@@ -18,7 +18,7 @@
     - Implement src/core/schema.ts: re-export zod as z, field helpers id(), text(), money(), integer(), boolean(), enumOf(), ref(entity), timestamp(); toJsonSchema(schema) producing draft 2020-12 JSON Schema for sidecar and manifest use.
     - Write src/core/ids.test.ts and src/core/schema.test.ts covering valid and invalid names, address stability across calls, and JSON schema output for every field helper.
     - _Requirements: 1.1, 1.2, 1.3, 7.1, 7.2, 7.3, 7.4, 7.5, 21.1, 21.2, 21.3_
-  - [ ] 0.3 Implement the Entity primitive, the store adapter interface and the memory store
+  - [x] 0.3 Implement the Entity primitive, the store adapter interface and the memory store
     - Implement src/core/entity.ts: entity(name, {fields, label, key}) returning schema (zod object), type inference helper, jsonSchema, label function and key field; malformed declarations throw naming the field.
     - Implement src/core/store.ts: Store interface with get(id), list({filter, page, size}), put(record), delete(id) and a bind(entity, store) helper; implement src/core/store.memory.ts as the in-memory adapter.
     - Implement src/core/store.conformance.ts exporting runStoreConformance(makeStore) used by every adapter test; write src/core/entity.test.ts and src/core/store.memory.test.ts that run the conformance suite against the memory store.
