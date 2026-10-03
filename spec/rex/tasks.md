@@ -7,7 +7,7 @@
 ## Wave 0
 
 - [ ] 0. Foundation: workspace, core primitives, manifest
-  - [ ] 0.1 Scaffold the pnpm workspace and the @sidioralabs/rex package
+  - [x] 0.1 Scaffold the pnpm workspace and the @sidioralabs/rex package
     - Finalize root package.json, pnpm-workspace.yaml, tsconfig.base.json, .npmrc and .gitignore for a pnpm 10 workspace with packages/* and examples/*; pin typescript ^5.9, vitest ^5, tsx ^4.
     - Create packages/rex/package.json named @sidioralabs/rex with type module, bin rex -> dist/cli/index.js, and the complete subpath exports map for ., ./client, ./server, ./vite and ./check pointing at src during development and dist after build; add typecheck, test and build scripts.
     - Create packages/rex/tsconfig.json extending the base with jsx react-jsx, packages/rex/vitest.config.ts with happy-dom for tsx tests, and packages/rex/src/index.ts exporting the core entry.

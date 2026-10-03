@@ -227,7 +227,7 @@ status  = "pending"
 
 [task.0.1]
 title = "Scaffold the pnpm workspace and the @sidioralabs/rex package"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = []
