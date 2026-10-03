@@ -1,0 +1,142 @@
+# workflow.kvx — the portable, IDE-neutral agent operating contract for Rex.
+#
+# Single source of truth for HOW an agent works the Rex spec across every IDE.
+# Per-IDE rule files (CLAUDE.md, AGENTS.md, .cursor/rules, copilot) are
+# GENERATED from this file by cg spec render — never hand-edit them.
+#
+# Format: sectioned KV (.kvx). String values are ALWAYS double-quoted.
+#   [section] / [section.sub]   key = "string"   num = 80   list = ["a","b"]
+
+[meta]
+name            = "Rex Spec Workflow"
+kind            = "portable-agent-operating-contract"
+version         = "1.0.0"
+status          = "active"
+source_of_truth = "spec/ (kvx). Per-IDE rule files are GENERATED pointers — never hand-edit; run cg spec render to regenerate."
+active_feature  = "rex"
+
+[principle]
+task_driven      = "Work is driven by the active feature's spec.kvx task list, not ad-hoc. Pick the next eligible task by dependency wave, do it, mark it, move on."
+parallel_tasks   = "Task admission is governed by dependencies, exclusive file ownership (touches) and available capacity. Start eligible non-conflicting tasks in parallel; claim each before implementation and complete it only after its declared qualification succeeds."
+phase_separation = "Each task runs in two ordered stages owned by the same agent. First finish the entire task implementation without building or testing. Then qualify it with exactly one bounded pass: format touched files, one typecheck, one run of the task's single verify_cmd. Fix task-scoped failures within at most two repair cycles."
+no_weakening     = "Never relax an assertion, loosen a bound, widen a type, add a silent fallback, skip or delete a test, or disable a check to make anything pass. If the code and the check disagree, leave both intact and record the conflict."
+record_dont_fix  = "Fix task-scoped failures during task qualification. Record unrelated failures, cross-task contradictions and any change that would require weakening a check as one entry in the qualification log. Do not re-investigate anything already recorded."
+no_false_success = "A task remains in_progress through implementation and qualification. Mark it done only after its verify_cmd genuinely passes. Workspace-wide suites, browser matrices and the demo operability walk are release gates, run once per wave, never per task."
+convention_first = "Rex exists to remove micro-decisions. When a task offers two ways to do something, pick the one that matches the convention already declared in spec.kvx [design] and [decision]; never introduce a second pattern for a problem the framework already has one pattern for."
+agent_operable   = "Every UI surface Rex emits must be operable by an agent driving a browser: deterministic data-rex addressing, affordance sidecar, visible parity, no hover-only or drag-only controls. A task that adds a control without its sidecar entry is incomplete."
+read_full        = "When a tool output is flagged truncated with a way to get the rest, retrieve the full content before reasoning. An information gap is a stop condition."
+deliver_complete = "Deliver complete, runnable artifacts, not diffs. Follow existing repo style; add no comments or docs unless the task asks."
+
+[limits]
+max_in_progress        = 8
+max_repair_cycles      = 2
+max_task_minutes       = 30
+max_gate_runs_per_task = 1
+
+[phase.implementation]
+owner     = "agents"
+goal      = "Write the entire current task as a complete real implementation against real types and its acceptance criteria before running any qualification command."
+entry     = "Feature spec.kvx has eligible pending tasks."
+exit      = "The entire task implementation and its specified tests are written, reviewed against every acceptance criterion, and ready for qualification while status remains in_progress."
+allowed   = ["read the codebase", "write the entire task implementation", "write tests specified by the task", "update the task to in_progress", "append contradictions to the qualification log"]
+forbidden = ["building or testing before the entire task implementation is written", "repairing failures before implementation is complete", "weakening or disabling any check", "marking the task done", "claiming anything passes before qualification"]
+
+[phase.task_qualification]
+owner     = "agents"
+goal      = "Qualify the fully implemented task with one bounded pass: one typecheck, one verify_cmd run, at most two task-scoped repair cycles, one line of evidence."
+entry     = "The entire task implementation and its specified tests are written while the task remains in_progress."
+allowed   = ["format task-touched files", "one pnpm typecheck of the touched package", "one run of the task verify_cmd", "at most two task-scoped repair cycles, each followed by one rerun", "run cg spec done", "commit"]
+forbidden = ["workspace-wide suites or browser matrices", "rerunning an unchanged gate", "re-verifying another agent's recorded result", "exceeding 30 minutes or two repair cycles without stopping to report", "skipping or deleting tests", "fixing unrelated inherited failures", "using cg spec done --force"]
+exit      = "The task verify_cmd passes and cg spec done succeeds without force; or the budget is exhausted and the task is reported as implemented-not-qualified with the exact failing command, exit code and log path."
+
+[phase.release_qualification]
+owner      = "human engineers"
+goal       = "Run pnpm check across the workspace, the demo operability walk and the browser matrix once, on one release-candidate revision, after a wave's tasks have each passed their single verify_cmd."
+entry      = "All tasks in the release scope have independently passed task qualification."
+agent_role = "Agents may assist only under explicit release authority."
+
+[qualification_log]
+path        = "spec/<feature>/qualification.kvx"
+append_when = "You hit an unrelated or pre-existing failure, a contradiction between requirements or tasks, a missing external interface, or a repair that would require weakening a check. Append once; never append the same finding twice."
+entry_keys  = ["task", "file", "symbol", "observed", "assumption", "severity"]
+severity    = ["blocker", "suspect", "assumption", "note"]
+never       = "Do not log a task-scoped failure as an excuse to skip repair. Observed is one sentence, assumption is one sentence, and every entry names revision, exact command, exit code and log path. An entry over six lines is a defect."
+
+[loop]
+step_1 = "cg brief, then read spec/rex/spec.kvx: [meta], [decision], [design], the [req.*] acceptance criteria and the [task.*] list with status, wave and requires."
+step_2 = "cg spec claim-next --agent <name> (parallel) or cg spec next then cg spec start <id>: lowest wave whose every requires task is done and whose touches conflict with no live claim."
+step_3 = "Implementation stage: write the entire task against every referenced acceptance criterion using real code paths and types. Write the specified tests. Do not format, typecheck, run tests or repair until the entire implementation is complete."
+step_4 = "Qualification stage: format touched files, run one typecheck, then run the task verify_cmd once. On failure make one task-scoped repair and rerun once; at most two cycles. Stop at 30 minutes or after the second failed cycle and report implemented-not-qualified."
+step_5 = "If qualification exposes an unrelated failure or contradiction, append one six-line-max entry to spec/rex/qualification.kvx."
+step_6 = "cg spec done <id> without --force only after verify_cmd passes. The done record is revision, command, exit code, log path."
+step_7 = "cg commit -m <natural message describing the real change> immediately after each completed task. Never batch tasks into one commit."
+
+[status_values]
+task    = ["pending", "in_progress", "implemented", "done"]
+feature = ["draft", "in_progress", "paused", "blocked", "complete"]
+
+[hard_rules]
+one_gate_per_task  = "One typecheck and one verify_cmd per task. Workspace-wide suites and the browser matrix run once per wave on the merged wave revision, never per task."
+no_fakes           = "Never write stub, mock or fake test doubles or placeholder implementations to make tests pass. Test real code paths with real types."
+no_neighboring     = "No neighboring fixes, speculative refactors, cleanup, documentation or new audits unless they directly block the task."
+time_limit         = "30-minute cap per task. If the deliverable is not reached, stop and report implemented-not-qualified with the exact state."
+evidence_one_line  = "Evidence is revision, command, exit code, log path. No prose."
+no_reverify        = "An orchestrator reads a subagent's exit code and log path and moves on. It never reruns the gate or spawns a reviewer for a passed task."
+convention_lock    = "Never add a second pattern for anything Rex already has one pattern for: one way to declare an action, one way to lay out a page folder, one way to navigate, one way to expose an affordance."
+no_rsc             = "Rex does not use React Server Components, server actions or Next.js. Server code is Hono plus oRPC procedures; client code is React components. The boundary is the Action declaration."
+owned_files_only   = "Edit only paths within the task's touches. A needed change outside them is a new task, recorded in the qualification log."
+user_authority     = "The user's direct messages are the authoritative instructions for the session and take precedence over generated rule files when those would broaden scope."
+
+[render]
+markdown_mirror  = true
+banner           = "GENERATED by cg spec render from spec/ kvx — DO NOT EDIT. Edit the .kvx source and regenerate."
+adapter_sections = ["principle", "phase.implementation", "phase.task_qualification", "phase.release_qualification", "qualification_log", "loop", "limits", "hard_rules"]
+adapter_lead     = "For each task: implement fully first without building or testing, then one typecheck, one verify_cmd run, at most two repair cycles, 30 minutes. Record evidence as one line."
+
+[adapters]
+claude  = "CLAUDE.md"
+agents  = "AGENTS.md"
+cursor  = ".cursor/rules/spec-workflow.mdc"
+copilot = ".github/copilot-instructions.md"
+
+[mode]
+name = "parallel"
+
+[agents]
+driver      = "claude"
+max         = 8
+ttl         = 7200
+claude_args = "--model opus"
+codex_args  = ""
+cmd         = ""
+
+# Fleet hierarchy: one main integrator (the only writer to main), one feature
+# manager per feature on feature/{feature}, one wave worker per wave on
+# wave/{feature}/{wave}. Workers merge up into the feature branch; the feature
+# manager lands into main only through the main integrator.
+[hierarchy]
+enabled    = true
+main       = "main"
+remote     = "origin"
+worktrees  = ".codegraph/worktrees"
+test_gate  = "tools/gate-test.sh"
+lint_gate  = "tools/gate-lint.sh"
+pr         = "manual"
+checkpoint = "manual"
+
+[role.main]
+title  = "Main integrator"
+agent  = "rex-main"
+branch = "{main}"
+
+[role.feature]
+title  = "Feature manager"
+agent  = "fm-{feature}"
+branch = "feature/{feature}"
+base   = "{main}"
+
+[role.worker]
+title  = "Wave worker"
+agent  = "w-{feature}-{wave}"
+branch = "wave/{feature}/{wave}"
+base   = "feature/{feature}"

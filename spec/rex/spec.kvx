@@ -1,0 +1,1011 @@
+# rex — feature spec. Decisions, design, requirements, then the task list.
+# Format: sectioned KV (.kvx). String values are ALWAYS double-quoted.
+
+[meta]
+feature    = "rex"
+name       = "Rex"
+slug       = "rex"
+version    = "0.1.0"
+status     = "draft"
+intro      = "Rex is Sidiora Labs' framework for building complex, high-quality web application interfaces that AI agents can write and that AI agents can operate. One declaration per capability, one folder convention per page, one checker that fails the build when anyone steps outside them."
+goal       = "Ship the Rex package, CLI and checker, and prove them with a demo app whose every page is operable by an agent driving a browser through the same UI a human uses."
+scope      = "Core primitives (Entity, Action, Page, Policy, Flow), the page folder convention, server and client runtime, the agent contract (addressing, affordance sidecar, outcome region, palette, density), manifest generation, the checker, generators, and a demo application."
+completion = "All acceptance criteria pass, rex check exits zero on the demo app, and the operability walk reaches every declared action through click, keyboard, URL and palette on one revision."
+
+[decision]
+problem          = "AI-generated apps degrade in proportion to the number of unforced micro-decisions per feature. Rex removes the decisions: one canonical shape per primitive, one folder layout per page, derived projections instead of hand-written glue."
+not_next         = "Rex does not use Next.js, React Server Components or server actions. The server is Hono plus oRPC procedures; the client is React. The boundary is the Action declaration."
+thin_runtime     = "Rex owns conventions, generators, the checker and the agent contract. It does not own a router, bundler or renderer. Vite, Hono, oRPC, TanStack Query, Drizzle and wouter are used as-is."
+stack            = "TypeScript strict, React 19, Vite, Hono, oRPC, TanStack Query, zod, Drizzle, wouter, cmdk, Tailwind 4 tokens, DesignX UI components copied into app/components."
+agent_interface  = "An agent interface is the human UI made legible and operable to an agent driving a browser or desktop. Every control carries a deterministic data-rex address; every page embeds an affordance sidecar; every action is reachable by click, keyboard, URL and command palette; state is visible as text, never only as color or motion."
+one_dom          = "There is one DOM for humans and agents. Density and motion are preferences on the same components, never a separate agent view. The sidecar describes the visible UI and the checker fails any sidecar affordance without a visible counterpart."
+derived_shell    = "The route table, header, navigation and back targets are derived from each page.ts declaration. No hand-written route switch, header switch or nav list exists."
+no_callbacks     = "Parts and regions never receive navigation or action callbacks as props from a parent. They use the typed nav and act primitives bound to the manifest."
+states_set       = "Every page can be in exactly one of nine data states: loading, empty, stale, partial, offline, permission-denied, recoverable-error, terminal-error, ready. states.tsx must export a component for each state the page declares; the type checker enforces it."
+first_apps       = "The demo app is a wallet-like portfolio and send flow modelled on the Paxeer wallet widgets. Workmates and the Paxeer wallet are the first migration candidates after the demo."
+package          = "One npm package @sidioralabs/rex with subpath exports: rex (core), rex/client, rex/server, rex/vite, rex/check, and the rex CLI binary."
+
+[design]
+overview            = "A Rex app is a directory of declarations plus React components. The Vite plugin discovers the app by convention and exposes it as a virtual module. The server mounts every Action as an oRPC procedure behind its Policy and records each call in the audit ledger. The client builds routes, navigation, palette, shortcuts and the sidecar from the same declarations. The checker reads the same structure and fails the build on violations. The manifest is the single generated artifact every projection reads."
+primitives          = "Entity: schema, label, store adapter. Action: id, input, output, policy, effect, label, shortcut, handler. Page: id, route, params, policy, recovery, draft, actions, chrome, regions, overlays. Policy: named permission table and evaluation. Flow: durable multi-step action with approval gates. Manifest: generated description of all of the above."
+page_folder         = "app/pages/<page>/page.ts (declaration), view.tsx (layout of regions only), states.tsx (one export per declared state), hooks/ (page-private state and queries), regions/<region>/region.tsx (binds hooks to parts; the only hook caller), regions/<region>/parts/*.tsx (pure, props in, events out), overlays/*.tsx (sheets, dialogs, drawers with declared dismissal), test/."
+import_table        = "page.ts imports entities, actions, policies and never React. view.tsx imports regions and layout primitives and never hooks, data or parts. region.tsx imports its page's hooks, its own parts, its page's overlays and actions, never other regions or pages. parts import DesignX components and types, never fetching hooks, actions or navigation. hooks import app/data and actions, never components. overlays import parts and DesignX, never data fetching. states.tsx imports parts and DesignX, never hooks. No page imports another page."
+addressing          = "data-rex=\"<page>/<action>\" on action controls, data-rex-region=\"<page>/<region>\" on region landmarks, data-rex-overlay=\"<page>/<overlay>\" on overlays, data-rex-page=\"<page>\" on the page root. Identifiers derive from declaration names, never from markup."
+sidecar             = "One script element of type application/rex+json with id rex-page per rendered page. Payload: page id, params, data state, actions (id, label, allowed, effect, input JSON schema, via list of click, key, palette, url), overlays (id, open, dismiss), outcome (last action id, ok, message, at). It updates on every state change and is mirrored on window.__rex."
+invocation          = "Every action is reachable four ways: a visible control, a keyboard shortcut from the declaration, a URL of the form <route>?act=<action id> with optional JSON input, and the cmdk command palette populated from the manifest. Irreversible actions require a confirmation step on all four routes."
+outcome             = "A persistent outcome region per page (aria-live polite) states the last action, success or failure and message. Transient toasts are not used for action results."
+density             = "A density preference (default or agent) is read from the density query parameter, the x-rex-density header or a stored preference. Agent density flattens layout, disables non-essential motion, expands collapsed groups and enlarges hit targets. It is a data attribute on the root consumed by tokens, not a separate component tree."
+traps               = "Hover-only, drag-only and canvas-only controls are forbidden unless a declared keyboard or typed equivalent exists. Every overlay declares dismissal. Every picker accepts typed input. Every infinite list has a paged route."
+checker             = "rex check runs typecheck, boundary rules, state rules, parity rules, naming rules, trap rules and emits JSON findings with file, line, rule id, message and fix hint. Exit code 1 on any error finding."
+generators          = "rex new, rex make page|region|part|overlay|action|entity|policy|flow, rex promote. Every skeleton is the canonical shape. Generators refuse to overwrite existing files."
+manifest            = "rex manifest writes .rex/manifest.json (deterministic ordering) and AGENTS.md from the declarations. Codify and Gideon read the manifest instead of crawling the repo."
+server              = "createRexServer builds a Hono app: oRPC RPCHandler at /rex/rpc over the action router, GET /rex/manifest, policy evaluation before every handler, audit record after every handler, actor resolved from a pluggable context function."
+client              = "createRexApp mounts providers (QueryClient, oRPC link, manifest, density), a wouter router from page declarations, the shell (header, nav, outcome, palette, sidecar) and the active page's view with its regions and states."
+storage             = "Entity declares a zod schema; a store adapter interface provides get, list, put, delete. An in-memory adapter ships first; a Drizzle adapter follows."
+
+[documentation]
+mode      = "auto"
+status    = "pending"
+audiences = ["user", "developer"]
+targets   = ["README.md", "docs/**", "CONTRIBUTING.md", "CHANGELOG.md"]
+
+[req.1]
+title = "Declarative primitives with one canonical shape"
+story = "As an agent writing a Rex app, I want each capability declared once in one known shape so that I never choose between patterns."
+ac_1  = "entity(), action(), page(), policy() and flow() each accept exactly one declaration object whose shape is exported as a TypeScript type and validated at declaration time; a malformed declaration throws with the field name."
+ac_2  = "Every declaration carries a stable string id derived from its name; two declarations with the same id in one app throw at registry build time."
+ac_3  = "Declarations contain no React imports and are importable from both server and client bundles."
+
+[req.2]
+title = "Action projections"
+story = "As an agent, I want one Action declaration to produce every surface it needs so that no route, hook, palette entry or audit record is written by hand."
+ac_1  = "Each Action becomes one oRPC procedure with input and output validation from its schemas; the procedure name equals the action id."
+ac_2  = "Each Action is callable from the client through a typed act() hook that returns a TanStack mutation, invalidates the queries the action declares, and records the result in the outcome region."
+ac_3  = "Each Action with a label appears in the command palette; each Action with a shortcut is bound to that key combination while its page is active."
+ac_4  = "Each Action is invocable by URL: <page route>?act=<action id>&input=<json>; invalid input renders a validation outcome, it does not throw."
+ac_5  = "Each Action invocation on the server writes one audit record with actor, action id, input digest, outcome, effect class and timestamp."
+ac_6  = "Each Action with effect irreversible requires a confirmation step before the handler runs on all four invocation routes."
+
+[req.3]
+title = "Page folder convention"
+story = "As an agent, I want the files of a page to be discoverable by name so that the folder tree is the component tree."
+ac_1  = "A page directory contains page.ts, view.tsx, states.tsx and optionally hooks/, regions/<name>/region.tsx, regions/<name>/parts/*.tsx, overlays/*.tsx and test/; the Vite plugin resolves these by convention without barrels."
+ac_2  = "Every region named in page.ts regions has a regions/<name>/region.tsx file, and every regions/<name> folder is named in page.ts; the checker reports either mismatch."
+ac_3  = "Every overlay named in page.ts overlays has an overlays/<Name>.tsx file, and every overlays file is named in page.ts."
+ac_4  = "Part files are PascalCase components with a single default export; hook files are camelCase starting with use and export a single function."
+ac_5  = "A part shared by two pages is moved to app/components by rex promote; the checker reports a part imported from another page's folder."
+
+[req.4]
+title = "Required data states"
+story = "As a user or agent, I want every page to render a sensible screen in every data state so that nothing is blank or spinning forever."
+ac_1  = "The RexDataState type is the closed set loading, empty, stale, partial, offline, permission-denied, recoverable-error, terminal-error, ready."
+ac_2  = "states.tsx must export a component named for every state the page declares in page.ts states (default: all nine); a missing export is a type error and a checker error."
+ac_3  = "The runtime resolves the current state from the page's queries, policy result and connectivity, renders the matching export, and writes the state into the sidecar."
+ac_4  = "The ready export is view.tsx; the other eight receive the page params and a retry function."
+
+[req.5]
+title = "Import boundaries"
+story = "As a maintainer, I want layering enforced by the checker so that models cannot drift the architecture."
+ac_1  = "The checker enforces the import table in [design] import_table for page.ts, view.tsx, region.tsx, parts, hooks, overlays and states.tsx."
+ac_2  = "No file under app/pages/<a> imports from app/pages/<b> where a differs from b."
+ac_3  = "No component file calls fetch, the oRPC client or a store adapter directly; data flows through hooks in hooks/ or app/data."
+ac_4  = "Each violation is reported with file, line, rule id, the offending import and the allowed alternatives."
+
+[req.6]
+title = "Derived shell and typed navigation"
+story = "As an agent, I want routes, header, nav and back behaviour to come from page declarations so that no shell switch is hand-written."
+ac_1  = "The router is built from every page.ts route and params schema; unknown routes render the app-level not-found state."
+ac_2  = "Header title, back target and nav visibility are read from page.ts chrome; the shell has no per-page switch statements."
+ac_3  = "nav.to(page, params) is typed against the manifest; passing params that fail the target page's schema is a compile error and a runtime validation outcome."
+ac_4  = "Page params and draft state live in the URL as declared by page.ts draft; a reload restores the same screen."
+ac_5  = "A page whose policy denies the current actor renders its permission-denied state and the shell offers the page's declared recovery target."
+
+[req.7]
+title = "Stable addressing and affordance sidecar"
+story = "As an agent driving a browser, I want to find every control by meaning and read what a page offers so that I never guess from pixels."
+ac_1  = "Every action control renders data-rex=<page>/<action>, every region landmark renders data-rex-region=<page>/<region>, every overlay renders data-rex-overlay=<page>/<overlay>, the page root renders data-rex-page=<page>."
+ac_2  = "Addresses are derived from declaration names and are identical across builds and style changes."
+ac_3  = "Each rendered page contains exactly one script element with type application/rex+json and id rex-page whose payload matches the shape in [design] sidecar and validates against the published JSON schema."
+ac_4  = "The sidecar payload updates within one render of any change to data state, action availability, overlay open state or outcome, and window.__rex holds the same object."
+ac_5  = "Every action listed in the sidecar has a visible control in the DOM with a matching data-rex address while the action is available; the checker and the operability walk both report a mismatch."
+
+[req.8]
+title = "Four invocation routes"
+story = "As an agent, I want every action reachable by click, keyboard, URL and command palette so that I can choose the cheapest route."
+ac_1  = "Every action declared on a page is reachable by clicking its control, by its declared shortcut, by the URL act parameter and by selecting it in the palette."
+ac_2  = "The palette opens with mod+k, lists the active page's actions and all navigable pages from the manifest, filters by label and id, and executes or navigates on enter."
+ac_3  = "A disallowed action appears in the palette and sidecar as not allowed with the policy reason; it does not execute."
+
+[req.9]
+title = "Density and motion preference"
+story = "As an agent or a user with accessibility needs, I want a flat, still, fully expanded layout on request without a separate UI."
+ac_1  = "The density preference is resolved from the density query parameter, then the x-rex-density header, then the stored preference, then default."
+ac_2  = "Agent density sets data-rex-density=agent on the root, which disables non-essential motion, expands collapsed groups, and enlarges hit targets to at least 44 by 44 CSS pixels through tokens."
+ac_3  = "No state is conveyed only by color or motion; the checker reports a motion-only state change where detectable, and the demo passes a manual audit."
+
+[req.10]
+title = "No agent traps"
+story = "As an agent, I want no control that requires hovering, dragging or a canvas so that I can always complete a task."
+ac_1  = "The checker reports an onMouseEnter or onMouseOver handler without a matching onFocus handler, a draggable element without a declared keyboard alternative, and a canvas element without a declared equivalent action."
+ac_2  = "Every overlay declares its dismissal; Escape and the declared dismiss control both close it; focus returns to the opener."
+ac_3  = "Every date, token or entity picker accepts typed input in addition to selection."
+ac_4  = "Every list that loads more on scroll also exposes a paged route with page and size params."
+
+[req.11]
+title = "Generated manifest"
+story = "As Codify or Gideon, I want one machine-readable file describing the app so that I never crawl the source."
+ac_1  = "rex manifest writes .rex/manifest.json containing every entity, action, page (with regions, overlays, states, chrome, route), policy and flow with deterministic key ordering."
+ac_2  = "rex manifest writes AGENTS.md from the manifest with the page table, action table and the folder convention; a hand-edited AGENTS.md is overwritten and the checker warns when it is stale."
+ac_3  = "The server serves the same manifest at GET /rex/manifest and the client reads it at startup."
+
+[req.12]
+title = "The checker"
+story = "As an agent, I want one command whose structured failures tell me exactly what to fix so that red to green is mechanical."
+ac_1  = "rex check runs typecheck, boundaries, states, parity, naming, traps and manifest freshness and exits 1 on any error finding."
+ac_2  = "rex check --json emits an array of findings with rule, severity, file, line, column, message and hint; the human format prints the same findings grouped by file."
+ac_3  = "Each rule is individually testable against fixture directories and has at least one passing and one failing fixture."
+ac_4  = "rex check completes on the demo app in under 30 seconds on the reference machine."
+
+[req.13]
+title = "Generators"
+story = "As an agent, I want skeletons written by the tool so that I only fill in handler bodies and parts."
+ac_1  = "rex new <name> writes a complete app that passes rex check with zero findings."
+ac_2  = "rex make page <id> --regions a,b --overlays X,Y writes page.ts, view.tsx, states.tsx with all nine exports, hooks/, regions/a/region.tsx, regions/b/region.tsx, overlays/X.tsx, overlays/Y.tsx and test/; the result passes rex check."
+ac_3  = "rex make action|entity|policy|flow|region|part|overlay write the canonical skeleton at the conventional path and refuse to overwrite an existing file."
+ac_4  = "rex promote <page>/regions/<region>/parts/<Part> moves the part to app/components and rewrites imports in the source page."
+
+[req.14]
+title = "Dev, build and single deployable"
+story = "As a developer, I want one command to run the whole app and one artifact to deploy."
+ac_1  = "rex dev starts one process serving the Vite client and the Hono server on one port with hot reload."
+ac_2  = "rex build emits one directory containing the server entry and the client assets; node dist/server.js serves the app."
+ac_3  = "rex dev and rex build fail fast with the checker's findings when rex check reports errors, unless --no-check is passed."
+
+[req.15]
+title = "Policy evaluation"
+story = "As an operator, I want one permission table consulted by the server, the UI and the sidecar so that gating never disagrees."
+ac_1  = "policy() declares named permissions and a resolver from actor to granted permissions; requires() and can() build policy predicates."
+ac_2  = "The server evaluates the action's policy before the handler and returns FORBIDDEN with the reason when denied; the handler does not run."
+ac_3  = "The client evaluates the same policy against the current actor to set allowed in the sidecar and disable controls, and the server result is authoritative on disagreement."
+
+[req.16]
+title = "Audit ledger"
+story = "As an operator, I want every action invocation recorded so that agent activity is reviewable."
+ac_1  = "The ledger interface exposes append and list with filters by actor, action id, outcome and time range; an in-memory implementation ships."
+ac_2  = "Records contain actor, action id, input digest (sha-256 of canonical JSON), outcome ok or error code, effect class, duration and timestamp; raw input is not stored."
+ac_3  = "A handler failure still writes a record with the error code."
+
+[req.17]
+title = "Flow primitive"
+story = "As an agent harness, I want durable multi-step work with approval gates so that long tasks survive restarts and humans can sign off."
+ac_1  = "flow() declares ordered steps, each an action or an approval gate, with a journal adapter; an in-memory journal ships."
+ac_2  = "A flow instance records each completed step; resuming an instance continues from the first incomplete step."
+ac_3  = "An approval gate pauses the flow, exposes an approve and reject action in the sidecar of the owning page, and resumes or terminates on decision."
+
+[req.18]
+title = "Operability walk"
+story = "As a release engineer, I want proof that an agent can operate every page so that the contract is tested, not asserted."
+ac_1  = "A Playwright script reads /rex/manifest, visits every page, and for every declared action verifies reachability by click, keyboard, URL and palette."
+ac_2  = "The walk verifies that the sidecar lists exactly the actions whose controls are present, that every overlay declared is dismissible, and that the outcome region updates after each invocation."
+ac_3  = "The walk emits a JSON report per page and exits 1 on any failure."
+
+[req.19]
+title = "Demo application"
+story = "As the Rex team, I want a realistic app built only with the convention so that every rule is exercised."
+ac_1  = "The demo declares at least two entities (account, token), four actions (send, pick token, pick contact, toggle hide dust), two policies and two pages (portfolio, send) with regions, overlays, hooks and all nine states."
+ac_2  = "The demo passes rex check with zero findings and the operability walk with zero failures."
+ac_3  = "The demo is generated with rex new and rex make and then filled in; no file deviates from the skeleton layout."
+
+[req.20]
+title = "Design tokens and components"
+story = "As a designer, I want every visual value to come from tokens so that generated UI stays on-system."
+ac_1  = "app/components holds DesignX UI copies; parts import only from app/components and the Rex layout primitives."
+ac_2  = "The checker reports raw color classes, arbitrary values and inline style colors outside token references."
+ac_3  = "Rex layout primitives Page.Stack, Page.Grid, Page.Section and Page.Outcome accept only token-based spacing props."
+
+[req.21]
+title = "Entity storage"
+story = "As an app author, I want an entity to carry its schema and storage so that CRUD needs no hand-written glue."
+ac_1  = "entity() derives the TypeScript type, zod validator and JSON schema from one field definition."
+ac_2  = "The store adapter interface exposes get, list with filter and paging, put and delete; the in-memory adapter passes the adapter conformance test."
+ac_3  = "The Drizzle adapter passes the same conformance test against libsql."
+
+[req.22]
+title = "Overlays"
+story = "As an agent, I want every sheet and dialog declared, addressable and dismissible so that I am never trapped."
+ac_1  = "overlay() wraps a component with id, declared dismiss behavior and open state bound to region state or URL."
+ac_2  = "Open overlays appear in the sidecar with open true and the dismiss method; closed overlays appear with open false."
+ac_3  = "An overlay traps focus while open, restores focus on close and renders data-rex-overlay."
+
+[tasks]
+heading = "Implementation Plan: Rex"
+
+[task.0]
+title   = "Foundation: workspace, core primitives, manifest"
+section = "Wave 0"
+status  = "pending"
+
+[task.0.1]
+title = "Scaffold the pnpm workspace and the @sidioralabs/rex package"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = []
+reqs = ["1.1", "1.2", "1.3", "14.1", "14.2", "14.3"]
+do_1 = "Finalize root package.json, pnpm-workspace.yaml, tsconfig.base.json, .npmrc and .gitignore for a pnpm 10 workspace with packages/* and examples/*; pin typescript ^5.9, vitest ^5, tsx ^4."
+do_2 = "Create packages/rex/package.json named @sidioralabs/rex with type module, bin rex -> dist/cli/index.js, and the complete subpath exports map for ., ./client, ./server, ./vite and ./check pointing at src during development and dist after build; add typecheck, test and build scripts."
+do_3 = "Create packages/rex/tsconfig.json extending the base with jsx react-jsx, packages/rex/vitest.config.ts with happy-dom for tsx tests, and packages/rex/src/index.ts exporting the core entry."
+do_4 = "Create examples/demo/package.json named demo with dev, build, check and test scripts calling the rex bin, examples/demo/tsconfig.json, and examples/demo/index.html; run pnpm install and commit the lockfile."
+touches = ["package.json", "pnpm-workspace.yaml", "pnpm-lock.yaml", "tsconfig.base.json", ".npmrc", ".gitignore", "packages/rex/package.json", "packages/rex/tsconfig.json", "packages/rex/vitest.config.ts", "packages/rex/src/index.ts", "examples/demo/package.json", "examples/demo/tsconfig.json", "examples/demo/index.html"]
+verify_cmd = "pnpm install && pnpm -r typecheck"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.2]
+title = "Implement deterministic identifiers and schema field helpers"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.1"]
+reqs = ["1.1", "1.2", "1.3", "7.1", "7.2", "7.3", "7.4", "7.5", "21.1", "21.2", "21.3"]
+do_1 = "Implement src/core/ids.ts: validateName (lowercase, digits, dot and dash, no leading digit), pageId, actionId, regionAddress(page, region), actionAddress(page, action), overlayAddress(page, overlay), pageAddress(page); addresses are pure functions of names."
+do_2 = "Implement src/core/schema.ts: re-export zod as z, field helpers id(), text(), money(), integer(), boolean(), enumOf(), ref(entity), timestamp(); toJsonSchema(schema) producing draft 2020-12 JSON Schema for sidecar and manifest use."
+do_3 = "Write src/core/ids.test.ts and src/core/schema.test.ts covering valid and invalid names, address stability across calls, and JSON schema output for every field helper."
+touches = ["packages/rex/src/core/ids.ts", "packages/rex/src/core/schema.ts", "packages/rex/src/core/ids.test.ts", "packages/rex/src/core/schema.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/ids.test.ts src/core/schema.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.3]
+title = "Implement the Entity primitive, the store adapter interface and the memory store"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.2"]
+reqs = ["1.1", "1.2", "1.3", "21.1", "21.2", "21.3"]
+do_1 = "Implement src/core/entity.ts: entity(name, {fields, label, key}) returning schema (zod object), type inference helper, jsonSchema, label function and key field; malformed declarations throw naming the field."
+do_2 = "Implement src/core/store.ts: Store interface with get(id), list({filter, page, size}), put(record), delete(id) and a bind(entity, store) helper; implement src/core/store.memory.ts as the in-memory adapter."
+do_3 = "Implement src/core/store.conformance.ts exporting runStoreConformance(makeStore) used by every adapter test; write src/core/entity.test.ts and src/core/store.memory.test.ts that run the conformance suite against the memory store."
+touches = ["packages/rex/src/core/entity.ts", "packages/rex/src/core/store.ts", "packages/rex/src/core/store.memory.ts", "packages/rex/src/core/store.conformance.ts", "packages/rex/src/core/entity.test.ts", "packages/rex/src/core/store.memory.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/entity.test.ts src/core/store.memory.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.4]
+title = "Implement the Policy primitive and evaluation"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.2"]
+reqs = ["1.1", "1.2", "1.3", "15.1", "15.2", "15.3"]
+do_1 = "Implement src/core/policy.ts: policy(name, {permissions, resolve(actor) -> granted set}); predicates requires({unlocked, account, custody, permissions}), can(permission), allOf, anyOf, always, never; evaluate(predicate, actor) -> {allowed, reason} with a stable reason code per failing clause."
+do_2 = "Define the Actor type (id, roles, permissions, attributes) and the anonymous actor; evaluation is pure and identical on server and client."
+do_3 = "Write src/core/policy.test.ts covering every predicate, combination, reason codes and the anonymous actor."
+touches = ["packages/rex/src/core/policy.ts", "packages/rex/src/core/actor.ts", "packages/rex/src/core/policy.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/policy.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.5]
+title = "Implement the Action primitive and the declaration registry"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.3", "0.4"]
+reqs = ["1.1", "1.2", "1.3", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6"]
+do_1 = "Implement src/core/action.ts: action(id, {input, output, policy, effect: reversible|irreversible|read, label, shortcut, invalidates, handler}) returning a frozen ActionDeclaration with inferred Input and Output types; validate id with validateName and shortcut syntax (mod, shift, alt plus one key)."
+do_2 = "Implement src/core/registry.ts: createRegistry() collecting entities, actions, pages, policies and flows; register throws on duplicate id; freeze() returns an immutable snapshot with deterministic ordering by id."
+do_3 = "Write src/core/action.test.ts and src/core/registry.test.ts covering type inference, invalid ids and shortcuts, duplicate detection and ordering."
+touches = ["packages/rex/src/core/action.ts", "packages/rex/src/core/registry.ts", "packages/rex/src/core/action.test.ts", "packages/rex/src/core/registry.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/action.test.ts src/core/registry.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.6]
+title = "Implement the Page declaration, data states and the states module contract"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.5"]
+reqs = ["1.1", "1.2", "1.3", "3.1", "3.2", "3.3", "3.4", "3.5", "4.1", "4.2", "4.3", "4.4", "6.1", "6.2", "6.3", "6.4", "6.5", "22.1", "22.2", "22.3"]
+do_1 = "Implement src/core/page.ts: page(id, {route, params, policy, recovery, draft: route|session|none, actions, chrome: {header, nav, back, title}, regions, overlays, states}) returning a frozen PageDeclaration; validate region and overlay names, route syntax and that recovery names a page id."
+do_2 = "Export the closed RexDataState union of the nine states, the StatesModule type that requires one export per declared state (ready excluded, provided by view.tsx), and the StateProps type (params, retry, error)."
+do_3 = "Export the OverlayDeclaration type (id, dismiss: escape|button|both, binding: region|url) with no React dependency."
+do_4 = "Write src/core/page.test.ts covering validation errors, default states, chrome defaults and the StatesModule type through expectTypeOf."
+touches = ["packages/rex/src/core/page.ts", "packages/rex/src/core/states.ts", "packages/rex/src/core/overlay.ts", "packages/rex/src/core/page.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/page.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.7]
+title = "Implement manifest types, the manifest builder and the sidecar JSON schema"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.6"]
+reqs = ["7.1", "7.2", "7.3", "7.4", "7.5", "11.1", "11.2", "11.3"]
+do_1 = "Implement src/manifest/types.ts: Manifest with version, app, entities, actions, pages (route, params JSON schema, chrome, regions, overlays, states, actions), policies, flows; every array sorted by id."
+do_2 = "Implement src/manifest/build.ts: buildManifest(registry) producing a deterministic manifest and stableStringify for byte-identical output; implement src/manifest/sidecar.schema.ts exporting the JSON Schema for the application/rex+json payload and a validateSidecar function."
+do_3 = "Write src/manifest/build.test.ts covering ordering determinism, JSON schema emission for params and inputs, and sidecar schema acceptance and rejection cases."
+touches = ["packages/rex/src/manifest/types.ts", "packages/rex/src/manifest/build.ts", "packages/rex/src/manifest/sidecar.schema.ts", "packages/rex/src/manifest/build.test.ts", "packages/rex/src/index.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/manifest/build.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.8]
+title = "Implement the Flow primitive with a journal and approval gates"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.5"]
+reqs = ["1.1", "1.2", "1.3", "17.1", "17.2", "17.3"]
+do_1 = "Implement src/core/flow.ts: flow(id, {steps, journal}) where a step is {action, input(ctx)} or {approval, label, approvers policy}; FlowDeclaration is frozen and validated."
+do_2 = "Implement src/core/journal.ts with the Journal interface (open, record, load, list) and the in-memory journal; implement runFlow(flow, instanceId, ctx) that executes from the first incomplete step, pauses at an approval gate, and resumes or terminates on decide(instanceId, approve|reject, actor)."
+do_3 = "Write src/core/flow.test.ts covering completion, restart from a partial journal, approval pause and resume, rejection termination and duplicate decision refusal."
+touches = ["packages/rex/src/core/flow.ts", "packages/rex/src/core/journal.ts", "packages/rex/src/core/flow.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/flow.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1]
+title   = "Server runtime: audit, action router, Hono server, Drizzle store"
+section = "Wave 1"
+status  = "pending"
+
+[task.1.1]
+title = "Implement the audit ledger"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["0.7"]
+reqs = ["16.1", "16.2", "16.3"]
+do_1 = "Implement src/server/audit.ts: AuditRecord (id, actor, actionId, inputDigest, outcome ok|error code, effect, durationMs, at), Ledger interface append and list with filters by actor, actionId, outcome and time range, and the in-memory ledger."
+do_2 = "Implement digest(input) as sha-256 over canonical JSON (sorted keys) using the Web Crypto API so it runs in Node and browsers."
+do_3 = "Write src/server/audit.test.ts covering filters, digest stability, and that raw input never appears in a record."
+touches = ["packages/rex/src/server/audit.ts", "packages/rex/src/server/audit.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/audit.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1.2]
+title = "Build the oRPC action router with policy, confirmation and audit"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["1.1"]
+reqs = ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "15.1", "15.2", "15.3", "16.1", "16.2", "16.3"]
+do_1 = "Implement src/server/router.ts: buildActionRouter(registry, {ledger}) producing an oRPC router keyed by action id; each procedure uses os.$context<RexContext>() with actor and density, validates input and output with the declared schemas, evaluates the policy and throws ORPCError FORBIDDEN with the reason before the handler runs."
+do_2 = "Implement confirmation for irreversible actions: the procedure requires a confirm token obtained from a confirm procedure that returns a short-lived token bound to the action id and input digest; a missing or mismatched token throws PRECONDITION_REQUIRED."
+do_3 = "Append one audit record after every call including handler failures, with effect and duration."
+do_4 = "Write src/server/router.test.ts using call() from @orpc/server covering allowed, forbidden, validation failure, confirmation flow and audit records for success and failure."
+touches = ["packages/rex/src/server/router.ts", "packages/rex/src/server/context.ts", "packages/rex/src/server/router.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/router.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1.3]
+title = "Implement createRexServer on Hono"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["1.2"]
+reqs = ["11.1", "11.2", "11.3", "14.1", "14.2", "14.3", "15.1", "15.2", "15.3"]
+do_1 = "Implement src/server/index.ts: createRexServer({registry, ledger, actor(request) -> Actor}) returning a Hono app with RPCHandler mounted at /rex/rpc, GET /rex/manifest returning buildManifest(registry), GET /rex/health, and the x-rex-density header copied into context."
+do_2 = "Export the RouterClient type for the built router so the client package can type the oRPC client from the app registry."
+do_3 = "Write src/server/server.test.ts exercising the app with app.request for manifest, health, an allowed action, a forbidden action and the density header."
+touches = ["packages/rex/src/server/index.ts", "packages/rex/src/server/server.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/server.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1.4]
+title = "Implement the Node server entry and static serving for builds"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["1.3"]
+reqs = ["14.1", "14.2", "14.3"]
+do_1 = "Implement src/server/node.ts: startNodeServer(app, {port, clientDir}) using @hono/node-server, serving clientDir assets and index.html fallback for page routes while leaving /rex/* to the API."
+do_2 = "Write src/server/node.test.ts starting the server on an ephemeral port against a temporary client directory and asserting asset, fallback and API responses."
+touches = ["packages/rex/src/server/node.ts", "packages/rex/src/server/node.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/node.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1.5]
+title = "Implement the Drizzle store adapter against libsql"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["0.7"]
+reqs = ["21.1", "21.2", "21.3"]
+do_1 = "Implement src/store/drizzle.ts: drizzleStore(entity, db) mapping entity fields to a Drizzle sqlite table definition, with get, list (filter, page, size), put and delete."
+do_2 = "Write src/store/drizzle.test.ts running runStoreConformance against an in-memory libsql database created with @libsql/client."
+touches = ["packages/rex/src/store/drizzle.ts", "packages/rex/src/store/drizzle.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/store/drizzle.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2]
+title   = "Client runtime: providers, router, nav, act, view and regions, states, layout, shell"
+section = "Wave 2"
+status  = "pending"
+
+[task.2.1]
+title = "Implement the client app provider"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["0.7"]
+reqs = ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "11.1", "11.2", "11.3"]
+do_1 = "Implement src/client/app.tsx: createRexApp({registry, manifest, link}) returning a RexApp component that mounts QueryClientProvider, the oRPC client built from RPCLink at /rex/rpc, the manifest context, the actor context (fetched from /rex/manifest headers or provided) and the density provider slot."
+do_2 = "Implement src/client/context.ts exposing useManifest, useActor, useRexClient and useRegistry hooks."
+do_3 = "Write src/client/app.test.tsx rendering RexApp with a mocked fetch of the manifest and asserting the hooks resolve."
+touches = ["packages/rex/src/client/app.tsx", "packages/rex/src/client/context.ts", "packages/rex/src/client/index.ts", "packages/rex/src/client/app.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/app.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.2]
+title = "Implement the router and typed navigation"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.1"]
+reqs = ["6.1", "6.2", "6.3", "6.4", "6.5"]
+do_1 = "Implement src/client/router.tsx: routes built from every page declaration with wouter, params parsed and validated with the page params schema, a not-found page and the page policy check producing permission-denied with the recovery target."
+do_2 = "Implement src/client/nav.ts: useNav() returning to(page, params), back(), replace(page, params) typed against the registry; params failing the schema are a compile error through the declaration types and a runtime validation outcome; draft state is serialized into the URL as declared by page.draft."
+do_3 = "Write src/client/nav.test.tsx covering navigation, params validation, reload restoration from URL and the denied recovery path."
+touches = ["packages/rex/src/client/router.tsx", "packages/rex/src/client/nav.ts", "packages/rex/src/client/nav.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/nav.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.3]
+title = "Implement the act hook and the outcome store"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.1"]
+reqs = ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "15.1", "15.2", "15.3"]
+do_1 = "Implement src/client/outcome.ts: a small store holding the last outcome per page (actionId, ok, message, at) with subscribe and useOutcome."
+do_2 = "Implement src/client/act.ts: useAct(action) returning {run(input), pending, allowed, reason, controlProps} where run performs the oRPC call through a TanStack mutation, invalidates the declared query keys, writes the outcome, and for irreversible actions requests a confirm token first; allowed comes from client-side policy evaluation against the current actor."
+do_3 = "Write src/client/act.test.tsx with a mocked RPC link covering success, validation failure, forbidden, invalidation and the confirm step."
+touches = ["packages/rex/src/client/act.ts", "packages/rex/src/client/outcome.ts", "packages/rex/src/client/act.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/act.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.4]
+title = "Implement data state resolution"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.1"]
+reqs = ["4.1", "4.2", "4.3", "4.4"]
+do_1 = "Implement src/client/states.ts: resolveDataState({queries, policy, online, hasData}) returning one of the nine states with documented precedence: permission-denied, offline, loading, terminal-error, recoverable-error, empty, partial, stale, ready."
+do_2 = "Implement useDataState(pageQueries) that observes TanStack query states and navigator.onLine."
+do_3 = "Write src/client/states.test.ts covering every state and every precedence pair."
+touches = ["packages/rex/src/client/states.ts", "packages/rex/src/client/states.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/states.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.5]
+title = "Implement view, region, Region and the page host"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.2", "2.3", "2.4"]
+reqs = ["3.1", "3.2", "3.3", "3.4", "3.5", "4.1", "4.2", "4.3", "4.4", "6.1", "6.2", "6.3", "6.4", "6.5"]
+do_1 = "Implement src/client/page.tsx: view(render) and region(name, render) wrappers; the Region component that renders the named region as a landmark section with data-rex-region; PageHost that loads the page module set (page.ts, view.tsx, states.tsx, regions, overlays), resolves the data state and renders the matching states export or the view."
+do_2 = "Provide region render context {act, nav, params, state} so regions never receive callbacks from the view."
+do_3 = "Write src/client/page.test.tsx with a fixture page covering ready rendering, each non-ready state rendering its export, and the region landmark attributes."
+touches = ["packages/rex/src/client/page.tsx", "packages/rex/src/client/page.test.tsx", "packages/rex/src/client/fixtures/page-basic/page.ts", "packages/rex/src/client/fixtures/page-basic/view.tsx", "packages/rex/src/client/fixtures/page-basic/states.tsx", "packages/rex/src/client/fixtures/page-basic/regions/main/region.tsx", "packages/rex/src/client/fixtures/page-basic/regions/main/parts/Hello.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/page.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.6]
+title = "Implement layout primitives and the token stylesheet"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.1"]
+reqs = ["20.1", "20.2", "20.3"]
+do_1 = "Implement src/client/layout.tsx: Page.Stack, Page.Grid, Page.Section and Page.Outcome accepting only token-based spacing props (space: 1..8, columns: 1..4) and rendering semantic elements."
+do_2 = "Implement src/client/tokens.css defining spacing, radius, motion and hit-target tokens, with agent density overrides keyed on data-rex-density=agent."
+do_3 = "Write src/client/layout.test.tsx asserting element semantics, token class output and rejection of non-token props at the type level."
+touches = ["packages/rex/src/client/layout.tsx", "packages/rex/src/client/tokens.css", "packages/rex/src/client/layout.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/layout.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.7]
+title = "Implement the derived shell"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.5", "2.6"]
+reqs = ["6.1", "6.2", "6.3", "6.4", "6.5"]
+do_1 = "Implement src/client/shell.tsx: Shell rendering the header (title and back target from the active page chrome), the navigation (pages with chrome.nav visible), the outcome slot, and the page host; no per-page switch statements."
+do_2 = "Render the permission-denied state with a control navigating to the page's recovery target."
+do_3 = "Write src/client/shell.test.tsx with two fixture pages asserting header, nav membership, back behaviour and recovery."
+touches = ["packages/rex/src/client/shell.tsx", "packages/rex/src/client/shell.test.tsx", "packages/rex/src/client/fixtures/page-second/page.ts", "packages/rex/src/client/fixtures/page-second/view.tsx", "packages/rex/src/client/fixtures/page-second/states.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/shell.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3]
+title   = "Checker and manifest tooling"
+section = "Wave 3"
+status  = "pending"
+
+[task.3.1]
+title = "Implement the checker engine and findings format"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["0.7"]
+reqs = ["12.1", "12.2", "12.3", "12.4"]
+do_1 = "Implement src/check/engine.ts: discoverApp(root) mapping the app directory into typed file roles (page, view, states, region, part, hook, overlay, action, entity, policy, flow, component, data); runRules(app, rules) collecting Finding {rule, severity, file, line, column, message, hint}; exit code 1 on any error."
+do_2 = "Implement src/check/report.ts with JSON and grouped human formatters, and src/check/rule.ts with the Rule interface and a shared TypeScript source loader using the typescript compiler API."
+do_3 = "Create the fixtures layout src/check/fixtures/<rule>/{pass,fail}/app and write src/check/engine.test.ts covering discovery roles, formatting and exit codes."
+touches = ["packages/rex/src/check/engine.ts", "packages/rex/src/check/report.ts", "packages/rex/src/check/rule.ts", "packages/rex/src/check/index.ts", "packages/rex/src/check/engine.test.ts", "packages/rex/src/check/fixtures/engine/pass/app/pages/home/page.ts", "packages/rex/src/check/fixtures/engine/pass/app/pages/home/view.tsx", "packages/rex/src/check/fixtures/engine/pass/app/pages/home/states.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/check/engine.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.2]
+title = "Implement the import boundary rule"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.1"]
+reqs = ["5.1", "5.2", "5.3", "5.4"]
+do_1 = "Implement src/check/rules/boundaries.ts encoding the import table from [design] import_table by file role, the cross-page import ban, and the no-direct-fetch rule for component roles; each finding names the offending import and the allowed alternatives."
+do_2 = "Create pass and fail fixtures under src/check/fixtures/boundaries and write src/check/rules/boundaries.test.ts asserting zero findings on pass and one named finding per violation on fail."
+touches = ["packages/rex/src/check/rules/boundaries.ts", "packages/rex/src/check/rules/boundaries.test.ts", "packages/rex/src/check/fixtures/boundaries/pass/app", "packages/rex/src/check/fixtures/boundaries/fail/app"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/check/rules/boundaries.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.3]
+title = "Implement the parity and states rules"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.1"]
+reqs = ["3.1", "3.2", "3.3", "3.4", "3.5", "4.1", "4.2", "4.3", "4.4", "7.1", "7.2", "7.3", "7.4", "7.5"]
+do_1 = "Implement src/check/rules/parity.ts: regions declared in page.ts match regions folders, overlays declared match overlays files, every action declared on the page is referenced by at least one of its regions, and no region references an action the page does not declare."
+do_2 = "Implement src/check/rules/states.ts: states.tsx exports one component per declared state, no extra exports, and view.tsx has a default export."
+do_3 = "Create pass and fail fixtures and write src/check/rules/parity.test.ts covering each mismatch direction."
+touches = ["packages/rex/src/check/rules/parity.ts", "packages/rex/src/check/rules/states.ts", "packages/rex/src/check/rules/parity.test.ts", "packages/rex/src/check/fixtures/parity/pass/app", "packages/rex/src/check/fixtures/parity/fail/app"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/check/rules/parity.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.4]
+title = "Implement the naming, trap and token rules"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.1"]
+reqs = ["3.1", "3.2", "3.3", "3.4", "3.5", "9.1", "9.2", "9.3", "10.1", "10.2", "10.3", "10.4", "20.1", "20.2", "20.3"]
+do_1 = "Implement src/check/rules/naming.ts: parts are PascalCase with one default export, hooks are camelCase starting with use with one named export, region files are region.tsx, overlay files are PascalCase."
+do_2 = "Implement src/check/rules/traps.ts: onMouseEnter or onMouseOver without onFocus, draggable without a data-rex-alternative attribute, canvas without a data-rex-alternative attribute, and overlays without a declared dismiss."
+do_3 = "Implement src/check/rules/tokens.ts: raw Tailwind color utilities, arbitrary value brackets and inline style color properties outside app/components."
+do_4 = "Create pass and fail fixtures and write src/check/rules/quality.test.ts covering every rule."
+touches = ["packages/rex/src/check/rules/naming.ts", "packages/rex/src/check/rules/traps.ts", "packages/rex/src/check/rules/tokens.ts", "packages/rex/src/check/rules/quality.test.ts", "packages/rex/src/check/fixtures/quality/pass/app", "packages/rex/src/check/fixtures/quality/fail/app"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/check/rules/quality.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.5]
+title = "Implement manifest generation from source and the freshness rule"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.1"]
+reqs = ["11.1", "11.2", "11.3", "12.1", "12.2", "12.3", "12.4"]
+do_1 = "Implement src/manifest/scan.ts: loadRegistry(appRoot) that imports app/entities, actions, policies, flows and pages/*/page.ts through tsx in a child process and returns the frozen registry; writeManifest(appRoot) writing .rex/manifest.json with stableStringify and AGENTS.md from src/manifest/agents-md.ts."
+do_2 = "Implement src/check/rules/manifest.ts reporting a stale .rex/manifest.json or AGENTS.md compared with a fresh build."
+do_3 = "Write src/manifest/scan.test.ts against a fixture app asserting byte-identical output on repeated runs and the freshness finding after a declaration change."
+touches = ["packages/rex/src/manifest/scan.ts", "packages/rex/src/manifest/agents-md.ts", "packages/rex/src/check/rules/manifest.ts", "packages/rex/src/manifest/scan.test.ts", "packages/rex/src/manifest/fixtures/app"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/manifest/scan.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.6]
+title = "Integrate typecheck as a checker rule and assemble the default rule set"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.2", "3.3", "3.4", "3.5"]
+reqs = ["12.1", "12.2", "12.3", "12.4"]
+do_1 = "Implement src/check/rules/typecheck.ts running the TypeScript program over the app with the app tsconfig and mapping diagnostics to findings."
+do_2 = "Implement src/check/rules/index.ts exporting defaultRules in execution order and runCheck(root, {json}) used by the CLI; write src/check/check.test.ts running the full set on the engine pass fixture and asserting zero findings and on a combined fail fixture asserting findings from every rule."
+touches = ["packages/rex/src/check/rules/typecheck.ts", "packages/rex/src/check/rules/index.ts", "packages/rex/src/check/check.test.ts", "packages/rex/src/check/fixtures/all/fail/app"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/check/check.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4]
+title   = "CLI, generators and the Vite plugin"
+section = "Wave 4"
+status  = "pending"
+
+[task.4.1]
+title = "Implement the Vite plugin and the rex:app virtual module"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["0.7"]
+reqs = ["3.1", "3.2", "3.3", "3.4", "3.5", "14.1", "14.2", "14.3"]
+do_1 = "Implement src/vite/index.ts: rex() Vite plugin resolving the virtual module rex:app that imports app/pages/*/page.ts, view.tsx, states.tsx, regions/*/region.tsx, overlays/*.tsx, app/actions/*.ts, app/entities/*.ts, app/policies/*.ts and app/flows/*.ts by glob and exports a typed app bundle; invalidates on file add and remove."
+do_2 = "Add a dev middleware option that mounts a provided Hono app under /rex so one Vite process serves client and API, forwarding the x-rex-density header."
+do_3 = "Write src/vite/vite.test.ts building a fixture app with the Vite JavaScript API and asserting the virtual module exports."
+touches = ["packages/rex/src/vite/index.ts", "packages/rex/src/vite/virtual.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/vite/fixtures/app"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/vite/vite.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4.2]
+title = "Implement the CLI skeleton and the canonical templates"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["0.7"]
+reqs = ["13.1", "13.2", "13.3", "13.4"]
+do_1 = "Implement src/cli/index.ts with commander: rex with version, new, make, promote, dev, build, check and manifest subcommands registered from src/cli/commands/*.ts; unknown commands exit 2."
+do_2 = "Implement src/cli/templates.ts exporting one template function per file kind: page.ts, view.tsx, states.tsx (all nine exports), region.tsx, Part.tsx, Overlay.tsx, useHook.ts, action.ts, entity.ts, policy.ts, flow.ts; templates are the canonical shapes from [design] and contain no placeholders that fail rex check."
+do_3 = "Write src/cli/cli.test.ts running the CLI through tsx for version, help and unknown command."
+touches = ["packages/rex/src/cli/index.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/cli.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/cli.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4.3]
+title = "Implement rex make"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["4.2"]
+reqs = ["13.1", "13.2", "13.3", "13.4"]
+do_1 = "Implement src/cli/commands/make.ts: rex make page <id> --regions a,b --overlays X,Y writing the full page folder; rex make region|part|overlay <page> <name>; rex make action|entity|policy|flow <name>; rex make hook <page> <name>; every command refuses to overwrite and reports each written path."
+do_2 = "Write src/cli/make.test.ts generating into a temporary directory and asserting the exact file set, the page.ts declaration contents and the overwrite refusal."
+touches = ["packages/rex/src/cli/commands/make.ts", "packages/rex/src/cli/make.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/make.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4.4]
+title = "Implement rex new and rex promote"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["4.3", "3.6"]
+reqs = ["3.1", "3.2", "3.3", "3.4", "3.5", "13.1", "13.2", "13.3", "13.4"]
+do_1 = "Implement src/cli/commands/new.ts: rex new <name> writing a complete app (package.json, tsconfig, index.html, rex.config.ts, app/ with one home page, one entity, one action, one policy, app/components, app/data) that passes rex check with zero findings."
+do_2 = "Implement src/cli/commands/promote.ts: rex promote <page>/regions/<region>/parts/<Part> moving the file to app/components/<Part>.tsx and rewriting imports within the source page."
+do_3 = "Write src/cli/new.test.ts generating an app into a temporary directory, running runCheck on it and asserting zero findings, then promoting a part and asserting the move and rewritten import."
+touches = ["packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/commands/promote.ts", "packages/rex/src/cli/new.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/new.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4.5]
+title = "Implement rex dev, build, check and manifest commands"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["4.1", "4.2", "1.4", "2.7", "3.6"]
+reqs = ["11.1", "11.2", "11.3", "12.1", "12.2", "12.3", "12.4", "14.1", "14.2", "14.3"]
+do_1 = "Implement src/cli/commands/dev.ts starting one Vite dev server with the rex plugin and the app's Hono server mounted; src/cli/commands/build.ts building the client with Vite and bundling the server entry into dist with the client directory; both run runCheck first and stop on error findings unless --no-check."
+do_2 = "Implement src/cli/commands/check.ts (--json) and src/cli/commands/manifest.ts calling runCheck and writeManifest and returning their exit codes."
+do_3 = "Write src/cli/commands.test.ts running check and manifest against a generated app and build against it, asserting dist/server.js and dist/client/index.html exist."
+touches = ["packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands/check.ts", "packages/rex/src/cli/commands/manifest.ts", "packages/rex/src/cli/commands.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/commands.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5]
+title   = "Agent contract: addressing, sidecar, outcome, invocation, density, overlays"
+section = "Wave 5"
+status  = "pending"
+
+[task.5.1]
+title = "Implement stable addressing"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["2.7"]
+reqs = ["7.1", "7.2", "7.3", "7.4", "7.5"]
+do_1 = "Implement src/client/agent/address.tsx: useAddress() returning the current page and region ids; controlProps from useAct include data-rex=<page>/<action>; PageHost sets data-rex-page; Region sets data-rex-region; overlays set data-rex-overlay."
+do_2 = "Write src/client/agent/address.test.tsx asserting every attribute on the fixture page and that attributes are unchanged when class names change."
+touches = ["packages/rex/src/client/agent/address.tsx", "packages/rex/src/client/agent/address.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/agent/address.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.2]
+title = "Implement the affordance sidecar"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.1"]
+reqs = ["7.1", "7.2", "7.3", "7.4", "7.5"]
+do_1 = "Implement src/client/agent/sidecar.tsx: RexSidecar rendering one script element type application/rex+json id rex-page with the payload from [design] sidecar built from the active page, data state, act allowed results, overlay registry and outcome store; mirrors to window.__rex; updates on every change."
+do_2 = "Write src/client/agent/sidecar.test.tsx validating the payload with validateSidecar, asserting updates after a state change, an overlay open and an action outcome, and asserting exactly one sidecar element per page."
+touches = ["packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/sidecar.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/agent/sidecar.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.3]
+title = "Implement the outcome region"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["2.7"]
+reqs = ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "7.1", "7.2", "7.3", "7.4", "7.5"]
+do_1 = "Implement src/client/agent/outcome.tsx: Page.Outcome reading the outcome store and rendering an aria-live polite region with the last action label, ok or failure and message, plus a dismiss control; the Shell renders it on every page."
+do_2 = "Write src/client/agent/outcome.test.tsx asserting rendering after success and failure and persistence across re-renders."
+touches = ["packages/rex/src/client/agent/outcome.tsx", "packages/rex/src/client/agent/outcome.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/agent/outcome.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.4]
+title = "Implement the command palette, shortcuts, URL invocation and confirmation"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.2", "5.3"]
+reqs = ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "8.1", "8.2", "8.3"]
+do_1 = "Implement src/client/agent/palette.tsx with cmdk: opens on mod+k, lists active page actions (allowed state and reason shown) and navigable pages from the manifest, filters by label and id, executes or navigates on enter."
+do_2 = "Implement src/client/agent/shortcuts.ts binding each active page action shortcut and src/client/agent/url-invoke.ts reading act and input query parameters on page mount, validating input and invoking through useAct; invalid input writes a validation outcome."
+do_3 = "Implement src/client/agent/confirm.tsx: a confirmation overlay for irreversible actions used by all four routes, obtaining the confirm token on accept."
+do_4 = "Write src/client/agent/invoke.test.tsx covering palette listing and execution, shortcut invocation, URL invocation with valid and invalid input, and confirmation on each route."
+touches = ["packages/rex/src/client/agent/palette.tsx", "packages/rex/src/client/agent/shortcuts.ts", "packages/rex/src/client/agent/url-invoke.ts", "packages/rex/src/client/agent/confirm.tsx", "packages/rex/src/client/agent/invoke.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/agent/invoke.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.5]
+title = "Implement the density and motion preference"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["2.7"]
+reqs = ["9.1", "9.2", "9.3"]
+do_1 = "Implement src/client/agent/density.ts: resolveDensity from the density query parameter, the x-rex-density header exposed by the server on the manifest response, the stored preference and default; DensityProvider sets data-rex-density on the root and exposes useDensity and setDensity."
+do_2 = "Extend tokens.css agent density overrides: motion duration zero, collapsed groups expanded, hit targets at least 44 by 44 pixels."
+do_3 = "Write src/client/agent/density.test.tsx covering precedence order and the root attribute."
+touches = ["packages/rex/src/client/agent/density.ts", "packages/rex/src/client/agent/density.css", "packages/rex/src/client/agent/density.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/agent/density.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.6]
+title = "Implement overlays"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.2"]
+reqs = ["10.1", "10.2", "10.3", "10.4", "22.1", "22.2", "22.3"]
+do_1 = "Implement src/client/overlay.tsx: overlay(id, {dismiss, binding}, render) producing a component that registers itself in the overlay registry with open state, renders data-rex-overlay, traps focus while open, closes on Escape and the declared dismiss control, and restores focus to the opener; open state binds to region state or the URL as declared."
+do_2 = "Write src/client/overlay.test.tsx covering open and close on each dismiss path, focus trap and restoration, URL binding and sidecar registration."
+touches = ["packages/rex/src/client/overlay.tsx", "packages/rex/src/client/overlay.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/overlay.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.7]
+title = "Expose flow approval gates on the owning page"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.2", "0.8"]
+reqs = ["17.1", "17.2", "17.3"]
+do_1 = "Implement src/client/agent/flow.tsx: useFlow(flow, instanceId) exposing status and, while paused at an approval gate, approve and reject actions that appear in the sidecar and the palette of the owning page and resume or terminate the flow through the server."
+do_2 = "Write src/client/agent/flow.test.tsx covering pause, sidecar exposure, approve resume and reject termination."
+touches = ["packages/rex/src/client/agent/flow.tsx", "packages/rex/src/client/agent/flow.test.tsx", "packages/rex/src/server/flow.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/agent/flow.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.6]
+title   = "Proof: demo application and operability walk"
+section = "Wave 6"
+status  = "pending"
+
+[task.6.1]
+title = "Build the demo application with rex new and rex make"
+status = "pending"
+mode = "BUILD"
+wave = 6
+requires = ["4.5", "5.4", "5.5", "5.6", "1.5"]
+reqs = ["19.1", "19.2", "19.3", "20.1", "20.2", "20.3"]
+do_1 = "Generate examples/demo with rex new and rex make: entities account, token and contact; actions send (irreversible), pick-token, pick-contact and toggle-hide-dust; policies wallet and viewer; pages portfolio (regions hero, actions, holdings; overlay HoldingsFilterSheet) and send (regions form, confirm, success; overlays TokenSelectorSheet, ContactPickerSheet); seeded in-memory stores."
+do_2 = "Fill parts, hooks and handlers using only app/components and the Rex layout primitives; every page exports all nine states; no file deviates from the generated layout."
+do_3 = "Add examples/demo/rex.config.ts and server entry so rex dev and rex build run; commit .rex/manifest.json and AGENTS.md."
+touches = ["examples/demo/app", "examples/demo/rex.config.ts", "examples/demo/server.ts", "examples/demo/.rex/manifest.json", "examples/demo/AGENTS.md", "examples/demo/package.json"]
+verify_cmd = "pnpm -C examples/demo exec rex check --json"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.6.2]
+title = "Implement the operability walk"
+status = "pending"
+mode = "BUILD"
+wave = 6
+requires = ["6.1"]
+reqs = ["7.1", "7.2", "7.3", "7.4", "7.5", "8.1", "8.2", "8.3", "10.1", "10.2", "10.3", "10.4", "18.1", "18.2", "18.3", "19.1", "19.2", "19.3"]
+do_1 = "Implement examples/demo/e2e/operability.spec.ts with Playwright: start the built demo, read /rex/manifest, visit every page in default and agent density, and for every declared action verify reachability by clicking its data-rex control, pressing its shortcut, loading the act URL and selecting it in the palette, with confirmation handled for irreversible actions."
+do_2 = "Verify sidecar parity (listed actions equal present controls), every declared overlay opens and dismisses by Escape and by control, and the outcome region updates after each invocation; write a JSON report per page to e2e/report and exit 1 on any failure."
+do_3 = "Add examples/demo/playwright.config.ts and the test script."
+touches = ["examples/demo/e2e/operability.spec.ts", "examples/demo/e2e/walk.ts", "examples/demo/playwright.config.ts"]
+verify_cmd = "pnpm -C examples/demo exec playwright test e2e/operability.spec.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."

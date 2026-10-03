@@ -1,0 +1,16 @@
+{
+  "name": "rex-js",
+  "private": true,
+  "packageManager": "pnpm@10.27.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "pnpm -r --filter @sidioralabs/rex build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "check": "pnpm --filter demo check",
+    "dev": "pnpm --filter demo dev"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

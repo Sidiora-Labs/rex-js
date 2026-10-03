@@ -1,0 +1,7 @@
+node_modules
+dist
+.rex/
+*.log
+.DS_Store
+.codegraph/
+.claude/settings.local.json
