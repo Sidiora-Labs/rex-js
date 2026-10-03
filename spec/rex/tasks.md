@@ -13,7 +13,7 @@
     - Create packages/rex/tsconfig.json extending the base with jsx react-jsx, packages/rex/vitest.config.ts with happy-dom for tsx tests, and packages/rex/src/index.ts exporting the core entry.
     - Create examples/demo/package.json named demo with dev, build, check and test scripts calling the rex bin, examples/demo/tsconfig.json, and examples/demo/index.html; run pnpm install and commit the lockfile.
     - _Requirements: 1.1, 1.2, 1.3, 14.1, 14.2, 14.3_
-  - [ ] 0.2 Implement deterministic identifiers and schema field helpers
+  - [x] 0.2 Implement deterministic identifiers and schema field helpers
     - Implement src/core/ids.ts: validateName (lowercase, digits, dot and dash, no leading digit), pageId, actionId, regionAddress(page, region), actionAddress(page, action), overlayAddress(page, overlay), pageAddress(page); addresses are pure functions of names.
     - Implement src/core/schema.ts: re-export zod as z, field helpers id(), text(), money(), integer(), boolean(), enumOf(), ref(entity), timestamp(); toJsonSchema(schema) producing draft 2020-12 JSON Schema for sidecar and manifest use.
     - Write src/core/ids.test.ts and src/core/schema.test.ts covering valid and invalid names, address stability across calls, and JSON schema output for every field helper.
