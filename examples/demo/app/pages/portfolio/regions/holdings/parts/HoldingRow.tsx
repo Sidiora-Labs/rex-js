@@ -9,9 +9,9 @@ export interface Holding {
 
 export default function HoldingRow({ holding }: { readonly holding: Holding }) {
   return (
-    <li data-demo-holding={holding.id}>
+    <span data-demo-holding={holding.id}>
       <strong>{holding.symbol}</strong> {holding.name}: {holding.balance} ({`$${holding.valueUsd}`})
       {holding.dust ? " dust" : null}
-    </li>
+    </span>
   );
 }
