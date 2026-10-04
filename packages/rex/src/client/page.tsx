@@ -27,6 +27,7 @@ import type { ActResult, RunOptions } from "./act.ts";
 import { AddressScope } from "./agent/address.tsx";
 import { ConfirmContext, ConfirmProvider, useInvoke, type InvokeHandle } from "./agent/confirm.tsx";
 import { PageStatesContext, RegionBoundary } from "./boundary.tsx";
+import { pageLoaderQueryHashes, usePageLoaderQueries } from "./loaders.ts";
 import { useNav, type Nav } from "./nav.ts";
 import { useActivePage, type PageResolution } from "./router.tsx";
 import { useDataState } from "./states.ts";
@@ -221,12 +222,27 @@ export function definePageModules<Pg extends AnyPage>(
   return Object.freeze({ ...modules });
 }
 
+export function pageQueryScope(resolution: PageResolution): string {
+  return `${resolution.page.id}:${JSON.stringify(resolution.params)}`;
+}
+
+function settledOrFetching(query: Query): boolean {
+  return query.state.status !== "pending" || query.state.fetchStatus !== "idle";
+}
+
 export function usePageQueries(scope: string): readonly Query[] {
   const cache = useQueryClient().getQueryCache();
+  const active = useActivePage();
   const observed = () => new Set(cache.getAll().filter((query) => query.getObserversCount() > 0));
   const tracked = useRef<{ scope: string; queries: Set<Query> } | null>(null);
   if (tracked.current === null || tracked.current.scope !== scope) {
     tracked.current = { scope, queries: observed() };
+  }
+  if (active !== null && pageQueryScope(active) === scope) {
+    for (const hash of pageLoaderQueryHashes(active.page, active.params)) {
+      const query = cache.get(hash);
+      if (query !== undefined && settledOrFetching(query)) tracked.current.queries.add(query);
+    }
   }
   const [, refresh] = useReducer((count: number) => count + 1, 0);
 
@@ -349,10 +365,18 @@ function EagerPageHost({ modules }: { readonly modules: EagerPageModuleSet }) {
   const declared = resolution.page;
   const validated = useMemo(() => definePageModules(modules), [modules]);
   const queryClient = useQueryClient();
-  const scope = `${declared.id}:${JSON.stringify(resolution.params)}`;
-  const queries = usePageQueries(scope);
+  const loadable = resolution.policy.allowed && resolution.issues.length === 0;
+  const loaderResults = usePageLoaderQueries(declared, resolution.params, loadable);
+  const queries = usePageQueries(pageQueryScope(resolution));
+  const loaderHashes = useMemo(
+    () => new Set(pageLoaderQueryHashes(declared, resolution.params)),
+    [declared, resolution.params],
+  );
   const dataState = useDataState(
-    queries.map((query) => query.state),
+    [
+      ...loaderResults,
+      ...queries.filter((query) => !loaderHashes.has(query.queryHash)).map((query) => query.state),
+    ],
     { policy: resolution.policy },
   );
   const invalid = resolution.policy.allowed && resolution.issues.length > 0;

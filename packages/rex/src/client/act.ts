@@ -15,6 +15,7 @@ import {
   type ConfirmGrant,
   type ConfirmRequest,
 } from "./context.ts";
+import { invalidatesLoaderQuery } from "./loaders.ts";
 import { APP_OUTCOME_KEY, useOutcomeStore } from "./outcome.ts";
 import { useActivePage } from "./router.tsx";
 
@@ -102,9 +103,13 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
       return parsed.value as ActionOutput<A>;
     },
     onSuccess: async () => {
-      await Promise.all(
-        declared.invalidates.map((name) => queryClient.invalidateQueries({ queryKey: [name] })),
-      );
+      if (declared.invalidates.length === 0) return;
+      await Promise.all([
+        ...declared.invalidates.map((name) => queryClient.invalidateQueries({ queryKey: [name] })),
+        queryClient.invalidateQueries({
+          predicate: (query) => invalidatesLoaderQuery(registry, query.queryKey, declared),
+        }),
+      ]);
     },
   });
 

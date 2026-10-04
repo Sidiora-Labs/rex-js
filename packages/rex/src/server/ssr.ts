@@ -22,12 +22,14 @@ import {
   type PageModuleSet,
   type StateExportComponent,
 } from "../client/page.tsx";
-import { manifestParamsSchema, orderPages, resolvePage } from "../client/router.tsx";
+import { shouldDehydrateRexQuery } from "../client/loaders.ts";
+import { manifestParamsSchema, orderPages, resolvePage, type PageResolution } from "../client/router.tsx";
 import { NOT_FOUND_TITLE } from "../client/shell.tsx";
 import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from "../core/page.ts";
 import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import type { Manifest } from "../manifest/types.ts";
 import type { RexRequestContext } from "./context.ts";
+import { loaderRunnerFor, runPageLoaders } from "./loaders.ts";
 import type { RenderKind, RexPageRenderer, RexRenderResult } from "./routes/render.ts";
 
 export { registerPageRenderer } from "./routes/render.ts";
@@ -314,7 +316,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         version: REX_DATA_VERSION,
         page,
         actor: actorData(context),
-        queries: dehydrate(queryClient),
+        queries: dehydrate(queryClient, { shouldDehydrateQuery: shouldDehydrateRexQuery }),
       },
       hydrate,
     };
@@ -380,9 +382,35 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     };
   }
 
+  async function loadPageData(
+    request: Request,
+    resolution: PageResolution,
+    context: RexRequestContext,
+    queryClient: QueryClient,
+  ): Promise<boolean> {
+    const declared = resolution.page;
+    if (declared.loaders.length === 0) return true;
+    if (!resolution.policy.allowed || resolution.issues.length > 0) return true;
+    const runner = loaderRunnerFor(request);
+    if (runner === undefined) {
+      throw new Error(
+        `rex: page "${declared.id}" declares loaders but the request was not served by createRexServer`,
+      );
+    }
+    const outcomes = await runPageLoaders({
+      page: declared,
+      params: resolution.params,
+      context,
+      queryClient,
+      runner,
+    });
+    return outcomes.every((outcome) => outcome.ok);
+  }
+
   async function render(request: Request, context: RexRequestContext): Promise<RexRenderResult> {
     const url = new URL(request.url);
     const match = matchPage(registry.pages, url.pathname);
+    const queryClient = new QueryClient();
     let kind: RenderKind = "not-found";
     if (match !== null) {
       const resolution = resolvePage(
@@ -400,9 +428,9 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         } catch {
           return failure(url, match, context);
         }
+        if (!(await loadPageData(request, resolution, context, queryClient))) kind = "failed";
       }
     }
-    const queryClient = new QueryClient();
     const errors: unknown[] = [];
     let stream: Awaited<ReturnType<typeof renderToReadableStream>>;
     try {
