@@ -20,8 +20,17 @@ import {
   viewTemplate,
 } from "../templates.ts";
 import { INVALID_ARGUMENT, MAKE_REFUSED, MakeError, writePlan, type PlannedEntry } from "./make.ts";
-import { CONFIG_FILE } from "../../core/config.ts";
+import { CONFIG_FILE, UI_KITS, type UiKit } from "../../core/config.ts";
 import { runGenerators } from "../generators.ts";
+import { InvalidArgumentError } from "../args.ts";
+import {
+  DesignxError,
+  fetchDesignx,
+  installPackages,
+  type DesignxInstall,
+  type DesignxOptions,
+} from "../designx.ts";
+import { DEFAULT_UI, isUiKit, type DesignxNewContext } from "../gen/designx.ts";
 
 export { SERVER_IMPORT, configTemplate };
 export const REX_PACKAGE = "@sidioralabs/rex";
@@ -255,8 +264,13 @@ function dir(path: string): PlannedEntry {
   return { kind: "dir", path };
 }
 
-export function newAppPlan(name: string): readonly PlannedEntry[] {
-  return runGenerators({ name });
+export function newAppPlan(
+  name: string,
+  ui: UiKit = "none",
+  designx: DesignxInstall | null = null,
+): readonly PlannedEntry[] {
+  const context: DesignxNewContext = { name, ui, designx };
+  return runGenerators(context);
 }
 
 export function baseAppPlan(name: string): readonly PlannedEntry[] {
@@ -290,7 +304,16 @@ function isNonEmptyDirectory(target: string): boolean {
   return readdirSync(target).length > 0;
 }
 
-export function newApp(cwd: string, name: string): string[] {
+export interface NewAppOptions extends DesignxOptions {
+  readonly ui?: UiKit;
+  readonly install?: boolean;
+}
+
+export async function newApp(
+  cwd: string,
+  name: string,
+  options: NewAppOptions = {},
+): Promise<string[]> {
   let appName: string;
   try {
     appName = validateName(name, "app name");
@@ -304,7 +327,20 @@ export function newApp(cwd: string, name: string): string[] {
       `refusing to write into ${appName}: it already exists and is not an empty folder`,
     );
   }
-  return writePlan(root, newAppPlan(appName)).map((path) => `${appName}/${path}`);
+  const ui = options.ui ?? DEFAULT_UI;
+  const designx = ui === "designx" ? await fetchDesignx(undefined, options) : null;
+  const written = writePlan(root, newAppPlan(appName, ui, designx)).map(
+    (path) => `${appName}/${path}`,
+  );
+  if (designx !== null && options.install !== false) installPackages(root);
+  return written;
+}
+
+export function parseUi(value: string): UiKit {
+  if (!isUiKit(value)) {
+    throw new InvalidArgumentError(`--ui must be one of ${UI_KITS.join(", ")}`);
+  }
+  return value;
 }
 
 export function register(program: Command, io: RexCliIO): void {
@@ -312,12 +348,14 @@ export function register(program: Command, io: RexCliIO): void {
     .command("new")
     .description("write a complete Rex app into a new folder")
     .argument("<name>", "app name: lowercase letters, digits, dot and dash")
-    .action((name: string) => {
+    .option("--ui <kit>", "UI kit: designx (default) or none", parseUi, DEFAULT_UI)
+    .option("--no-install", "write the app without running the package manager install")
+    .action(async (name: string, options: { ui: UiKit; install: boolean }) => {
       let written: string[];
       try {
-        written = newApp(io.cwd, name);
+        written = await newApp(io.cwd, name, { ui: options.ui, install: options.install });
       } catch (error) {
-        if (error instanceof MakeError) {
+        if (error instanceof MakeError || error instanceof DesignxError) {
           command.error(`rex new: ${error.message}`, {
             code: error.code,
             exitCode: error.exitCode,

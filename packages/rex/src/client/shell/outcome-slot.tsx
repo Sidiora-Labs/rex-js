@@ -1,5 +1,5 @@
-import { Page } from "../layout.tsx";
-import { APP_OUTCOME_KEY, useOutcome } from "../outcome.ts";
+import { APP_OUTCOME_KEY } from "../outcome.ts";
+import { useShellComponent } from "./components.ts";
 import type { ShellSlotProps } from "./slots.ts";
 
 export interface OutcomeSlotProps {
@@ -7,8 +7,8 @@ export interface OutcomeSlotProps {
 }
 
 export function ShellOutcome({ page }: OutcomeSlotProps) {
-  const outcome = useOutcome(page);
-  return <Page.Outcome>{outcome === null ? null : <p>{outcome.message}</p>}</Page.Outcome>;
+  const Outcome = useShellComponent("Outcome");
+  return <Outcome page={page} />;
 }
 
 export function OutcomeSlot({ active, Outcome }: ShellSlotProps) {

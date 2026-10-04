@@ -169,7 +169,7 @@
     - Add client/media.tsx exporting Img and Script per [design] media_api; emit preload links for priority images and configured fonts plus the font-face block with font-display swap in server/ssr.ts; add check/rules/media.ts (media/no-raw-img) with fixtures and register it.
     - Write client/media.test.tsx and check/rules/media.test.ts, and an SSR case asserting the preload and font-face output.
     - _Requirements: 28.1, 28.2_
-  - [ ] 5.2 DesignX UI installed by rex new and used by the demo and the shell
+  - [ ] 5.2 DesignX UI installed by rex new and used by the demo and the shell — **Implemented - qualification pending**
     - Add cli/designx.ts fetching registry items from https://dxuireact.com/r/<name>.json with their registry dependencies into app/components/ui and app/theme.css, installing npm dependencies and @tailwindcss/vite, writing dx.json; add cli/gen/designx.ts contributing it to rex new under ui designx (default) with --ui none keeping token components.
     - Add chrome.components support in client/shell/components.ts so an app replaces the shell's Button, Sheet, palette item and Outcome renderers; make the demo use DesignX for every part, overlay and the shell components, with Tailwind 4 and the DesignX theme, keeping agent density motion-free.
     - Write cli/designx.test.ts (real registry fetch into a temp app that passes rex check) and update the demo so pnpm -C examples/demo exec rex check reports no findings.

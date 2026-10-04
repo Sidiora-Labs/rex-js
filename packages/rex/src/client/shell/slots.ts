@@ -3,6 +3,7 @@ import type { AnyPage } from "../../core/page.ts";
 import type { PageModuleSet } from "../page.tsx";
 import type { RouteResolution } from "../router.tsx";
 import { BodySlot, RecoverySlot } from "./body.tsx";
+import { withShellComponents } from "./components.ts";
 import { HeaderSlot } from "./header.tsx";
 import { NavSlot } from "./nav.tsx";
 import { OutcomeSlot, type OutcomeSlotProps } from "./outcome-slot.tsx";
@@ -21,9 +22,9 @@ export interface ShellSlot {
 }
 
 export const SHELL_SLOTS: readonly ShellSlot[] = [
-  { id: "header", Component: HeaderSlot },
-  { id: "nav", Component: NavSlot },
-  { id: "body", Component: BodySlot },
-  { id: "recovery", Component: RecoverySlot },
-  { id: "outcome", Component: OutcomeSlot },
+  { id: "header", Component: withShellComponents(HeaderSlot) },
+  { id: "nav", Component: withShellComponents(NavSlot) },
+  { id: "body", Component: withShellComponents(BodySlot) },
+  { id: "recovery", Component: withShellComponents(RecoverySlot) },
+  { id: "outcome", Component: withShellComponents(OutcomeSlot) },
 ];
