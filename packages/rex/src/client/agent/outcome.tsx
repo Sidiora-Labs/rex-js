@@ -3,7 +3,7 @@ import { isPlainObject } from "../../core/entity.ts";
 import { actionLabel } from "../act.ts";
 import { useRegistry } from "../context.ts";
 import { useText } from "../i18n/context.ts";
-import { PageOutcome } from "../page-outcome.tsx";
+import { PageOutcome } from "../outcome-frame.tsx";
 import { useOutcome, useOutcomeStore, type Outcome } from "../outcome.ts";
 import { isDefaultShellComponent, useShellComponents } from "../shell/components.ts";
 

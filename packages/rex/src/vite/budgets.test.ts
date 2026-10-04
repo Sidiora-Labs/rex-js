@@ -58,7 +58,7 @@ const STARTED_RUNTIME = [
   CLIENT_RUNTIME_SOURCE,
   "src/client/app.tsx",
   "src/client/page.tsx",
-  "src/client/page-outcome.tsx",
+  "src/client/outcome-frame.tsx",
   "src/client/shell.tsx",
   "src/client/agent/sidecar.tsx",
   "src/client/store-registry.ts",
