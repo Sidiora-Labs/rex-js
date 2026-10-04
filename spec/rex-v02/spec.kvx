@@ -2014,6 +2014,24 @@ max_repair_cycles = 2
 time_limit_minutes = 90
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
 
+[task.9.8]
+title = "Repair the two walk regressions: the no-JS send outcome and the embed page's vitals"
+status = "pending"
+mode = "BUILD"
+wave = 9
+requires = ["9.4", "9.7"]
+reqs = ["7.1", "35.1", "32.1"]
+do_1 = "qualification.942 records the walk of task 9.4 on feature/rex-v02 at 1feb4ad (log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/rex-main-private/verify-94-demotest.log): 71 passed, 4 failed. (1) e2e/nojs.spec.ts the send flow runs without JavaScript and writes its audit record: after the form post and redirect the page renders no [data-rex-outcome=send] element and the outcome region says No action has run on this page yet, so the rex-outcome cookie written by the form route is no longer rendered into the server-rendered outcome slot; find whether the per-render registries of task 9.7 (ssr.ts renderWithOwnStores, the fresh overlay, affordance and region-failure registries) or the demo Shell's Outcome slot of task 9.4 dropped the server-side outcome, write the failing test first in packages/rex/src/server/form.test.tsx or ssr.test.tsx (post a form, follow the redirect, assert the outcome element with data-rex-outcome-ok), and fix it in the framework without weakening the walk. (2) e2e/vitals.spec.ts core web vitals of page embed on phone, tablet and desktop: finalizeVitals (vitals.spec.ts:367 page.waitForFunction) times out after 15 s only on the embed page; find why the embed page never finalizes its vitals (the interop mount, a store exposed per render, a missing interaction target or a hydration that never settles) and fix the cause in the framework or the demo page, never the threshold or the wait."
+do_2 = "Then run the unchanged verify_cmd of task 9.4 (pnpm -C examples/demo exec rex check && pnpm -C examples/demo test) once as this task's gate; when it passes, both 9.4 and 9.8 are done with the same evidence line, and the report names the module that held each regression."
+touches = ["packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/routes/form.ts", "packages/rex/src/server/form.test.tsx", "packages/rex/src/server/routes/render.ts", "packages/rex/src/client/shell/outcome-slot.tsx", "packages/rex/src/client/outcome.ts", "packages/rex/src/client/agent/outcome.tsx", "packages/rex/src/client/interop", "packages/rex/src/client/store-registry.ts", "examples/demo/app", "examples/demo/e2e/walk.ts"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server src/client && pnpm -C examples/demo exec rex check && pnpm -C examples/demo test"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 90
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
 [task.9.5]
 title = "Static pages carry the root attributes, the walks fit static and SSR pages, the demo tests follow the redesign, and the two 9.0 follow-ups"
 status = "implemented"

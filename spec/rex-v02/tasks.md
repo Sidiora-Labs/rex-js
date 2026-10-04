@@ -379,6 +379,10 @@
     - Reproduce the leak the screen-fit work observed on the built demo (qualification entry from task 9.4's screen-fit run): after the server renders /embed, or regenerates the stale /tokens page, every later server-rendered sidecar on / and /send carries stores.watchlist, a store those pages never load, so readSidecar in the walk fails with window.__rex differs from the sidecar script. Write the failing test first in packages/rex/src/server/ssr.node.test.ts or ssr.test.tsx: render a page whose region exposes a store, then render a page that does not, and assert the second sidecar lists only its own stores and that the client-side hydration equality (window.__rex equals the sidecar script) holds; then scope the exposed-store registry per render (the store registry and the sidecar registry must be created inside the render or carried through the request context, never module-level state shared across requests), keeping the client behaviour identical.
     - Run the demo's e2e operability walk on the built demo in the page order about, embed, portfolio, send, tokens and keep readSidecar's parity assertion as it is; record in the task report which module held the shared state and how it is scoped now.
     - _Requirements: 22.2, 3.4_
+  - [ ] 9.8 Repair the two walk regressions: the no-JS send outcome and the embed page's vitals
+    - qualification.942 records the walk of task 9.4 on feature/rex-v02 at 1feb4ad (log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/rex-main-private/verify-94-demotest.log): 71 passed, 4 failed. (1) e2e/nojs.spec.ts the send flow runs without JavaScript and writes its audit record: after the form post and redirect the page renders no [data-rex-outcome=send] element and the outcome region says No action has run on this page yet, so the rex-outcome cookie written by the form route is no longer rendered into the server-rendered outcome slot; find whether the per-render registries of task 9.7 (ssr.ts renderWithOwnStores, the fresh overlay, affordance and region-failure registries) or the demo Shell's Outcome slot of task 9.4 dropped the server-side outcome, write the failing test first in packages/rex/src/server/form.test.tsx or ssr.test.tsx (post a form, follow the redirect, assert the outcome element with data-rex-outcome-ok), and fix it in the framework without weakening the walk. (2) e2e/vitals.spec.ts core web vitals of page embed on phone, tablet and desktop: finalizeVitals (vitals.spec.ts:367 page.waitForFunction) times out after 15 s only on the embed page; find why the embed page never finalizes its vitals (the interop mount, a store exposed per render, a missing interaction target or a hydration that never settles) and fix the cause in the framework or the demo page, never the threshold or the wait.
+    - Then run the unchanged verify_cmd of task 9.4 (pnpm -C examples/demo exec rex check && pnpm -C examples/demo test) once as this task's gate; when it passes, both 9.4 and 9.8 are done with the same evidence line, and the report names the module that held each regression.
+    - _Requirements: 7.1, 35.1, 32.1_
 
 ## Task Dependency Graph
 
@@ -394,7 +398,7 @@
     { "id": 6,  "tasks": ["6.1", "6.2", "6.3", "6.4"] },
     { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9", "7.10", "7.11", "7.12", "7.13", "7.14", "7.15", "7.16", "7.18", "7.19", "7.20", "7.21"] },
     { "id": 8,  "tasks": ["8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7"] },
-    { "id": 9,  "tasks": ["9.0", "9.1", "9.2", "9.3", "9.4", "9.5", "9.6", "9.7"] }
+    { "id": 9,  "tasks": ["9.0", "9.1", "9.2", "9.3", "9.4", "9.5", "9.6", "9.7", "9.8"] }
   ]
 }
 ```
