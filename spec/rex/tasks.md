@@ -106,7 +106,7 @@
     - Provide region render context {act, nav, params, state} so regions never receive callbacks from the view.
     - Write src/client/page.test.tsx with a fixture page covering ready rendering, each non-ready state rendering its export, and the region landmark attributes.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 2.6 Implement layout primitives and the token stylesheet
+  - [x] 2.6 Implement layout primitives and the token stylesheet
     - Implement src/client/layout.tsx: Page.Stack, Page.Grid, Page.Section and Page.Outcome accepting only token-based spacing props (space: 1..8, columns: 1..4) and rendering semantic elements.
     - Implement src/client/tokens.css defining spacing, radius, motion and hit-target tokens, with agent density overrides keyed on data-rex-density=agent.
     - Write src/client/layout.test.tsx asserting element semantics, token class output and rejection of non-token props at the type level.
