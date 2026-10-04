@@ -1,5 +1,5 @@
 import type { ActionOutput } from "@sidioralabs/rex";
-import type { readStandards } from "../../../../../actions/read-standards.ts";
+import type { readStandards } from "../../../../../actions/standards/read-standards.ts";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/ui/card.tsx";
 import StatusBadge from "./StatusBadge.tsx";
 import TaskList from "./TaskList.tsx";

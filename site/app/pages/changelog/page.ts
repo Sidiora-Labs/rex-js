@@ -1,5 +1,5 @@
 import { page } from "@sidioralabs/rex";
-import { readChangelog } from "../../actions/read-changelog.ts";
+import { readChangelog } from "../../actions/changelog/read-changelog.ts";
 
 export default page("changelog", {
   route: "/changelog",

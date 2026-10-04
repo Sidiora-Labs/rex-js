@@ -1,6 +1,6 @@
 import { action, always } from "@sidioralabs/rex";
 import { z } from "zod/mini";
-import { readStandards as readStandardsTable } from "../server/content/standards.ts";
+import { readStandards as readStandardsTable } from "../../server/content/standards.ts";
 
 export const readStandards = action("read-standards", {
   input: z.object({}),
