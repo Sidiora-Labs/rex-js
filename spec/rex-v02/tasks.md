@@ -191,6 +191,7 @@
     - _Requirements: 33.1_
   - [ ] 5.7 Convert the remaining server, client and Vite errors to catalogued codes
     - Convert every throw in server/, client/, vite/, check/ and cli/commands to RexError with a catalogued code, adding codes to core/errors.ts where missing, and regenerate docs/errors.md; the test asserts no bare Error throw remains in those directories by scanning the sources.
+    - Split the catalog for the budgets ([decision] zod_boundary, qualification.721): REX_ERROR_CATALOG in core/errors.ts keeps code and message only, and hint and docs move to core/errors.docs.ts, which the CLI, devtools, check, the dev overlay and tools/docs-errors.mjs consume and the core entry does not export, so no runtime bundle carries documentation strings; errors.test.ts proves every catalogued code has a docs entry and that errors.docs.ts is not reachable from src/index.ts.
     - _Requirements: 13.1_
   - [x] 5.8 Audit records for flow decisions
     - Make server/flow.ts write an audit record for every approval decision with the gate id and the decision; extend server/flow.test.ts and client/agent/flow.test.tsx.
@@ -251,6 +252,18 @@
     - One node server entry (qualification.132): startPrerenderedNodeServer delegates to startNodeServer and createPrerenderedNodeApp becomes a thin alias of createNodeApp now that createNodeApp forwards page paths; the generated server entry in cli/commands/build.ts and static-cache.test.ts follow only if an export name changes.
     - Apply [decision] license_scope: tools/license-review.mjs walks peer dependencies and the demo closure as well as dependencies and optionalDependencies, with the allowlist the decision names; the script keeps failing on any license outside it (qualification.451).
     - _Requirements: 3.3, 12.3, 27.1_
+  - [ ] 7.8 The core entry is the declaration surface, imports no zod and meets its 15 KB budget
+    - Curate src/index.ts to the declaration surface per [decision] core_exports: errors, ids, entity, store and the memory store, actor, policy, action, states, overlay, page, registry, journal, flow, protocol, deprecated, serialize, manifest/types and the Standard Schema helpers; config.ts is reachable only through rex/config, the field helpers of core/schema.ts only through a new src/schema/index.ts exported as rex/schema, and manifest/build.ts with the JSON Schema generator and sidecar.schema.ts only through a new src/manifest/index.ts exported as rex/manifest; package.json exports and tsconfig paths gain ./schema and ./manifest.
+    - No zod in the runtime per [decision] zod_boundary: entity, action and page keep the declared schema objects and stop computing JSON Schema at declaration time, buildManifest in rex/manifest derives the JSON Schema when the manifest is built, and check/runtime.ts reads the sidecar schema through rex/manifest; add src/zod-boundary.test.ts, which bundles the three budget entries with the same externals as the size test and fails if any module path containing /zod/ or zod/mini lands in the output of the core entry (the client and edge entries are asserted by 7.9).
+    - vite/budgets.ts adds zod to the externals of every entry per the revised [design] budgets and src/size.test.ts builds the entries in production mode (NODE_ENV=production, minified) so devtools and dev-only branches are stripped; the budgets stay 15, 30, 40 and 50 KB and the core entry passes its 15 KB assertion.
+    - Every consumer follows the new entries: cli/templates.ts and cli/fixtures import the field helpers from @sidioralabs/rex/schema and z from zod/mini, check/rules/boundaries.ts admits @sidioralabs/rex/schema wherever @sidioralabs/rex is admitted for declarations, the demo app pages import from rex/schema, README.md line 83 and docs/primitives.md show the rex/schema import (qualification.722), and cli/codemods gains the 0.2 schema-entry codemod that rex migrate lists, with a migrate.test.ts case.
+    - _Requirements: 3.1, 3.2, 3.3, 2.4_
+  - [ ] 7.9 The client and edge entries carry no server code, no zod and no build-time work, and meet their 30 KB and 40 KB budgets
+    - The client runtime carries no server module (qualification.721): FLOW_RPC_PREFIX and the density values live in core/protocol.ts; client/agent/flow.tsx and client/agent/density.ts import them from there, and server/flow.ts and server/context.ts re-export the same names from protocol, so @orpc/server leaves the client bundle.
+    - rex:app and the client entry read the prebuilt manifest: the vite plugin builds the manifest once per build and emits it as a virtual module that rex:app and client/agent/sidecar.tsx consume, neither bundle calls buildManifest or the JSON Schema generator, and the sidecar is validated with a zod-free structural check from rex/manifest types; the server bundles keep taking dist/manifest.json as 7.2 made them.
+    - The palette is a lazily loaded module: client/agent/palette.tsx exports a thin trigger that imports the cmdk palette module on the first open (mod+k, the data-rex trigger or ?act=) and the open is awaited where client/runtime.test.tsx relied on it being synchronous; devtools are excluded from production builds.
+    - The edge entry carries no config parser and no zod: server/app.ts takes resolved options with config parsing left to the CLI and the vite plugin, server/form.ts decodes form fields through the Standard Schema interface, and src/zod-boundary.test.ts gains the client and edge entries; the client entry passes 30 KB and the edge entry 40 KB with the unchanged assertions.
+    - _Requirements: 3.2, 3.4, 7.1, 12.3_
 
 ## Task Dependency Graph
 
@@ -264,7 +277,7 @@
     { "id": 4,  "tasks": ["4.1", "4.2", "4.3", "4.4", "4.5"] },
     { "id": 5,  "tasks": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9"] },
     { "id": 6,  "tasks": ["6.1", "6.2", "6.3"] },
-    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7"] }
+    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9"] }
   ]
 }
 ```
