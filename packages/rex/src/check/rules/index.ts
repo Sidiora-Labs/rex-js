@@ -5,6 +5,7 @@ import { boundariesRule } from "./boundaries.ts";
 import { manifestRule } from "./manifest.ts";
 import { namingRule } from "./naming.ts";
 import { parityRule } from "./parity.ts";
+import { securityRule } from "./security.ts";
 import { statesRule } from "./states.ts";
 import { tokensRule } from "./tokens.ts";
 import { trapsRule } from "./traps.ts";
@@ -19,6 +20,7 @@ export const defaultRules: readonly Rule[] = Object.freeze([
   trapsRule,
   tokensRule,
   manifestRule,
+  securityRule,
 ]);
 
 export interface RunCheckOptions {
