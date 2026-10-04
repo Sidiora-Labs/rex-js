@@ -355,3 +355,20 @@ Rex 0.1 proved the convention and the agent contract. Rex 0.2 brings the framewo
 3. The packed tarball installs into a fresh rex new app, which builds, serves its home page, its manifest and an RPC call from the built server, and the tarball passes publint and are-the-types-wrong; the README documents installation from npm.
 4. The repository is linted and formatted by its own rex/eslint and rex/prettier presets with zero findings, checked in CI.
 
+## Requirement 37: Screen-fit sizing
+
+### Acceptance Criteria
+
+1. The document root carries data-rex-screen (phone, tablet, desktop, wide), data-rex-pointer (coarse, fine) and data-rex-density (comfortable, compact, agent) from the first server response (Client Hints with a user-agent fallback, Accept-CH sent) and the client keeps them current on resize and pointer change; useScreen() returns the three values and the sidecar carries them.
+2. The token sheet defines fluid type and space scales with clamp() keyed by screen class and density; Page.Grid collapses its columns by the width of its container, not the viewport, and Page.Stack spacing scales with the density; every interactive control meets a 44 px minimum target on coarse pointers.
+3. An overlay renders as a dialog on desktop and as a bottom sheet on phone, navigation renders as a sidebar on desktop and a dock on phone, and both stay operable through the same data-rex addresses and sidecar entries on every screen.
+4. The demo walk runs on phone, tablet and desktop viewports with no horizontal overflow, targets of at least 44 px on the phone project, axe clean and the vitals thresholds met on each.
+
+## Requirement 38: DesignX as the standard vocabulary
+
+### Acceptance Criteria
+
+1. rex/designx exports the surface-to-registry map and the standard set; rex new --ui designx installs the standard set from the registry and generates the shell override, the states and the first regions on those primitives; the demo uses the primitives in every region, part, overlay and state.
+2. The checker reports ui/designx-primitive for a raw button, input, select, textarea, table or dialog element in a region, part or overlay of an app whose ui.kit is designx, layout/fixed-size for pixel widths and heights on parts, and layout/touch-target for controls declared under 44 px, each with a fix hint naming the primitive or token to use.
+3. docs/convention.md and docs/recipes document the screen-fit contract and the DesignX map, and the agent contract documents the screen, pointer and density fields of the sidecar.
+
