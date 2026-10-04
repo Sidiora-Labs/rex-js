@@ -39,3 +39,11 @@ symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowSt
 observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
 assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
 severity = "blocker"
+
+[qualification.371]
+task = "3.7"
+file = "examples/demo/app/pages/portfolio, packages/rex/src/vite/budgets.ts, packages/rex/src/core/schema.ts"
+symbol = "rex build page budget, buildDemo"
+observed = "The axe walk never reaches a page because rex build exits 1 with page-portfolio at 80.36 KB gzip over the 50 KB page budget (classic zod still bundled, see qualification.05); the committed demo manifest was also stale against a fresh build and was regenerated with rex manifest; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C examples/demo exec playwright test e2e/axe.spec.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.7-private/logs/3.7-verify.log."
+assumption = "Once the zod/mini move brings the portfolio page chunk under its budget the unchanged axe spec builds the demo and audits every page and overlay in both densities; any serious or critical violation it then reports is for 6.2; the budget was not relaxed and --no-check was not used."
+severity = "blocker"

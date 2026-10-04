@@ -141,7 +141,7 @@
     - Rewrite check/rules/tokens.ts to report only raw color and spacing literals, resolve Tailwind utilities to tokens through the theme and honour the allow lists in config.check.tokens; add a fixture app using CSS Modules and Tailwind utilities that passes.
     - Write vite/styles.test.ts and extend check/rules/quality.test.ts.
     - _Requirements: 24.1, 24.2_
-  - [ ] 3.7 The axe audit in the demo walk
+  - [ ] 3.7 The axe audit in the demo walk — **Implemented - qualification pending**
     - Add @axe-core/playwright to the demo and write examples/demo/e2e/axe.spec.ts that builds the demo, starts node dist/server.js on an ephemeral port like the operability walk, runs axe on every manifest page in both densities and fails on serious or critical violations; if the current demo fails, record the violations in the qualification log for 6.2 and report implemented.
     - _Requirements: 22.2_
   - [ ] 4.1 Explicit unsafe HTML opt-in and the escaping audit
