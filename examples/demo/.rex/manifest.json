@@ -808,6 +808,7 @@
         {
           "action": "list-tokens",
           "input": "params",
+          "invalidatedBy": [],
           "name": "tokens"
         }
       ],
@@ -860,6 +861,7 @@
         {
           "action": "load-wallet",
           "input": "params",
+          "invalidatedBy": [],
           "name": "wallet"
         }
       ],
@@ -923,6 +925,7 @@
         {
           "action": "load-wallet",
           "input": "params",
+          "invalidatedBy": [],
           "name": "wallet"
         }
       ],
