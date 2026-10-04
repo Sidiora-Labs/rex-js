@@ -28,6 +28,8 @@ import {
   SERVING_PREFIX,
   appServerRuntime,
   buildApp,
+  formatHostFiles,
+  formatStaticOutputs,
   generateServerEntry,
   isBuildTarget,
   nodeRuntimePath,
@@ -102,6 +104,9 @@ function buildResult(target: BuildTarget, apiOrigin: string | null = null): Buil
     staticManifestFile: null,
     textFiles: [],
     shells: [],
+    outputs: [],
+    host: null,
+    hostFiles: [],
   };
 }
 
@@ -310,6 +315,59 @@ describe("build output", () => {
   });
 });
 
+describe("output and host file lines", () => {
+  it("prints one wrote line per output file in list order and per host file", () => {
+    const outDir = "/opt/app/dist";
+    const built: BuildResult = {
+      ...buildResult("static"),
+      outputs: [
+        {
+          id: "shell-documents",
+          files: [
+            {
+              file: `${outDir}/client/index.html`,
+              path: "/",
+              page: "home",
+              note: "home, the shell document for /",
+            },
+          ],
+        },
+        {
+          id: "static-manifest",
+          files: [
+            {
+              file: `${outDir}/client/rex/manifest`,
+              path: "/rex/manifest",
+              page: null,
+              note: null,
+            },
+          ],
+        },
+        { id: "text-files", files: [] },
+        {
+          id: "prerender-list",
+          files: [{ file: `${outDir}/${PRERENDER_LIST_FILE}`, path: null, page: null, note: null }],
+        },
+      ],
+      host: "static",
+      hostFiles: [`${outDir}/client/.nojekyll`],
+    };
+    expect(formatStaticOutputs(built)).toBe(
+      [
+        "rex build: wrote dist/client/index.html (home, the shell document for /)",
+        "rex build: wrote dist/client/rex/manifest",
+        `rex build: wrote dist/${PRERENDER_LIST_FILE}`,
+        "",
+      ].join("\n"),
+    );
+    expect(formatHostFiles(built)).toBe(
+      "rex build: wrote dist/client/.nojekyll (the static host file)\n",
+    );
+    expect(formatStaticOutputs(buildResult("edge"))).toBe("");
+    expect(formatHostFiles(buildResult("edge"))).toBe("");
+  });
+});
+
 describe("buildApp and rex build", () => {
   it("refuses a root without rex.config.ts before writing anything", async () => {
     const root = tempDir();
@@ -332,9 +390,13 @@ describe("buildApp and rex build", () => {
     const [listing] = program.listing().commands;
     expect(listing).toMatchObject({ name: "build", path: "rex build", arguments: [] });
     expect(listing?.options).toMatchObject([
-      { long: "--target", value: "target", default: DEFAULT_BUILD_TARGET },
+      { long: "--target", value: "target" },
       { long: "--no-check", value: null, negate: true },
     ]);
+    expect(listing?.options[0]).not.toHaveProperty("default");
+    expect(listing?.options[0]?.description).toContain(
+      `the target of deploy.host in rex.config.ts, else ${DEFAULT_BUILD_TARGET}`,
+    );
 
     await expect(program.parseAsync(["build", "--target", "lambda"])).rejects.toThrow(RexArgsError);
     await expect(program.parseAsync(["build", "--target", "lambda"])).rejects.toThrow(

@@ -82,6 +82,7 @@ describe("rex/schema entry", () => {
       ["ref", schema.ref("account")],
       ["timestamp", schema.timestamp()],
       ["json", schema.json()],
+      ["markdown", schema.markdown()],
     ];
     expect(constructed.map(([kind]) => kind).sort()).toEqual([...schema.FIELD_KINDS].sort());
     for (const [kind, field] of constructed) {

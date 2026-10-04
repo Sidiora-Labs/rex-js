@@ -1,6 +1,7 @@
 import type { AnyEntity, InferEntity } from "./entity.ts";
 import {
-  matchesFilter,
+  compareFieldValues,
+  matchesCondition,
   normalizeListQuery,
   validateStoreId,
   type ListQuery,
@@ -24,11 +25,25 @@ export function memoryStore<E extends AnyEntity>(
       return record === undefined ? undefined : structuredClone(record);
     },
     async list(query?: ListQuery<T>): Promise<ListResult<T>> {
-      const { filter, page, size, offset } = normalizeListQuery(query);
+      const { conditions, sort, page, size, offset } = normalizeListQuery(
+        query,
+        entity.fieldKinds,
+        entity.id,
+      );
       const matching = [...records.keys()]
         .sort()
         .map((key) => records.get(key) as T)
-        .filter((record) => matchesFilter(record, filter));
+        .filter((record) =>
+          conditions.every((condition) =>
+            matchesCondition(record, condition, entity.fieldKinds[condition.field]),
+          ),
+        );
+      if (sort !== null) {
+        const kind = entity.fieldKinds[sort.field];
+        const sign = sort.direction === "desc" ? -1 : 1;
+        const field = (record: T) => (record as Readonly<Record<string, unknown>>)[sort.field];
+        matching.sort((a, b) => sign * compareFieldValues(kind, field(a), field(b)));
+      }
       return {
         items: matching.slice(offset, offset + size).map((record) => structuredClone(record)),
         page,
