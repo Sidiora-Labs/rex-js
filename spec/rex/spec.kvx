@@ -761,7 +761,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.4.2]
 title = "Implement the CLI skeleton and the canonical templates"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 4
 requires = ["0.7"]
