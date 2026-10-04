@@ -120,32 +120,32 @@
 ## Wave 3
 
 - [ ] 3. Checker and manifest tooling
-  - [ ] 3.1 Implement the checker engine and findings format
+  - [x] 3.1 Implement the checker engine and findings format
     - Implement src/check/engine.ts: discoverApp(root) mapping the app directory into typed file roles (page, view, states, region, part, hook, overlay, action, entity, policy, flow, component, data); runRules(app, rules) collecting Finding {rule, severity, file, line, column, message, hint}; exit code 1 on any error.
     - Implement src/check/report.ts with JSON and grouped human formatters, and src/check/rule.ts with the Rule interface and a shared TypeScript source loader using the typescript compiler API.
     - Create the fixtures layout src/check/fixtures/<rule>/{pass,fail}/app and write src/check/engine.test.ts covering discovery roles, formatting and exit codes.
     - _Requirements: 12.1, 12.2, 12.3, 12.4_
-  - [ ] 3.2 Implement the import boundary rule
+  - [x] 3.2 Implement the import boundary rule
     - Implement src/check/rules/boundaries.ts encoding the import table from [design] import_table by file role, the cross-page import ban, and the no-direct-fetch rule for component roles; each finding names the offending import and the allowed alternatives.
     - Create pass and fail fixtures under src/check/fixtures/boundaries and write src/check/rules/boundaries.test.ts asserting zero findings on pass and one named finding per violation on fail.
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
-  - [ ] 3.3 Implement the parity and states rules
+  - [x] 3.3 Implement the parity and states rules
     - Implement src/check/rules/parity.ts: regions declared in page.ts match regions folders, overlays declared match overlays files, every action declared on the page is referenced by at least one of its regions, and no region references an action the page does not declare.
     - Implement src/check/rules/states.ts: states.tsx exports one component per declared state, no extra exports, and view.tsx has a default export.
     - Create pass and fail fixtures and write src/check/rules/parity.test.ts covering each mismatch direction.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ] 3.4 Implement the naming, trap and token rules
+  - [x] 3.4 Implement the naming, trap and token rules
     - Implement src/check/rules/naming.ts: parts are PascalCase with one default export, hooks are camelCase starting with use with one named export, region files are region.tsx, overlay files are PascalCase.
     - Implement src/check/rules/traps.ts: onMouseEnter or onMouseOver without onFocus, draggable without a data-rex-alternative attribute, canvas without a data-rex-alternative attribute, and overlays without a declared dismiss.
     - Implement src/check/rules/tokens.ts: raw Tailwind color utilities, arbitrary value brackets and inline style color properties outside app/components.
     - Create pass and fail fixtures and write src/check/rules/quality.test.ts covering every rule.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 9.1, 9.2, 9.3, 10.1, 10.2, 10.3, 10.4, 20.1, 20.2, 20.3_
-  - [ ] 3.5 Implement manifest generation from source and the freshness rule
+  - [x] 3.5 Implement manifest generation from source and the freshness rule
     - Implement src/manifest/scan.ts: loadRegistry(appRoot) that imports app/entities, actions, policies, flows and pages/*/page.ts through tsx in a child process and returns the frozen registry; writeManifest(appRoot) writing .rex/manifest.json with stableStringify and AGENTS.md from src/manifest/agents-md.ts.
     - Implement src/check/rules/manifest.ts reporting a stale .rex/manifest.json or AGENTS.md compared with a fresh build.
     - Write src/manifest/scan.test.ts against a fixture app asserting byte-identical output on repeated runs and the freshness finding after a declaration change.
     - _Requirements: 11.1, 11.2, 11.3, 12.1, 12.2, 12.3, 12.4_
-  - [ ] 3.6 Integrate typecheck as a checker rule and assemble the default rule set
+  - [x] 3.6 Integrate typecheck as a checker rule and assemble the default rule set
     - Implement src/check/rules/typecheck.ts running the TypeScript program over the app with the app tsconfig and mapping diagnostics to findings.
     - Implement src/check/rules/index.ts exporting defaultRules in execution order and runCheck(root, {json}) used by the CLI; write src/check/check.test.ts running the full set on the engine pass fixture and asserting zero findings and on a combined fail fixture asserting findings from every rule.
     - _Requirements: 12.1, 12.2, 12.3, 12.4_

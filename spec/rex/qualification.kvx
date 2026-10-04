@@ -47,3 +47,11 @@ symbol = "CONFIRM_PROCEDURE, CONFIRM_HEADER, ACTOR_HEADER"
 observed = "The client asks the $confirm procedure for {action, input} and gets back {token, expiresAt}; it sends the token in the x-rex-confirm header and reads the actor from the x-rex-actor header (URI-encoded JSON) on GET /rex/manifest; wave 1 router and server were not on this branch; evidence: revision a390960, command pnpm -C packages/rex exec vitest run src/client/act.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/2.3-verify.log."
 assumption = "Tasks 1.2 and 1.3 implement these exact names, or the integrator aligns one side when the waves merge."
 severity = "assumption"
+
+[qualification.7]
+task = "3.6"
+file = "packages/rex/src/check/index.ts"
+symbol = "defaultRules, runCheck"
+observed = "Task 3.6 adds defaultRules and runCheck in src/check/rules/index.ts but its touches exclude src/check/index.ts, so the @sidioralabs/rex/check entry does not re-export them; evidence: revision ccdba7e7adabf0d8182048739c5d5561584c8ce4, command pnpm -C packages/rex exec vitest run src/check/check.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/w-rex-3/logs/3.6-verify.log."
+assumption = "The CLI (4.5) imports runCheck from src/check/rules/index.ts, and a later task owning src/check/index.ts adds export * from ./rules/index.ts."
+severity = "note"
