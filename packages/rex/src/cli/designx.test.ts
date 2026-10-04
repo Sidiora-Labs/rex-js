@@ -15,15 +15,26 @@ import { afterAll, describe, expect, it } from "vitest";
 import { runCheck } from "../check/index.ts";
 import { rexPrettierConfig } from "../prettier.ts";
 import {
+  DESIGNX_ITEMS,
+  DESIGNX_PROVIDED,
+  DESIGNX_STANDARD,
+  type DesignxItemName,
+} from "../designx/index.ts";
+import {
   DESIGNX_BASE,
   DESIGNX_CONFIG_FILE,
+  DESIGNX_STANDARD_SET,
   DESIGNX_STYLESHEET_HREF,
   DESIGNX_THEME_FILE,
   DESIGNX_UI_DIR,
   TAILWIND_PACKAGES,
+  designxFiles,
   parseDependency,
+  parseDesignxItem,
+  providedDesignxNames,
   registryName,
   rewriteImports,
+  useScreenTemplate,
 } from "./designx.ts";
 import { EXIT_OK, EXIT_USAGE, run, type RexCliIO } from "./index.ts";
 
@@ -118,24 +129,87 @@ describe("DesignX registry helpers", () => {
   });
 });
 
+function installedFile(name: DesignxItemName): string {
+  if (name === "theme") return DESIGNX_THEME_FILE;
+  if (name === "utils") return `${DESIGNX_UI_DIR}/utils.ts`;
+  return `${DESIGNX_UI_DIR}/${name}.${DESIGNX_ITEMS[name] === "hook" ? "ts" : "tsx"}`;
+}
+
+describe("DesignX provided items", () => {
+  it("places use-screen.ts for use-mobile and points registry imports of it there", () => {
+    const sidebar = parseDesignxItem(
+      {
+        name: "sidebar",
+        type: "registry:ui",
+        registryDependencies: ["@dx/use-mobile"],
+        files: [
+          {
+            path: "ui/sidebar.tsx",
+            type: "registry:ui",
+            content:
+              'import { useIsMobile } from "@/hooks/use-mobile";\nexport const mobile = useIsMobile;\n',
+          },
+        ],
+      },
+      "sidebar",
+    );
+    const provided = providedDesignxNames(["sidebar"], [sidebar]);
+    expect(provided).toEqual(["use-mobile"]);
+    const files = designxFiles([sidebar], provided);
+    expect(files.map((file) => file.path)).toEqual([
+      `${DESIGNX_UI_DIR}/sidebar.tsx`,
+      `${DESIGNX_UI_DIR}/${DESIGNX_PROVIDED["use-mobile"].file}`,
+    ]);
+    expect(files[0]?.content).toContain('import { useIsMobile } from "./use-screen.ts";');
+    expect(files[1]?.content).toBe(useScreenTemplate());
+    expect(useScreenTemplate()).toContain('import { useScreen } from "@sidioralabs/rex/client";');
+    expect(useScreenTemplate()).toContain("export { useScreen };");
+  });
+
+  it("refuses a registry item whose type disagrees with the rex/designx map", () => {
+    expect(() =>
+      parseDesignxItem(
+        {
+          name: "card",
+          type: "registry:component",
+          files: [
+            {
+              path: "components/card.tsx",
+              type: "registry:component",
+              content: "",
+            },
+          ],
+        },
+        "card",
+      ),
+    ).toThrow(/maps it as registry:ui/);
+  });
+});
+
 describe("rex new --ui", { timeout: DESIGNX_TEST_TIMEOUT_MS }, () => {
-  it("installs the DesignX theme and base set from the registry into an app that passes rex check", async () => {
+  it("installs the DesignX standard set from the registry into an app that passes rex check", async () => {
     const cwd = tempDir();
     const captured = captureIO(cwd);
     expect(await run(["new", "dx-app", "--no-install"], captured.io)).toBe(EXIT_OK);
     expect(captured.err()).toBe("");
     const root = join(cwd, "dx-app");
 
-    for (const name of DESIGNX_BASE) {
-      expect(existsSync(join(root, DESIGNX_UI_DIR, `${name}.tsx`)), name).toBe(true);
-      expect(captured.out()).toContain(`wrote dx-app/${DESIGNX_UI_DIR}/${name}.tsx\n`);
+    expect(DESIGNX_STANDARD_SET).toEqual(DESIGNX_STANDARD);
+    for (const name of DESIGNX_BASE) expect(DESIGNX_STANDARD_SET, name).toContain(name);
+    for (const name of DESIGNX_STANDARD_SET) {
+      const file = installedFile(name);
+      expect(existsSync(join(root, file)), name).toBe(true);
+      expect(captured.out()).toContain(`wrote dx-app/${file}\n`);
     }
-    expect(existsSync(join(root, DESIGNX_UI_DIR, "utils.ts"))).toBe(true);
-    for (const file of [
-      ...DESIGNX_BASE.map((name) => `${DESIGNX_UI_DIR}/${name}.tsx`),
-      `${DESIGNX_UI_DIR}/utils.ts`,
-      DESIGNX_THEME_FILE,
-    ]) {
+    const useScreen = `${DESIGNX_UI_DIR}/${DESIGNX_PROVIDED["use-mobile"].file}`;
+    expect(existsSync(join(root, DESIGNX_UI_DIR, "use-mobile.ts"))).toBe(false);
+    expect(readFileSync(join(root, useScreen), "utf8")).toContain(
+      'import { useScreen } from "@sidioralabs/rex/client";',
+    );
+    expect(readFileSync(join(root, DESIGNX_UI_DIR, "sidebar.tsx"), "utf8")).toContain(
+      'from "./use-screen.ts"',
+    );
+    for (const file of [...DESIGNX_STANDARD_SET.map(installedFile), useScreen]) {
       const written = readFileSync(join(root, file), "utf8");
       expect(
         await format(written, {
@@ -149,25 +223,37 @@ describe("rex new --ui", { timeout: DESIGNX_TEST_TIMEOUT_MS }, () => {
     expect(theme.startsWith('@import "tailwindcss";\n@import "tw-animate-css";\n')).toBe(true);
     expect(theme).toContain("@theme inline");
 
-    const dx = readJson<{ items: string[]; theme: string; ui: string }>(
-      join(root, DESIGNX_CONFIG_FILE),
-    );
+    const dx = readJson<{
+      items: string[];
+      theme: string;
+      ui: string;
+      provided: Record<string, string>;
+    }>(join(root, DESIGNX_CONFIG_FILE));
     expect(dx.theme).toBe(DESIGNX_THEME_FILE);
     expect(dx.ui).toBe(DESIGNX_UI_DIR);
-    expect(dx.items).toEqual(expect.arrayContaining(["theme", "utils", ...DESIGNX_BASE]));
+    expect(dx.items).toEqual(expect.arrayContaining([...DESIGNX_STANDARD_SET]));
+    expect(dx.items).not.toContain("use-mobile");
+    expect(dx.provided).toEqual({ "use-mobile": useScreen });
 
     const command = readFileSync(join(root, DESIGNX_UI_DIR, "command.tsx"), "utf8");
     expect(command).not.toContain('"@/');
     expect(command).toContain('from "./dialog.tsx"');
 
     const manifest = readJson<GeneratedPackage>(join(root, "package.json"));
-    for (const name of [...TAILWIND_PACKAGES, "@base-ui/react", "class-variance-authority"]) {
+    for (const name of [
+      ...TAILWIND_PACKAGES,
+      "@base-ui/react",
+      "class-variance-authority",
+      "@tanstack/react-table",
+    ]) {
       expect(manifest.dependencies[name], name).toBeDefined();
     }
     expect(readFileSync(join(root, "index.html"), "utf8")).toContain(
       `<link rel="stylesheet" href="${DESIGNX_STYLESHEET_HREF}" />`,
     );
-    expect(readFileSync(join(root, "rex.config.ts"), "utf8")).toContain('ui: "designx",');
+    expect(readFileSync(join(root, "rex.config.ts"), "utf8")).toContain(
+      'ui: { kit: "designx", components: "app/components/Shell.tsx" },',
+    );
     expect(readFileSync(join(root, "app/components/Button.tsx"), "utf8")).toContain(
       'import { Button as DesignxButton } from "./ui/button.tsx";',
     );
