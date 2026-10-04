@@ -30,6 +30,7 @@ export * from "./reset.ts";
 export * from "./store.ts";
 export * from "./overlay.tsx";
 export * from "./unsafe-html.tsx";
+export * from "./form.tsx";
 export * from "./agent/address.tsx";
 export * from "./agent/sidecar.tsx";
 export * from "./agent/outcome.tsx";
