@@ -152,7 +152,7 @@
     - Add server/middleware/security.ts implementing [design] security_impl: Origin check for POST on /rex/*, CSP built from config.security with the per-request nonce from RexContext, X-Content-Type-Options, Referrer-Policy and Permissions-Policy defaults, header overrides; register it in server/middleware.ts; add vite/nonce.ts applying the nonce to inline scripts in the dev HTML transform.
     - Write server/security.test.ts: 403 without or with a foreign Origin, allowed origins, CSP header shape in strict and report modes, nonce present on every inline script in an SSR response.
     - _Requirements: 25.2, 25.3_
-  - [ ] 4.3 Server and client bundle boundary with secret leak detection
+  - [x] 4.3 Server and client bundle boundary with secret leak detection
     - Add vite/boundary.ts: a transform that strips handler from action modules in client builds, a resolver that throws REX440 when a client module imports rex/server, app/server or a module containing import 'rex/server-only', and a closeBundle scan of the client output for process.env references without the VITE_ prefix and for config.security.secretNames that throws REX441; register in vite/hooks.ts; add the rex/server-only export (an empty module with a side-effect marker).
     - Write vite/boundary.test.ts covering each case with fixture apps.
     - _Requirements: 25.4_

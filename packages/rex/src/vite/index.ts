@@ -71,5 +71,27 @@ export {
   type RexHookState,
 } from "./hooks.ts";
 export { CSP_NONCE_META_PROPERTY, applyNonce, nonceHook, nonceMetaTag } from "./nonce.ts";
+export {
+  ALLOWED_ENV_NAMES,
+  APP_SERVER_DIR,
+  BOUNDARY_IMPORT_CODE,
+  PUBLIC_ENV_PREFIX,
+  SECRET_LEAK_CODE,
+  SERVER_ONLY_HANDLER_MESSAGE,
+  SERVER_ONLY_SPECIFIER,
+  SERVER_SPECIFIER,
+  boundaryError,
+  boundaryHook,
+  boundaryViolation,
+  collectEnvReferences,
+  findSecretNames,
+  isActionModule,
+  isPublicEnvName,
+  serverOnlyModulePaths,
+  stripActionHandlers,
+  type BoundaryErrorCode,
+  type BoundaryLog,
+  type BoundaryViolation,
+} from "./boundary.ts";
 export { assemblePlugins, createHookContext, rex, type RexPluginOptions } from "./plugin.ts";
 export { rex as default } from "./plugin.ts";

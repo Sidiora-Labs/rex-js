@@ -127,3 +127,11 @@ symbol = "rex(), RexPluginOptions.tailwind, RexPluginOptions.ui"
 observed = "The Vite plugin adds @tailwindcss/vite through vite/styles.ts when rex({ tailwind: true }) or rex({ ui: 'designx' }), and the token rule reads check.tokens statically from rex.config.ts, but rex dev, rex build and the module loader (outside the 3.6 touches) call rex() without the tailwind and ui values of the loaded rex.config.ts; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/vite/styles.test.ts src/check/rules/quality.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.6-private/logs/3.6-verify.log."
 assumption = "The task that next owns the dev and build commands passes { tailwind: config.tailwind, ui: config.ui } from the loaded config into rex(), alongside compiler and devtools from qualification.04."
 severity = "assumption"
+
+[qualification.431]
+task = "4.3"
+file = "packages/rex/src/core/errors.ts, packages/rex/src/cli/commands/build.ts"
+symbol = "REX_ERROR_CATALOG, buildApp, RexPluginOptions.secretNames, boundaryError"
+observed = "The boundary fails client builds with REX440 and REX441 carried as the Rolldown plugin code with a hint and docs link, but REX440 and REX441 are not in the catalog in core/errors.ts (owned by 2.1) so RexError cannot be raised yet, and rex build calls rex() without config.security.secretNames (cli/commands/build.ts is outside the 4.3 touches), so the secret-name scan only runs when rex({ secretNames }) is passed; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/vite/boundary.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.3-private/logs/4.3-verify.log."
+assumption = "Task 2.1 adds REX440 and REX441 to the catalog and 5.7 converts vite/boundary.ts to RexError; the owner of cli/commands/build.ts passes { secretNames: config.security.secretNames } into rex() for the client build."
+severity = "assumption"
