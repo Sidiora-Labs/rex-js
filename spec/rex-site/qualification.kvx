@@ -39,3 +39,43 @@ symbol = "rex() plugin options in vitest.config.ts, RexPluginOptions.shellCompon
 observed = "rex check, rex build and rex dev read ui.components from rex.config.ts through configPluginOptions, but a vitest.config.ts calls rex() with no options and nothing reads the config there, so renderPage renders the token shell instead of the app's Shell.tsx and a site test cannot assert its own frame, mark, navigation forms or theme toggle; the demo's tests have the same blind spot; the site passes rex({ shellComponents: \"app/components/Shell.tsx\" }) by hand, a second statement of ui.components; evidence: revision 4967803 plus the 1.1 changes, command pnpm -C site check && pnpm -C site test:unit && pnpm -C site build, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-1.1-private/logs/1.1-verify.log (home.test.tsx found no [data-site-mark] in the token frame)."
 assumption = "Task 3.3 makes rex() read rex.config.ts when it runs under vitest (or exports a rexTestPlugins() helper from rex/vite that does) so the app's shell components, fonts and ui options reach unit tests without restating them, and the site drops its explicit shellComponents option."
 severity = "medium"
+
+[qualification.231]
+task = "2.3"
+file = "packages/rex/src/check/engine.ts, packages/rex/src/check/rules/naming.ts, packages/rex/src/check/rules/boundaries.ts"
+symbol = "classify, naming/unclassified, IMPORT_TABLE.action"
+observed = "rex check has no file role for app/server although docs/convention.md lists server/ as the server-only folder and the Vite boundary (APP_SERVER_DIR, REX440) enforces it, so the [design] module_layout readers fail the site check: naming/unclassified on app/server/content/errors.ts and boundaries/import-table on each action importing it (app/actions/errors-catalog.ts, app/actions/errors-detail.ts); every other check rule and all 18 task tests pass; evidence: revision d1eac09 plus the 2.3 changes, command pnpm -C site check && pnpm -C site exec vitest run app/pages/errors app/pages/error app/server/content/errors.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.3-private/logs/2.3-verify.log (vitest alone exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.3-private/logs/2.3-vitest.log)."
+assumption = "Task 3.3 gives app/server a checker role (server-only modules importable by actions, data and other server modules, never by component roles) so the readers of 2.1, 2.2, 2.3, 2.4 and 3.1 pass rex check unchanged; the site does not move its readers to app/data as a workaround."
+severity = "high"
+
+[qualification.232]
+task = "2.3"
+file = "packages/rex/src/vite/scan.ts, packages/rex/src/check/engine.ts, spec/rex-site/spec.kvx [design] module_layout"
+symbol = "declarationFiles, TOP_LEVEL_ROLES, app/actions/<page>/"
+observed = "[design] module_layout puts each page task's read actions in app/actions/<page>/, but rex:app registers only top-level app/actions/*.ts files and the checker classifies only app/actions/<file>.ts, so an action in app/actions/errors/ is unregistered (every page loading it fails the manifest with REX209 and the whole site app stops) and is reported naming/unclassified; the convention is one action per file at app/actions/<action>.ts; evidence: revision d1eac09, read from scan.ts declarationFiles and engine.ts classify."
+assumption = "2.3 keeps the convention and names its actions app/actions/errors-catalog.ts and app/actions/errors-detail.ts, the errors prefix keeping the per-task paths disjoint; task 3.3 either records a [decision] that site actions are flat app/actions/<page>-<name>.ts or teaches the scanner and checker one level of action folders."
+severity = "high"
+
+[qualification.233]
+task = "2.3"
+file = "packages/rex/src/client/shell/header.tsx"
+symbol = "HeaderSlot back control"
+observed = "The page header renders chrome.back as a Button whose onClick calls nav.back(), so on a render static page (zero page JavaScript) the prerendered back control is inert; the error pages set chrome.header false and render an All error codes anchor to /errors instead; evidence: revision d1eac09, read from HeaderSlot."
+assumption = "Task 3.3 renders the back target as a link with the target page's href (keeping data-rex-nav and the client navigation on hydrated pages) so the header works without JavaScript on static pages."
+severity = "medium"
+
+[qualification.234]
+task = "2.3"
+file = "packages/rex/src/core/page.ts, packages/rex/src/server/ssr.ts"
+symbol = "PageChrome.title, documentHead title"
+observed = "chrome.title is one string per page, so the 115 prerendered /errors/<code> pages all carry the document title Error code; a page with route params has no way to title each prerendered path (for example from its params or loader data); evidence: revision d1eac09, read from page.ts PageChrome and ssr.ts title."
+assumption = "Task 3.3 lets a page derive its document title per path (for example chrome.title as a function of params, or a title from a loader) or records a [decision] that path pages share their page title."
+severity = "low"
+
+[qualification.235]
+task = "2.3"
+file = "packages/rex/src/core/errors.docs.ts, packages/rex/src/index.ts, packages/rex/src/check/index.ts"
+symbol = "REX_ERROR_DOCS, REX_ERROR_AREAS, errorArea"
+observed = "The main entry exports REX_ERROR_CATALOG, errorDocs and RexError from core/errors.ts, but the hints, the areas and errorArea in core/errors.docs.ts are exported by no public entry (not ., not ./check), so the site reads them by repository path, ../../../../packages/rex/src/core/errors.docs.ts, the documented source of docs/errors.md and tools/docs-errors.mjs; evidence: revision d1eac09, read from packages/rex/package.json exports and src/index.ts."
+assumption = "Task 3.3 exports REX_ERROR_DOCS, REX_ERROR_AREAS, errorArea and errorHint from a public entry (for example @sidioralabs/rex next to the catalog) and the site reader switches its import to it."
+severity = "medium"

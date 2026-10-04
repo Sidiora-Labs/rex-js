@@ -142,14 +142,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.3]
 title = "The error catalog pages"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 1
 requires = ["1.1"]
 reqs = ["2.2", "1.2"]
 do_1 = "app/server/content/errors.ts reads the catalog from the package (REX_ERROR_DOCS and the codes of core/errors.ts through the entry that exports them; if no public entry exports the catalog, record the gap in the qualification log and read it through the package's check entry or a documented path, never by copying the catalog); each entry carries code, area with its title, message, hint and the docs URL the framework emits; the read actions live in app/actions/errors."
 do_2 = "Page errors (/errors, ssg) with the Catalog region grouped by area and a filter on code or message text; page error (/errors/:code, static, paths from the catalog) with the Detail region (code as the heading, area badge, message, hint, a link to the area's doc page, previous and next code navigation); tests asserting every code is a path, a known code renders its message and hint, the docs URL of a RexError resolves to that page's route, and the sidecar of both pages."
-touches = ["site/app/pages/errors", "site/app/pages/error", "site/app/server/content/errors.ts", "site/app/server/content/errors.test.ts", "site/app/actions/errors"]
+touches = ["site/app/pages/errors", "site/app/pages/error", "site/app/server/content/errors.ts", "site/app/server/content/errors.test.ts"]
 verify_cmd = "pnpm -C site check && pnpm -C site exec vitest run app/pages/errors app/pages/error app/server/content/errors.test.ts"
 gate_kind = "planned"
 max_builds = 1
