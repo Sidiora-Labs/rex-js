@@ -164,7 +164,7 @@ describe("i18n/literal", () => {
     expect(
       result.findings.map((entry) => [entry.rule, entry.file, entry.line, entry.column]),
     ).toEqual([
-      ["i18n/literal", "app/actions/send.ts", 8, 10],
+      ["i18n/literal", "app/actions/send.ts", 9, 10],
       ["i18n/literal", "app/pages/home/page.ts", 7, 20],
       ["i18n/literal", "app/pages/home/regions/main/region.tsx", 5, 38],
       ["i18n/literal", "app/pages/home/regions/main/region.tsx", 6, 19],

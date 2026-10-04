@@ -88,9 +88,19 @@ const MIGRATED_COVER_REGION = [
   "",
   'export default region("cover", () => (',
   "  <section>",
-  '    <Img src="/images/cover.png" alt="Gallery cover" width={1 /* REX610 placeholder */} height={1 /* REX610 placeholder */} />',
+  "    <Img",
+  '      src="/images/cover.png"',
+  '      alt="Gallery cover"',
+  "      width={1 /* REX610 placeholder */}",
+  "      height={1 /* REX610 placeholder */}",
+  "    />",
   '    <Thumb src="/images/first.png" label="First photo" />',
-  '    <Img src="/images/divider.png" alt={"" /* REX610 placeholder */} width={1 /* REX610 placeholder */} height={1 /* REX610 placeholder */} />',
+  "    <Img",
+  '      src="/images/divider.png"',
+  '      alt={"" /* REX610 placeholder */}',
+  "      width={1 /* REX610 placeholder */}",
+  "      height={1 /* REX610 placeholder */}",
+  "    />",
   "  </section>",
   "));",
   "",
@@ -144,7 +154,7 @@ const SETTINGS_PAGE = "app/pages/settings/page.ts";
 
 const FLAG_LINES = [
   `REX610 ${COVER}:6:5 Img width, height are placeholders; set the real values (${errorDocs("REX610")})`,
-  `REX610 ${COVER}:8:5 Img alt, width, height are placeholders; set the real values (${errorDocs("REX610")})`,
+  `REX610 ${COVER}:13:5 Img alt, width, height are placeholders; set the real values (${errorDocs("REX610")})`,
 ];
 
 const temporary: string[] = [];
@@ -311,6 +321,35 @@ describe("rex migrate codemods", () => {
     expect(convertRawImg(COVER, fixtureText(COVER))).toBe(MIGRATED_COVER_REGION);
     expect(convertRawImg(THUMB, fixtureText(THUMB))).toBe(MIGRATED_THUMB);
     expect(convertRawImg(COVER, MIGRATED_COVER_REGION)).toBeNull();
+    expect(
+      convertRawImg(
+        THUMB,
+        [
+          "export default function Avatar() {",
+          "  return (",
+          "    <img",
+          '      src="/a.png"',
+          '      alt="A"',
+          '      width="4"',
+          '      height="4"',
+          "    />",
+          "  );",
+          "}",
+          "",
+        ].join("\n"),
+      ),
+    ).toBe(
+      [
+        'import { Img } from "@sidioralabs/rex/client";',
+        "",
+        "export default function Avatar() {",
+        "  return (",
+        '    <Img src="/a.png" alt="A" width={4} height={4} />',
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
   });
 });
 

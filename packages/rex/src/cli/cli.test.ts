@@ -1,10 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { AnyAction } from "../core/action.ts";
 import type { AnyEntity } from "../core/entity.ts";
 import type { AnyPage } from "../core/page.ts";
@@ -62,8 +62,39 @@ afterAll(() => {
   for (const dir of temporary) rmSync(dir, { recursive: true, force: true });
 });
 
+const CLI_BUILD_TIMEOUT_MS = 180_000;
+
+function buildCli(): string {
+  const cache = join(packageRoot, "node_modules", ".cache");
+  mkdirSync(cache, { recursive: true });
+  const outDir = mkdtempSync(join(cache, "rex-cli-"));
+  temporary.push(outDir);
+  const config = ts.getParsedCommandLineOfConfigFile(
+    join(packageRoot, "tsconfig.build.json"),
+    {},
+    {
+      ...ts.sys,
+      onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
+        throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
+      },
+    },
+  );
+  if (config === undefined) throw new Error("tsconfig.build.json could not be read");
+  const program = ts.createProgram({
+    rootNames: config.fileNames,
+    options: { ...config.options, outDir, declaration: false },
+  });
+  const emitted = program.emit();
+  expect(emitted.emitSkipped).toBe(false);
+  const entry = join(outDir, basename(dirname(cliEntry)), "index.js");
+  expect(existsSync(entry)).toBe(true);
+  return entry;
+}
+
+let builtCli = "";
+
 function rex(...args: string[]) {
-  const result = spawnSync(process.execPath, [cliEntry, ...args], {
+  const result = spawnSync(process.execPath, [builtCli, ...args], {
     cwd: packageRoot,
     encoding: "utf8",
     env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" },
@@ -89,6 +120,10 @@ function captureIO(cwd = packageRoot) {
 const SPAWN_TEST_TIMEOUT_MS = 30_000;
 
 describe("rex CLI as a node process without tsx", { timeout: SPAWN_TEST_TIMEOUT_MS }, () => {
+  beforeAll(() => {
+    builtCli = buildCli();
+  }, CLI_BUILD_TIMEOUT_MS);
+
   it("prints the package version for --version, -v and version", () => {
     expect(REX_VERSION).toBe(packageVersion);
     for (const args of [["--version"], ["-v"], ["version"]]) {
