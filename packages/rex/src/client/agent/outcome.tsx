@@ -1,10 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { isPlainObject } from "../../core/entity.ts";
 import { actionLabel } from "../act.ts";
 import { useRegistry } from "../context.ts";
 import { useText } from "../i18n/context.ts";
 import { PageOutcome } from "../outcome-frame.tsx";
-import { useOutcome, useOutcomeStore, type Outcome } from "../outcome.ts";
+import { useOutcome, useOutcomeStore, type Outcome, type OutcomeStore } from "../outcome.ts";
 import { isDefaultShellComponent, useShellComponents } from "../shell/components.ts";
 
 export interface OutcomeRegionProps {
@@ -79,6 +79,36 @@ export function takeOutcomeCookie(): FormOutcome | null {
   return raw === "" ? null : parseOutcomeCookie(raw);
 }
 
+const OUTCOME_STATE_ATTRIBUTE = "data-rex-outcome-state";
+
+const adoptedServerOutcomes = new WeakSet<Element>();
+
+function isFormOutcome(outcome: Outcome): outcome is FormOutcome {
+  const posted = outcome as Partial<FormOutcome>;
+  return posted.code !== undefined && posted.fields !== undefined;
+}
+
+function sameOutcome(left: Outcome | null, right: Outcome): boolean {
+  return left !== null && left.actionId === right.actionId && left.at === right.at;
+}
+
+function adoptServerOutcome(page: string, store: OutcomeStore): void {
+  if (typeof document === "undefined") return;
+  const element = document.querySelector(`[${OUTCOME_STATE_ATTRIBUTE}]`);
+  if (element === null || adoptedServerOutcomes.has(element)) return;
+  adoptedServerOutcomes.add(element);
+  const value = element.getAttribute(OUTCOME_STATE_ATTRIBUTE);
+  const rendered = value === null ? null : parseOutcomeCookie(value);
+  if (rendered !== null && !sameOutcome(store.get(page), rendered)) store.set(page, rendered);
+}
+
+function useServerOutcome(page: string, store: OutcomeStore): void {
+  useState(() => {
+    adoptServerOutcome(page, store);
+    return null;
+  });
+}
+
 export function outcomeErrors(outcome: Outcome | null, actionId: string): FieldErrors | null {
   if (outcome === null || outcome.actionId !== actionId) return null;
   const fields = (outcome as Partial<FormOutcome>).fields;
@@ -99,13 +129,14 @@ function useOutcomeLabel(outcome: Outcome | null): string | null {
 
 export function OutcomeRegion({ page }: OutcomeRegionProps) {
   const store = useOutcomeStore();
+  useServerOutcome(page, store);
   const outcome = useOutcome(page);
   const label = useOutcomeLabel(outcome);
   const text = useText();
   const { Outcome: ShellOutcome, Button } = useShellComponents();
   useEffect(() => {
     const posted = takeOutcomeCookie();
-    if (posted !== null) store.set(page, posted);
+    if (posted !== null && !sameOutcome(store.get(page), posted)) store.set(page, posted);
   }, [page, store]);
   return (
     <PageOutcome>
@@ -116,6 +147,9 @@ export function OutcomeRegion({ page }: OutcomeRegionProps) {
           data-rex-outcome={outcome.actionId}
           data-rex-outcome-ok={outcome.ok ? "true" : "false"}
           data-rex-outcome-at={outcome.at}
+          {...(isFormOutcome(outcome)
+            ? { [OUTCOME_STATE_ATTRIBUTE]: encodeOutcomeCookie(outcome) }
+            : {})}
         >
           {isDefaultShellComponent("Outcome", ShellOutcome) ? (
             <>
