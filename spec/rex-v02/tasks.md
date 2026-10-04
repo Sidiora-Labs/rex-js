@@ -156,7 +156,7 @@
     - Add vite/boundary.ts: a transform that strips handler from action modules in client builds, a resolver that throws REX440 when a client module imports rex/server, app/server or a module containing import 'rex/server-only', and a closeBundle scan of the client output for process.env references without the VITE_ prefix and for config.security.secretNames that throws REX441; register in vite/hooks.ts; add the rex/server-only export (an empty module with a side-effect marker).
     - Write vite/boundary.test.ts covering each case with fixture apps.
     - _Requirements: 25.4_
-  - [ ] 4.4 OpenTelemetry spans, logger and client hooks
+  - [x] 4.4 OpenTelemetry spans, logger and client hooks
     - Add server/middleware/telemetry.ts per [design] telemetry_impl using @opentelemetry/api as an optional peer, spans for action, form, loader and render, traceId and spanId on audit records, and the logger interface with the console default; register it in server/middleware.ts and server/router.ts.
     - Add onOutcome and onNavigate options to createRexApp in client/app.tsx.
     - Write server/telemetry.test.ts with the in-memory span exporter from @opentelemetry/sdk-trace-base (dev dependency) asserting span names, attributes and the audit trace id, and client/app.test.tsx cases for the hooks.

@@ -230,3 +230,11 @@ symbol = "serverFetch (renderPage, renderRegion, testServer), installSecurityMid
 observed = "rex/testing builds its requests without an Origin header, so after the 4.2 security middleware every POST it sends to /rex/rpc (load-wallet, the pick and toggle actions, the confirm procedure and send) is refused with 403 Forbidden; every demo page renders its terminal-error state and 34 of the 40 demo tests fail on that one cause, as would the 2.4 testing.test.tsx; evidence: revision 3309c0efe60d726bd44e536d8e32909843b2db7e, command pnpm -C examples/demo test:unit, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.7-private/logs/2.7-verify.log."
 assumption = "The owner of packages/rex/src/testing/index.ts makes serverFetch set Origin to the test app's baseUrl origin when the request has none, as a browser does (qualification on 4.2 already expects test owners to send Origin); the Origin rule and the demo tests were not relaxed, and the unchanged verify_cmd can then qualify 2.7."
 severity = "blocker"
+
+[qualification.441]
+task = "4.4"
+file = "packages/rex/src/core/serialize.test.ts"
+symbol = "SidecarSource argument at line 81"
+observed = "Typecheck reports TS2345 in serialize.test.ts line 81: the sidecar source object lacks the manifest field that SidecarSource now requires after the 0.8 move to manifest JSON Schema; outside the 4.4 touches and not covered by qualification.082 (build.ts and entity.test.ts errors are); evidence: revision 38cf5c4, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.4-private/logs/4.4-typecheck.log."
+assumption = "The owner of serialize.test.ts passes the built manifest into the sidecar source; the 4.4 files typecheck clean and verify_cmd exits 0."
+severity = "minor"

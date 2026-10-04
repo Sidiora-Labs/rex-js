@@ -5,10 +5,12 @@ import {
   Fragment,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ComponentType,
   type ReactNode,
 } from "react";
+import { matchRoute, useLocation, useRouter, useSearch } from "wouter";
 import { actor as createActor, anonymousActor, type Actor, type ActorInput } from "../core/actor.ts";
 import { isPlainObject } from "../core/entity.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
@@ -24,12 +26,29 @@ import {
   type RexClientContext,
   type RexRuntime,
 } from "./context.ts";
+import { OutcomeProvider, useOutcomeStore, type Outcome, type OutcomeStore } from "./outcome.ts";
+import { orderPages } from "./router.tsx";
 
 export type RexFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
 
 export interface DensitySlotProps {
   readonly children: ReactNode;
 }
+
+export interface RexOutcomeEvent extends Outcome {
+  readonly page: string;
+}
+
+export interface RexNavigateEvent {
+  readonly path: string;
+  readonly search: string;
+  readonly href: string;
+  readonly page: string | null;
+  readonly from: string | null;
+}
+
+export type RexOutcomeHook = (event: RexOutcomeEvent) => void;
+export type RexNavigateHook = (event: RexNavigateEvent) => void;
 
 export interface CreateRexAppOptions {
   readonly registry: RegistrySnapshot;
@@ -40,6 +59,8 @@ export interface CreateRexAppOptions {
   readonly fetch?: RexFetch;
   readonly queryClient?: QueryClient;
   readonly density?: ComponentType<DensitySlotProps>;
+  readonly onOutcome?: RexOutcomeHook;
+  readonly onNavigate?: RexNavigateHook;
 }
 
 export interface RexAppProps {
@@ -178,6 +199,53 @@ async function loadStartup(
   return { manifest, actor, density: response.headers.get(DENSITY_HEADER) };
 }
 
+export function observeOutcomes(store: OutcomeStore, onOutcome: RexOutcomeHook): OutcomeStore {
+  return {
+    get: (page) => store.get(page),
+    set(page, outcome) {
+      store.set(page, outcome);
+      const recorded = store.get(page);
+      if (recorded !== null) onOutcome(Object.freeze({ ...recorded, page }));
+    },
+    clear: (page) => store.clear(page),
+    subscribe: (listener) => store.subscribe(listener),
+  };
+}
+
+export function pageAtPath(
+  registry: RegistrySnapshot,
+  parser: Parameters<typeof matchRoute>[0],
+  path: string,
+): string | null {
+  for (const declared of orderPages(registry.pages)) {
+    const [matched] = matchRoute(parser, declared.route, path);
+    if (matched) return declared.id;
+  }
+  return null;
+}
+
+interface NavigationObserverProps {
+  readonly registry: RegistrySnapshot;
+  readonly onNavigate: RexNavigateHook;
+}
+
+function NavigationObserver({ registry, onNavigate }: NavigationObserverProps) {
+  const [path] = useLocation();
+  const search = useSearch();
+  const { parser } = useRouter();
+  const previous = useRef<string | null>(null);
+  useEffect(() => {
+    const href = search === "" ? path : `${path}?${search}`;
+    if (previous.current === href) return;
+    const from = previous.current;
+    previous.current = href;
+    onNavigate(
+      Object.freeze({ path, search, href, page: pageAtPath(registry, parser, path), from }),
+    );
+  }, [path, search, parser]);
+  return null;
+}
+
 function PassthroughDensity({ children }: DensitySlotProps) {
   return <Fragment>{children}</Fragment>;
 }
@@ -192,6 +260,8 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
   const client = createORPCClient<RexClient>(link);
   const queryClient = options.queryClient ?? new QueryClient();
   const Density = options.density ?? PassthroughDensity;
+  const onOutcome = options.onOutcome;
+  const onNavigate = options.onNavigate;
   const provided: StartupValue | null =
     options.manifest !== undefined && options.actor !== undefined
       ? { manifest: checkManifest(options.manifest, registry), actor: options.actor, density: null }
@@ -202,6 +272,11 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
       provided === null ? { status: "loading" } : { status: "ready", value: provided },
     );
     const [attempt, setAttempt] = useState(0);
+    const parentOutcomes = useOutcomeStore();
+    const outcomes = useMemo(
+      () => (onOutcome === undefined ? null : observeOutcomes(parentOutcomes, onOutcome)),
+      [parentOutcomes],
+    );
 
     useEffect(() => {
       if (provided !== null) return;
@@ -253,9 +328,21 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
         </div>
       );
     } else {
+      const observed = (
+        <Fragment>
+          {onNavigate === undefined ? null : (
+            <NavigationObserver registry={registry} onNavigate={onNavigate} />
+          )}
+          <Density>{children}</Density>
+        </Fragment>
+      );
       body = (
         <RexRuntimeContext.Provider value={runtime}>
-          <Density>{children}</Density>
+          {outcomes === null ? (
+            observed
+          ) : (
+            <OutcomeProvider store={outcomes}>{observed}</OutcomeProvider>
+          )}
         </RexRuntimeContext.Provider>
       );
     }

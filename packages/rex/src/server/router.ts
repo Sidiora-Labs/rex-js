@@ -15,6 +15,13 @@ import {
   type Ledger,
 } from "./audit.ts";
 import type { RexContext } from "./context.ts";
+import {
+  ATTR_ACTION_ID,
+  ATTR_ACTOR_ID,
+  SPAN_ACTION,
+  telemetryFor,
+  type RexTelemetry,
+} from "./middleware/telemetry.ts";
 
 export { CONFIRM_PROCEDURE };
 export const DEFAULT_CONFIRM_TTL_MS = 60_000;
@@ -98,6 +105,7 @@ export interface ActionRouterSource<A extends AnyAction> {
 export interface ActionRouterOptions {
   readonly ledger: Ledger;
   readonly confirmTtlMs?: number;
+  readonly telemetry?: RexTelemetry;
 }
 
 interface PendingConfirmation {
@@ -205,31 +213,41 @@ function actionProcedure(
   declared: AnyAction,
   ledger: Ledger,
   confirmations: Confirmations,
+  telemetry: () => RexTelemetry,
 ): ActionProcedure<AnyAction> {
   return base
-    .use(async ({ context, next }, input: unknown) => {
-      const at = new Date().toISOString();
-      const started = performance.now();
-      let outcome: AuditOutcome = AUDIT_OK;
-      try {
-        return await next();
-      } catch (error) {
-        outcome = auditCode(error);
-        throw error;
-      } finally {
-        await ledger.append(
-          await createAuditEntry({
-            actor: context.actor.id,
-            actionId: declared.id,
-            input,
-            outcome,
-            effect: declared.effect,
-            durationMs: performance.now() - started,
-            at,
-          }),
-        );
-      }
-    })
+    .use(async ({ context, next }, input: unknown) =>
+      telemetry().span(
+        SPAN_ACTION,
+        { [ATTR_ACTION_ID]: declared.id, [ATTR_ACTOR_ID]: context.actor.id },
+        async (span) => {
+          const at = new Date().toISOString();
+          const started = performance.now();
+          let outcome: AuditOutcome = AUDIT_OK;
+          try {
+            return await next();
+          } catch (error) {
+            outcome = auditCode(error);
+            throw error;
+          } finally {
+            span.outcome(outcome);
+            await ledger.append(
+              await createAuditEntry({
+                actor: context.actor.id,
+                actionId: declared.id,
+                input,
+                outcome,
+                effect: declared.effect,
+                durationMs: performance.now() - started,
+                at,
+                traceId: span.traceId,
+                spanId: span.spanId,
+              }),
+            );
+          }
+        },
+      ),
+    )
     .use(async ({ context, next }) => {
       forbidden(declared, context.actor);
       return next();
@@ -292,6 +310,8 @@ export function buildActionRouter<A extends AnyAction>(
     throw new RangeError("buildActionRouter: confirmTtlMs must be a positive integer");
   }
   const confirmations = createConfirmations(ttlMs);
+  const configured = options.telemetry;
+  const telemetry = (): RexTelemetry => configured ?? telemetryFor(ledger);
   const byId = new Map<string, AnyAction>();
   for (const declared of source.actions) {
     if (declared.kind !== "action") {
@@ -307,7 +327,12 @@ export function buildActionRouter<A extends AnyAction>(
   }
   const router: Record<string, ActionProcedure<AnyAction> | ConfirmProcedure> = {};
   for (const id of [...byId.keys()].sort()) {
-    router[id] = actionProcedure(byId.get(id) as AnyAction, ledger, confirmations);
+    router[id] = actionProcedure(
+      byId.get(id) as AnyAction,
+      ledger,
+      confirmations,
+      telemetry,
+    );
   }
   router[CONFIRM_PROCEDURE] = confirmProcedure(byId, confirmations);
   return Object.freeze(router) as unknown as ActionRouter<A>;
