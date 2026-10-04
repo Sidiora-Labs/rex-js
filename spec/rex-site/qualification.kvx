@@ -95,3 +95,35 @@ symbol = "REX_ERROR_DOCS, REX_ERROR_AREAS, errorArea"
 observed = "The main entry exports REX_ERROR_CATALOG, errorDocs and RexError from core/errors.ts, but the hints, the areas and errorArea in core/errors.docs.ts are exported by no public entry (not ., not ./check), so the site reads them by repository path, ../../../../packages/rex/src/core/errors.docs.ts, the documented source of docs/errors.md and tools/docs-errors.mjs; evidence: revision d1eac09, read from packages/rex/package.json exports and src/index.ts."
 assumption = "Task 3.3 exports REX_ERROR_DOCS, REX_ERROR_AREAS, errorArea and errorHint from a public entry (for example @sidioralabs/rex next to the catalog) and the site reader switches its import to it."
 severity = "medium"
+
+[qualification.241]
+task = "2.4"
+file = "packages/rex/src/check/engine.ts, packages/rex/src/check/rules/boundaries.ts, packages/rex/src/check/rules/naming.ts"
+symbol = "classify (no role for app/server), IMPORT_TABLE.action targets"
+observed = "The 2.4 verify_cmd stops at rex check with exactly four findings, all from the [design] module_layout reader location: naming/unclassified on app/server/content/standards.ts and changelog.ts, and boundaries/import-table on app/actions/read-standards.ts and read-changelog.ts importing them (which has no Rex file role); docs/convention.md lists server/ as server-only modules, boundary.ts (APP_SERVER_DIR) treats app/server as the server-only folder and the REX440 and REX441 hints send server code to app/server, but classify gives it no role and the action import table does not allow it; the vitest half of the verify_cmd passes on its own (29 tests, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.4-private/logs/2.4-vitest-2.log and 2.4-vitest-3.log); evidence: revision 5c24d68, command pnpm -C site check && pnpm -C site exec vitest run app/pages/standards app/pages/changelog app/pages/about app/server/content/standards.test.ts app/server/content/changelog.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.4-private/logs/2.4-verify-2.log."
+assumption = "Task 3.3 adds a server file role for app/server/** (server-only modules, never imported by a component role) that actions, flows and app/data may import, with a checker fixture, so every site reader of 2.1 to 3.1 passes rex check unchanged; until then no wave-1 site task whose touches include app/server/content can pass its verify_cmd, so 2.4 stays implemented."
+severity = "high"
+
+[qualification.242]
+task = "2.4"
+file = "packages/rex/src/vite/scan.ts, packages/rex/src/check/engine.ts, packages/rex/src/manifest/build.ts"
+symbol = "declarationFiles, classify, buildManifest REX209"
+observed = "[design] module_layout puts the read actions in app/actions/<page>/ folders, but scanApp registers only the files directly in app/actions and classify gives app/actions/<dir>/<file>.ts no role, so a page loading a nested action fails buildManifest with REX209 (loader names action that is not registered) when rex:app loads, which breaks every site page and test, and rex check reports naming/unclassified (probe with app/actions/probe/probe.ts on revision d1eac09); 2.4 therefore declares read-standards and read-changelog as app/actions/read-standards.ts and app/actions/read-changelog.ts, the convention's one action per file, outside its touches, and dropped site/app/actions/standards and site/app/actions/changelog from them."
+assumption = "The convention wins over the [design] layout: one flat app/actions/<action>.ts per action as in the demo; 3.3 either records a [decision] that the site's read actions are flat files named read-<content>.ts and updates module_layout, or teaches scanApp and classify nested action folders; 2.1, 2.2, 2.3 and 3.1 meet the same REX209 if they nest their actions."
+severity = "high"
+
+[qualification.243]
+task = "2.4"
+file = "site/app/pages/changelog/regions/releases/parts/Blocks.tsx, site/app/components/Prose.tsx, site/package.json"
+symbol = "changelog Releases region, Prose part, marked and shiki"
+observed = "Task 2.4 says the Releases region renders through the Prose part, but Prose.tsx and markdown.ts belong to the parallel task 2.2 and do not exist on the 2.4 branch (cut from d1eac09), and marked and shiki, which 1.1 was to install, are not in site/package.json; 2.4 renders CHANGELOG.md from a strict structured parse (releases, groups, paragraphs, lists, the commit-log details block, code spans, links and strong text, refusing any other markdown or HTML with an error) through React parts, with no dangerouslySetInnerHTML."
+assumption = "Once 2.2 lands, 3.3 decides whether the changelog keeps its structured parts (which work without the markdown engine and ship no injected HTML) or moves the release bodies to markdown.ts and Prose; either way the reader's release split and the page tests stay valid."
+severity = "note"
+
+[qualification.244]
+task = "2.4"
+file = "packages/rex/src/client/shell/header.tsx"
+symbol = "Header back control for chrome.back"
+observed = "[design] pages gives every page a back target, and the derived header renders it as a type=button Button whose onClick calls nav.back(); on a static page (zero page JavaScript, as standards, changelog and about render) that control does nothing, so the prerendered back control is dead without JavaScript, which the no-JS walk of 3.2 will meet; read from header.tsx on revision d1eac09."
+assumption = "Task 3.3 renders the back control as a link to the back page's route (href from the registry, with the client navigation on click), so it works on static pages and stays addressed by data-rex-nav."
+severity = "medium"
