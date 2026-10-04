@@ -203,9 +203,11 @@ describe("RexDevtools registration", () => {
 
     const frame = await openDevtools();
     expect(frame.getAttribute("aria-label")).toBe(DEVTOOLS_TITLE);
-    expect(within(frame).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(
-      DEVTOOLS_PANELS.map((panel) => DEVTOOLS_PANEL_TITLES[panel]),
-    );
+    expect(
+      within(frame)
+        .getAllByRole("tab")
+        .map((tab) => tab.textContent),
+    ).toEqual(DEVTOOLS_PANELS.map((panel) => DEVTOOLS_PANEL_TITLES[panel]));
 
     await press({ key: "D", code: "KeyD", metaKey: true, shiftKey: true });
     expect(devtools()).toBeNull();
@@ -233,9 +235,9 @@ describe("RexDevtools panels", () => {
     const panel = await showPanel("page");
     expect(panel.textContent).toContain("/lab/:topic");
     expect(panel.querySelector("[data-rex-devtools-state]")?.textContent).toBe("ready");
-    expect(JSON.parse(panel.querySelector("[data-rex-devtools-params]")?.textContent ?? "")).toEqual(
-      { topic: "alpha" },
-    );
+    expect(
+      JSON.parse(panel.querySelector("[data-rex-devtools-params]")?.textContent ?? ""),
+    ).toEqual({ topic: "alpha" });
     const loader = () => panel.querySelector('[data-rex-devtools-loader="notes"]');
     expect(loader()?.textContent).toContain("notes");
     await waitFor(() => expect(loader()?.textContent).toContain("success"));
@@ -323,7 +325,9 @@ describe("RexDevtools panels", () => {
     await click("Ping");
     await waitFor(async () => expect(await audited()).toEqual(["notes", "ping", "ping"]));
     await click("Refresh audit");
-    await waitFor(() => expect(panel.querySelectorAll("[data-rex-devtools-audit]")).toHaveLength(3));
+    await waitFor(() =>
+      expect(panel.querySelectorAll("[data-rex-devtools-audit]")).toHaveLength(3),
+    );
   });
 });
 
@@ -381,9 +385,9 @@ describe("GET /rex/dev/audit", () => {
     expect(invalid.status).toBe(400);
 
     const production = (await seeded(false)).server;
-    expect(
-      (await production.fetch(new Request(`http://rex.test${DEV_AUDIT_PATH}`))).status,
-    ).toBe(404);
+    expect((await production.fetch(new Request(`http://rex.test${DEV_AUDIT_PATH}`))).status).toBe(
+      404,
+    );
     expect(process.env.NODE_ENV).not.toBe("development");
     const unset = (await seeded(undefined)).server;
     expect((await unset.fetch(new Request(`http://rex.test${DEV_AUDIT_PATH}`))).status).toBe(404);

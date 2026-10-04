@@ -26,18 +26,18 @@ import { money, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 ```
 
-| Helper | Schema |
-| --- | --- |
-| `id()` | string, 1 to 128 characters, matching `ID_PATTERN` (`/^[A-Za-z0-9][A-Za-z0-9._:-]*$/`) |
-| `text(options?)` | string with optional `min` and `max` length (`TextOptions`) |
-| `money()` | decimal string matching `MONEY_PATTERN` (`/^-?(0\|[1-9][0-9]*)(\.[0-9]+)?$/`) |
-| `integer(options?)` | integer with optional `min` and `max` (`IntegerOptions`) |
-| `boolean()` | boolean |
-| `enumOf(values)` | one of the listed strings; duplicates throw |
-| `ref(target)` | id string referring to another entity (`target` is an entity name or an object with `id`) |
-| `timestamp()` | ISO datetime string |
-| `real(options?)` | number with optional `min` and `max` (`RealOptions`) |
-| `json()` | any JSON value |
+| Helper              | Schema                                                                                    |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| `id()`              | string, 1 to 128 characters, matching `ID_PATTERN` (`/^[A-Za-z0-9][A-Za-z0-9._:-]*$/`)    |
+| `text(options?)`    | string with optional `min` and `max` length (`TextOptions`)                               |
+| `money()`           | decimal string matching `MONEY_PATTERN` (`/^-?(0\|[1-9][0-9]*)(\.[0-9]+)?$/`)             |
+| `integer(options?)` | integer with optional `min` and `max` (`IntegerOptions`)                                  |
+| `boolean()`         | boolean                                                                                   |
+| `enumOf(values)`    | one of the listed strings; duplicates throw                                               |
+| `ref(target)`       | id string referring to another entity (`target` is an entity name or an object with `id`) |
+| `timestamp()`       | ISO datetime string                                                                       |
+| `real(options?)`    | number with optional `min` and `max` (`RealOptions`)                                      |
+| `json()`            | any JSON value                                                                            |
 
 `FieldKind` is the union of the field kinds. `fieldKind(schema)` and `refTarget(schema)` read the tags back. Declarations accept any Standard Schema and validate through `~standard.validate`; JSON Schema is derived only when the manifest is built, by `toJsonSchema(schema, io?)` and `buildManifest` in `@sidioralabs/rex/manifest`. `defineConfig` lives in `@sidioralabs/rex/config`.
 
@@ -57,7 +57,13 @@ Field names are camelCase. The key field must be a required string field (`id`, 
 
 ```ts
 export const token = entity("token", {
-  fields: { id: id(), symbol: text({ min: 1, max: 12 }), name: text({ min: 1 }), balance: money(), priceUsd: money() },
+  fields: {
+    id: id(),
+    symbol: text({ min: 1, max: 12 }),
+    name: text({ min: 1 }),
+    balance: money(),
+    priceUsd: money(),
+  },
   label: (record) => `${record.name} (${record.symbol})`,
 });
 ```
@@ -139,14 +145,14 @@ interface PolicyConfig<P> {
 
 The declaration provides `granted(actor)` (throws if `resolve` returns an undeclared permission), `can(permission)` and `requires(clause)`. Predicates can also be built without a policy, in which case permissions are read from `actor.permissions`:
 
-| Builder | Allows when |
-| --- | --- |
-| `always()` | always |
-| `never()` | never (reason `never`) |
-| `can(permission)` / `myPolicy.can(permission)` | the permission is granted (reason `missing-permission:<permission>`) |
+| Builder                                                                                | Allows when                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `always()`                                                                             | always                                                                                                                                                                                                                                                                                                 |
+| `never()`                                                                              | never (reason `never`)                                                                                                                                                                                                                                                                                 |
+| `can(permission)` / `myPolicy.can(permission)`                                         | the permission is granted (reason `missing-permission:<permission>`)                                                                                                                                                                                                                                   |
 | `requires({ unlocked?, account?, custody?, permissions? })` / `myPolicy.requires(...)` | `unlocked: true` needs `actor.attributes.unlocked === true` (reason `locked`); `account: true` needs a non-empty `actor.attributes.account` (reason `no-account`); `custody` needs `actor.attributes.custody` to be one of the listed values (reason `custody-mismatch`); then every listed permission |
-| `allOf(...predicates)` | every predicate allows; returns the first denial |
-| `anyOf(...predicates)` | one predicate allows; otherwise the first denial |
+| `allOf(...predicates)`                                                                 | every predicate allows; returns the first denial                                                                                                                                                                                                                                                       |
+| `anyOf(...predicates)`                                                                 | one predicate allows; otherwise the first denial                                                                                                                                                                                                                                                       |
 
 `evaluate(predicate, actor)` returns `PolicyResult`: `{ allowed: true, reason: null }` or `{ allowed: false, reason }`. `predicateToJson` is the form written to the manifest. The server, the client controls, the palette and the sidecar all call the same `evaluate`.
 
@@ -177,7 +183,11 @@ Flow statuses are `running`, `paused`, `completed`, `rejected`, `failed`. The `J
 ```ts
 interface Store<T> {
   get(id: string): Promise<T | undefined>;
-  list(query?: { filter?: Partial<T>; page?: number; size?: number }): Promise<{ items: T[]; page: number; size: number; total: number }>;
+  list(query?: {
+    filter?: Partial<T>;
+    page?: number;
+    size?: number;
+  }): Promise<{ items: T[]; page: number; size: number; total: number }>;
   put(record: T): Promise<T>;
   delete(id: string): Promise<boolean>;
 }
@@ -196,16 +206,16 @@ Every call to an action procedure writes one audit record (`packages/rex/src/ser
 
 ```ts
 interface AuditRecord {
-  id: string;            // "audit-000001", ... in memoryLedger
-  actor: string;         // actor id
+  id: string; // "audit-000001", ... in memoryLedger
+  actor: string; // actor id
   actionId: string;
-  inputDigest: string;   // lowercase hex SHA-256 of the canonical JSON of the input
-  outcome: string;       // "ok" or an UPPER_SNAKE error code such as FORBIDDEN or BAD_REQUEST
+  inputDigest: string; // lowercase hex SHA-256 of the canonical JSON of the input
+  outcome: string; // "ok" or an UPPER_SNAKE error code such as FORBIDDEN or BAD_REQUEST
   effect: "reversible" | "irreversible" | "read";
   durationMs: number;
-  at: string;            // ISO timestamp of the call start
-  traceId?: string;      // 32 hex chars from the telemetry span, when a tracer is configured
-  spanId?: string;       // 16 hex chars
+  at: string; // ISO timestamp of the call start
+  traceId?: string; // 32 hex chars from the telemetry span, when a tracer is configured
+  spanId?: string; // 16 hex chars
 }
 ```
 
@@ -223,9 +233,31 @@ interface Manifest {
   app: { name: string };
   entities: { id; key; fields: { name; kind; ref; required }[]; schema }[];
   actions: { id; label; shortcut; effect; invalidates; policy; form; input; output }[];
-  pages: { id; route; routeParams; params; policy; recovery; draft; render; revalidate; paths; loaders: { name; action; input: "params" | "mapped"; invalidatedBy }[]; cache; transition; chrome; regions; overlays; states; actions }[];
+  pages: {
+    id;
+    route;
+    routeParams;
+    params;
+    policy;
+    recovery;
+    draft;
+    render;
+    revalidate;
+    paths;
+    loaders: { name; action; input: "params" | "mapped"; invalidatedBy }[];
+    cache;
+    transition;
+    chrome;
+    regions;
+    overlays;
+    states;
+    actions;
+  }[];
   policies: { id; permissions }[];
-  flows: { id; steps: ({ kind: "action"; action } | { kind: "approval"; id; label; approvers })[] }[];
+  flows: {
+    id;
+    steps: ({ kind: "action"; action } | { kind: "approval"; id; label; approvers })[];
+  }[];
 }
 ```
 
@@ -237,14 +269,14 @@ Every list is sorted by id, page actions are listed by id, and `stableStringify`
 
 The derived shell renders through six slots, the `ShellComponents` interface in `packages/rex/src/client/shell/components.ts`. `rex.config.ts` `ui.components` names a module under `app/components` that exports any of them by name; `registerShellComponents` resolves the module app-wide (an export that is not a component, or a module exporting none of the six, is `REX120`) and every slot not exported keeps its token-styled default. `useShellComponents()` and `ShellComponentsProvider` read and scope the resolved set.
 
-| Slot | Props | Default |
-| --- | --- | --- |
-| `Button` | `ShellButtonProps` (button attributes) | `TokenButton`, a plain `button` |
-| `Sheet` | `ShellSheetProps`: `address`, `title`, `titleId`, `form` (`dialog` or `bottom-sheet`), `children` | `TokenSheet`, the overlay title and body |
-| `PaletteItem` | `ShellPaletteItemProps`: `kind`, `id`, `label`, `detail`, `shortcut`, `allowed`, `reason` | `TokenPaletteItem` |
-| `Outcome` | `ShellOutcomeProps`: `page` | `TokenOutcome`, the outcome message |
-| `Frame` | `ShellFrameProps`: `appName`, `links`, `navForm` (`bar`, `sidebar` or `dock`, picked from the screen), `palette`, `children` | `TokenFrame`, the app bar over the content area, with `data-rex-frame` and, when the page has links, `data-rex-nav-form`; it renders `Nav` in the bar for `bar`, beside the content for `sidebar` and after the content for `dock` |
-| `Nav` | `ShellNavProps`: `links`, `form` (`bar`, `sidebar` or `dock`) | `TokenNav`, a list of page links |
+| Slot          | Props                                                                                                                        | Default                                                                                                                                                                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`      | `ShellButtonProps` (button attributes)                                                                                       | `TokenButton`, a plain `button`                                                                                                                                                                                                    |
+| `Sheet`       | `ShellSheetProps`: `address`, `title`, `titleId`, `form` (`dialog` or `bottom-sheet`), `children`                            | `TokenSheet`, the overlay title and body                                                                                                                                                                                           |
+| `PaletteItem` | `ShellPaletteItemProps`: `kind`, `id`, `label`, `detail`, `shortcut`, `allowed`, `reason`                                    | `TokenPaletteItem`                                                                                                                                                                                                                 |
+| `Outcome`     | `ShellOutcomeProps`: `page`                                                                                                  | `TokenOutcome`, the outcome message                                                                                                                                                                                                |
+| `Frame`       | `ShellFrameProps`: `appName`, `links`, `navForm` (`bar`, `sidebar` or `dock`, picked from the screen), `palette`, `children` | `TokenFrame`, the app bar over the content area, with `data-rex-frame` and, when the page has links, `data-rex-nav-form`; it renders `Nav` in the bar for `bar`, beside the content for `sidebar` and after the content for `dock` |
+| `Nav`         | `ShellNavProps`: `links`, `form` (`bar`, `sidebar` or `dock`)                                                                | `TokenNav`, a list of page links                                                                                                                                                                                                   |
 
 `Frame` receives the app name from the manifest, the navigation links of the active page, the nav form for the current screen, the palette trigger and, as `children`, the page header (the `h1` with the page title and the back control), the outcome region, the page body with its `main` landmark, the recovery control and the route announcer. A `ShellNavLink` is `{ id, label, href, current, address, onClick }`: `current` marks the active page (render it as `aria-current="page"`), `address` is the page id for the `data-rex-nav` attribute (`NAV_ADDRESS_ATTRIBUTE`) and `onClick` performs the client-side navigation. `palette` is `{ label, shortcut, address, onOpen }` when the agent outcome mounts the command palette and `null` otherwise; render it as a button carrying `data-rex-palette-trigger` (`PALETTE_TRIGGER_ATTRIBUTE`) and the visible shortcut (`useShortcutText(shortcut)` gives `Ctrl K`, or `⌘K` on Apple platforms, and `ariaKeyShortcuts(shortcut)` the `aria-keyshortcuts` value). `onOpen` opens the palette through its `mod+k` keyboard path. Pages whose chrome sets `nav: false` receive no links, and the default `Nav` then renders nothing.
 

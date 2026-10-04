@@ -82,7 +82,9 @@ function writeApp(name: string, files: Readonly<Record<string, string>>): string
   }
   for (const dependency of DEPENDENCIES) {
     const source =
-      dependency === "@sidioralabs/rex" ? packageRoot : join(packageRoot, "node_modules", dependency);
+      dependency === "@sidioralabs/rex"
+        ? packageRoot
+        : join(packageRoot, "node_modules", dependency);
     expect(existsSync(source), `${dependency} is resolvable from the rex package`).toBe(true);
     const destination = join(root, "node_modules", dependency);
     mkdirSync(dirname(destination), { recursive: true });
@@ -329,9 +331,33 @@ describe("runtime parity helpers", () => {
       params: {},
       state: "ready",
       actions: [
-        { id: "publish", label: "Publish", allowed: true, reason: null, effect: "reversible", input: {}, via: ["click", "palette", "url"] },
-        { id: "archive", label: "Archive", allowed: false, reason: "never", effect: "reversible", input: {}, via: ["click", "palette", "url"] },
-        { id: "flow-only", label: "Flow", allowed: true, reason: null, effect: "reversible", input: {}, via: ["url"] },
+        {
+          id: "publish",
+          label: "Publish",
+          allowed: true,
+          reason: null,
+          effect: "reversible",
+          input: {},
+          via: ["click", "palette", "url"],
+        },
+        {
+          id: "archive",
+          label: "Archive",
+          allowed: false,
+          reason: "never",
+          effect: "reversible",
+          input: {},
+          via: ["click", "palette", "url"],
+        },
+        {
+          id: "flow-only",
+          label: "Flow",
+          allowed: true,
+          reason: null,
+          effect: "reversible",
+          input: {},
+          via: ["url"],
+        },
       ],
       overlays: [],
       outcome: null,
@@ -375,11 +401,14 @@ describe("rex check --runtime", () => {
       expect(ready?.actions).toEqual(["greet", "open-vault"]);
       expect(ready?.controls).toEqual(["home/greet", "home/open-vault"]);
       const loading = result.mounts.find(
-        (mount) => mount.page === "home" && mount.actor === "anonymous" && mount.state === "loading",
+        (mount) =>
+          mount.page === "home" && mount.actor === "anonymous" && mount.state === "loading",
       );
       expect(loading?.actions).toEqual(["greet", "open-vault"]);
       expect(loading?.controls).toEqual([]);
-      const denied = result.mounts.find((mount) => mount.page === "vault" && mount.actor === "anonymous");
+      const denied = result.mounts.find(
+        (mount) => mount.page === "vault" && mount.actor === "anonymous",
+      );
       expect(denied?.controls).toEqual([]);
       const granted = result.mounts.find(
         (mount) => mount.page === "vault" && mount.actor === GRANTED_ACTOR_ID,

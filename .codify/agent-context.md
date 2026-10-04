@@ -7,12 +7,11 @@ _Generated graph context owned by `cg agentmd`. Regenerate with `cg agentmd --wr
 ## Languages
 
 | Language | Files | Lines |
-|---|---:|---:|
+| -------- | ----: | ----: |
 
 0 source files, 0 lines total.
 
 ## Directory map
-
 
 ## Build & tooling
 
@@ -23,7 +22,6 @@ _Generated graph context owned by `cg agentmd`. Regenerate with `cg agentmd --wr
 - no `main` entry points (library or web project)
 
 ## Load-bearing symbols (most referenced)
-
 
 ## Querying this codebase
 

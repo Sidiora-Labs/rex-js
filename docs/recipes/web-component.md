@@ -14,7 +14,12 @@ export interface TokenChipProps {
   readonly tags?: readonly string[];
 }
 
-export default function TokenChip({ symbol = "?", amount = 0, muted = false, tags = [] }: TokenChipProps) {
+export default function TokenChip({
+  symbol = "?",
+  amount = 0,
+  muted = false,
+  tags = [],
+}: TokenChipProps) {
   return (
     <span data-chip={symbol}>
       {symbol} {amount.toFixed(2)} {muted ? "muted" : "live"} {tags.join(" ")}

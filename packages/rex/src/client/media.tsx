@@ -60,21 +60,20 @@ export function MediaProvider({ value, children }: MediaProviderProps) {
 
 type NativeImgProps = ComponentPropsWithRef<"img">;
 
-export interface ImgProps
-  extends Omit<
-    NativeImgProps,
-    | "src"
-    | "alt"
-    | "width"
-    | "height"
-    | "loading"
-    | "decoding"
-    | "fetchPriority"
-    | "srcSet"
-    | "sizes"
-    | "children"
-    | "dangerouslySetInnerHTML"
-  > {
+export interface ImgProps extends Omit<
+  NativeImgProps,
+  | "src"
+  | "alt"
+  | "width"
+  | "height"
+  | "loading"
+  | "decoding"
+  | "fetchPriority"
+  | "srcSet"
+  | "sizes"
+  | "children"
+  | "dangerouslySetInnerHTML"
+> {
   readonly src: string;
   readonly alt: string;
   readonly width: number;
@@ -216,7 +215,13 @@ function scheduleIdle(run: () => void): () => void {
   return () => clearTimeout(handle);
 }
 
-export function Script({ src, strategy = DEFAULT_SCRIPT_STRATEGY, id, onLoad, onError }: ScriptProps) {
+export function Script({
+  src,
+  strategy = DEFAULT_SCRIPT_STRATEGY,
+  id,
+  onLoad,
+  onError,
+}: ScriptProps) {
   if (typeof src !== "string" || src === "") {
     throw new RexError("REX314", "Script: src must be a non-empty string");
   }

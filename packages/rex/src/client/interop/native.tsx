@@ -11,8 +11,10 @@ export type NativeTag = "div" | "span" | "section" | "article" | "figure";
 
 export type NativeMount = (node: HTMLElement) => void | (() => void);
 
-export interface NativeProps
-  extends Omit<HTMLAttributes<HTMLElement>, "children" | "dangerouslySetInnerHTML"> {
+export interface NativeProps extends Omit<
+  HTMLAttributes<HTMLElement>,
+  "children" | "dangerouslySetInnerHTML"
+> {
   readonly as?: NativeTag;
   readonly mount?: NativeMount;
 }

@@ -363,7 +363,14 @@ describe("ActionForm", () => {
     expect(outcomeText()).toBe("No action has run on this page yet.");
     const malformed = { actionId: "wipe", ok: "yes" };
     expect(parseOutcomeCookie(encodeURIComponent(JSON.stringify(malformed)))).toBeNull();
-    const flat = { actionId: "wipe", ok: true, message: "done", at, code: null, fields: { a: "x" } };
+    const flat = {
+      actionId: "wipe",
+      ok: true,
+      message: "done",
+      at,
+      code: null,
+      fields: { a: "x" },
+    };
     expect(parseOutcomeCookie(encodeURIComponent(JSON.stringify(flat)))).toBeNull();
   });
 });

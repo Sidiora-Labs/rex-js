@@ -105,7 +105,8 @@ export function createRegistry(): Registry {
         find,
         get(kind: string, id: string) {
           const found = find(kind, id);
-          if (found === undefined) throw new RexError("REX301", `registry: unknown ${kind} "${id}"`);
+          if (found === undefined)
+            throw new RexError("REX301", `registry: unknown ${kind} "${id}"`);
           return found;
         },
       }) as unknown as RegistrySnapshot;

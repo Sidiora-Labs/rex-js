@@ -4,17 +4,17 @@ This file lists the people who maintain Rex and what each may do. Roles and how 
 
 ## Active maintainers
 
-| GitHub | Affiliation | Roles | Areas |
-| --- | --- | --- | --- |
+| GitHub                                       | Affiliation  | Roles                                                               | Areas                                                    |
+| -------------------------------------------- | ------------ | ------------------------------------------------------------------- | -------------------------------------------------------- |
 | [@dev-paxeer](https://github.com/dev-paxeer) | Sidiora Labs | Lead maintainer, release manager, security contact, conduct contact | All of `packages/rex`, `examples/demo`, `spec/`, `docs/` |
 
 ## Contacts
 
-| Purpose | Contact |
-| --- | --- |
-| Security vulnerabilities | Private vulnerability reporting on GitHub, as described in [SECURITY.md](SECURITY.md). |
-| Code of conduct reports | The conduct contact above, privately, as described in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). If the report concerns the conduct contact, any other maintainer or the Sidiora Labs organisation owners. |
-| Everything else | An issue on the repository. |
+| Purpose                  | Contact                                                                                                                                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Security vulnerabilities | Private vulnerability reporting on GitHub, as described in [SECURITY.md](SECURITY.md).                                                                                                                    |
+| Code of conduct reports  | The conduct contact above, privately, as described in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). If the report concerns the conduct contact, any other maintainer or the Sidiora Labs organisation owners. |
+| Everything else          | An issue on the repository.                                                                                                                                                                               |
 
 ## Release managers
 

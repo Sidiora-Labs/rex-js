@@ -47,6 +47,7 @@ symbol = "declarationFiles (scanApp actions), classify TOP_LEVEL_ROLES"
 observed = "[design] module_layout puts the read actions in app/actions/<page>/ (2.2 writes app/actions/docs/list-docs.ts, read-doc.ts, load-search-index.ts), but scanApp lists only files directly in app/actions and classify gives the action role only to actions/<file>.ts, so rex:app never registers them and buildManifest throws REX209 (page \"doc\" loader \"article\" names action \"read-doc\" that is not registered); every page test importing rex:app fails the same way, so merging 2.2 (or 2.1, 2.3, 2.4 with their app/actions/<page>/ folders) into feature/rex-site breaks the home tests too; evidence: revision d1eac09 plus the 2.2 changes, command pnpm -C site check && pnpm -C site exec vitest run app/pages/docs app/pages/doc app/pages/recipe app/server/content, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.2-private/logs/2.2-verify-2.log."
 assumption = "The framework scans and classifies app/actions recursively (one action per file in any subfolder), or the spec moves read actions to app/actions/<action>.ts; this must land before the wave-1 site tasks merge, since 3.3 runs after them."
 severity = "high"
+resolved = "task 2.7: the commit tagged [spec:rex-site/2.7] on task/rex-site/2.7 registers and classifies every .ts module under app/actions at any depth as an action and gives app/server the server role that actions and server modules may import"
 
 [qualification.222]
 task = "2.2"
@@ -55,6 +56,7 @@ symbol = "classify, IMPORT_TABLE.action"
 observed = "docs/convention.md lists app/server/ (server-only modules, never bundled for the client) and the rex:boundary plugin enforces APP_SERVER_DIR, but classify has no role for app/server/**, so rex check reports naming/unclassified for every reader in site/app/server/content (markdown.ts, docs.ts, search.ts) and boundaries/import-table for each action importing one (the action import table allows entity, policy, action and data only); read from the code at revision d1eac09, masked in the 2.2 gate by the REX209 abort of qualification.221; a diagnostic run of the reader tests alone passed 15 of 17 (log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.2-private/logs/2.2-content-probe.log after the 2.2 repair), the 2 failures being 2.2 test and reading-order bugs repaired in cycle 1 and not rerun, since the gate stops at REX209."
 assumption = "The checker gains a server role for app/server/** that actions, data and tests may import and no component role may, matching the boundary plugin."
 severity = "high"
+resolved = "task 2.7: the commit tagged [spec:rex-site/2.7] on task/rex-site/2.7 registers and classifies every .ts module under app/actions at any depth as an action and gives app/server the server role that actions and server modules may import"
 
 [qualification.223]
 task = "2.2"
@@ -71,3 +73,113 @@ symbol = "HeaderSlot chrome.title, documentHead title, Nav.href"
 observed = "A page with route params can only show its static chrome.title, so every prerendered doc is titled Guide and every recipe Recipe in the h1 and the document title, and the markdown title renders as an h2 in the article; and a region cannot navigate to a page it may not import (no cross-page imports, Nav takes the declaration), so the docs Search region opens a result with window.location.assign(route) and the Index links are plain anchors built from loader routes; read from the 2.2 pages at revision d1eac09 plus the 2.2 changes."
 assumption = "Task 3.3 lets a page derive its title from a loader (for example chrome.title as a function of the loaded data, used by the header and the prerendered head) and lets Nav address a page by id and params, and the site adopts both."
 severity = "medium"
+
+[qualification.211]
+task = "2.1"
+file = "packages/rex/src/vite/scan.ts, packages/rex/src/check/engine.ts"
+symbol = "scanApp declarationFiles, classify (the action role is actions/<file>.ts only)"
+observed = "[design] module_layout puts each page task's read actions in app/actions/<page>/, but scanApp lists only the files directly in app/actions and classify gives the action role only to actions/<file>.ts, so site/app/actions/home/read-home-meta.ts is never registered and rex:app throws while it builds the manifest; evidence: revision d1eac09 plus the 2.1 changes, command pnpm -C site check && pnpm -C site exec vitest run app/pages/home, exit 1 (rex check: REX209 buildManifest: page \"home\" loader \"meta\" names action \"read-home-meta\" that is not registered; vitest never ran), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.1-private/logs/2.1-verify.log; the same holds for app/actions/docs, errors, standards, changelog and api of tasks 2.2, 2.3, 2.4 and 3.1."
+assumption = "A framework task before 3.3 either makes scanApp and classify accept one level of folders under app/actions (and the boundaries and parity rules treat those files as actions), or records a [decision] that actions stay flat and moves the page tasks' actions to app/actions/<page>-<name>.ts with their touches updated; the 2.1 verify_cmd then reruns unchanged."
+severity = "high"
+resolved = "task 2.7: the commit tagged [spec:rex-site/2.7] on task/rex-site/2.7 registers and classifies every .ts module under app/actions at any depth as an action and gives app/server the server role that actions and server modules may import"
+
+[qualification.212]
+task = "2.1"
+file = "packages/rex/src/check/engine.ts, packages/rex/src/check/rules/naming.ts, packages/rex/src/check/rules/boundaries.ts"
+symbol = "classify, naming/unclassified, boundaries/import-table for app/server"
+observed = "docs/convention.md lists app/server as the folder for server-only modules and the Vite boundary (APP_SERVER_DIR, REX440, REX441) treats it so, but classify returns no role for server/**, so site/app/server/content/meta.ts is reported by naming/unclassified and the action importing it by boundaries/import-table (has no Rex file role); masked in the 2.1 verify by REX209 of [qualification.211], read from classify and checkFile at revision d1eac09; every content reader of tasks 2.2, 2.3, 2.4 and 3.1 meets it."
+assumption = "The same framework task gives app/server/** a server role in classify with an import table entry (any non-React package, app/data, app/entities, app/server; importable by actions, data and other server modules, never by component roles), so rex check accepts the content readers under site/app/server/content."
+severity = "high"
+resolved = "task 2.7: the commit tagged [spec:rex-site/2.7] on task/rex-site/2.7 registers and classifies every .ts module under app/actions at any depth as an action and gives app/server the server role that actions and server modules may import"
+
+[qualification.231]
+task = "2.3"
+file = "packages/rex/src/check/engine.ts, packages/rex/src/check/rules/naming.ts, packages/rex/src/check/rules/boundaries.ts"
+symbol = "classify, naming/unclassified, IMPORT_TABLE.action"
+observed = "rex check has no file role for app/server although docs/convention.md lists server/ as the server-only folder and the Vite boundary (APP_SERVER_DIR, REX440) enforces it, so the [design] module_layout readers fail the site check: naming/unclassified on app/server/content/errors.ts and boundaries/import-table on each action importing it (app/actions/errors-catalog.ts, app/actions/errors-detail.ts); every other check rule and all 18 task tests pass; evidence: revision d1eac09 plus the 2.3 changes, command pnpm -C site check && pnpm -C site exec vitest run app/pages/errors app/pages/error app/server/content/errors.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.3-private/logs/2.3-verify.log (vitest alone exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.3-private/logs/2.3-vitest.log)."
+assumption = "Task 3.3 gives app/server a checker role (server-only modules importable by actions, data and other server modules, never by component roles) so the readers of 2.1, 2.2, 2.3, 2.4 and 3.1 pass rex check unchanged; the site does not move its readers to app/data as a workaround."
+severity = "high"
+resolved = "task 2.7: the commit tagged [spec:rex-site/2.7] on task/rex-site/2.7 registers and classifies every .ts module under app/actions at any depth as an action and gives app/server the server role that actions and server modules may import"
+
+[qualification.232]
+task = "2.3"
+file = "packages/rex/src/vite/scan.ts, packages/rex/src/check/engine.ts, spec/rex-site/spec.kvx [design] module_layout"
+symbol = "declarationFiles, TOP_LEVEL_ROLES, app/actions/<page>/"
+observed = "[design] module_layout puts each page task's read actions in app/actions/<page>/, but rex:app registers only top-level app/actions/*.ts files and the checker classifies only app/actions/<file>.ts, so an action in app/actions/errors/ is unregistered (every page loading it fails the manifest with REX209 and the whole site app stops) and is reported naming/unclassified; the convention is one action per file at app/actions/<action>.ts; evidence: revision d1eac09, read from scan.ts declarationFiles and engine.ts classify."
+assumption = "2.3 keeps the convention and names its actions app/actions/errors-catalog.ts and app/actions/errors-detail.ts, the errors prefix keeping the per-task paths disjoint; task 3.3 either records a [decision] that site actions are flat app/actions/<page>-<name>.ts or teaches the scanner and checker one level of action folders."
+severity = "high"
+resolved = "task 2.7: the commit tagged [spec:rex-site/2.7] on task/rex-site/2.7 registers and classifies every .ts module under app/actions at any depth as an action and gives app/server the server role that actions and server modules may import"
+
+[qualification.233]
+task = "2.3"
+file = "packages/rex/src/client/shell/header.tsx"
+symbol = "HeaderSlot back control"
+observed = "The page header renders chrome.back as a Button whose onClick calls nav.back(), so on a render static page (zero page JavaScript) the prerendered back control is inert; the error pages set chrome.header false and render an All error codes anchor to /errors instead; evidence: revision d1eac09, read from HeaderSlot."
+assumption = "Task 3.3 renders the back target as a link with the target page's href (keeping data-rex-nav and the client navigation on hydrated pages) so the header works without JavaScript on static pages."
+severity = "medium"
+
+[qualification.234]
+task = "2.3"
+file = "packages/rex/src/core/page.ts, packages/rex/src/server/ssr.ts"
+symbol = "PageChrome.title, documentHead title"
+observed = "chrome.title is one string per page, so the 115 prerendered /errors/<code> pages all carry the document title Error code; a page with route params has no way to title each prerendered path (for example from its params or loader data); evidence: revision d1eac09, read from page.ts PageChrome and ssr.ts title."
+assumption = "Task 3.3 lets a page derive its document title per path (for example chrome.title as a function of params, or a title from a loader) or records a [decision] that path pages share their page title."
+severity = "low"
+
+[qualification.235]
+task = "2.3"
+file = "packages/rex/src/core/errors.docs.ts, packages/rex/src/index.ts, packages/rex/src/check/index.ts"
+symbol = "REX_ERROR_DOCS, REX_ERROR_AREAS, errorArea"
+observed = "The main entry exports REX_ERROR_CATALOG, errorDocs and RexError from core/errors.ts, but the hints, the areas and errorArea in core/errors.docs.ts are exported by no public entry (not ., not ./check), so the site reads them by repository path, ../../../../packages/rex/src/core/errors.docs.ts, the documented source of docs/errors.md and tools/docs-errors.mjs; evidence: revision d1eac09, read from packages/rex/package.json exports and src/index.ts."
+assumption = "Task 3.3 exports REX_ERROR_DOCS, REX_ERROR_AREAS, errorArea and errorHint from a public entry (for example @sidioralabs/rex next to the catalog) and the site reader switches its import to it."
+severity = "medium"
+
+[qualification.241]
+task = "2.4"
+file = "packages/rex/src/check/engine.ts, packages/rex/src/check/rules/boundaries.ts, packages/rex/src/check/rules/naming.ts"
+symbol = "classify (no role for app/server), IMPORT_TABLE.action targets"
+observed = "The 2.4 verify_cmd stops at rex check with exactly four findings, all from the [design] module_layout reader location: naming/unclassified on app/server/content/standards.ts and changelog.ts, and boundaries/import-table on app/actions/read-standards.ts and read-changelog.ts importing them (which has no Rex file role); docs/convention.md lists server/ as server-only modules, boundary.ts (APP_SERVER_DIR) treats app/server as the server-only folder and the REX440 and REX441 hints send server code to app/server, but classify gives it no role and the action import table does not allow it; the vitest half of the verify_cmd passes on its own (29 tests, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.4-private/logs/2.4-vitest-2.log and 2.4-vitest-3.log); evidence: revision 5c24d68, command pnpm -C site check && pnpm -C site exec vitest run app/pages/standards app/pages/changelog app/pages/about app/server/content/standards.test.ts app/server/content/changelog.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.4-private/logs/2.4-verify-2.log."
+assumption = "Task 3.3 adds a server file role for app/server/** (server-only modules, never imported by a component role) that actions, flows and app/data may import, with a checker fixture, so every site reader of 2.1 to 3.1 passes rex check unchanged; until then no wave-1 site task whose touches include app/server/content can pass its verify_cmd, so 2.4 stays implemented."
+severity = "high"
+resolved = "task 2.7: the commit tagged [spec:rex-site/2.7] on task/rex-site/2.7 registers and classifies every .ts module under app/actions at any depth as an action and gives app/server the server role that actions and server modules may import"
+
+[qualification.242]
+task = "2.4"
+file = "packages/rex/src/vite/scan.ts, packages/rex/src/check/engine.ts, packages/rex/src/manifest/build.ts"
+symbol = "declarationFiles, classify, buildManifest REX209"
+observed = "[design] module_layout puts the read actions in app/actions/<page>/ folders, but scanApp registers only the files directly in app/actions and classify gives app/actions/<dir>/<file>.ts no role, so a page loading a nested action fails buildManifest with REX209 (loader names action that is not registered) when rex:app loads, which breaks every site page and test, and rex check reports naming/unclassified (probe with app/actions/probe/probe.ts on revision d1eac09); 2.4 therefore declares read-standards and read-changelog as app/actions/read-standards.ts and app/actions/read-changelog.ts, the convention's one action per file, outside its touches, and dropped site/app/actions/standards and site/app/actions/changelog from them."
+assumption = "The convention wins over the [design] layout: one flat app/actions/<action>.ts per action as in the demo; 3.3 either records a [decision] that the site's read actions are flat files named read-<content>.ts and updates module_layout, or teaches scanApp and classify nested action folders; 2.1, 2.2, 2.3 and 3.1 meet the same REX209 if they nest their actions."
+severity = "high"
+resolved = "task 2.7: the commit tagged [spec:rex-site/2.7] on task/rex-site/2.7 registers and classifies every .ts module under app/actions at any depth as an action and gives app/server the server role that actions and server modules may import"
+
+[qualification.243]
+task = "2.4"
+file = "site/app/pages/changelog/regions/releases/parts/Blocks.tsx, site/app/components/Prose.tsx, site/package.json"
+symbol = "changelog Releases region, Prose part, marked and shiki"
+observed = "Task 2.4 says the Releases region renders through the Prose part, but Prose.tsx and markdown.ts belong to the parallel task 2.2 and do not exist on the 2.4 branch (cut from d1eac09), and marked and shiki, which 1.1 was to install, are not in site/package.json; 2.4 renders CHANGELOG.md from a strict structured parse (releases, groups, paragraphs, lists, the commit-log details block, code spans, links and strong text, refusing any other markdown or HTML with an error) through React parts, with no dangerouslySetInnerHTML."
+assumption = "Once 2.2 lands, 3.3 decides whether the changelog keeps its structured parts (which work without the markdown engine and ship no injected HTML) or moves the release bodies to markdown.ts and Prose; either way the reader's release split and the page tests stay valid."
+severity = "note"
+
+[qualification.244]
+task = "2.4"
+file = "packages/rex/src/client/shell/header.tsx"
+symbol = "Header back control for chrome.back"
+observed = "[design] pages gives every page a back target, and the derived header renders it as a type=button Button whose onClick calls nav.back(); on a static page (zero page JavaScript, as standards, changelog and about render) that control does nothing, so the prerendered back control is dead without JavaScript, which the no-JS walk of 3.2 will meet; read from header.tsx on revision d1eac09."
+assumption = "Task 3.3 renders the back control as a link to the back page's route (href from the registry, with the client navigation on click), so it works on static pages and stays addressed by data-rex-nav."
+severity = "medium"
+
+[qualification.271]
+task = "2.7"
+file = "packages/rex/src/manifest/scan.ts, packages/rex/src/check/rules/manifest.ts"
+symbol = "manifest/scan.ts declarationFiles (sourceFiles of app/actions), scanManifest used by the manifest rule"
+observed = "2.7 makes rex:app (vite/scan.ts scanApp), rex manifest (which builds through rex:app) and the checker roles accept action folders, but the manifest rule of rex check rebuilds the expected manifest through scanManifest, whose declarationFiles lists only the files directly in app/actions; once an app with an action folder has run rex manifest (.rex/ exists), rex check reports manifest/load-error (REX209: a loader names an action that is not registered) or a stale manifest missing the nested actions; manifest/scan.ts is outside the 2.7 touches; read from manifest/scan.ts sourceFiles at revision f1e70bc."
+assumption = "A follow-up task (3.3) lists app/actions recursively in manifest/scan.ts declarationFiles with the same rule as vite/scan.ts (every .ts at any depth except *.test.ts, .d.ts and fixtures folders), with a manifest scan test on an action folder; the site has no .rex/ today, so its check is unaffected."
+severity = "medium"
+
+[qualification.272]
+task = "2.7"
+file = "site/app/server/content/errors.ts, packages/rex/src/index.ts, packages/rex/src/check/rules/boundaries.ts"
+symbol = "IMPORT_TABLE.server targets, the errors reader's repository-path import of core/errors.docs.ts"
+observed = "Every part of the 2.7 verify_cmd passes except its last command: typecheck exit 0, vitest src/vite/scan.test.ts src/check 14 files and 105 tests passed, rex check on examples/demo No findings; pnpm -C site check now reports exactly one finding where it reported naming/unclassified and import-table findings on every reader before: boundaries/import-table on app/server/content/errors.ts line 4, which imports ../../../../packages/rex/src/core/errors.docs.ts (a file outside app/), the repository-path workaround [qualification.235] records because no public entry exports REX_ERROR_DOCS, REX_ERROR_AREAS and errorArea; evidence: revision f1e70bc plus the 2.7 changes, command pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/scan.test.ts src/check && pnpm -C examples/demo exec rex check && pnpm -C site check, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.7-private/logs/2.7-verify.log."
+assumption = "The server role keeps the import table of the declaration roles (no file outside app/ by relative path; widening it to any target would admit the workaround instead of fixing it); once 3.3 exports the error docs catalog from a public entry per [qualification.235] and the 2.3 reader imports it from @sidioralabs/rex, the unchanged 2.7 verify_cmd passes; site/app/server/content/errors.ts and the package exports are outside the 2.7 touches."
+severity = "high"

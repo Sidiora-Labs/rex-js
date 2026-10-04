@@ -30,9 +30,9 @@ function installNonce(nonce: string = NONCE): void {
 }
 
 function headScripts(src: string): HTMLScriptElement[] {
-  return [...document.head.querySelectorAll<HTMLScriptElement>(`script[${SCRIPT_ATTRIBUTE}]`)].filter(
-    (element) => element.getAttribute("src") === src,
-  );
+  return [
+    ...document.head.querySelectorAll<HTMLScriptElement>(`script[${SCRIPT_ATTRIBUTE}]`),
+  ].filter((element) => element.getAttribute("src") === src);
 }
 
 afterEach(() => {
@@ -64,7 +64,9 @@ describe("Img", () => {
     expect(image?.getAttribute("loading")).toBe("lazy");
     expect(image?.getAttribute("decoding")).toBe("async");
     expect(image?.getAttribute("sizes")).toBe("(max-width: 640px) 100vw, 640px");
-    expect(image?.getAttribute("srcset")).toBe("/images/card-320.avif 320w, /images/card-640.avif 640w");
+    expect(image?.getAttribute("srcset")).toBe(
+      "/images/card-320.avif 320w, /images/card-640.avif 640w",
+    );
     expect(image?.getAttribute("class")).toBe("card-art");
     expect(image?.hasAttribute("fetchpriority")).toBe(false);
   });
@@ -73,7 +75,14 @@ describe("Img", () => {
     const { container } = render(
       <>
         <Img src="/images/hero.avif" alt="" width={1200} height={630} priority />
-        <Img src="/images/inline.avif" alt="Inline" width={10} height={10} loading="eager" decoding="sync" />
+        <Img
+          src="/images/inline.avif"
+          alt="Inline"
+          width={10}
+          height={10}
+          loading="eager"
+          decoding="sync"
+        />
       </>,
     );
     const [hero, inline] = [...container.querySelectorAll("img")];
@@ -90,8 +99,22 @@ describe("Img", () => {
     const media = createMediaCollector(NONCE);
     const html = renderToString(
       <MediaProvider value={media.collector}>
-        <Img src="/images/hero.avif" srcSet="/images/hero-2x.avif 2x" alt="Hero" width={1200} height={630} priority />
-        <Img src="/images/hero.avif" srcSet="/images/hero-2x.avif 2x" alt="Hero again" width={1200} height={630} priority />
+        <Img
+          src="/images/hero.avif"
+          srcSet="/images/hero-2x.avif 2x"
+          alt="Hero"
+          width={1200}
+          height={630}
+          priority
+        />
+        <Img
+          src="/images/hero.avif"
+          srcSet="/images/hero-2x.avif 2x"
+          alt="Hero again"
+          width={1200}
+          height={630}
+          priority
+        />
         <Img src="/images/below.avif" alt="Below the fold" width={600} height={400} />
       </MediaProvider>,
     );
@@ -104,9 +127,18 @@ describe("Img", () => {
 
   it("refuses an image without a size, alt text or with a lazy priority", () => {
     const invalid: readonly [Partial<ImgProps>, string][] = [
-      [{ src: "/a.png", alt: "a", height: 10 }, "Img: width and height are required positive numbers for /a.png"],
-      [{ src: "/a.png", alt: "a", width: 10, height: 0 }, "Img: width and height are required positive numbers for /a.png"],
-      [{ src: "/a.png", width: 10, height: 10 }, 'Img: alt is required for /a.png (use "" for a decorative image)'],
+      [
+        { src: "/a.png", alt: "a", height: 10 },
+        "Img: width and height are required positive numbers for /a.png",
+      ],
+      [
+        { src: "/a.png", alt: "a", width: 10, height: 0 },
+        "Img: width and height are required positive numbers for /a.png",
+      ],
+      [
+        { src: "/a.png", width: 10, height: 10 },
+        'Img: alt is required for /a.png (use "" for a decorative image)',
+      ],
       [{ src: "", alt: "a", width: 10, height: 10 }, "Img: src must be a non-empty string"],
       [
         { src: "/a.png", alt: "a", width: 10, height: 10, priority: true, loading: "lazy" },
@@ -190,7 +222,9 @@ describe("Script", () => {
         <Script src="/vendor/consent.js" strategy="beforeHydration" />
       </MediaProvider>,
     );
-    expect(html).toBe(`<script src="/vendor/consent.js" nonce="${NONCE}" ${SCRIPT_ATTRIBUTE}="beforeHydration"></script>`);
+    expect(html).toBe(
+      `<script src="/vendor/consent.js" nonce="${NONCE}" ${SCRIPT_ATTRIBUTE}="beforeHydration"></script>`,
+    );
 
     installNonce();
     const container = document.createElement("div");
@@ -203,7 +237,11 @@ describe("Script", () => {
     const root = await act(async () =>
       hydrateRoot(
         container,
-        <Script src="/vendor/consent.js" strategy="beforeHydration" onLoad={() => loaded.push("consent")} />,
+        <Script
+          src="/vendor/consent.js"
+          strategy="beforeHydration"
+          onLoad={() => loaded.push("consent")}
+        />,
       ),
     );
     expect(container.querySelector("script")).toBe(serverScript);
@@ -229,7 +267,9 @@ describe("Script", () => {
     expect(() =>
       renderToString(<Script src="/x.js" strategy={"eager" as ScriptStrategy} />),
     ).toThrow("Script: strategy must be one of beforeHydration, afterHydration, idle");
-    expect(() => renderToString(<Script src="" />)).toThrow("Script: src must be a non-empty string");
+    expect(() => renderToString(<Script src="" />)).toThrow(
+      "Script: src must be a non-empty string",
+    );
     expect(() => loadScript("")).toThrow("loadScript: src must be a non-empty string");
   });
 });

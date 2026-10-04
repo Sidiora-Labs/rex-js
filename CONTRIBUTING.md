@@ -25,3 +25,5 @@ Do not edit `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `.curso
 ## Before a release
 
 The release gates `tools/gate-test.sh` and `tools/gate-lint.sh` run the package tests, the typecheck, `rex check` on the demo, the demo's Playwright walks (operability, no-JS, axe, vitals, Lighthouse and screenshots), `pnpm audit --prod`, the license review (`node tools/license-review.mjs`) and `cg spec render --check`. They run once per wave on the merged revision, not per task.
+
+`pnpm lint` runs ESLint with the rex preset (`@sidioralabs/rex/eslint`, with `jsx-a11y`) over `packages/rex/src` and `examples/demo` from the root `eslint.config.js`, and `pnpm format:check` checks the whole repository against the rex Prettier preset (`pnpm format` writes it). CI runs both in its lint job, so run them before you push.

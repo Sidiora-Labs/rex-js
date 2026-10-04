@@ -299,8 +299,11 @@ describe("confirmFlowDecision", () => {
     const h = harness(approver, "p-8");
     await pause(h, "p-8");
     const context = h.context();
-    const result = await confirmFlowDecision(context, async () => true, "reject", (choice) =>
-      decideFlow(context, choice),
+    const result = await confirmFlowDecision(
+      context,
+      async () => true,
+      "reject",
+      (choice) => decideFlow(context, choice),
     );
     expect(result).toMatchObject({ ok: true, state: { status: "rejected", gate: null } });
     expect(charged).toEqual([]);

@@ -119,8 +119,10 @@ export interface FlowHandle {
 
 type FlowGateModule = typeof import("./flow-gate.ts");
 
-const flowGateModule = lazyModule<FlowGateModule>("rex.flow-gate", "the flow gate", () =>
-  import("./flow-gate.ts"),
+const flowGateModule = lazyModule<FlowGateModule>(
+  "rex.flow-gate",
+  "the flow gate",
+  () => import("./flow-gate.ts"),
 );
 
 const NO_GATE_AFFORDANCES: readonly Affordance[] = Object.freeze([]);
@@ -235,7 +237,9 @@ export function useFlow(declared: AnyFlow, instanceId: string): FlowHandle {
   const confirmed = useCallback(
     (choice: FlowDecision): Promise<FlowDecisionResult> =>
       withFlowGate((loadedGates) =>
-        loadedGates.confirmFlowDecision(context, confirm, choice, (next) => decideRef.current(next)),
+        loadedGates.confirmFlowDecision(context, confirm, choice, (next) =>
+          decideRef.current(next),
+        ),
       ),
     [confirm, context],
   );
@@ -255,9 +259,14 @@ export function useFlow(declared: AnyFlow, instanceId: string): FlowHandle {
   const controlProps = (choice: FlowDecision): GateControlProps | null =>
     gates === null
       ? null
-      : gates.gateControlProps({ declared, gate, decision, pageId, names: GATE_NAMES }, choice, pending, (picked) => {
-          void confirmed(picked);
-        });
+      : gates.gateControlProps(
+          { declared, gate, decision, pageId, names: GATE_NAMES },
+          choice,
+          pending,
+          (picked) => {
+            void confirmed(picked);
+          },
+        );
 
   return {
     state,

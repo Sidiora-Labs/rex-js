@@ -56,9 +56,11 @@ export const APP_DATA = "notes";
 export const APP_COMPONENT = "Button";
 
 export const APP_PEERS = [
+  "@babel/core",
   "@hono/node-server",
   "@tanstack/react-query",
   "@vitejs/plugin-react",
+  "babel-plugin-react-compiler",
   "cmdk",
   "react",
   "react-dom",

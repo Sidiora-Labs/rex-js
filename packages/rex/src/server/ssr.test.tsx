@@ -16,6 +16,7 @@ import {
 import { Img, SCRIPT_ATTRIBUTE, Script } from "../client/media.tsx";
 import { ActionForm } from "../client/form.tsx";
 import { region, view, type LazyPageModuleSet, type LoadedPageModules } from "../client/page.tsx";
+import { store, type RexStore } from "../client/store.ts";
 import { action } from "../core/action.ts";
 import { actor } from "../core/actor.ts";
 import { page, type AnyPage } from "../core/page.ts";
@@ -133,7 +134,15 @@ const HERO_SIZES = "(max-width: 640px) 100vw, 1200px";
 const WIDGET_SRC = "/vendor/widget.js";
 const GalleryView = view(() => (
   <>
-    <Img src={HERO_SRC} srcSet={HERO_SRCSET} sizes={HERO_SIZES} alt="Harbour at dusk" width={1200} height={630} priority />
+    <Img
+      src={HERO_SRC}
+      srcSet={HERO_SRCSET}
+      sizes={HERO_SIZES}
+      alt="Harbour at dusk"
+      width={1200}
+      height={630}
+      priority
+    />
     <Img src="/images/thumb.avif" alt="Thumbnail" width={320} height={180} />
     <Script src={WIDGET_SRC} strategy="beforeHydration" />
   </>
@@ -208,7 +217,8 @@ async function buildFixtureAssets(): Promise<RexDocumentAssets> {
   const asset = items.find(
     (item) => item.type === "asset" && item.fileName === CLIENT_MANIFEST_FILE,
   );
-  if (asset === undefined || asset.type !== "asset") throw new Error("no client manifest was built");
+  if (asset === undefined || asset.type !== "asset")
+    throw new Error("no client manifest was built");
   return ssrAssetsFromManifest(JSON.parse(String(asset.source)) as ViteManifest, {
     root: fixtureRoot,
   });
@@ -275,7 +285,10 @@ function serverFetch(input: Request | string | URL, init?: RequestInit): Promise
   return Promise.resolve(server.fetch(outgoing));
 }
 
-async function hydrate(container: HTMLElement, mismatches: HydrationMismatch[]): Promise<StartedRex> {
+async function hydrate(
+  container: HTMLElement,
+  mismatches: HydrationMismatch[],
+): Promise<StartedRex> {
   let result: StartedRex | null = null;
   await act(async () => {
     result = startRexEntry(container, bundle, {
@@ -362,7 +375,9 @@ describe("streaming server-side rendering", () => {
     const entryScript = assets.scripts[0] as string;
     expect(html.indexOf(`src="${entryScript}"`)).toBeGreaterThan(pageAt);
 
-    const nonce = /<script type="application\/rex\+data" id="rex-data" nonce="([^"]+)"/.exec(html)?.[1];
+    const nonce = /<script type="application\/rex\+data" id="rex-data" nonce="([^"]+)"/.exec(
+      html,
+    )?.[1];
     expect(nonce).toMatch(/^[0-9a-f]{32}$/);
     for (const attributes of executableInlineScripts(html)) {
       expect(attributes).toContain(`nonce="${nonce}"`);
@@ -503,12 +518,16 @@ describe("streaming server-side rendering", () => {
     expect(thumb?.getAttribute("decoding")).toBe("async");
     expect(thumb?.hasAttribute("fetchpriority")).toBe(false);
 
-    const nonce = /<script type="application\/rex\+data" id="rex-data" nonce="([^"]+)"/.exec(html)?.[1];
+    const nonce = /<script type="application\/rex\+data" id="rex-data" nonce="([^"]+)"/.exec(
+      html,
+    )?.[1];
     expect(nonce).toMatch(/^[0-9a-f]{32}$/);
     const widget = parsed.body.querySelector(`script[src="${WIDGET_SRC}"]`);
     expect(widget?.getAttribute(SCRIPT_ATTRIBUTE)).toBe("beforeHydration");
     expect(widget?.getAttribute("nonce")).toBe(nonce);
-    expect(body.indexOf(`src="${WIDGET_SRC}"`)).toBeLessThan(body.indexOf(`src="${assets.scripts[0] as string}"`));
+    expect(body.indexOf(`src="${WIDGET_SRC}"`)).toBeLessThan(
+      body.indexOf(`src="${assets.scripts[0] as string}"`),
+    );
 
     const other = await (await server.fetch(request("/"))).text();
     expect(other).toContain('<style data-rex-fonts="">');
@@ -549,7 +568,9 @@ const signupBundle: RexEntryBundle = {
 let signupRenderer: RexPageRenderer | null = null;
 
 function signupRequest(): Request {
-  return new Request(new URL("/signup", window.location.origin), { headers: { accept: "text/html" } });
+  return new Request(new URL("/signup", window.location.origin), {
+    headers: { accept: "text/html" },
+  });
 }
 
 async function renderSignup(request: Request): Promise<string> {
@@ -564,7 +585,9 @@ async function renderSignup(request: Request): Promise<string> {
 }
 
 function csrfFieldOf(html: string): string | null {
-  const input = new RegExp(`<input type="hidden" name="${CSRF_FIELD}" value="([^"]*)"/>`).exec(html);
+  const input = new RegExp(`<input type="hidden" name="${CSRF_FIELD}" value="([^"]*)"/>`).exec(
+    html,
+  );
   return input === null ? null : (input[1] as string);
 }
 
@@ -576,7 +599,9 @@ describe("the CSRF token in server-rendered forms", () => {
   it("renders the rex-csrf token granted to the document request into the form", async () => {
     const request = signupRequest();
     const grant = ensureCsrfToken(request);
-    expect(grant.setCookie).toMatch(new RegExp(`^${CSRF_COOKIE}=${grant.token}; Path=/; SameSite=Lax$`));
+    expect(grant.setCookie).toMatch(
+      new RegExp(`^${CSRF_COOKIE}=${grant.token}; Path=/; SameSite=Lax$`),
+    );
     bindCsrfGrant(request, grant);
     const html = await renderSignup(request);
     expect(html).toMatch(/<form\b[^>]*\baction="\/rex\/form\/subscribe"[^>]*\bmethod="post"/);
@@ -607,6 +632,135 @@ describe("the CSRF token in server-rendered forms", () => {
     expect(field?.value).toBe(token);
     expect(mismatches).toEqual([]);
     expect(hydrationErrors(errors.mock.calls)).toEqual([]);
+  });
+});
+
+const watchPage = page("watch", {
+  route: "/watch",
+  chrome: { title: "Watchlist" },
+  regions: ["chips"],
+});
+
+const plainPage = page("plain", {
+  route: "/plain",
+  chrome: { title: "Plain" },
+});
+
+const WATCHED_INITIAL: readonly string[] = ["eth", "pax"];
+let watched: RexStore<readonly string[]> | null = null;
+
+function watchedStore(): RexStore<readonly string[]> {
+  watched ??= store<readonly string[]>("watched", { initial: WATCHED_INITIAL, expose: true });
+  return watched;
+}
+
+const WatchChips = region("chips", () => {
+  const ids = watchedStore().useStore();
+  return (
+    <ul>
+      {ids.map((id) => (
+        <li key={id}>{id}</li>
+      ))}
+    </ul>
+  );
+});
+
+const watchModules: LoadedPageModules = {
+  view: view(() => <WatchChips />),
+  states: statesFor("the watchlist"),
+  regions: { chips: WatchChips },
+  overlays: {},
+};
+let watchLoading: Promise<LoadedPageModules> | null = null;
+const watchSet: LazyPageModuleSet = Object.freeze({
+  page: watchPage,
+  chunk: "page-watch",
+  load: () => {
+    watchLoading ??= Promise.resolve().then(() => {
+      watchedStore();
+      return watchModules;
+    });
+    return watchLoading;
+  },
+});
+
+const storeRegistry = createRegistry().register(watchPage, plainPage).freeze();
+const storeBundle: RexEntryBundle = {
+  registry: storeRegistry,
+  manifest: buildManifest(storeRegistry, { app: "ssr-stores" }),
+  pages: [
+    watchSet,
+    lazySet(plainPage, { view: view(() => <p>Nothing watched</p>), states: statesFor("Plain") }),
+  ],
+};
+const storeRenderer = createRexRenderer({ bundle: storeBundle });
+
+async function renderStorePage(path: string): Promise<string> {
+  const result = await storeRenderer.render(request(path), {
+    actor: owner,
+    density: DEFAULT_DENSITY,
+    nonce: "0123456789abcdef0123456789abcdef",
+  });
+  expect(result.kind).toBe("page");
+  return new Response(result.body).text();
+}
+
+function serverSidecarOf(html: string): Record<string, unknown> {
+  return readSidecar(new DOMParser().parseFromString(html, "text/html")) as Record<string, unknown>;
+}
+
+async function hydrateStorePage(path: string): Promise<{
+  readonly server: Record<string, unknown>;
+  readonly container: HTMLElement;
+}> {
+  const html = await renderStorePage(path);
+  const container = mountDocument(html, path);
+  const server = readSidecar(container) as Record<string, unknown>;
+  await act(async () => {
+    started = startRexEntry(container, storeBundle, { dev: true, fetch: serverFetch });
+  });
+  expect(started?.mode).toBe("hydrate");
+  await waitFor(() => expect(window.__rex?.page).toBe(server.page));
+  return { server, container };
+}
+
+describe("the stores a server render exposes", () => {
+  it("lists only the stores the rendered page uses after another page exposed one", async () => {
+    const before = serverSidecarOf(await renderStorePage("/plain"));
+    expect(before).not.toHaveProperty("stores");
+    const watch = serverSidecarOf(await renderStorePage("/watch"));
+    expect(watch.stores).toEqual({ watched: WATCHED_INITIAL });
+    const after = serverSidecarOf(await renderStorePage("/plain"));
+    expect(after).not.toHaveProperty("stores");
+    expect(after).toEqual(before);
+  });
+
+  it("keeps the stores of concurrent renders apart", async () => {
+    const [watch, plain, again] = await Promise.all([
+      renderStorePage("/watch"),
+      renderStorePage("/plain"),
+      renderStorePage("/watch"),
+    ]);
+    expect(serverSidecarOf(watch).stores).toEqual({ watched: WATCHED_INITIAL });
+    expect(serverSidecarOf(again).stores).toEqual({ watched: WATCHED_INITIAL });
+    expect(serverSidecarOf(plain)).not.toHaveProperty("stores");
+    expect(watch).toContain("<li>pax</li>");
+  });
+
+  it("hydrates the store page to the server sidecar and the next page to its own sidecar script", async () => {
+    const watch = await hydrateStorePage("/watch");
+    expect(watch.server.stores).toEqual({ watched: WATCHED_INITIAL });
+    expect(window.__rex).toEqual(watch.server);
+    expect(JSON.stringify(window.__rex)).toBe(JSON.stringify(readSidecar(watch.container)));
+    const root = started?.root;
+    await act(async () => {
+      root?.unmount();
+    });
+    started = null;
+
+    const plain = await hydrateStorePage("/plain");
+    expect(plain.server).not.toHaveProperty("stores");
+    expect(JSON.stringify(window.__rex)).toBe(JSON.stringify(readSidecar(plain.container)));
   });
 });
 
@@ -646,21 +800,27 @@ describe("screen classification on the server", () => {
     expect(
       await classify("/", { "sec-ch-ua-mobile": "?0", "sec-ch-viewport-width": "820" }),
     ).toEqual({ screen: "tablet", pointer: "fine", density: "comfortable" });
-    expect(await classify("/", { "sec-ch-ua-mobile": "?0", "sec-ch-viewport-width": "1440" })).toEqual(
-      { screen: "desktop", pointer: "fine", density: "comfortable" },
+    expect(
+      await classify("/", { "sec-ch-ua-mobile": "?0", "sec-ch-viewport-width": "1440" }),
+    ).toEqual({ screen: "desktop", pointer: "fine", density: "comfortable" });
+    expect(await classify("/", { "sec-ch-viewport-width": "1920", "user-agent": DESKTOP })).toEqual(
+      {
+        screen: "wide",
+        pointer: "fine",
+        density: "comfortable",
+      },
     );
-    expect(await classify("/", { "sec-ch-viewport-width": "1920", "user-agent": DESKTOP })).toEqual({
-      screen: "wide",
-      pointer: "fine",
-      density: "comfortable",
-    });
     expect(await classify("/", { "sec-ch-ua-mobile": "?1", "user-agent": DESKTOP })).toEqual({
       screen: "phone",
       pointer: "coarse",
       density: "comfortable",
     });
     expect(
-      await classify("/", { "sec-ch-ua-mobile": "?0", "sec-ch-viewport-width": "wide", "user-agent": IPHONE }),
+      await classify("/", {
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-viewport-width": "wide",
+        "user-agent": IPHONE,
+      }),
     ).toMatchObject({ screen: "desktop", pointer: "fine" });
   });
 

@@ -454,9 +454,11 @@ describe("Standard Schema actions through the router", () => {
 
   it("validates input and output through ~standard.validate and hands the handler the parsed value", async () => {
     const router = buildActionRouter({ actions: [tip, payout] }, { ledger: memoryLedger() });
-    await expect(call(router.tip, { amount: "2.5" }, { context: context(alice) })).resolves.toEqual({
-      paid: 2.5,
-    });
+    await expect(call(router.tip, { amount: "2.5" }, { context: context(alice) })).resolves.toEqual(
+      {
+        paid: 2.5,
+      },
+    );
     expect(seen).toEqual([2.5]);
     const invalid = await rejection(
       call(router.tip, { amount: "zero" }, { context: context(alice) }),

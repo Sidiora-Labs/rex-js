@@ -76,4 +76,3 @@ export function ConfirmDialog({ pending, address, settle }: ConfirmDialogProps) 
     </div>
   );
 }
-

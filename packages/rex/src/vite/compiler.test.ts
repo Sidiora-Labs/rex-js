@@ -58,11 +58,15 @@ describe("vite/compiler", { timeout: BUILD_TIMEOUT_MS }, () => {
   it("targets React 19 and only compiles application script modules", () => {
     expect(REACT_COMPILER_TARGET).toBe("19");
     const filter = /\b[A-Z]/;
-    expect(shouldCompile("/app/pages/home/view.tsx", "export function View() {}", filter)).toBe(true);
+    expect(shouldCompile("/app/pages/home/view.tsx", "export function View() {}", filter)).toBe(
+      true,
+    );
     expect(shouldCompile("/app/pages/home/view.tsx?v=1", "export function View() {}", filter)).toBe(
       true,
     );
-    expect(shouldCompile("/node_modules/x/index.js", "export function View() {}", filter)).toBe(false);
+    expect(shouldCompile("/node_modules/x/index.js", "export function View() {}", filter)).toBe(
+      false,
+    );
     expect(shouldCompile("\0rex:app", "export function View() {}", filter)).toBe(false);
     expect(shouldCompile("/app/styles.css", "Body {}", filter)).toBe(false);
     expect(shouldCompile("/app/types.d.ts", "export type A = 1", filter)).toBe(false);

@@ -1,12 +1,15 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { RexError } from "../core/errors.ts";
 import { resetAll } from "./reset.ts";
 import {
+  StoreRegistryProvider,
   createStoreRegistry,
   defaultStoreRegistry,
   toJsonValue,
   useExposedStores,
+  useStoreRegistry,
 } from "./store-registry.ts";
 import {
   createStoreRegistry as createFromStore,
@@ -104,6 +107,22 @@ describe("createStoreRegistry", () => {
     registry.register(entry(cart));
     expect(notified).toBe(3);
   });
+
+  it("leaves the stores unsubscribed when it does not follow them", () => {
+    const registry = createStoreRegistry({ follow: false });
+    let notified = 0;
+    registry.subscribe(() => {
+      notified += 1;
+    });
+    const leaveTheme = registry.register(entry(theme));
+    expect(notified).toBe(1);
+    expect(registry.exposed()).toEqual({ theme: "light" });
+    theme.set("dark");
+    expect(notified).toBe(1);
+    leaveTheme();
+    expect(notified).toBe(2);
+    expect(registry.exposed()).toEqual({});
+  });
 });
 
 describe("useExposedStores", () => {
@@ -132,6 +151,43 @@ describe("useExposedStores", () => {
       resetAll();
     });
     expect(exposed()).toEqual({ cart: { items: [] }, theme: "light" });
+  });
+
+  it("reads the registry a provider scopes and only the stores rendered under it", () => {
+    function Rendered() {
+      theme.useStore();
+      return <Exposed />;
+    }
+    const scoped = createStoreRegistry({ follow: false });
+    const html = renderToString(
+      <StoreRegistryProvider registry={scoped}>
+        <Rendered />
+      </StoreRegistryProvider>,
+    );
+    expect(scoped.get("theme")).toBe(theme);
+    expect(scoped.get("cart")).toBeUndefined();
+    expect(scoped.exposed()).toEqual({ theme: "light" });
+    expect(html).toContain(JSON.stringify({ theme: "light" }).replaceAll('"', "&quot;"));
+    const fresh = createStoreRegistry({ follow: false });
+    const plain = renderToString(
+      <StoreRegistryProvider registry={fresh}>
+        <Exposed />
+      </StoreRegistryProvider>,
+    );
+    expect(fresh.exposed()).toEqual({});
+    expect(plain).toContain('<pre data-testid="exposed">{}</pre>');
+  });
+
+  it("leaves the app registry as the registry outside a provider", () => {
+    let seen: unknown = null;
+    function Registry() {
+      seen = useStoreRegistry();
+      theme.useStore();
+      return null;
+    }
+    render(<Registry />);
+    expect(seen).toBe(defaultStoreRegistry);
+    expect(defaultStoreRegistry.get("theme")).toBe(theme);
   });
 
   it("is what the store module re-exports", () => {

@@ -73,12 +73,7 @@ export function OverlaySurface({
       data-rex-overlay-form={form}
       onKeyDown={onKeyDown}
     >
-      <Sheet
-        address={address}
-        title={title}
-        titleId={titleId}
-        form={form}
-      >
+      <Sheet address={address} title={title} titleId={titleId} form={form}>
         {children}
       </Sheet>
       {closeLabel === null ? null : (
@@ -89,4 +84,3 @@ export function OverlaySurface({
     </div>
   );
 }
-

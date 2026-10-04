@@ -116,7 +116,9 @@ describe("createRexServer telemetry", () => {
 
   beforeEach(() => {
     exporter = new InMemorySpanExporter();
-    const provider = new BasicTracerProvider({ spanProcessors: [new SimpleSpanProcessor(exporter)] });
+    const provider = new BasicTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(exporter)],
+    });
     ledger = memoryLedger();
     lines = [];
     app = createRexServer({
@@ -305,9 +307,9 @@ describe("audit trace ids", () => {
   };
 
   it("keeps a valid traceId and spanId pair", () => {
-    expect(validateAuditEntry({ ...entry, traceId: "b".repeat(32), spanId: "c".repeat(16) })).toEqual(
-      { ...entry, traceId: "b".repeat(32), spanId: "c".repeat(16) },
-    );
+    expect(
+      validateAuditEntry({ ...entry, traceId: "b".repeat(32), spanId: "c".repeat(16) }),
+    ).toEqual({ ...entry, traceId: "b".repeat(32), spanId: "c".repeat(16) });
     expect(validateAuditEntry(entry)).toEqual(entry);
   });
 

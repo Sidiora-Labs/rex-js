@@ -77,11 +77,11 @@ describe("media/no-raw-img", () => {
         [
           'import React, { createElement } from "react";',
           'import { Img } from "@sidioralabs/rex/client/media";',
-          "export const a = <img src=\"/a.png\" alt=\"\" />;",
-          "export const b = <Img src=\"/b.png\" alt=\"\" width={1} height={1} />;",
+          'export const a = <img src="/a.png" alt="" />;',
+          'export const b = <Img src="/b.png" alt="" width={1} height={1} />;',
           'export const c = React.createElement("img", { src: "/c.png" });',
           'export const d = createElement("picture", null);',
-          "export const e = <svg><image href=\"/e.png\" /></svg>;",
+          'export const e = <svg><image href="/e.png" /></svg>;',
         ].join("\n"),
       ),
     );

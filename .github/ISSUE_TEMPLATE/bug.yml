@@ -1,0 +1,113 @@
+name: Bug report
+description: Rex behaves differently from its documentation, its spec or the agent contract.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A vulnerability is not a bug report: report it privately through the
+        repository's Security tab as described in SECURITY.md, never in an issue.
+  - type: input
+    id: version
+    attributes:
+      label: Rex version
+      description: >-
+        The output of `rex version` in the app, or the `@sidioralabs/rex` version in its
+        package.json. When running from the repository, the commit SHA.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime target
+      description: >-
+        The target the app runs on (`rex build --target`), or the Vite dev server when the bug
+        shows under `rex dev`.
+      options:
+        - node
+        - bun
+        - deno
+        - edge
+        - static (client only)
+        - rex dev
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Runtime version, package manager and browser
+      description: >-
+        The Node, Bun or Deno version or the edge platform, the pnpm version, the operating
+        system and, for a bug in the browser, the browser and its version.
+      placeholder: "Node 22.21.1, pnpm 10.27.0, Ubuntu 24.04, Chromium 131"
+    validations:
+      required: true
+  - type: textarea
+    id: check
+    attributes:
+      label: rex check output
+      description: >-
+        Run `rex check` in the app (`rex check --runtime` when the bug concerns the sidecar or
+        parity) and paste the whole output, including `0 problems` when it is clean.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: page
+    attributes:
+      label: Minimal page folder
+      description: >-
+        The smallest `app/pages/<page>/` folder that reproduces the bug: `page.ts`, `view.tsx`,
+        `states.tsx` and the regions, actions, entities or policies it needs, one fenced block
+        per file with its path. A link to a repository or a failing test is also fine.
+      placeholder: |
+        app/pages/example/page.ts
+        app/pages/example/view.tsx
+        app/pages/example/states.tsx
+        app/pages/example/regions/main/region.tsx
+        app/actions/example.ts
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: >-
+        The commands and the clicks, keys, URLs or palette entries, in order. For an agent-driven
+        reproduction, the `data-rex` addresses used and the sidecar entry expected.
+      placeholder: |
+        1. pnpm install && rex dev
+        2. open /example
+        3. press mod+k and run "example.run"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What the documentation, the spec or the agent contract says should happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: >-
+        What happens instead, with the full error output, the REX code when there is one, and
+        the browser console or server log lines that matter.
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before opening
+      options:
+        - label: I searched the open and closed issues and this is not a duplicate.
+          required: true
+        - label: >-
+            This is not a security vulnerability; those are reported privately as described in
+            SECURITY.md.
+          required: true

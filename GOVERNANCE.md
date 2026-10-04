@@ -11,13 +11,13 @@ Rex (`@sidioralabs/rex`) is an MIT-licensed open source project stewarded by Sid
 
 ## Roles
 
-| Role | Who | Can |
-| --- | --- | --- |
-| User | Anyone who uses Rex | Open issues, ask questions, propose changes. |
-| Contributor | Anyone whose pull request has been merged | Everything a user can, plus review pull requests (non-binding). |
-| Maintainer | People listed in [MAINTAINERS.md](MAINTAINERS.md) | Triage issues, approve and merge pull requests, approve spec changes, vote on governance decisions. |
-| Release manager | Maintainers marked as such in [MAINTAINERS.md](MAINTAINERS.md) | Tag releases and hold publish rights for `@sidioralabs/rex` on npm. |
-| Lead maintainer | One maintainer named in [MAINTAINERS.md](MAINTAINERS.md) | Break ties, act as the conduct and security contact of last resort, and represent the project to Sidiora Labs. |
+| Role            | Who                                                            | Can                                                                                                            |
+| --------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| User            | Anyone who uses Rex                                            | Open issues, ask questions, propose changes.                                                                   |
+| Contributor     | Anyone whose pull request has been merged                      | Everything a user can, plus review pull requests (non-binding).                                                |
+| Maintainer      | People listed in [MAINTAINERS.md](MAINTAINERS.md)              | Triage issues, approve and merge pull requests, approve spec changes, vote on governance decisions.            |
+| Release manager | Maintainers marked as such in [MAINTAINERS.md](MAINTAINERS.md) | Tag releases and hold publish rights for `@sidioralabs/rex` on npm.                                            |
+| Lead maintainer | One maintainer named in [MAINTAINERS.md](MAINTAINERS.md)       | Break ties, act as the conduct and security contact of last resort, and represent the project to Sidiora Labs. |
 
 People and agents follow the same contract when they contribute: the workflow in [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/development.md](docs/development.md). An agent's work is attributed to the maintainer or contributor who ran it, and that person is accountable for it.
 

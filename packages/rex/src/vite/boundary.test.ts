@@ -192,8 +192,8 @@ describe("vite/boundary helpers", () => {
       'import "./side-effect.ts";',
       "function load(id: string): Row { return query(id); }",
       "const run = (id: string) => load(id);",
-      "export const one = action(\"one\", { input: z.object({}), handler: (input) => run(input.id) });",
-      "export const two = rex.action(\"two\", { input: z.object({}), async handler(input) { return pool.get(input); } });",
+      'export const one = action("one", { input: z.object({}), handler: (input) => run(input.id) });',
+      'export const two = rex.action("two", { input: z.object({}), async handler(input) { return pool.get(input); } });',
       "export const three = action(\"three\", { input: z.object({}), 'handler': () => 3 });",
     ].join("\n");
     const output = stripActionHandlers(source, "/app/actions/one.ts");
@@ -201,9 +201,11 @@ describe("vite/boundary helpers", () => {
     const code = output as string;
     const stub = `throw new __rexServerOnlyError(${JSON.stringify(SERVER_ONLY_HANDLER_CODE)}, ${JSON.stringify(SERVER_ONLY_HANDLER_MESSAGE)})`;
     expect(code.split(stub)).toHaveLength(4);
-    expect(code.trimEnd().endsWith('import { RexError as __rexServerOnlyError } from "@sidioralabs/rex";')).toBe(
-      true,
-    );
+    expect(
+      code
+        .trimEnd()
+        .endsWith('import { RexError as __rexServerOnlyError } from "@sidioralabs/rex";'),
+    ).toBe(true);
     expect(code).not.toContain("../server/db.ts");
     expect(code).not.toContain("function load");
     expect(code).not.toContain("const run");
@@ -219,13 +221,16 @@ describe("vite/boundary helpers", () => {
       'import { action } from "@sidioralabs/rex";',
       'import { z } from "zod/mini";',
       'import { query, LABEL } from "../lib/shared.ts";',
-      "export const one = action(\"one\", { input: z.object({}), label: LABEL, handler: () => query() });",
+      'export const one = action("one", { input: z.object({}), label: LABEL, handler: () => query() });',
     ].join("\n");
     const code = stripActionHandlers(source, "/app/actions/one.ts") as string;
     expect(code).toContain('import { LABEL } from "../lib/shared.ts";');
     expect(stripActionHandlers("export const handler = () => 1;", "/app/actions/x.ts")).toBeNull();
     expect(
-      stripActionHandlers('import { action } from "other";\naction("x", { handler: () => 1 });', "/a.ts"),
+      stripActionHandlers(
+        'import { action } from "other";\naction("x", { handler: () => 1 });',
+        "/a.ts",
+      ),
     ).toBeNull();
   });
 
@@ -243,7 +248,9 @@ describe("vite/boundary helpers", () => {
     expect(serverOnly).toContain(normalizePath(serverOnlyEntry));
     expect(boundaryViolation("@sidioralabs/rex/server", importer, appPath)).toBe("rex/server");
     expect(boundaryViolation("@sidioralabs/rex/server/node", importer, appPath)).toBe("rex/server");
-    expect(boundaryViolation("@sidioralabs/rex/server-only", importer, appPath)).toBe("server-only");
+    expect(boundaryViolation("@sidioralabs/rex/server-only", importer, appPath)).toBe(
+      "server-only",
+    );
     expect(boundaryViolation(normalizePath(serverOnlyEntry), importer, appPath, serverOnly)).toBe(
       "server-only",
     );

@@ -93,7 +93,9 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
     mutationFn: async ({ input, confirmToken }) => {
       const call = procedureOf(client, declared.id);
       const raw =
-        confirmToken === undefined ? await call(input) : await call(input, { context: { confirmToken } });
+        confirmToken === undefined
+          ? await call(input)
+          : await call(input, { context: { confirmToken } });
       const parsed = await validateStandard(declared.output, raw);
       if (parsed.issues !== undefined) {
         throw new RexError(

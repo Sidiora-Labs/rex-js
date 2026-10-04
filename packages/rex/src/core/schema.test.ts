@@ -36,7 +36,13 @@ const later: StandardSchemaV1<string, string> = {
 describe("core schema reads without importing zod", () => {
   it("contains no zod import", async () => {
     const { readFile } = await import("node:fs/promises");
-    for (const file of ["./schema.ts", "./standard.ts", "./entity.ts", "./action.ts", "./page.ts"]) {
+    for (const file of [
+      "./schema.ts",
+      "./standard.ts",
+      "./entity.ts",
+      "./action.ts",
+      "./page.ts",
+    ]) {
       const source = await readFile(new URL(file, import.meta.url), "utf8");
       expect(source).not.toMatch(/^import (?!type)[^;]*from "zod/m);
     }
@@ -45,7 +51,14 @@ describe("core schema reads without importing zod", () => {
   it("reads field kinds and ref targets through wrappers and classic meta", () => {
     expect(fieldKind(money())).toBe("money");
     expect(fieldKind(text().optional().nullable())).toBe("text");
-    expect(fieldKind(zc.string().meta({ [FIELD_KIND_KEY]: "text" }).optional())).toBe("text");
+    expect(
+      fieldKind(
+        zc
+          .string()
+          .meta({ [FIELD_KIND_KEY]: "text" })
+          .optional(),
+      ),
+    ).toBe("text");
     expect(fieldKind(z.string())).toBeUndefined();
     expect(fieldKind(hand)).toBeUndefined();
     expect(refTarget(ref("token").optional())).toBe("token");

@@ -63,10 +63,28 @@ function isModuleFile(name: string, extension: ".ts" | ".tsx"): boolean {
   );
 }
 
+const FIXTURES_FOLDER = "fixtures";
+
 function declarationFiles(dir: string): string[] {
   return entries(dir)
     .filter((entry) => entry.isFile() && isModuleFile(entry.name, ".ts"))
     .map((entry) => normalizePath(join(dir, entry.name)));
+}
+
+function nestedDeclarationFiles(dir: string): string[] {
+  const found: string[] = [];
+  const visit = (current: string) => {
+    for (const entry of entries(current)) {
+      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      if (entry.isDirectory()) {
+        if (entry.name !== FIXTURES_FOLDER) visit(join(current, entry.name));
+      } else if (entry.isFile() && isModuleFile(entry.name, ".ts")) {
+        found.push(normalizePath(join(current, entry.name)));
+      }
+    }
+  };
+  visit(dir);
+  return found.sort();
 }
 
 function scanPage(root: string, pagesDir: string, id: string): ScannedPage {
@@ -120,7 +138,7 @@ export function scanApp(root: string, appDir: string = DEFAULT_APP_DIR): AppScan
     root: normalizePath(absoluteRoot),
     appDir: normalizePath(appPath),
     entities: declarationFiles(join(appPath, DECLARATION_FOLDERS.entity)),
-    actions: declarationFiles(join(appPath, DECLARATION_FOLDERS.action)),
+    actions: nestedDeclarationFiles(join(appPath, DECLARATION_FOLDERS.action)),
     policies: declarationFiles(join(appPath, DECLARATION_FOLDERS.policy)),
     flows: declarationFiles(join(appPath, DECLARATION_FOLDERS.flow)),
     pages,

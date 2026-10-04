@@ -240,6 +240,11 @@ describe("tools/freshness.mjs", () => {
     expect(
       tools.checkVersions({ ...input, changelog: "# Changelog\n\n## 9.9.9 (unreleased)\n" }),
     ).toEqual([]);
+    for (const head of [`[v${REX_VERSION}] - 2026-10-04`, `[${REX_VERSION}] - 2026-10-04`]) {
+      expect(tools.checkVersions({ ...input, changelog: `# Changelog\n\n## ${head}\n` })).toEqual(
+        [],
+      );
+    }
     expect(
       tools.checkVersions({ ...input, changelog: "# Changelog\n\n## 0.0.9 (2020-01-01)\n" }),
     ).toEqual([

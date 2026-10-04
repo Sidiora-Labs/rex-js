@@ -1,12 +1,7 @@
 import type { Hono } from "hono";
 import { REX_RPC_PREFIX } from "../../core/protocol.ts";
 import type { RexServerSetup } from "../app.ts";
-import {
-  DENSITY_HEADER,
-  RexDensityError,
-  createRexContext,
-  type RexContext,
-} from "../context.ts";
+import { DENSITY_HEADER, RexDensityError, createRexContext, type RexContext } from "../context.ts";
 
 export const RPC_PREFIX = REX_RPC_PREFIX;
 
