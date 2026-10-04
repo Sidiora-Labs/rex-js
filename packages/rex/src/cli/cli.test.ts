@@ -43,7 +43,6 @@ const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
 const cliEntry = join(here, "index.ts");
 const coreEntry = join(here, "..", "index.ts");
-const tsxCli = join(packageRoot, "node_modules", "tsx", "dist", "cli.mjs");
 const packageVersion = (
   JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as { version: string }
 ).version;
@@ -60,7 +59,7 @@ afterAll(() => {
 });
 
 function rex(...args: string[]) {
-  const result = spawnSync(process.execPath, [tsxCli, cliEntry, ...args], {
+  const result = spawnSync(process.execPath, [cliEntry, ...args], {
     cwd: packageRoot,
     encoding: "utf8",
     env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" },
@@ -83,9 +82,9 @@ function captureIO(cwd = packageRoot) {
   return { io, out: () => out.join(""), err: () => err.join("") };
 }
 
-const TSX_TEST_TIMEOUT_MS = 30_000;
+const SPAWN_TEST_TIMEOUT_MS = 30_000;
 
-describe("rex CLI through tsx", { timeout: TSX_TEST_TIMEOUT_MS }, () => {
+describe("rex CLI as a node process without tsx", { timeout: SPAWN_TEST_TIMEOUT_MS }, () => {
   it("prints the package version for --version, -v and version", () => {
     expect(REX_VERSION).toBe(packageVersion);
     for (const args of [["--version"], ["-v"], ["version"]]) {
@@ -122,6 +121,41 @@ describe("rex CLI through tsx", { timeout: TSX_TEST_TIMEOUT_MS }, () => {
   });
 });
 
+describe("package hygiene", () => {
+  it("depends on no argument parser and no TypeScript loader", () => {
+    const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
+      readonly dependencies: Readonly<Record<string, string>>;
+      readonly devDependencies: Readonly<Record<string, string>>;
+    };
+    for (const name of ["commander", "tsx"]) {
+      expect(manifest.dependencies[name]).toBeUndefined();
+      expect(manifest.devDependencies[name]).toBeUndefined();
+    }
+    expect(Object.keys(manifest.dependencies).sort()).toEqual([
+      "@orpc/client",
+      "@orpc/server",
+      "@orpc/tanstack-query",
+      "hono",
+    ]);
+  });
+
+  it("reports usage errors with exit 2 and the offending input", async () => {
+    const missing = captureIO();
+    expect(await run(["new"], missing.io)).toBe(EXIT_USAGE);
+    expect(missing.err()).toContain("missing required argument 'name'");
+    const excess = captureIO();
+    expect(await run(["version", "extra"], excess.io)).toBe(EXIT_USAGE);
+    expect(excess.err()).toContain("too many arguments");
+    const badPort = captureIO();
+    expect(await run(["dev", "--port", "http"], badPort.io)).toBe(EXIT_USAGE);
+    expect(badPort.err()).toContain("the port must be an integer from 0 to 65535");
+    const makeHelp = captureIO();
+    expect(await run(["make", "page", "--help"], makeHelp.io)).toBe(EXIT_OK);
+    expect(makeHelp.out()).toContain("Usage: rex make page [options] <id>");
+    expect(makeHelp.out()).toContain("--regions <names>");
+  });
+});
+
 describe("run and createProgram", () => {
   it("returns the same exit codes in process", async () => {
     const version = captureIO();
@@ -142,9 +176,13 @@ describe("run and createProgram", () => {
     writeFileSync(
       join(dir, "greet.ts"),
       [
-        'import type { Command } from "commander";',
+        "interface Program {",
+        "  command(name: string): Program;",
+        "  description(text: string): Program;",
+        "  action(run: (name: string) => void): Program;",
+        "}",
         "",
-        "export function register(program: Command, io: { out(text: string): void }) {",
+        "export function register(program: Program, io: { out(text: string): void }) {",
         "  program",
         '    .command("greet <name>")',
         '    .description("greet someone")',
@@ -163,7 +201,7 @@ describe("run and createProgram", () => {
     const captured = captureIO();
     const program = await createProgram(captured.io, dir);
     expect(program.commands.map((command) => command.name()).sort()).toEqual(["greet", "version"]);
-    await program.parseAsync(["greet", "rex"], { from: "user" });
+    await program.parseAsync(["greet", "rex"]);
     expect(captured.out()).toBe("hello rex\n");
   });
 

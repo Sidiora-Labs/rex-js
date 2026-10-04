@@ -7,7 +7,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
-import type { Command } from "commander";
+import type { RexCommand as Command } from "../args.ts";
 import ts from "typescript";
 import { createSourceLoader, isRelativeSpecifier } from "../../check/rule.ts";
 import type { RexCliIO } from "../index.ts";

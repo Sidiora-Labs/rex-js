@@ -1,7 +1,7 @@
 import { rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Command } from "commander";
+import type { RexCommand as Command } from "../args.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
 import { rex } from "../../vite/index.ts";
 import { loadRexConfig } from "../config.ts";

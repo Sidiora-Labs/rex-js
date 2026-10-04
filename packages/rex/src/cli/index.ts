@@ -2,23 +2,14 @@
 import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { Command, CommanderError } from "commander";
 import { REX_VERSION } from "../index.ts";
+import { ARGS_ERROR, RexArgsError, RexCommand } from "./args.ts";
 
 export const EXIT_OK = 0;
 export const EXIT_FAILURE = 1;
 export const EXIT_USAGE = 2;
 
-export const USAGE_ERROR_CODES: readonly string[] = [
-  "commander.unknownCommand",
-  "commander.unknownOption",
-  "commander.missingArgument",
-  "commander.excessArguments",
-  "commander.invalidArgument",
-  "commander.optionMissingArgument",
-  "commander.missingMandatoryOptionValue",
-  "commander.conflictingOption",
-];
+export const USAGE_ERROR_CODES: readonly string[] = Object.values(ARGS_ERROR);
 
 export interface RexCliIO {
   readonly cwd: string;
@@ -27,7 +18,7 @@ export interface RexCliIO {
 }
 
 export interface RexCommandModule {
-  register(program: Command, io: RexCliIO): void;
+  register(program: RexCommand, io: RexCliIO): void;
 }
 
 export class RexCliExit extends Error {
@@ -81,12 +72,11 @@ export function processIO(): RexCliIO {
 export async function createProgram(
   io: RexCliIO,
   commandsDir: string = COMMANDS_DIR,
-): Promise<Command> {
-  const program = new Command("rex")
+): Promise<RexCommand> {
+  const program = new RexCommand("rex")
     .description("Rex: declarations in, an agent-operable web app out")
     .version(REX_VERSION, "-v, --version", "print the rex version")
-    .configureOutput({ writeOut: io.out, writeErr: io.err })
-    .exitOverride();
+    .configureOutput({ writeOut: io.out, writeErr: io.err });
   program
     .command("version")
     .description("print the rex version")
@@ -110,14 +100,15 @@ export async function run(
 ): Promise<number> {
   try {
     const program = await createProgram(io, commandsDir);
-    await program.parseAsync([...argv], { from: "user" });
+    await program.parseAsync([...argv]);
     return EXIT_OK;
   } catch (error) {
     if (error instanceof RexCliExit) {
       if (error.message !== "") io.err(`${error.message}\n`);
       return error.exitCode;
     }
-    if (error instanceof CommanderError) {
+    if (error instanceof RexArgsError) {
+      if (error.message !== "") io.err(`${error.message}\n`);
       return USAGE_ERROR_CODES.includes(error.code) ? EXIT_USAGE : error.exitCode;
     }
     io.err(`rex: ${error instanceof Error ? error.message : String(error)}\n`);

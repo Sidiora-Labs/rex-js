@@ -1,4 +1,4 @@
-import type { Command } from "commander";
+import type { RexCommand as Command } from "../args.ts";
 import { runCheck } from "../../check/index.ts";
 import type { RexConfigExport } from "../../core/config.ts";
 import { formatRexError, isRexError } from "../../core/errors.ts";

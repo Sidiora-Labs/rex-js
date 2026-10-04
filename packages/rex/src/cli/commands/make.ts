@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { Command } from "commander";
+import { ARGS_ERROR, type RexCommand as Command } from "../args.ts";
 import type { RexCliIO } from "../index.ts";
 import {
   actionTemplate,
@@ -22,7 +22,7 @@ export const DECLARATION_KINDS = ["action", "entity", "policy", "flow"] as const
 export type DeclarationKind = (typeof DECLARATION_KINDS)[number];
 
 export const MAKE_REFUSED = "rex.make.refused";
-export const INVALID_ARGUMENT = "commander.invalidArgument";
+export const INVALID_ARGUMENT = ARGS_ERROR.invalidArgument;
 
 export interface PlannedFile {
   readonly kind: "file";

@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { InvalidArgumentError, type Command } from "commander";
+import { InvalidArgumentError, type RexCommand as Command } from "../args.ts";
 import { createServer, type LogLevel, type ServerOptions, type ViteDevServer } from "vite";
 import { isFetchHandler } from "../../core/config.ts";
 import type { DeprecationWarn } from "../../core/deprecated.ts";
