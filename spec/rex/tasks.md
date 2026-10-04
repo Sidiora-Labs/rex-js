@@ -219,7 +219,7 @@
     - Export overlay from src/client/index.ts by appending to the existing export list.
     - Write src/client/overlay.test.tsx covering open and close on each dismiss path, focus trap and restoration, URL binding and sidecar registration.
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 22.1, 22.2, 22.3_
-  - [ ] 5.7 Expose flow approval gates on the owning page
+  - [x] 5.7 Expose flow approval gates on the owning page
     - Implement src/client/agent/flow.tsx: useFlow(flow, instanceId) exposing status and, while paused at an approval gate, approve and reject actions that appear in the sidecar and the palette of the owning page and resume or terminate the flow through the server.
     - Export flow, the Journal types, the memory journal, runFlow and decide from src/index.ts so apps import them from the core entry (closes qualification.1 from wave 0).
     - Write src/client/agent/flow.test.tsx covering pause, sidecar exposure, approve resume and reject termination.
