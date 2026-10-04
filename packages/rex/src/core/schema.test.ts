@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
+import * as zm from "zod/mini";
 import {
+  STANDARD_VENDOR_KEY,
+  objectJsonSchema,
+  unwrapSchema,
   FIELD_KIND_KEY,
   FIELD_REF_KEY,
   boolean,
@@ -15,6 +19,7 @@ import {
   toJsonSchema,
   z,
 } from "./schema.ts";
+import { fromStandard, isZodSchema, type StandardSchemaV1 } from "./standard.ts";
 
 const DRAFT = "https://json-schema.org/draft/2020-12/schema";
 
@@ -171,5 +176,71 @@ describe("toJsonSchema", () => {
 
   it("throws on unrepresentable schemas", () => {
     expect(() => toJsonSchema(z.date())).toThrow();
+  });
+});
+
+describe("field helpers are built on zod/mini", () => {
+  it("returns zod/mini schemas, not classic zod schemas", () => {
+    for (const schema of [id(), text(), money(), integer(), boolean(), ref("token"), timestamp()]) {
+      expect(isZodSchema(schema)).toBe(true);
+      expect(schema).not.toBeInstanceOf(z.ZodType);
+      expect(typeof (schema as unknown as { min?: unknown }).min).toBe("undefined");
+    }
+    expect(enumOf(["a", "b"])).not.toBeInstanceOf(z.ZodType);
+  });
+
+  it("keeps optional, nullable, default and meta on the helpers with their field tags", () => {
+    const memo = text({ max: 3 }).optional();
+    expect(memo.parse(undefined)).toBeUndefined();
+    expect(memo.safeParse("abcd").success).toBe(false);
+    expect(fieldKind(memo)).toBe("text");
+    const last = text({ min: 1 }).nullable();
+    expect(last.parse(null)).toBeNull();
+    expect(fieldKind(last)).toBe("text");
+    const hide = boolean().default(false);
+    expect(hide.parse(undefined)).toBe(false);
+    expect(fieldKind(hide)).toBe("boolean");
+    const tagged = money().meta({ description: "Amount" });
+    expect(fieldKind(tagged)).toBe("money");
+    expect(toJsonSchema(tagged)).toMatchObject({ description: "Amount", "x-rex-field": "money" });
+    const wrapped = ref("token").optional().nullable();
+    expect(refTarget(wrapped)).toBe("token");
+    expect(unwrapSchema(wrapped)._zod.def.type).toBe("string");
+  });
+
+  it("composes with zod/mini and classic zod objects", () => {
+    const mini = zm.object({ to: ref("contact"), memo: zm.optional(text()) });
+    expect(mini.parse({ to: "c-1" })).toEqual({ to: "c-1" });
+    const classic = z.object({ to: ref("contact"), amount: money() });
+    expect(classic.safeParse({ to: "c-1", amount: "x" }).success).toBe(false);
+    expect(fieldKind(classic.shape.amount)).toBe("money");
+  });
+
+  it("reads field tags from classic zod schemas tagged with meta", () => {
+    const classic = z.string().meta({ [FIELD_KIND_KEY]: "text" }).optional();
+    expect(fieldKind(classic)).toBe("text");
+  });
+});
+
+describe("objectJsonSchema", () => {
+  const hand: StandardSchemaV1<string, string> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof value === "string" ? { value } : { issues: [{ message: "must be a string" }] },
+    },
+  };
+
+  it("matches the JSON Schema of a zod object for zod fields", () => {
+    const shape = { name: text({ min: 1 }), count: integer().optional() };
+    expect(objectJsonSchema(shape)).toEqual(toJsonSchema(zm.object(shape)));
+  });
+
+  it("marks Standard Schema fields with their vendor", () => {
+    const schema = objectJsonSchema({ name: text(), code: fromStandard(hand) });
+    const properties = schema.properties as Record<string, Record<string, unknown>>;
+    expect(properties.code?.[STANDARD_VENDOR_KEY]).toBe("hand");
+    expect(properties.name?.[FIELD_KIND_KEY]).toBe("text");
   });
 });

@@ -1,0 +1,41 @@
+# rex-v02 qualification log. Format: sectioned KV (.kvx). String values are ALWAYS double-quoted.
+
+[qualification.01]
+task = "0.3"
+file = "packages/rex/src/client/router.tsx, client/nav.ts, client/shell.tsx, client/agent/sidecar.tsx, client/agent/confirm.tsx, core/flow.ts, store/drizzle.ts, cli/commands/new.ts"
+symbol = "z export, AnyPage.params, ActionDeclaration.inputJsonSchema, FieldKind, packageJsonTemplate"
+observed = "Finishing the zod/mini move needs files outside the 0.3 touches: the core still re-exports classic z, router.tsx, nav.ts and shell.tsx read params.shape so a non-zod Standard Schema page params only receives route params, sidecar.tsx reads declaration JSON Schema so declarations keep it beside the manifest copy, drizzle KIND_COLUMNS blocks real and json kinds, and rex new lists no zod dependency so templates keep the core z; evidence: revision c26b3a68c53cb6325ce2ac31e098b3e24c8a8f8d, command pnpm -C packages/rex exec vitest run src/core/standard.test.ts src/core/schema.test.ts src/core/entity.test.ts src/core/action.test.ts src/server/router.test.ts src/client/act.test.tsx src/manifest/build.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.3-verify.log."
+assumption = "A follow-up task owning those files switches the core z export to zod/mini, reads params and JSON Schema from Standard Schema and the manifest, adds real and json field kinds to the Drizzle store, and adds zod to the rex new package template (0.4 owns new.ts)."
+severity = "assumption"
+
+[qualification.02]
+task = "0.4"
+file = "packages/rex/src/manifest/scan.ts, packages/rex/src/check/rules/manifest.ts, packages/rex/src/cli/new.test.ts"
+symbol = "loadRegistry, scanManifest, manifestRule, generated package.json dependencies"
+observed = "tsx and commander left the package and rex manifest now loads app code through cli/load.ts, but manifest/scan.ts (used by the check manifest rule) still imports tsx, resolved only through the root devDependency, and new.test.ts pins the generated dependency list that now adds the vite, zod, wouter, cmdk, @vitejs/plugin-react and @hono/node-server peers; evidence: revision 1b634ec05443a6be38df09e54994747c9f6ab9b0, command pnpm -C packages/rex exec vitest run src/cli/args.test.ts src/cli/cli.test.ts src/cli/pack.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.4-verify.log."
+assumption = "A follow-up task owning manifest/scan.ts and check/rules/manifest.ts builds the fresh manifest through cli/load.ts so the root tsx devDependency can go, and the owner of new.test.ts updates its dependency expectation to the peer list in commands/new.ts APP_PEERS."
+severity = "assumption"
+
+[qualification.03]
+task = "0.5"
+file = "packages/rex/src/core/errors.ts, packages/rex/src/manifest/sidecar.schema.ts"
+symbol = "REX330, sidecarSchema"
+observed = "The region boundary reports code REX330 but the catalog in core/errors.ts (owned by 2.1) has no REX3xx entries, so the code travels as a REGION_ERROR_CODE string; the strict sidecar schema (outside the touches) has no regions field, so a failing region is reported through the existing state (recoverable-error) and outcome (region address and REX330 message) fields; evidence: revision bef8d5c6201c6c9ac828b9362cead824740876ac, command pnpm -C packages/rex exec vitest run src/client/boundary.test.tsx src/client/page.test.tsx src/vite/vite.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.5-verify.log."
+assumption = "Task 2.1 adds REX330 to the catalog so RegionBoundary can raise a RexError, and a sidecar schema owner may add a regions list with per-region state if agents need more than the page state and outcome."
+severity = "note"
+
+[qualification.04]
+task = "0.6"
+file = "packages/rex/src/cli/commands/dev.ts, packages/rex/src/cli/commands/build.ts, packages/rex/src/cli/load.ts"
+symbol = "rex(), RexPluginOptions.compiler, ResolvedRexOptions.compiler"
+observed = "The Vite plugin honours rex({ compiler }) (default on, client environment only, through reactCompilerPreset and @babel/core), but rex dev, rex build and the module loader call rex() without the resolved rex.config.ts compiler flag because those files are outside the 0.6 touches, so compiler: false in rex.config.ts does not yet reach the plugin; evidence: revision c806c05fcb19f5aa4233c30b464bc3337f27dcff, command pnpm -C packages/rex exec vitest run src/vite/compiler.test.ts src/client/compiler.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.6-verify.log."
+assumption = "The task that next owns the dev and build commands passes { compiler: config.compiler } from the loaded config into rex()."
+severity = "assumption"
+
+[qualification.05]
+task = "0.7"
+file = "packages/rex/src/core/schema.ts, core/page.ts, core/entity.ts, manifest/sidecar.schema.ts, server/router.ts, server/flow.ts, client/act.ts"
+symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowStateSchema, confirmGrantSchema"
+observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
+assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
+severity = "blocker"

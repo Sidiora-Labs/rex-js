@@ -479,7 +479,7 @@ ac_2  = "package version is 0.2.0, CHANGELOG has the 0.2.0 entry, README carries
 
 [task.0.1]
 title = "Split the Vite plugin, server and client entry points into per-concern modules with registration lists"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = []
@@ -499,7 +499,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.2]
 title = "Add rex/config with defineConfig and the 0.2 page, action and context options"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.1"]
@@ -520,7 +520,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.3]
 title = "Move validation to the Standard Schema interface and the field helpers to zod/mini"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.2"]
@@ -540,7 +540,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.4]
 title = "Package hygiene: minimal dependencies, MIT license, export map, own argument parser and Vite-based module loading"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.3"]
@@ -560,7 +560,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.5]
 title = "Per-page code splitting with Suspense and region error boundaries"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.1"]
@@ -580,7 +580,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.6]
 title = "Enable the React Compiler in the Vite plugin and prove fine-grained re-rendering"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.5"]
@@ -599,7 +599,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.7]
 title = "Enforce size budgets for the core, the client runtime and page chunks"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 0
 requires = ["0.4", "0.5"]

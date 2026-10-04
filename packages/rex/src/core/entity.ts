@@ -1,5 +1,20 @@
 import { RexNameError, validateName } from "./ids.ts";
-import { fieldKind, toJsonSchema, z, type FieldKind, type JsonSchema } from "./schema.ts";
+import {
+  fieldKind,
+  objectJsonSchema,
+  schemaType,
+  z,
+  type FieldKind,
+  type JsonSchema,
+} from "./schema.ts";
+import {
+  fromStandard,
+  isStandardSchema,
+  type AsZodSchema,
+  type StandardInferOutput,
+  type StandardSchemaV1,
+  type ZodSchemaLike,
+} from "./standard.ts";
 
 export class RexDeclarationError extends Error {
   readonly declaration: string;
@@ -34,14 +49,14 @@ export function isPlainObject(value: unknown): value is Record<string, unknown> 
 
 export const FIELD_NAME_PATTERN = /^[a-z][a-zA-Z0-9]*$/;
 
-export type EntityFields = { readonly [field: string]: z.ZodType };
+export type EntityFields = { readonly [field: string]: StandardSchemaV1 };
 
-export type EntityRecord<F extends EntityFields> = z.output<
-  z.ZodObject<{ -readonly [P in keyof F]: F[P] }>
->;
+export type EntityShape<F extends EntityFields> = { -readonly [P in keyof F]: AsZodSchema<F[P]> };
+
+export type EntityRecord<F extends EntityFields> = z.output<z.ZodObject<EntityShape<F>>>;
 
 export type StringFieldOf<F extends EntityFields> = {
-  [P in keyof F]: z.output<F[P]> extends string ? P : never;
+  [P in keyof F]: StandardInferOutput<F[P]> extends string ? P : never;
 }[keyof F] &
   string;
 
@@ -59,10 +74,10 @@ export interface EntityDeclaration<
   readonly kind: "entity";
   readonly id: N;
   readonly name: N;
-  readonly fields: Readonly<F>;
+  readonly fields: Readonly<EntityShape<F>>;
   readonly fieldKinds: Readonly<Record<keyof F & string, FieldKind | undefined>>;
   readonly key: K;
-  readonly schema: z.ZodObject<{ -readonly [P in keyof F]: F[P] }>;
+  readonly schema: z.ZodObject<EntityShape<F>>;
   readonly jsonSchema: JsonSchema;
   label(record: EntityRecord<F>): string;
   parse(value: unknown): EntityRecord<F>;
@@ -100,8 +115,8 @@ export function entity<
     if (!FIELD_NAME_PATTERN.test(fieldName)) {
       fail(`fields.${fieldName}`, "must be a camelCase name starting with a lowercase letter");
     }
-    if (!((fields as Record<string, unknown>)[fieldName] instanceof z.ZodType)) {
-      fail(`fields.${fieldName}`, "must be a zod schema");
+    if (!isStandardSchema((fields as Record<string, unknown>)[fieldName])) {
+      fail(`fields.${fieldName}`, "must be a Standard Schema such as a zod schema");
     }
   }
 
@@ -110,27 +125,35 @@ export function entity<
   const key = (config.key ?? "id") as K;
   if (typeof key !== "string") fail("key", "must name a field");
   if (!fieldNames.includes(key)) fail("key", `names unknown field "${key}"`);
-  const keySchema = config.fields[key] as z.ZodType;
+  const shape = Object.fromEntries(
+    fieldNames.map((fieldName) => [
+      fieldName,
+      fromStandard(config.fields[fieldName] as StandardSchemaV1),
+    ]),
+  ) as EntityShape<F>;
+  const keySchema = (shape as Record<string, ZodSchemaLike>)[key] as ZodSchemaLike;
   const keyOptional = keySchema.safeParse(undefined).success || keySchema.safeParse(null).success;
   if (
     keyOptional ||
-    (!(keySchema instanceof z.ZodString) && !KEY_KINDS.includes(fieldKind(keySchema)))
+    (schemaType(keySchema) !== "string" && !KEY_KINDS.includes(fieldKind(keySchema)))
   ) {
     fail("key", `field "${key}" must be a required string field`);
   }
 
-  const shape = { ...config.fields } as { -readonly [P in keyof F]: F[P] };
   const schema = z.object(shape);
   let jsonSchema: JsonSchema;
   try {
-    jsonSchema = toJsonSchema(schema);
+    jsonSchema = objectJsonSchema(shape);
   } catch (error) {
     return fail("fields", `cannot be represented as JSON Schema: ${(error as Error).message}`);
   }
 
   const fieldKinds = Object.freeze(
     Object.fromEntries(
-      fieldNames.map((fieldName) => [fieldName, fieldKind(config.fields[fieldName] as z.ZodType)]),
+      fieldNames.map((fieldName) => [
+        fieldName,
+        fieldKind((shape as Record<string, ZodSchemaLike>)[fieldName] as ZodSchemaLike),
+      ]),
     ),
   ) as Readonly<Record<keyof F & string, FieldKind | undefined>>;
 
@@ -148,7 +171,7 @@ export function entity<
     kind: "entity",
     id,
     name: id,
-    fields: Object.freeze({ ...config.fields }),
+    fields: Object.freeze(shape),
     fieldKinds,
     key,
     schema,

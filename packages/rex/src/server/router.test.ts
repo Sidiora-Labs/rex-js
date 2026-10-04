@@ -5,6 +5,7 @@ import { actor, type Actor } from "../core/actor.ts";
 import { always, never, policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
 import { boolean, integer, money, ref, text, z } from "../core/schema.ts";
+import type { StandardSchemaV1 } from "../core/standard.ts";
 import { digest, memoryLedger, type Ledger } from "./audit.ts";
 import type { RexContext } from "./context.ts";
 import { CONFIRM_PROCEDURE, auditCode, buildActionRouter, type ActionProcedure } from "./router.ts";
@@ -397,5 +398,95 @@ describe("buildActionRouter", () => {
     expect(() => buildActionRouter({ actions: [send, send] }, { ledger })).toThrow(
       'duplicate action "send"',
     );
+  });
+});
+
+describe("Standard Schema actions through the router", () => {
+  const amount: StandardSchemaV1<{ amount: string }, { amount: number }> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) => {
+        const raw = (value as { amount?: unknown } | null)?.amount;
+        const parsed = typeof raw === "string" ? Number(raw) : Number.NaN;
+        return Number.isFinite(parsed) && parsed > 0
+          ? { value: { amount: parsed } }
+          : { issues: [{ message: "must be a positive decimal", path: ["amount"] }] };
+      },
+    },
+  };
+  const paid: StandardSchemaV1<{ paid: number }> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof (value as { paid?: unknown } | null)?.paid === "number"
+          ? { value: value as { paid: number } }
+          : { issues: [{ message: "must report the paid amount", path: ["paid"] }] },
+    },
+  };
+  const seen: number[] = [];
+  const tip = action("tip", {
+    input: amount,
+    output: paid,
+    policy: always(),
+    effect: "reversible",
+    handler: (input) => {
+      seen.push(input.amount);
+      return { paid: input.amount };
+    },
+  });
+  const payout = action("payout", {
+    input: amount,
+    output: paid,
+    policy: always(),
+    effect: "irreversible",
+    handler: (input) => {
+      seen.push(input.amount);
+      return { paid: input.amount };
+    },
+  });
+
+  beforeEach(() => {
+    seen.length = 0;
+  });
+
+  it("validates input and output through ~standard.validate and hands the handler the parsed value", async () => {
+    const router = buildActionRouter({ actions: [tip, payout] }, { ledger: memoryLedger() });
+    await expect(call(router.tip, { amount: "2.5" }, { context: context(alice) })).resolves.toEqual({
+      paid: 2.5,
+    });
+    expect(seen).toEqual([2.5]);
+    const invalid = await rejection(
+      call(router.tip, { amount: "zero" }, { context: context(alice) }),
+    );
+    expect(invalid.code).toBe("BAD_REQUEST");
+    expect(seen).toEqual([2.5]);
+  });
+
+  it("issues a confirm token only for input the Standard Schema accepts", async () => {
+    const router = buildActionRouter({ actions: [tip, payout] }, { ledger: memoryLedger() });
+    const refused = await rejection(
+      call(
+        router[CONFIRM_PROCEDURE],
+        { action: "payout", input: { amount: "-1" } },
+        { context: context(alice) },
+      ),
+    );
+    expect(refused.code).toBe("BAD_REQUEST");
+    expect(refused.data).toEqual({
+      action: "payout",
+      issues: [{ code: "custom", message: "must be a positive decimal", path: ["amount"] }],
+    });
+    const grant = await call(
+      router[CONFIRM_PROCEDURE],
+      { action: "payout", input: { amount: "3" } },
+      { context: context(alice) },
+    );
+    expect(grant.inputDigest).toBe(await digest({ amount: 3 }));
+    await expect(
+      call(router.payout, { amount: "3" }, { context: context(alice, grant.token) }),
+    ).resolves.toEqual({ paid: 3 });
+    expect(seen).toEqual([3]);
   });
 });

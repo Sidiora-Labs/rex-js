@@ -7,5 +7,10 @@
     "declaration": true
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/fixtures/**"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.conformance.ts",
+    "src/**/fixtures/**"
+  ]
 }

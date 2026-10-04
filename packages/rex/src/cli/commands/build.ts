@@ -1,12 +1,23 @@
 import { rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Command } from "commander";
+import type { RexCommand as Command } from "../args.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
 import { rex } from "../../vite/index.ts";
-import type { RexCliIO } from "../index.ts";
+import { chunkBudgets, resolveBudgets } from "../../vite/budgets.ts";
+import {
+  chunkTable,
+  formatChunkTable,
+  type ChunkRow,
+  type OutputAssetLike,
+  type OutputChunkLike,
+} from "../../vite/split.ts";
+import { loadRexConfig } from "../config.ts";
+import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
 import { ensureCheckPasses } from "./check.ts";
-import { appConfigPath } from "./dev.ts";
+import { appConfigPath, cliWarn, rexCliExit } from "./dev.ts";
+import type { ResolvedBudgets } from "../../core/config.ts";
+import type { DeprecationWarn } from "../../core/deprecated.ts";
 
 export const DIST_DIR = "dist";
 export const CLIENT_DIR = "client";
@@ -18,23 +29,53 @@ export const SERVING_PREFIX = "rex: serving ";
 
 const MODULE_EXTENSION = import.meta.url.endsWith(".ts") ? ".ts" : ".js";
 
+function sourcePath(from: string, ...segments: string[]): string {
+  return normalizePath(resolve(dirname(fileURLToPath(from)), "..", "..", ...segments));
+}
+
 export function nodeRuntimePath(from: string = import.meta.url): string {
-  return normalizePath(
-    resolve(dirname(fileURLToPath(from)), "..", "..", "server", `node${MODULE_EXTENSION}`),
-  );
+  return sourcePath(from, "server", `node${MODULE_EXTENSION}`);
+}
+
+export interface ServerRuntimePaths {
+  readonly node: string;
+  readonly server: string;
+  readonly config: string;
+  readonly actor: string;
+}
+
+export function serverRuntimePaths(from: string = import.meta.url): ServerRuntimePaths {
+  return {
+    node: nodeRuntimePath(from),
+    server: sourcePath(from, "server", `index${MODULE_EXTENSION}`),
+    config: sourcePath(from, "core", `config${MODULE_EXTENSION}`),
+    actor: sourcePath(from, "core", `actor${MODULE_EXTENSION}`),
+  };
 }
 
 export interface ServerEntryOptions {
   readonly config: string;
-  readonly runtime: string;
+  readonly runtime: ServerRuntimePaths;
 }
 
 export function generateServerEntry(options: ServerEntryOptions): string {
+  const { runtime } = options;
   return [
     'import { fileURLToPath } from "node:url";',
-    `import { startNodeServer } from ${JSON.stringify(options.runtime)};`,
-    `import server from ${JSON.stringify(normalizePath(options.config))};`,
+    `import { startNodeServer } from ${JSON.stringify(runtime.node)};`,
+    `import { createRexServer, memoryLedger } from ${JSON.stringify(runtime.server)};`,
+    `import { configServer, readConfigExport } from ${JSON.stringify(runtime.config)};`,
+    `import { anonymousActor } from ${JSON.stringify(runtime.actor)};`,
+    `import exported from ${JSON.stringify(normalizePath(options.config))};`,
     "",
+    "const server = configServer(readConfigExport(exported), (app) =>",
+    "  createRexServer({",
+    "    registry: app.registry,",
+    "    ledger: memoryLedger(),",
+    "    actor: () => anonymousActor,",
+    "    app: app.name,",
+    "  }),",
+    ");",
     `const port = Number(process.env.PORT ?? ${JSON.stringify(String(DEFAULT_PORT))});`,
     "const hostname = process.env.HOST;",
     `const clientDir = fileURLToPath(new URL(${JSON.stringify(`./${CLIENT_DIR}`)}, import.meta.url));`,
@@ -62,35 +103,61 @@ function serverEntryPlugin(options: ServerEntryOptions): Plugin {
 
 export interface BuildOptions {
   readonly logLevel?: LogLevel;
+  readonly warn?: DeprecationWarn;
 }
 
 export interface BuildResult {
   readonly outDir: string;
   readonly clientDir: string;
   readonly serverFile: string;
+  readonly chunks: readonly ChunkRow[];
+}
+
+type BuildOutput = Awaited<ReturnType<typeof build>>;
+
+export function outputItems(result: BuildOutput): (OutputChunkLike | OutputAssetLike)[] {
+  const outputs = Array.isArray(result) ? result : [result];
+  return outputs.flatMap((output) =>
+    "output" in output ? (output.output as readonly (OutputChunkLike | OutputAssetLike)[]) : [],
+  );
+}
+
+export function overBudget(rows: readonly ChunkRow[]): readonly ChunkRow[] {
+  return rows.filter((row) => row.over);
 }
 
 export async function buildApp(root: string, options: BuildOptions = {}): Promise<BuildResult> {
   const appRoot = resolve(root);
   const config = appConfigPath(appRoot);
   const logLevel = options.logLevel ?? "warn";
+  let budgets: ResolvedBudgets;
+  try {
+    const loaded = await loadRexConfig(
+      appRoot,
+      options.warn === undefined ? {} : { warn: options.warn },
+    );
+    budgets = resolveBudgets(loaded.read);
+  } catch (error) {
+    return rexCliExit(error);
+  }
   const outDir = join(appRoot, DIST_DIR);
   const clientDir = join(outDir, CLIENT_DIR);
   rmSync(outDir, { recursive: true, force: true });
 
-  await build({
+  const client = await build({
     root: appRoot,
     configFile: false,
     logLevel,
     plugins: rex(),
     build: { outDir: clientDir, emptyOutDir: true },
   });
+  const chunks = chunkTable(outputItems(client), chunkBudgets(budgets));
 
   await build({
     root: appRoot,
     configFile: false,
     logLevel,
-    plugins: [...rex(), serverEntryPlugin({ config, runtime: nodeRuntimePath() })],
+    plugins: [...rex(), serverEntryPlugin({ config, runtime: serverRuntimePaths() })],
     ssr: { noExternal: true, target: "node" },
     build: {
       ssr: true,
@@ -105,7 +172,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     },
   });
 
-  return { outDir, clientDir, serverFile: join(outDir, SERVER_FILE) };
+  return { outDir, clientDir, serverFile: join(outDir, SERVER_FILE), chunks };
 }
 
 export function register(program: Command, io: RexCliIO): void {
@@ -117,8 +184,16 @@ export function register(program: Command, io: RexCliIO): void {
     .option("--no-check", "build without running rex check first")
     .action(async (options: { check: boolean }) => {
       if (options.check) await ensureCheckPasses(io.cwd, io, "build");
-      const result = await buildApp(io.cwd);
+      const result = await buildApp(io.cwd, { warn: cliWarn(io) });
+      io.out(formatChunkTable(result.chunks));
       io.out(`rex build: wrote ${DIST_DIR}/${CLIENT_DIR}/ and ${DIST_DIR}/${SERVER_FILE}\n`);
+      const over = overBudget(result.chunks);
+      if (over.length > 0) {
+        throw new RexCliExit(
+          EXIT_FAILURE,
+          `rex build: ${over.map((row) => `${row.name} (${(row.gzip / 1024).toFixed(2)} KB gzip, budget ${row.budget} KB)`).join(", ")} over budget`,
+        );
+      }
       io.out(`rex build: start it with node ${DIST_DIR}/${SERVER_FILE} (${result.serverFile})\n`);
     });
 }

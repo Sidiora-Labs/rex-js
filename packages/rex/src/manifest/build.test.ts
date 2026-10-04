@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { action } from "../core/action.ts";
+import { RexError } from "../core/errors.ts";
+import type { StandardSchemaV1 } from "../core/standard.ts";
 import { entity } from "../core/entity.ts";
 import { page } from "../core/page.ts";
 import { always, policy } from "../core/policy.ts";
@@ -168,7 +170,13 @@ describe("buildManifest", () => {
       policy: { kind: "can", permission: "send", policy: "wallet" },
       recovery: "portfolio",
       draft: "route",
-      chrome: { header: true, nav: false, back: "portfolio", title: "Send" },
+      render: "ssr",
+      revalidate: null,
+      paths: false,
+      loaders: [],
+      cache: null,
+      transition: "none",
+      chrome: { header: true, nav: false, back: "portfolio", title: "Send", components: [] },
       regions: ["form", "confirm", "success"],
       overlays: [
         { id: "ContactPickerSheet", dismiss: "escape", binding: "region" },
@@ -208,6 +216,7 @@ describe("buildManifest", () => {
     expect(described?.label).toBe("Send");
     expect(described?.shortcut).toBe("mod+enter");
     expect(described?.invalidates).toEqual(["account", "token"]);
+    expect(described?.form).toBeNull();
     expect(described?.policy).toEqual({
       kind: "requires",
       unlocked: true,
@@ -286,6 +295,113 @@ describe("buildManifest", () => {
       'page "orphan" chrome.back names unknown page "home"',
     );
     expect(() => buildManifest(snapshotOf([]), { app: " " })).toThrow("app");
+  });
+});
+
+describe("0.2 manifest options", () => {
+  const listHoldings = action("list-holdings", {
+    input: z.object({ account: text() }),
+    output: z.object({ symbols: z.array(text()) }),
+    policy: always(),
+    effect: "read",
+    handler: () => ({ symbols: [] }),
+  });
+  const quote = action("quote", {
+    input: z.object({}),
+    output: z.object({ price: money() }),
+    policy: always(),
+    effect: "read",
+    handler: () => ({ price: "1" }),
+  });
+  const sendForm = action("send-form", {
+    input: z.object({ amount: money() }),
+    output: z.object({ txId: text() }),
+    policy: always(),
+    effect: "irreversible",
+    form: { redirect: "/", confirmTitle: "Send funds?" },
+    handler: () => ({ txId: "tx" }),
+  });
+  function Button() {
+    return null;
+  }
+  const statement = page("statement", {
+    route: "/statement/:account",
+    params: z.object({ account: text() }),
+    render: "ssg",
+    revalidate: 300,
+    paths: () => [{ account: "main" }],
+    load: { quote: { action: quote, input: () => ({}) }, holdings: listHoldings },
+    cache: { staleTime: 5_000 },
+    transition: "view",
+    actions: [sendForm],
+    chrome: { components: { Outcome: Button, Button } },
+  });
+  const plain = page("plain", { route: "/" });
+
+  function source(pages: readonly (typeof statement | typeof plain)[]): ManifestSource {
+    return {
+      entities: [],
+      actions: [listHoldings, quote, sendForm],
+      pages,
+      policies: [],
+    };
+  }
+
+  it("records render, revalidate, paths, loaders, cache, transition and chrome components", () => {
+    const manifest = buildManifest(source([statement, plain]));
+    const described = manifest.pages.find((item) => item.id === "statement");
+    expect(described).toMatchObject({
+      render: "ssg",
+      revalidate: 300,
+      paths: true,
+      loaders: [
+        { name: "holdings", action: "list-holdings", input: "params" },
+        { name: "quote", action: "quote", input: "mapped" },
+      ],
+      cache: { staleTime: 5_000 },
+      transition: "view",
+      chrome: {
+        header: true,
+        nav: true,
+        back: null,
+        title: "Statement",
+        components: ["Button", "Outcome"],
+      },
+    });
+    expect(stableStringify(manifest)).toContain('"components"');
+  });
+
+  it("uses the configured default render mode for pages that declare none", () => {
+    expect(buildManifest(source([plain])).pages[0]?.render).toBe("ssr");
+    expect(buildManifest(source([plain]), { render: "csr" }).pages[0]?.render).toBe("csr");
+    expect(buildManifest(source([statement]), { render: "csr" }).pages[0]?.render).toBe("ssg");
+  });
+
+  it("records the action form options", () => {
+    const manifest = buildManifest(source([plain]));
+    expect(manifest.actions.find((item) => item.id === "send-form")?.form).toEqual({
+      redirect: "/",
+      confirmTitle: "Send funds?",
+    });
+    expect(manifest.actions.find((item) => item.id === "quote")?.form).toBeNull();
+  });
+
+  it("rejects a loader whose action is not registered with REX209", () => {
+    const unregistered: ManifestSource = {
+      entities: [],
+      actions: [sendForm, listHoldings],
+      pages: [statement],
+      policies: [],
+    };
+    let failure: unknown;
+    try {
+      buildManifest(unregistered);
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(RexError);
+    expect((failure as RexError).code).toBe("REX209");
+    expect((failure as RexError).message).toContain('loader "quote" names action "quote"');
   });
 });
 
@@ -446,5 +562,104 @@ describe("sidecar schema", () => {
   it("rejects non-objects", () => {
     expect(validateSidecar(null).valid).toBe(false);
     expect(validateSidecar("{}").valid).toBe(false);
+  });
+});
+
+describe("Standard Schema declarations in the manifest", () => {
+  const code: StandardSchemaV1<{ code: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof (value as { code?: unknown } | null)?.code === "string"
+          ? { value: value as { code: string } }
+          : { issues: [{ message: "must carry a code", path: ["code"] }] },
+    },
+  };
+  const slug: StandardSchemaV1<string> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof value === "string" && /^[a-z-]+$/.test(value)
+          ? { value }
+          : { issues: [{ message: "must be a slug" }] },
+    },
+  };
+  const redeem = action("redeem", {
+    input: code,
+    output: z.object({ ok: boolean() }),
+    policy: always(),
+    effect: "reversible",
+    handler: () => ({ ok: true }),
+  });
+  const redeemDeclared = action("redeem-declared", {
+    input: code,
+    output: code,
+    policy: always(),
+    effect: "reversible",
+    jsonSchema: {
+      input: { type: "object", properties: { code: { type: "string" } }, required: ["code"] },
+      output: { type: "object", properties: { code: { type: "string" } }, required: ["code"] },
+    },
+    handler: (input) => input,
+  });
+  const article = entity("article", {
+    fields: { id: id(), slug, title: text({ min: 1 }) },
+    label: (record) => record.title,
+  });
+  const routeParams: StandardSchemaV1<{ slug: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof (value as { slug?: unknown } | null)?.slug === "string"
+          ? { value: value as { slug: string } }
+          : { issues: [{ message: "must name a slug", path: ["slug"] }] },
+    },
+  };
+  const reader = page("reader", { route: "/articles/:slug", params: routeParams });
+
+  function source(actions: ManifestSource["actions"]): ManifestSource {
+    return { entities: [article], actions, pages: [reader], policies: [] };
+  }
+
+  it("throws REX210 naming the declaration when a Standard Schema has no JSON Schema", () => {
+    let failure: unknown;
+    try {
+      buildManifest(source([redeem]));
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(RexError);
+    expect((failure as RexError).code).toBe("REX210");
+    expect((failure as RexError).message).toContain('action "redeem" input');
+    expect((failure as RexError).message).toContain("jsonSchema.input");
+  });
+
+  it("uses the declared JSON Schema for Standard Schema actions", () => {
+    const manifest = buildManifest(source([redeemDeclared]));
+    const described = manifest.actions.find((item) => item.id === "redeem-declared");
+    expect(described?.input).toEqual({
+      type: "object",
+      properties: { code: { type: "string" } },
+      required: ["code"],
+    });
+  });
+
+  it("marks Standard Schema entity fields and page params with their vendor", () => {
+    const manifest = buildManifest(source([redeemDeclared]));
+    const properties = manifest.entities[0]?.schema.properties as Record<string, unknown>;
+    expect(properties.slug).toEqual({ "x-rex-standard": "hand" });
+    expect(manifest.entities[0]?.fields.map((field) => [field.name, field.kind, field.required])).toEqual([
+      ["id", "id", true],
+      ["slug", null, true],
+      ["title", "text", true],
+    ]);
+    const params = manifest.pages[0]?.params as Record<string, unknown>;
+    expect(params["x-rex-standard"]).toBe("hand");
+    expect(params.required).toEqual(["slug"]);
+    expect(reader.params.safeParse({ slug: "intro" }).success).toBe(true);
+    expect(reader.params.safeParse({ slug: 3 }).success).toBe(false);
   });
 });

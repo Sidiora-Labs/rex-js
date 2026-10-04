@@ -9,6 +9,7 @@ import {
 
 export const CORE_IMPORT = "@sidioralabs/rex";
 export const CLIENT_IMPORT = "@sidioralabs/rex/client";
+export const SERVER_IMPORT = "@sidioralabs/rex/server";
 
 export const TEMPLATE_KINDS = [
   "page",
@@ -352,11 +353,11 @@ export interface DeclarationTemplateOptions {
 export function actionTemplate(options: DeclarationTemplateOptions): string {
   const id = validateName(options.name, "action id");
   return lines(
-    `import { action, always, z } from "${CORE_IMPORT}";`,
+    `import { action, always, boolean, z } from "${CORE_IMPORT}";`,
     "",
     `export const ${camelCase(id)} = action(${JSON.stringify(id)}, {`,
     "  input: z.object({}),",
-    "  output: z.object({ ok: z.boolean() }),",
+    "  output: z.object({ ok: boolean() }),",
     "  policy: always(),",
     '  effect: "reversible",',
     `  label: ${JSON.stringify(titleFromId(id))},`,
@@ -398,6 +399,25 @@ export function flowTemplate(options: DeclarationTemplateOptions): string {
     `export const ${camelCase(id)} = flow(${JSON.stringify(id)}, {`,
     `  steps: [{ approval: "review", label: "Review", approvers: always() }],`,
     "  journal: memoryJournal(),",
+    "});",
+  );
+}
+
+export function configTemplate(): string {
+  return lines(
+    `import { anonymousActor, defineConfig } from "${CORE_IMPORT}";`,
+    `import { createRexServer, memoryLedger } from "${SERVER_IMPORT}";`,
+    'import app from "rex:app";',
+    "",
+    "export default defineConfig({",
+    "  app,",
+    "  server: (bundle) =>",
+    "    createRexServer({",
+    "      registry: bundle.registry,",
+    "      ledger: memoryLedger(),",
+    "      actor: () => anonymousActor,",
+    "      app: bundle.name,",
+    "    }),",
     "});",
   );
 }

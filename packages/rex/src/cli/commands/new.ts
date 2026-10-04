@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Command } from "commander";
+import type { RexCommand as Command } from "../args.ts";
 import { validateName } from "../../core/ids.ts";
 import { titleFromId } from "../../core/page.ts";
 import { REX_VERSION } from "../../index.ts";
@@ -9,6 +9,8 @@ import type { RexCliIO } from "../index.ts";
 import {
   CLIENT_IMPORT,
   CORE_IMPORT,
+  SERVER_IMPORT,
+  configTemplate,
   actionTemplate,
   appPaths,
   entityTemplate,
@@ -18,11 +20,13 @@ import {
   viewTemplate,
 } from "../templates.ts";
 import { INVALID_ARGUMENT, MAKE_REFUSED, MakeError, writePlan, type PlannedEntry } from "./make.ts";
+import { CONFIG_FILE } from "../../core/config.ts";
+import { runGenerators } from "../generators.ts";
 
-export const SERVER_IMPORT = "@sidioralabs/rex/server";
+export { SERVER_IMPORT, configTemplate };
 export const REX_PACKAGE = "@sidioralabs/rex";
 export const APP_MODULE_TYPES = "rex-app.d.ts";
-export const CONFIG_FILE = "rex.config.ts";
+export { CONFIG_FILE };
 
 export const HOME_PAGE = "home";
 export const HOME_REGION = "welcome";
@@ -33,6 +37,18 @@ export const APP_ACTION = "ping";
 export const APP_POLICY = "viewer";
 export const APP_DATA = "notes";
 export const APP_COMPONENT = "Button";
+
+export const APP_PEERS = [
+  "@hono/node-server",
+  "@tanstack/react-query",
+  "@vitejs/plugin-react",
+  "cmdk",
+  "react",
+  "react-dom",
+  "vite",
+  "wouter",
+  "zod",
+] as const;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(here, "..", "..", "..");
@@ -86,12 +102,10 @@ export function packageJsonTemplate(name: string): string {
       manifest: "rex manifest",
       start: "node dist/server.js",
     },
-    dependencies: {
-      [REX_PACKAGE]: `^${REX_VERSION}`,
-      "@tanstack/react-query": versionOf(rex, "@tanstack/react-query"),
-      react: versionOf(rex, "react"),
-      "react-dom": versionOf(rex, "react-dom"),
-    },
+    dependencies: Object.fromEntries([
+      [REX_PACKAGE, `^${REX_VERSION}`],
+      ...APP_PEERS.map((peer) => [peer, versionOf(rex, peer)]),
+    ]),
     devDependencies: {
       "@types/node": versionOf(rex, "@types/node"),
       "@types/react": versionOf(rex, "@types/react"),
@@ -143,21 +157,6 @@ export function indexHtmlTemplate(name: string): string {
     '    <script type="module" src="/@rex/entry"></script>',
     "  </body>",
     "</html>",
-  );
-}
-
-export function configTemplate(): string {
-  return lines(
-    `import { anonymousActor } from "${CORE_IMPORT}";`,
-    `import { createRexServer, memoryLedger } from "${SERVER_IMPORT}";`,
-    'import app from "rex:app";',
-    "",
-    "export default createRexServer({",
-    "  registry: app.registry,",
-    "  ledger: memoryLedger(),",
-    "  actor: () => anonymousActor,",
-    "  app: app.name,",
-    "});",
   );
 }
 
@@ -257,6 +256,10 @@ function dir(path: string): PlannedEntry {
 }
 
 export function newAppPlan(name: string): readonly PlannedEntry[] {
+  return runGenerators({ name });
+}
+
+export function baseAppPlan(name: string): readonly PlannedEntry[] {
   const page = HOME_PAGE;
   return [
     file("package.json", packageJsonTemplate(name)),

@@ -4,8 +4,13 @@ import type { Hono } from "hono";
 import { FlowDecisionError, decide, runFlow, type AnyFlow } from "../core/flow.ts";
 import { completedSteps, type FlowInstance, type FlowStatus } from "../core/journal.ts";
 import { z } from "../core/schema.ts";
-import type { RexContext } from "./context.ts";
-import { RexDensityError, createRexContext, type ActorResolver } from "./index.ts";
+import type { RexServerSetup } from "./app.ts";
+import {
+  RexDensityError,
+  createRexContext,
+  type ActorResolver,
+  type RexContext,
+} from "./context.ts";
 
 export const FLOW_RPC_PREFIX = "/rex/flow";
 
@@ -171,4 +176,8 @@ export function mountFlows(app: Hono, options: MountFlowsOptions): Hono {
     return c.newResponse(response.body, response);
   });
   return app;
+}
+
+export function installFlowRoutes(app: Hono, setup: RexServerSetup): void {
+  mountFlows(app, { flows: setup.options.registry.flows ?? [], actor: setup.options.actor });
 }

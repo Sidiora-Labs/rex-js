@@ -4,43 +4,43 @@
 
 ## Tasks
 
-  - [ ] 0.1 Split the Vite plugin, server and client entry points into per-concern modules with registration lists
+  - [x] 0.1 Split the Vite plugin, server and client entry points into per-concern modules with registration lists
     - Create vite/plugin.ts assembling the plugin from the ordered hook list in vite/hooks.ts; move the rex:app code to vite/app-module.ts, the /@rex/entry code to vite/entry-module.ts, resolution to vite/resolve.ts and scanning to vite/scan.ts; vite/index.ts only re-exports; keep virtual.ts as the home of module id constants.
     - Create server/app.ts composing createRexServer from server/routes.ts (ordered list of route installers) and server/middleware.ts (ordered list); move the manifest, rpc and health handlers to server/routes/manifest.ts, rpc.ts and health.ts; server/index.ts re-exports and imports nothing from node:.
     - Create client/entry.tsx holding createRexEntry built from the provider list in client/providers.ts; split shell.tsx into client/shell/header.tsx, nav.tsx, outcome-slot.tsx and client/shell/slots.ts (ordered slot list) with shell.tsx composing them; add client/reset.ts exporting registerReset and resetAll for test helpers.
     - Keep every public export name identical so no existing test changes; run the full existing vite, server and client test files as the verify.
     - _Requirements: 1.1, 1.2, 1.3_
-  - [ ] 0.2 Add rex/config with defineConfig and the 0.2 page, action and context options
+  - [x] 0.2 Add rex/config with defineConfig and the 0.2 page, action and context options
     - Add core/errors.ts with the RexError class (code, hint, docs, file, line, column) and the initial catalog for REX1xx config and REX2xx declaration codes; add core/serialize.ts exporting escapeInlineJson used by every inline script Rex emits and make client/agent/sidecar.tsx use it.
     - Add core/config.ts exporting defineConfig, RexConfig and parseConfig implementing [design] config_schema in full (render, budgets, security with origins, csp, headers and secretNames, i18n, images, fonts, telemetry, ui, client, compiler, devtools, tailwind, check with tokens allow lists); export it from a new src/config.ts entry and from src/index.ts.
     - Extend page() with render, revalidate, paths, load, cache, transition and chrome.components per [design] page_options with validation and manifest output; extend action() with form and jsonSchema per [design] action_options; extend RexContext in server/context.ts with a per-request nonce (crypto.randomUUID based) and a locale field resolved later.
     - Add cli/config.ts that loads rex.config.ts through the existing Vite ssrLoadModule path, accepts a defineConfig result or a bare Hono app (emitting deprecation REX101 once through a deprecated() helper in core/deprecated.ts), and make dev, build, check and manifest commands use it; update the rex new template to defineConfig.
     - Write core/config.test.ts, extend core/page.test.ts, core/action.test.ts, manifest/build.test.ts and cli/commands.test.ts for every new option and error code.
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
-  - [ ] 0.3 Move validation to the Standard Schema interface and the field helpers to zod/mini
+  - [x] 0.3 Move validation to the Standard Schema interface and the field helpers to zod/mini
     - Add core/standard.ts with the StandardSchemaV1 types, validateStandard(schema, value) and isZodSchema; make entity(), action(), page(), the server router, useAct, the URL invoker and the palette validate through it.
     - Rebuild core/schema.ts field helpers on zod/mini keeping the x-rex-field tags and the same exported names; add integer, real and json where entity storage needs them.
     - Move JSON Schema generation into manifest/build.ts using z.toJSONSchema for zod schemas and the declared jsonSchema otherwise, throwing REX210 when neither applies; remove toJsonSchema calls from core.
     - Switch the demo app and the rex new templates to zod/mini imports; extend the tests named in the verify to cover a non-zod Standard Schema (a hand-written object implementing ~standard) end to end through the router and useAct.
     - _Requirements: 3.1, 3.2, 3.3_
-  - [ ] 0.4 Package hygiene: minimal dependencies, MIT license, export map, own argument parser and Vite-based module loading
+  - [x] 0.4 Package hygiene: minimal dependencies, MIT license, export map, own argument parser and Vite-based module loading
     - Rewrite packages/rex/package.json per [req.4] ac_1 and ac_2: dependencies hono and @orpc/*; peers react, react-dom, @tanstack/react-query, vite, zod, typescript; optional peers for drizzle-orm, @libsql/client, @hono/node-server, cmdk, wouter, @opentelemetry/api, @vitejs/plugin-react, babel-plugin-react-compiler and @tailwindcss/vite; keep the dev dependencies the tests need; license MIT; sideEffects for CSS only; types-first exports adding ./config, ./server/node and ./store/drizzle; publishConfig provenance; add the root LICENSE (MIT, Sidiora Labs).
     - Replace commander with cli/args.ts (a small parser for commands, flags, repeated flags and positionals with exit code 2 on unknown input) and replace tsx with cli/load.ts that loads TypeScript modules through Vite's createServer plus ssrLoadModule; add cli/generators.ts, an ordered list of rex new file contributors that new.ts runs, so later waves add generators without editing new.ts.
     - Add cli/pack.test.ts: build the package, run npm pack --dry-run --json and assert every export path and its types condition exist in the tarball and that no src or test files are included; regenerate pnpm-lock.yaml.
     - Update the Drizzle store to be importable from the new ./store/drizzle export and the demo and templates to use it where storage is configured.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
-  - [ ] 0.5 Per-page code splitting with Suspense and region error boundaries
+  - [x] 0.5 Per-page code splitting with Suspense and region error boundaries
     - Make vite/app-module.ts import every page's view, states, regions and overlays through dynamic import and expose them as lazy module records on the bundle; add vite/split.ts with the manual chunk naming (page-<id>) and the chunk table builder used by rex build.
     - In client/page.tsx render lazy page modules under Suspense with the page's loading state as fallback; add client/boundary.tsx with a RegionBoundary that catches render errors, reports REX330 with the region address, renders the page's recoverable-error state scoped to the region and offers a retry that remounts it; register the boundary state in the sidecar.
     - Make cli/commands/build.ts print the chunk table (name, raw, gzip, budget) and exit 1 over budget using the defaults from [design] budgets until 0.7 wires rex.config budgets.
     - Write client/boundary.test.tsx (throwing region recovers and retries; sidecar shows the state) and extend client/page.test.tsx and vite/vite.test.ts (a build emits one chunk per fixture page and the table names them).
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
-  - [ ] 0.6 Enable the React Compiler in the Vite plugin and prove fine-grained re-rendering
+  - [x] 0.6 Enable the React Compiler in the Vite plugin and prove fine-grained re-rendering
     - Add vite/compiler.ts registering babel-plugin-react-compiler through @vitejs/plugin-react when config.compiler is not false, targeting React 19; add babel-plugin-react-compiler as a dev dependency for the tests and keep it an optional peer.
     - Write vite/compiler.test.ts building the fixture app and asserting the compiler runtime import (react/compiler-runtime) appears in a compiled part, and that compiler false leaves it out.
     - Write client/compiler.test.tsx using React Profiler on the fixture page: update one store-like value read by one part and assert only that part commits again.
     - _Requirements: 6.1, 6.2_
-  - [ ] 0.7 Enforce size budgets for the core, the client runtime and page chunks
+  - [ ] 0.7 Enforce size budgets for the core, the client runtime and page chunks — **Implemented - qualification pending**
     - Add vite/budgets.ts resolving budgets from rex.config with the defaults in [design] budgets and make cli/commands/build.ts use it for the chunk table and the exit code.
     - Write src/size.test.ts that bundles the rex, rex/client and rex/server/edge entries (the edge entry is server/index.ts until 1.5 adds adapters) with Vite's build API, externalising react, react-dom, @tanstack/react-query, cmdk, wouter and @orpc/client, and asserts 15 KB, 30 KB and 40 KB gzipped respectively; the test prints the measured sizes.
     - _Requirements: 7.1, 7.2, 3.4_

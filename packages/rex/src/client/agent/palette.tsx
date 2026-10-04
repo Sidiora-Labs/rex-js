@@ -3,8 +3,9 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import type { AnyAction } from "../../core/action.ts";
 import type { AnyPage } from "../../core/page.ts";
 import { evaluate } from "../../core/policy.ts";
-import { actionLabel } from "../act.ts";
+import { actionLabel, inputProblem } from "../act.ts";
 import { useActor, useManifest, useRegistry } from "../context.ts";
+import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
 import { useNav } from "../nav.ts";
 import { useActivePage } from "../router.tsx";
 import { isNavigable } from "../shell.tsx";
@@ -102,6 +103,7 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
   const opener = useRef<Element | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const invokers = usePageInvokers();
+  const outcomes = useOutcomeStore();
   const confirm = useConfirm();
   const nav = useNav();
   const active = useActivePage();
@@ -139,8 +141,20 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
   const runAction = (entry: PaletteActionEntry) => {
     if (!entry.allowed) return;
     close();
-    if (entry.action !== null) {
-      void invokers.invoke(entry.action.id, { ...PALETTE_INPUT });
+    const declared = entry.action;
+    if (declared !== null) {
+      void inputProblem(declared, PALETTE_INPUT).then((problem) => {
+        if (problem === null) {
+          void invokers.invoke(declared.id, { ...PALETTE_INPUT });
+          return;
+        }
+        outcomes.set(active === null ? APP_OUTCOME_KEY : active.page.id, {
+          actionId: declared.id,
+          ok: false,
+          message: problem,
+          at: new Date().toISOString(),
+        });
+      });
       return;
     }
     const affordance = entry.affordance;

@@ -9,6 +9,10 @@ import { Hono } from "hono";
 export const API_PREFIX = "/rex";
 export const INDEX_FILE = "index.html";
 
+export interface NodeFetchApp {
+  fetch(request: Request, env?: unknown): Response | Promise<Response>;
+}
+
 export interface NodeServerOptions {
   readonly port: number;
   readonly clientDir: string;
@@ -31,7 +35,7 @@ export function isPageRoutePath(path: string): boolean {
   return !last.includes(".");
 }
 
-export function createNodeApp(app: Hono, clientDir: string): Hono {
+export function createNodeApp(app: NodeFetchApp, clientDir: string): Hono {
   const root = resolve(clientDir);
   if (!existsSync(root) || !statSync(root).isDirectory()) {
     throw new Error(`startNodeServer: clientDir "${root}" is not a directory`);
@@ -66,7 +70,10 @@ export function createNodeApp(app: Hono, clientDir: string): Hono {
   return outer;
 }
 
-export function startNodeServer(app: Hono, options: NodeServerOptions): Promise<RunningNodeServer> {
+export function startNodeServer(
+  app: NodeFetchApp,
+  options: NodeServerOptions,
+): Promise<RunningNodeServer> {
   const { port, hostname } = options;
   if (!Number.isInteger(port) || port < 0 || port > 65_535) {
     throw new RangeError(`startNodeServer: port must be an integer from 0 to 65535`);
