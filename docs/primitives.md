@@ -1,0 +1,210 @@
+# Primitives
+
+Rex has five declarations, all imported from `@sidioralabs/rex`: `entity()`, `action()`, `page()`, `policy()` and `flow()`. Each takes a name and exactly one declaration object, validates it when it is called, and returns a frozen declaration with `kind`, `id` and `name`. A malformed declaration throws `RexDeclarationError` with the declaration kind, the id and the field name, for example `action "send": field "effect" must be one of reversible, irreversible, read`. Unknown keys in the declaration object are rejected. Declarations contain no React code and import from both server and client bundles.
+
+The manifest is the sixth piece: a generated description of all declarations.
+
+Sources: `packages/rex/src/core/*.ts`, `packages/rex/src/manifest/*.ts`, `packages/rex/src/server/audit.ts`, `packages/rex/src/store/drizzle.ts`.
+
+## Names and ids
+
+The declaration id is the name you pass. Names must start with a lowercase letter and contain only lowercase letters, digits, dot and dash (`validateName`); otherwise `RexNameError` is raised and reported as a `RexDeclarationError` on the `id` field. Overlay ids are PascalCase (`validateComponentName`).
+
+`createRegistry()` collects declarations: `register(...declarations)` adds them (registering the same object twice is a no-op; a different declaration with an existing id throws "is already registered by another `<kind>`"), `has(kind, id)` tests membership, and `freeze()` returns a `RegistrySnapshot` with `entities`, `actions`, `pages`, `policies` and `flows` sorted by id, plus `find(kind, id)` and `get(kind, id)` (which throws for an unknown id). The generated `rex:app` module builds the app's registry this way.
+
+## Field helpers
+
+`packages/rex/src/core/schema.ts` re-exports zod as `z` and adds field helpers that tag the zod schema with a field kind (`x-rex-field` metadata):
+
+| Helper | Schema |
+| --- | --- |
+| `id()` | string, 1 to 128 characters, matching `ID_PATTERN` (`/^[A-Za-z0-9][A-Za-z0-9._:-]*$/`) |
+| `text(options?)` | string with optional `min` and `max` length (`TextOptions`) |
+| `money()` | decimal string matching `MONEY_PATTERN` (`/^-?(0\|[1-9][0-9]*)(\.[0-9]+)?$/`) |
+| `integer(options?)` | integer with optional `min` and `max` (`IntegerOptions`) |
+| `boolean()` | boolean |
+| `enumOf(values)` | one of the listed strings; duplicates throw |
+| `ref(target)` | id string referring to another entity (`target` is an entity name or an object with `id`) |
+| `timestamp()` | ISO datetime string |
+
+`FieldKind` is the union of those eight kinds. `fieldKind(schema)` and `refTarget(schema)` read the tags back, and `toJsonSchema(schema, io?)` converts a zod schema to draft 2020-12 JSON Schema.
+
+## entity()
+
+```ts
+entity<N, F, K>(name: N, config: EntityConfig<F, K>): EntityDeclaration<N, F, K>
+
+interface EntityConfig<F, K> {
+  fields: F;                                  // { [field]: zod schema }, at least one
+  label: (record: EntityRecord<F>) => string; // display label for a record
+  key?: K;                                    // key field, default "id"
+}
+```
+
+Field names are camelCase. The key field must be a required string field (`id`, `text`, `ref` or a plain zod string). The declaration exposes `fields`, `fieldKinds`, `key`, `schema` (a zod object), `jsonSchema`, `label(record)`, `parse(value)` and `keyOf(record)`. `InferEntity<typeof myEntity>` is the record type.
+
+```ts
+export const token = entity("token", {
+  fields: { id: id(), symbol: text({ min: 1, max: 12 }), name: text({ min: 1 }), balance: money(), priceUsd: money() },
+  label: (record) => `${record.name} (${record.symbol})`,
+});
+```
+
+## action()
+
+```ts
+action<N, I, O>(name: N, config: ActionConfig<I, O>): ActionDeclaration<N, I, O>
+
+interface ActionConfig<I, O> {
+  input: I;                    // zod schema
+  output: O;                   // zod schema
+  policy: Predicate;           // from always(), never(), can(), requires(), allOf(), anyOf() or a policy
+  effect: "reversible" | "irreversible" | "read";
+  label?: string;              // non-empty; shown in the palette and outcome
+  shortcut?: string;           // for example "shift+t" or "mod+enter"
+  invalidates?: string[];      // TanStack query keys to invalidate after success
+  handler: (input, ctx: ActionContext) => output | Promise<output>;
+}
+
+interface ActionContext { actor: Actor }
+```
+
+The declaration adds `label` and `shortcut` as `string | null`, `invalidates` (deduplicated), `inputJsonSchema` and `outputJsonSchema`. Both schemas must be representable as JSON Schema.
+
+Shortcuts are parsed by `parseShortcut`: modifiers from `mod`, `shift`, `alt` in that order, then one key (a lowercase letter, digit, punctuation key or named key such as `enter`, `escape`, `space`, `tab`, `arrowup`, `f1`). `mod+k` and `escape` are reserved (`RESERVED_SHORTCUTS`). `ActionInput<A>`, `ActionParsedInput<A>` and `ActionOutput<A>` extract the types.
+
+An action with `effect: "irreversible"` requires confirmation on every invocation route; see [agent-contract.md](agent-contract.md#confirmation-protocol).
+
+## page()
+
+```ts
+page<N, P, S, R, O, A>(name: N, config: PageConfig<P, S, R, O, A>): PageDeclaration<N, P, S, R, O, A>
+
+interface PageConfig {
+  route: string;                     // "/", "/send", "/orders/:orderId"
+  params?: ZodObject;                // must declare every route param as required; default z.object({})
+  policy?: Predicate;                // default always()
+  recovery?: string;                 // page id offered when the policy denies the actor
+  draft?: "route" | "session" | "none"; // default "none"
+  actions?: ActionDeclaration[];     // no repeats
+  chrome?: { header?: boolean; nav?: boolean; back?: string | null; title?: string };
+  regions?: string[];                // region names, no repeats
+  overlays?: { id: string; dismiss: "escape" | "button" | "both"; binding: "region" | "url" }[];
+  states?: RexDataState[];           // must include "ready"; default all nine
+}
+```
+
+Chrome defaults: `header: true`, `nav: true`, `back: null`, and a title derived from the id (`titleFromId`: `send-money` becomes "Send money"). `recovery` and `chrome.back` must name a different page; `buildManifest` checks that the target exists. The declaration adds `routeParams`, `paramsJsonSchema`, and `states` in canonical order. `PageParams<P>`, `PageParamsInput<P>`, `PageStates<P>` and `PageStatesModule<P>` extract types; `PageStatesModule` is the type `states.tsx` must satisfy.
+
+Draft modes, used by `useDraft(schema)` in `@sidioralabs/rex/client`:
+
+- `route`: the draft is JSON in the `draft` query parameter, so a reload restores it;
+- `session`: the draft is stored in `sessionStorage` under `rex:draft:<page>`;
+- `none`: setting a draft throws.
+
+### Data states
+
+`REX_DATA_STATES` is `loading`, `empty`, `stale`, `partial`, `offline`, `permission-denied`, `recoverable-error`, `terminal-error`, `ready` (`RexDataState`). `NonReadyState` excludes `ready`. `STATE_EXPORT_NAMES` maps each to its `states.tsx` export (`permission-denied` to `PermissionDenied`, and so on); `requiredStateExports(states)` lists the exports a page needs. State components receive `StateProps`: `{ params, retry, error }`.
+
+## policy()
+
+```ts
+policy<N, P>(name: N, config: PolicyConfig<P>): PolicyDeclaration<N, P>
+
+interface PolicyConfig<P> {
+  permissions: P[];                       // non-empty, unique, valid names
+  resolve: (actor: Actor) => Iterable<P>; // the permissions granted to an actor
+}
+```
+
+The declaration provides `granted(actor)` (throws if `resolve` returns an undeclared permission), `can(permission)` and `requires(clause)`. Predicates can also be built without a policy, in which case permissions are read from `actor.permissions`:
+
+| Builder | Allows when |
+| --- | --- |
+| `always()` | always |
+| `never()` | never (reason `never`) |
+| `can(permission)` / `myPolicy.can(permission)` | the permission is granted (reason `missing-permission:<permission>`) |
+| `requires({ unlocked?, account?, custody?, permissions? })` / `myPolicy.requires(...)` | `unlocked: true` needs `actor.attributes.unlocked === true` (reason `locked`); `account: true` needs a non-empty `actor.attributes.account` (reason `no-account`); `custody` needs `actor.attributes.custody` to be one of the listed values (reason `custody-mismatch`); then every listed permission |
+| `allOf(...predicates)` | every predicate allows; returns the first denial |
+| `anyOf(...predicates)` | one predicate allows; otherwise the first denial |
+
+`evaluate(predicate, actor)` returns `PolicyResult`: `{ allowed: true, reason: null }` or `{ allowed: false, reason }`. `predicateToJson` is the form written to the manifest. The server, the client controls, the palette and the sidecar all call the same `evaluate`.
+
+Actors are built with `actor({ id, roles?, permissions?, attributes? })`; `anonymousActor` has id `anonymous`.
+
+## flow()
+
+```ts
+flow<N>(name: N, config: FlowConfig): FlowDeclaration<N>
+
+interface FlowConfig {
+  steps: (ActionStepConfig | ApprovalStepConfig)[]; // non-empty
+  journal: Journal;
+}
+interface ActionStepConfig { action: ActionDeclaration; input: (ctx: FlowStepContext) => unknown }
+interface ApprovalStepConfig { approval: string; label: string; approvers: Predicate }
+interface FlowStepContext { actor: Actor; input: unknown; outputs: unknown[] }
+```
+
+`runFlow(flow, instanceId, { actor, input? })` opens or resumes an instance in the journal and runs from the first incomplete step. An action step evaluates the action's policy, parses the step input, runs the handler and records the output; an error records a `failed` entry and stops with status `failed`. An approval step records `paused` and returns with the gate. `decide(flow, instanceId, "approve" | "reject", actor)` requires a pending gate (`FlowDecisionError` with code `NO_PENDING_APPROVAL` otherwise) and an actor allowed by `approvers` (code `FORBIDDEN`), records the decision, and either resumes the flow or ends it as `rejected`.
+
+Flow statuses are `running`, `paused`, `completed`, `rejected`, `failed`. The `Journal` interface has `open`, `record`, `load` and `list`; journal entries are `step`, `paused`, `decision`, `failed` and `completed`. `memoryJournal()` is the in-memory implementation.
+
+## Stores
+
+`Store<T>` (`packages/rex/src/core/store.ts`):
+
+```ts
+interface Store<T> {
+  get(id: string): Promise<T | undefined>;
+  list(query?: { filter?: Partial<T>; page?: number; size?: number }): Promise<{ items: T[]; page: number; size: number; total: number }>;
+  put(record: T): Promise<T>;
+  delete(id: string): Promise<boolean>;
+}
+```
+
+Pages start at 1; `size` defaults to 50 (`DEFAULT_PAGE_SIZE`) and may not exceed 500 (`MAX_PAGE_SIZE`). Filters match fields by equality. `bind(entity, store)` returns an `EntityStore` that validates ids, rejects unknown filter fields, and parses records with the entity schema on `put`.
+
+- **Memory.** `memoryStore(entity, seed?)` keeps records in a map keyed by `entity.keyOf`, returns copies, and lists in key order.
+- **Drizzle.** `drizzleStore(entity, db, { table?, createTable? })` in `packages/rex/src/store/drizzle.ts` maps an entity to a SQLite table on an async Drizzle database (libsql in the tests). The table name defaults to the entity id with dots and dashes replaced by underscores. Column types follow the field kind (`id`, `text`, `money`, `enum`, `ref`, `timestamp` as text, `integer` as integer, `boolean` as integer in boolean mode, other numbers as real, other values as JSON text). The key field is the primary key. Unless `createTable` is `false`, it runs `CREATE TABLE IF NOT EXISTS` before the first query. `put` is an upsert. A field that is both optional and nullable is rejected. This module is not exposed by the package exports map in 0.1.0.
+
+Both adapters are tested against the shared conformance suite in `packages/rex/src/core/store.conformance.ts` (`runStoreConformance`).
+
+## The audit ledger
+
+Every call to an action procedure writes one audit record (`packages/rex/src/server/audit.ts`):
+
+```ts
+interface AuditRecord {
+  id: string;            // "audit-000001", ... in memoryLedger
+  actor: string;         // actor id
+  actionId: string;
+  inputDigest: string;   // lowercase hex SHA-256 of the canonical JSON of the input
+  outcome: string;       // "ok" or an UPPER_SNAKE error code such as FORBIDDEN or BAD_REQUEST
+  effect: "reversible" | "irreversible" | "read";
+  durationMs: number;
+  at: string;            // ISO timestamp of the call start
+}
+```
+
+Raw input is never stored; `digest(input)` hashes `canonicalJson(input)` (keys sorted) with Web Crypto. The `Ledger` interface is `append(entry)` and `list(filter?)`, where the filter has `actor`, `actionId`, `outcome` (`"ok"`, `"error"` for any failure, or a specific code), `from` (inclusive) and `to` (exclusive). `memoryLedger()` keeps records in memory and lists them by time. A handler failure, a policy denial and a validation error all write a record with the error code.
+
+## The manifest
+
+`buildManifest(source, { app? })` turns registered declarations into a `Manifest` (`packages/rex/src/manifest/types.ts`):
+
+```ts
+interface Manifest {
+  version: 1;
+  app: { name: string };
+  entities: { id; key; fields: { name; kind; ref; required }[]; schema }[];
+  actions: { id; label; shortcut; effect; invalidates; policy; input; output }[];
+  pages: { id; route; routeParams; params; policy; recovery; draft; chrome; regions; overlays; states; actions }[];
+  policies: { id; permissions }[];
+  flows: { id; steps: ({ kind: "action"; action } | { kind: "approval"; id; label; approvers })[] }[];
+}
+```
+
+Every list is sorted by id, page actions are listed by id, and `stableStringify` writes keys in sorted order, so the output is deterministic. `buildManifest` throws when a page lists an unregistered action or names an unknown page in `recovery` or `chrome.back`.
+
+`rex manifest` writes the manifest to `.rex/manifest.json` and renders `AGENTS.md` from it (pages, actions, entities, policies, flows and the folder convention). `scanManifest(root)` loads the declaration files in a child Node process with `tsx` (60 second timeout); `writeManifest(root)` writes both files. The server serves the same manifest at `GET /rex/manifest`, and the client checks at startup that the manifest and the registry list the same pages and actions.
