@@ -29,6 +29,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "./dropdown-menu.tsx";
@@ -124,20 +125,22 @@ function DataTable<TData, TValue>({
             View
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-40">
-            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-            {table
-              .getAllColumns()
-              .filter((c) => c.getCanHide())
-              .map((c) => (
-                <DropdownMenuCheckboxItem
-                  key={c.id}
-                  className="capitalize"
-                  checked={c.getIsVisible()}
-                  onCheckedChange={(v) => c.toggleVisibility(!!v)}
-                >
-                  {c.id}
-                </DropdownMenuCheckboxItem>
-              ))}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              {table
+                .getAllColumns()
+                .filter((c) => c.getCanHide())
+                .map((c) => (
+                  <DropdownMenuCheckboxItem
+                    key={c.id}
+                    className="capitalize"
+                    checked={c.getIsVisible()}
+                    onCheckedChange={(v) => c.toggleVisibility(!!v)}
+                  >
+                    {c.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
