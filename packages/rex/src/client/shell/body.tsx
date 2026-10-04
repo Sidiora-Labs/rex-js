@@ -1,3 +1,4 @@
+import { useFallback } from "../fallback-host.ts";
 import { useText } from "../i18n/context.ts";
 import { useNav } from "../nav.ts";
 import { PageHost, type PageModuleSet } from "../page.tsx";
@@ -9,11 +10,12 @@ export function BodySlot({ resolution, modules }: ShellSlotProps) {
     const pageModules = modules.get(resolution.page.id) as PageModuleSet;
     return <PageHost modules={pageModules} />;
   }
-  return (
-    <main data-rex-app-state="not-found">
-      <p role="alert">No page matches {resolution.path}.</p>
-    </main>
-  );
+  return <NotFoundBodySlot path={resolution.path} />;
+}
+
+function NotFoundBodySlot({ path }: { readonly path: string }) {
+  const Body = useFallback("NotFoundBody");
+  return Body === null ? null : <Body path={path} />;
 }
 
 export function RecoverySlot({ resolution }: ShellSlotProps) {

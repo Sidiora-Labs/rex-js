@@ -13,8 +13,8 @@ import {
   type ReactNode,
 } from "react";
 import { RexError } from "../../core/errors.ts";
-import type { AnyFlow, ApprovalStep } from "../../core/flow.ts";
 import { actionAddress } from "../../core/ids.ts";
+import type { AnyFlow, ApprovalStep } from "../../core/flow.ts";
 import type { FlowDecision } from "../../core/journal.ts";
 import { evaluate, type PolicyResult } from "../../core/policy.ts";
 import { FLOW_RPC_PREFIX, type FlowState } from "../../core/protocol.ts";
@@ -22,9 +22,11 @@ import type { FlowRouter } from "../../server/flow.ts";
 import { describeError } from "../act.ts";
 import type { RexFetch } from "../app.tsx";
 import { RexRuntimeContext, useActor } from "../context.ts";
+import { LAZY_FAILURE_CODE, lazyFailureOutcome, lazyModule, useLazyModule } from "../lazy.ts";
 import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
 import { useActivePage } from "../router.tsx";
 import { useConfirm } from "./confirm.tsx";
+import type { FlowGateContext, FlowGateNames } from "./flow-gate.ts";
 import { useRegisterAffordances, type Affordance } from "./sidecar.tsx";
 
 export type FlowClient = RouterClient<FlowRouter>;
@@ -115,6 +117,30 @@ export interface FlowHandle {
   readonly rejectProps: GateControlProps | null;
 }
 
+type FlowGateModule = typeof import("./flow-gate.ts");
+
+const flowGateModule = lazyModule<FlowGateModule>("rex.flow-gate", "the flow gate", () =>
+  import("./flow-gate.ts"),
+);
+
+const NO_GATE_AFFORDANCES: readonly Affordance[] = Object.freeze([]);
+
+const GATE_NAMES: FlowGateNames = Object.freeze({
+  affordanceId: gateAffordanceId,
+  label: gateLabel,
+  address: actionAddress,
+  describe: describeError,
+});
+
+async function withFlowGate(
+  run: (gates: FlowGateModule) => Promise<FlowDecisionResult>,
+): Promise<FlowDecisionResult> {
+  const loaded = await flowGateModule.load();
+  if (loaded.ok) return run(loaded.value);
+  const failure = lazyFailureOutcome(flowGateModule, loaded.error);
+  return { ok: false, code: LAZY_FAILURE_CODE, message: failure.message };
+}
+
 export function useFlow(declared: AnyFlow, instanceId: string): FlowHandle {
   const client = useFlowClient();
   const subject = useActor();
@@ -122,6 +148,8 @@ export function useFlow(declared: AnyFlow, instanceId: string): FlowHandle {
   const confirm = useConfirm();
   const active = useActivePage();
   const pageId = active === null ? null : active.page.id;
+  const loaded = useLazyModule(flowGateModule);
+  const gates = loaded !== null && loaded.ok ? loaded.value : null;
   const [state, setState] = useState<FlowState | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,110 +205,59 @@ export function useFlow(declared: AnyFlow, instanceId: string): FlowHandle {
     [gate, subject],
   );
 
-  const decideDirect = useCallback(
-    async (choice: FlowDecision): Promise<FlowDecisionResult> => {
-      if (gate === null) {
-        return {
-          ok: false,
-          code: "CONFLICT",
-          message: `flow "${declared.id}" is not paused at a gate`,
-        };
-      }
-      const id = gateAffordanceId(declared, gate.id, choice);
-      const label = gateLabel(gate, choice);
-      const record = (ok: boolean, message: string) =>
-        outcomes.set(pageId ?? APP_OUTCOME_KEY, {
-          actionId: id,
-          ok,
-          message,
-          at: new Date().toISOString(),
-        });
-      if (decision !== null && !decision.allowed) {
-        const message = `${label}: not allowed (${decision.reason})`;
-        record(false, message);
-        return { ok: false, code: "FORBIDDEN", message };
-      }
-      setPending(true);
-      try {
-        const next = await client.decide({
-          flow: declared.id,
-          instance: instanceId,
-          decision: choice,
-        });
-        setState(next);
-        setError(null);
-        record(true, `${label} succeeded; flow ${next.status}`);
-        return { ok: true, state: next };
-      } catch (failure) {
-        const { code, message } = describeError(failure);
-        setError(message);
-        record(false, `${label} failed: ${message}`);
-        return { ok: false, code, message };
-      } finally {
-        setPending(false);
-      }
-    },
+  const context = useMemo<FlowGateContext>(
+    () => ({
+      declared,
+      instanceId,
+      client,
+      outcomes,
+      pageId,
+      outcomeKey: pageId ?? APP_OUTCOME_KEY,
+      names: GATE_NAMES,
+      gate,
+      decision,
+      setState,
+      setPending,
+      setError,
+    }),
     [client, decision, declared, gate, instanceId, outcomes, pageId],
+  );
+
+  const decideDirect = useCallback(
+    (choice: FlowDecision): Promise<FlowDecisionResult> =>
+      withFlowGate((loadedGates) => loadedGates.decideFlow(context, choice)),
+    [context],
   );
 
   const decideRef = useRef(decideDirect);
   decideRef.current = decideDirect;
 
   const confirmed = useCallback(
-    async (choice: FlowDecision): Promise<FlowDecisionResult> => {
-      if (gate === null) return decideRef.current(choice);
-      const id = gateAffordanceId(declared, gate.id, choice);
-      const label = gateLabel(gate, choice);
-      const accepted = await confirm({
-        page: pageId,
-        action: { id, label, effect: "irreversible" },
-        input: {},
-      });
-      if (!accepted) {
-        const message = `${label} cancelled`;
-        outcomes.set(pageId ?? APP_OUTCOME_KEY, {
-          actionId: id,
-          ok: false,
-          message,
-          at: new Date().toISOString(),
-        });
-        return { ok: false, code: "CANCELLED", message };
-      }
-      return decideRef.current(choice);
-    },
-    [confirm, declared, gate, outcomes, pageId],
+    (choice: FlowDecision): Promise<FlowDecisionResult> =>
+      withFlowGate((loadedGates) =>
+        loadedGates.confirmFlowDecision(context, confirm, choice, (next) => decideRef.current(next)),
+      ),
+    [confirm, context],
   );
 
-  const affordances = useMemo<readonly Affordance[]>(() => {
-    if (gate === null || decision === null) return [];
-    return (["approve", "reject"] as const).map((choice): Affordance => ({
-      id: gateAffordanceId(declared, gate.id, choice),
-      label: gateLabel(gate, choice),
-      allowed: decision.allowed,
-      reason: decision.reason,
-      effect: "irreversible",
-      input: { type: "object", properties: {}, additionalProperties: false },
-      via: ["click", "palette"],
-      invoke: () => decideRef.current(choice),
-    }));
-  }, [decision, declared, gate]);
+  const affordances = useMemo<readonly Affordance[]>(
+    () =>
+      gates === null
+        ? NO_GATE_AFFORDANCES
+        : gates.flowAffordances({ declared, gate, decision, names: GATE_NAMES }, (choice) =>
+            decideRef.current(choice),
+          ),
+    [decision, declared, gate, gates],
+  );
 
   useRegisterAffordances(pageId, affordances);
 
-  const controlProps = (choice: FlowDecision): GateControlProps | null => {
-    if (gate === null || decision === null || pageId === null) return null;
-    const blocked = !decision.allowed || pending;
-    return {
-      "data-rex": actionAddress(pageId, gateAffordanceId(declared, gate.id, choice)),
-      "data-rex-allowed": decision.allowed ? "true" : "false",
-      disabled: blocked,
-      "aria-disabled": blocked,
-      ...(decision.allowed ? {} : { title: `Not allowed: ${decision.reason}` }),
-      onClick: () => {
-        void confirmed(choice);
-      },
-    };
-  };
+  const controlProps = (choice: FlowDecision): GateControlProps | null =>
+    gates === null
+      ? null
+      : gates.gateControlProps({ declared, gate, decision, pageId, names: GATE_NAMES }, choice, pending, (picked) => {
+          void confirmed(picked);
+        });
 
   return {
     state,

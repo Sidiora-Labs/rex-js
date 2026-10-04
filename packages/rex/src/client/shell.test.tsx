@@ -263,8 +263,9 @@ describe("Shell", () => {
     expect(screen.queryByRole("button", { name: "Go to Home" })).toBeNull();
   });
 
-  it("renders the app-level not-found state inside the shell", () => {
+  it("renders the app-level not-found state inside the shell", async () => {
     mount("/missing");
+    await screen.findByRole("alert");
     expect(heading()).toBe("Page not found");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("alert").textContent).toBe("No page matches /missing.");

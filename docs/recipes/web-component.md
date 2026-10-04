@@ -1,6 +1,6 @@
 # Export a part as a web component
 
-A part is a pure component: props in, events out. `defineElement` from `@sidioralabs/rex/client` registers a part as a custom element, so any page (a CMS template, a server-rendered page, another framework) can use it as an HTML tag. In the other direction, parts may render custom elements and reach plain DOM through `Native`.
+A part is a pure component: props in, events out. `defineElement` from `@sidioralabs/rex/client/interop` registers a part as a custom element, so any page (a CMS template, a server-rendered page, another framework) can use it as an HTML tag. In the other direction, parts may render custom elements and reach plain DOM through `Native`.
 
 ## 1. Pick the part
 
@@ -28,7 +28,7 @@ export default function TokenChip({ symbol = "?", amount = 0, muted = false, tag
 Registration is a side effect, so it lives in a module of its own outside `app/` (the checker classifies every file under `app/` and has no role for an element entry). For example `widgets/token-chip.ts`:
 
 ```ts
-import { defineElement } from "@sidioralabs/rex/client";
+import { defineElement } from "@sidioralabs/rex/client/interop";
 import TokenChip from "../app/pages/portfolio/regions/holdings/parts/TokenChip.tsx";
 
 defineElement("rex-token-chip", TokenChip, {
@@ -68,7 +68,7 @@ Parts may render custom elements from other libraries. Because an agent and a ke
 For code that needs a DOM node (a chart library, a third-party widget), render `Native`. It forwards its ref to the element it renders (`div` by default, or `as="span" | "section" | "article" | "figure"`) and calls `mount(node)` after mount, running the returned cleanup on unmount or when `mount` changes:
 
 ```tsx
-import { Native } from "@sidioralabs/rex/client";
+import { Native } from "@sidioralabs/rex/client/interop";
 
 export default function PriceChart({ points }: { readonly points: readonly number[] }) {
   return (

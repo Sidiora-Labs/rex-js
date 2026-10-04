@@ -79,8 +79,12 @@ describe("resolveDensity", () => {
     expect(resolveDensity({})).toEqual({ density: "default", source: "default" });
   });
 
-  it("skips values that are not densities at every level", () => {
+  it("skips values that are not densities at every level and admits compact as a client preference", () => {
     expect(resolveDensity({ query: "compact", header: "agent" })).toEqual({
+      density: "compact",
+      source: "query",
+    });
+    expect(resolveDensity({ query: "wide", header: "agent" })).toEqual({
       density: "agent",
       source: "header",
     });
@@ -131,14 +135,14 @@ describe("DensityProvider", () => {
     expect(rootDensity()).toBe("agent");
   });
 
-  it("falls back to default and restores the root attribute on unmount", () => {
+  it("falls back to default, shown as comfortable on the root, and restores the root attribute on unmount", () => {
     const { unmount } = render(
       <DensityProvider search="" header={null}>
         <Probe />
       </DensityProvider>,
     );
     expect(shown()).toBe("default:default");
-    expect(rootDensity()).toBe("default");
+    expect(rootDensity()).toBe("comfortable");
     unmount();
     expect(rootDensity()).toBeNull();
   });
@@ -182,7 +186,7 @@ describe("DensityProvider", () => {
       fireEvent.click(screen.getByRole("button", { name: "Toggle density" }));
     });
     expect(shown()).toBe("default:set");
-    expect(rootDensity()).toBe("default");
+    expect(rootDensity()).toBe("comfortable");
     expect(localStorage.getItem(DENSITY_STORAGE_KEY)).toBe("default");
   });
 
