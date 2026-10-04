@@ -136,5 +136,7 @@ function isMain(): boolean {
 }
 
 if (isMain()) {
-  process.exitCode = await run(process.argv.slice(2));
+  void run(process.argv.slice(2)).then((code) => {
+    process.exitCode = code;
+  });
 }
