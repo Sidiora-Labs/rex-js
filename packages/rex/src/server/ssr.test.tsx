@@ -32,10 +32,13 @@ import { memoryLedger } from "./audit.ts";
 import { DEFAULT_DENSITY } from "./context.ts";
 import { CSRF_COOKIE, CSRF_FIELD, bindCsrfGrant, ensureCsrfToken } from "./form.ts";
 import { RENDER_STATUS, type RexPageRenderer } from "./routes/render.ts";
+import { ACCEPT_CH, ACCEPT_CH_HEADER } from "./adapters/client-hints.ts";
+import { createRexContext } from "./context.ts";
 import {
   createRexRenderer,
   pageAssets,
   registerPageRenderer,
+  screenFromRequest,
   type RexDocumentAssets,
 } from "./ssr.ts";
 
@@ -608,5 +611,148 @@ describe("the CSRF token in server-rendered forms", () => {
     expect(field?.value).toBe(token);
     expect(mismatches).toEqual([]);
     expect(hydrationErrors(errors.mock.calls)).toEqual([]);
+  });
+});
+
+describe("screen classification on the server", () => {
+  const IPHONE =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+  const IPAD =
+    "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+  const ANDROID_TABLET =
+    "Mozilla/5.0 (Linux; Android 15; SM-X910) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+  const DESKTOP =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+
+  function hinted(path: string, headers: Record<string, string>): Request {
+    const outgoing = new Request(new URL(path, window.location.origin), {
+      headers: { accept: "text/html" },
+    });
+    for (const [name, value] of Object.entries(headers)) outgoing.headers.set(name, value);
+    return outgoing;
+  }
+
+  async function classify(path: string, headers: Record<string, string>) {
+    const incoming = hinted(path, headers);
+    const context = await createRexContext(incoming, () => owner);
+    return screenFromRequest(incoming, context);
+  }
+
+  function rootAttributes(html: string): Record<string, string> {
+    const tag = /<html\b([^>]*)>/.exec(html)?.[1] ?? "";
+    return Object.fromEntries([...tag.matchAll(/([a-z-]+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
+  }
+
+  it("classifies from Sec-CH-Viewport-Width and Sec-CH-UA-Mobile before the user agent", async () => {
+    expect(
+      await classify("/", { "sec-ch-ua-mobile": "?1", "sec-ch-viewport-width": "390" }),
+    ).toEqual({ screen: "phone", pointer: "coarse", density: "comfortable" });
+    expect(
+      await classify("/", { "sec-ch-ua-mobile": "?0", "sec-ch-viewport-width": "820" }),
+    ).toEqual({ screen: "tablet", pointer: "fine", density: "comfortable" });
+    expect(await classify("/", { "sec-ch-ua-mobile": "?0", "sec-ch-viewport-width": "1440" })).toEqual(
+      { screen: "desktop", pointer: "fine", density: "comfortable" },
+    );
+    expect(await classify("/", { "sec-ch-viewport-width": "1920", "user-agent": DESKTOP })).toEqual({
+      screen: "wide",
+      pointer: "fine",
+      density: "comfortable",
+    });
+    expect(await classify("/", { "sec-ch-ua-mobile": "?1", "user-agent": DESKTOP })).toEqual({
+      screen: "phone",
+      pointer: "coarse",
+      density: "comfortable",
+    });
+    expect(
+      await classify("/", { "sec-ch-ua-mobile": "?0", "sec-ch-viewport-width": "wide", "user-agent": IPHONE }),
+    ).toMatchObject({ screen: "desktop", pointer: "fine" });
+  });
+
+  it("falls back to the user agent when no client hint is sent", async () => {
+    expect(await classify("/", { "user-agent": IPHONE })).toMatchObject({
+      screen: "phone",
+      pointer: "coarse",
+    });
+    expect(await classify("/", { "user-agent": IPAD })).toMatchObject({
+      screen: "tablet",
+      pointer: "coarse",
+    });
+    expect(await classify("/", { "user-agent": ANDROID_TABLET })).toMatchObject({
+      screen: "tablet",
+      pointer: "coarse",
+    });
+    expect(await classify("/", { "user-agent": DESKTOP })).toMatchObject({
+      screen: "desktop",
+      pointer: "fine",
+    });
+    expect(await classify("/", {})).toEqual({
+      screen: "desktop",
+      pointer: "fine",
+      density: "comfortable",
+    });
+  });
+
+  it("takes the density from the query, then the x-rex-density header", async () => {
+    expect((await classify("/?density=compact", {})).density).toBe("compact");
+    expect((await classify("/", { "x-rex-density": "agent" })).density).toBe("agent");
+    expect((await classify("/?density=agent", { "x-rex-density": "default" })).density).toBe(
+      "agent",
+    );
+    expect((await classify("/?density=roomy", { "x-rex-density": "default" })).density).toBe(
+      "comfortable",
+    );
+  });
+
+  it("writes the root attributes into the first response, renders the phone forms and sends Accept-CH", async () => {
+    const response = await server.fetch(
+      hinted("/", { "sec-ch-ua-mobile": "?1", "sec-ch-viewport-width": "390" }),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get(ACCEPT_CH_HEADER)).toBe(ACCEPT_CH);
+    expect(ACCEPT_CH).toBe("Sec-CH-UA-Mobile, Sec-CH-Viewport-Width");
+    expect(response.headers.get("vary")).toBe("Sec-CH-UA-Mobile, Sec-CH-Viewport-Width");
+    const html = await response.text();
+    expect(rootAttributes(html)).toEqual({
+      lang: "en",
+      "data-rex-screen": "phone",
+      "data-rex-pointer": "coarse",
+      "data-rex-density": "comfortable",
+    });
+    const shell = new DOMParser().parseFromString(html, "text/html");
+    const nav = shell.querySelector('nav[aria-label="Pages"]');
+    expect(nav?.getAttribute("data-rex-nav-form")).toBe("dock");
+    expect(nav?.querySelector('[data-rex-nav="home"]')).not.toBeNull();
+    const sidecar = JSON.parse(
+      shell.querySelector(`script[type="${SIDECAR_MIME_TYPE}"]`)?.textContent ?? "{}",
+    ) as Record<string, unknown>;
+    expect(sidecar).toMatchObject({
+      page: "home",
+      screen: "phone",
+      pointer: "coarse",
+      density: "comfortable",
+    });
+  });
+
+  it("renders the desktop forms and the agent density without hints", async () => {
+    const response = await server.fetch(hinted("/?density=agent", { "user-agent": DESKTOP }));
+    expect(response.headers.get(ACCEPT_CH_HEADER)).toBe(ACCEPT_CH);
+    const html = await response.text();
+    expect(rootAttributes(html)).toMatchObject({
+      "data-rex-screen": "desktop",
+      "data-rex-pointer": "fine",
+      "data-rex-density": "agent",
+    });
+    const shell = new DOMParser().parseFromString(html, "text/html");
+    expect(shell.querySelector("[data-rex-frame]")?.getAttribute("data-rex-nav-form")).toBe(
+      "sidebar",
+    );
+  });
+
+  it("sends Accept-CH on documents only", async () => {
+    const health = await server.fetch(hinted("/rex/health", { "sec-ch-ua-mobile": "?1" }));
+    expect(health.headers.get(ACCEPT_CH_HEADER)).toBeNull();
+    const missing = await server.fetch(hinted("/nowhere", {}));
+    expect(missing.status).toBe(404);
+    expect(missing.headers.get(ACCEPT_CH_HEADER)).toBe(ACCEPT_CH);
   });
 });

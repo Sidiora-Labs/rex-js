@@ -21,10 +21,12 @@ import {
 import type { AnyPage } from "../core/page.ts";
 import { useOpenOverlays, useOverlayRegistry } from "./agent/sidecar.tsx";
 import { useActivePage } from "./router.tsx";
+import { sheetFormFor, useScreen } from "./screen.ts";
 import { useShellComponents } from "./shell/components.ts";
 
 export const OVERLAY_QUERY_KEY = "overlay";
 export const OVERLAY_DISMISS_LABEL = "Close";
+export const OVERLAY_FORM_ATTRIBUTE = "data-rex-overlay-form";
 
 export interface OverlayOptions {
   readonly dismiss: OverlayDismiss;
@@ -168,6 +170,7 @@ function OverlaySurface({ handle, dismiss, children }: OverlaySurfaceProps) {
   const surface = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { Sheet, Button } = useShellComponents();
+  const form = sheetFormFor(useScreen().screen);
   const { hide } = handle;
 
   useLayoutEffect(() => {
@@ -217,9 +220,15 @@ function OverlaySurface({ handle, dismiss, children }: OverlaySurfaceProps) {
       tabIndex={-1}
       data-rex-overlay={handle.address}
       data-rex-overlay-dismiss={dismiss}
+      data-rex-overlay-form={form}
       onKeyDown={onKeyDown}
     >
-      <Sheet address={handle.address} title={overlaySentence(handle.id)} titleId={titleId}>
+      <Sheet
+        address={handle.address}
+        title={overlaySentence(handle.id)}
+        titleId={titleId}
+        form={form}
+      >
         {children}
       </Sheet>
       {dismissesOnButton(dismiss) ? (

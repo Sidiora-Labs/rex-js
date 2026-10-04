@@ -1,12 +1,107 @@
-:root {
-  --rex-space-1: 0.25rem;
-  --rex-space-2: 0.5rem;
-  --rex-space-3: 0.75rem;
-  --rex-space-4: 1rem;
-  --rex-space-5: 1.5rem;
-  --rex-space-6: 2rem;
-  --rex-space-7: 3rem;
-  --rex-space-8: 4rem;
+:root,
+[data-rex-screen],
+[data-rex-density] {
+  --rex-fluid-min: 1;
+  --rex-fluid-max: 1.125;
+  --rex-fluid-base: 0.7778;
+  --rex-fluid-slope: 0.3472vw;
+  --rex-density-scale: 1;
+  --rex-density-text-scale: 1;
+  --rex-text-1: clamp(
+    calc(0.875rem * var(--rex-fluid-min) * var(--rex-density-text-scale)),
+    calc(
+      (0.875rem * var(--rex-fluid-base) + 0.875 * var(--rex-fluid-slope)) *
+        var(--rex-density-text-scale)
+    ),
+    calc(0.875rem * var(--rex-fluid-max) * var(--rex-density-text-scale))
+  );
+  --rex-text-2: clamp(
+    calc(1rem * var(--rex-fluid-min) * var(--rex-density-text-scale)),
+    calc(
+      (1rem * var(--rex-fluid-base) + 1 * var(--rex-fluid-slope)) * var(--rex-density-text-scale)
+    ),
+    calc(1rem * var(--rex-fluid-max) * var(--rex-density-text-scale))
+  );
+  --rex-text-3: clamp(
+    calc(1.125rem * var(--rex-fluid-min) * var(--rex-density-text-scale)),
+    calc(
+      (1.125rem * var(--rex-fluid-base) + 1.125 * var(--rex-fluid-slope)) *
+        var(--rex-density-text-scale)
+    ),
+    calc(1.125rem * var(--rex-fluid-max) * var(--rex-density-text-scale))
+  );
+  --rex-text-4: clamp(
+    calc(1.375rem * var(--rex-fluid-min) * var(--rex-density-text-scale)),
+    calc(
+      (1.375rem * var(--rex-fluid-base) + 1.375 * var(--rex-fluid-slope)) *
+        var(--rex-density-text-scale)
+    ),
+    calc(1.375rem * var(--rex-fluid-max) * var(--rex-density-text-scale))
+  );
+  --rex-text-5: clamp(
+    calc(1.75rem * var(--rex-fluid-min) * var(--rex-density-text-scale)),
+    calc(
+      (1.75rem * var(--rex-fluid-base) + 1.75 * var(--rex-fluid-slope)) *
+        var(--rex-density-text-scale)
+    ),
+    calc(1.75rem * var(--rex-fluid-max) * var(--rex-density-text-scale))
+  );
+  --rex-text-6: clamp(
+    calc(2.25rem * var(--rex-fluid-min) * var(--rex-density-text-scale)),
+    calc(
+      (2.25rem * var(--rex-fluid-base) + 2.25 * var(--rex-fluid-slope)) *
+        var(--rex-density-text-scale)
+    ),
+    calc(2.25rem * var(--rex-fluid-max) * var(--rex-density-text-scale))
+  );
+  --rex-space-1: clamp(
+    calc(0.25rem * var(--rex-fluid-min) * var(--rex-density-scale)),
+    calc(
+      (0.25rem * var(--rex-fluid-base) + 0.25 * var(--rex-fluid-slope)) * var(--rex-density-scale)
+    ),
+    calc(0.25rem * var(--rex-fluid-max) * var(--rex-density-scale))
+  );
+  --rex-space-2: clamp(
+    calc(0.5rem * var(--rex-fluid-min) * var(--rex-density-scale)),
+    calc(
+      (0.5rem * var(--rex-fluid-base) + 0.5 * var(--rex-fluid-slope)) * var(--rex-density-scale)
+    ),
+    calc(0.5rem * var(--rex-fluid-max) * var(--rex-density-scale))
+  );
+  --rex-space-3: clamp(
+    calc(0.75rem * var(--rex-fluid-min) * var(--rex-density-scale)),
+    calc(
+      (0.75rem * var(--rex-fluid-base) + 0.75 * var(--rex-fluid-slope)) * var(--rex-density-scale)
+    ),
+    calc(0.75rem * var(--rex-fluid-max) * var(--rex-density-scale))
+  );
+  --rex-space-4: clamp(
+    calc(1rem * var(--rex-fluid-min) * var(--rex-density-scale)),
+    calc((1rem * var(--rex-fluid-base) + 1 * var(--rex-fluid-slope)) * var(--rex-density-scale)),
+    calc(1rem * var(--rex-fluid-max) * var(--rex-density-scale))
+  );
+  --rex-space-5: clamp(
+    calc(1.5rem * var(--rex-fluid-min) * var(--rex-density-scale)),
+    calc(
+      (1.5rem * var(--rex-fluid-base) + 1.5 * var(--rex-fluid-slope)) * var(--rex-density-scale)
+    ),
+    calc(1.5rem * var(--rex-fluid-max) * var(--rex-density-scale))
+  );
+  --rex-space-6: clamp(
+    calc(2rem * var(--rex-fluid-min) * var(--rex-density-scale)),
+    calc((2rem * var(--rex-fluid-base) + 2 * var(--rex-fluid-slope)) * var(--rex-density-scale)),
+    calc(2rem * var(--rex-fluid-max) * var(--rex-density-scale))
+  );
+  --rex-space-7: clamp(
+    calc(3rem * var(--rex-fluid-min) * var(--rex-density-scale)),
+    calc((3rem * var(--rex-fluid-base) + 3 * var(--rex-fluid-slope)) * var(--rex-density-scale)),
+    calc(3rem * var(--rex-fluid-max) * var(--rex-density-scale))
+  );
+  --rex-space-8: clamp(
+    calc(4rem * var(--rex-fluid-min) * var(--rex-density-scale)),
+    calc((4rem * var(--rex-fluid-base) + 4 * var(--rex-fluid-slope)) * var(--rex-density-scale)),
+    calc(4rem * var(--rex-fluid-max) * var(--rex-density-scale))
+  );
   --rex-radius-1: 0.25rem;
   --rex-radius-2: 0.5rem;
   --rex-radius-3: 1rem;
@@ -14,10 +109,43 @@
   --rex-motion-duration: 150ms;
   --rex-motion-easing: cubic-bezier(0.2, 0, 0, 1);
   --rex-hit-target: 2rem;
+  --rex-grid-track: calc(var(--rex-space-8) * 4);
+}
+
+[data-rex-screen="phone"] {
+  --rex-fluid-min: 0.875;
+  --rex-fluid-max: 1;
+  --rex-fluid-base: 0.7321;
+  --rex-fluid-slope: 0.7143vw;
+}
+
+[data-rex-screen="tablet"] {
+  --rex-fluid-min: 0.9375;
+  --rex-fluid-max: 1.0625;
+  --rex-fluid-base: 0.7606;
+  --rex-fluid-slope: 0.4717vw;
+}
+
+[data-rex-screen="desktop"] {
+  --rex-fluid-min: 1;
+  --rex-fluid-max: 1.125;
+  --rex-fluid-base: 0.7778;
+  --rex-fluid-slope: 0.3472vw;
+}
+
+[data-rex-screen="wide"] {
+  --rex-fluid-min: 1.0625;
+  --rex-fluid-max: 1.25;
+  --rex-fluid-base: 0.75;
+  --rex-fluid-slope: 0.3125vw;
 }
 
 [data-rex-density="agent"] {
   --rex-motion-duration: 0ms;
+  --rex-hit-target: 44px;
+}
+
+[data-rex-pointer="coarse"] {
   --rex-hit-target: 44px;
 }
 
@@ -68,8 +196,22 @@
 }
 
 .rex-grid {
+  container-type: inline-size;
   display: grid;
-  grid-template-columns: repeat(var(--rex-columns, 1), minmax(0, 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(
+      min(
+        100%,
+        max(
+          var(--rex-grid-track),
+          (100% - (var(--rex-columns, 1) - 1) * var(--rex-gap, var(--rex-space-3))) /
+            var(--rex-columns, 1)
+        )
+      ),
+      1fr
+    )
+  );
   gap: var(--rex-gap, var(--rex-space-3));
 }
 
@@ -105,11 +247,11 @@
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --rex-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --rex-text-xs: 0.75rem;
-  --rex-text-sm: 0.875rem;
-  --rex-text-md: 1rem;
-  --rex-text-lg: 1.125rem;
-  --rex-text-xl: 1.375rem;
-  --rex-text-2xl: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+  --rex-text-sm: var(--rex-text-1);
+  --rex-text-md: var(--rex-text-2);
+  --rex-text-lg: var(--rex-text-3);
+  --rex-text-xl: var(--rex-text-4);
+  --rex-text-2xl: var(--rex-text-5);
   --rex-leading-tight: 1.2;
   --rex-leading-normal: 1.55;
   --rex-weight-regular: 400;
@@ -671,4 +813,68 @@
   .rex-frame :where(*, *::before, *::after) {
     transition-duration: 0ms !important;
   }
+}
+
+.rex-frame-body {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  inline-size: 100%;
+}
+
+.rex-frame[data-rex-nav-form="sidebar"] .rex-frame-body {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--rex-space-6);
+  max-inline-size: var(--rex-measure);
+  margin-inline: auto;
+  padding-inline: var(--rex-gutter);
+}
+
+.rex-frame[data-rex-nav-form="sidebar"] .rex-frame-content {
+  max-inline-size: none;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.rex-frame-aside {
+  position: sticky;
+  inset-block-start: var(--rex-bar-height);
+  padding-block: var(--rex-space-6);
+}
+
+.rex-frame[data-rex-nav-form="dock"] .rex-frame-content {
+  padding-block-end: calc(var(--rex-space-8) + 44px + env(safe-area-inset-bottom));
+}
+
+.rex-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rex-space-3);
+}
+
+.rex-sheet-handle {
+  align-self: center;
+  inline-size: var(--rex-space-7);
+  block-size: var(--rex-space-1);
+  border-radius: var(--rex-radius-full);
+  background: currentColor;
+  opacity: 0.35;
+}
+
+:where(body:has(.rex-frame)) [data-rex-overlay][data-rex-overlay-form="bottom-sheet"] {
+  inset-block: auto 0;
+  inline-size: 100%;
+  max-block-size: 85dvh;
+  border-block-end: 0;
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+  padding-block-end: max(var(--rex-space-5), env(safe-area-inset-bottom));
+}
+
+[data-rex-pointer="coarse"]
+  :is(a, button, input, select, textarea, summary, [role="option"], [data-rex]) {
+  min-block-size: 44px;
+  min-inline-size: 44px;
 }

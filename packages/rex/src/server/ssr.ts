@@ -23,6 +23,7 @@ import {
   type StateExportComponent,
 } from "../client/page.tsx";
 import { CsrfTokenContext } from "../client/form.tsx";
+import { densityFromSearch, isDensityPreference } from "../client/agent/density.ts";
 import { LocaleSeedContext, i18nFor, type I18nSource } from "../client/i18n/context.ts";
 import { stripLocalePrefix } from "../client/i18n/locale.ts";
 import { translate } from "../client/i18n/messages.ts";
@@ -34,12 +35,23 @@ import {
   type RexMediaCollector,
 } from "../client/media.tsx";
 import { manifestParamsSchema, orderPages, resolvePage, type PageResolution } from "../client/router.tsx";
+import {
+  DEFAULT_SCREEN,
+  ScreenSeedContext,
+  classifyPointer,
+  classifyScreen,
+  screenAttributes,
+  screenDensity,
+  type RexScreen,
+  type ScreenState,
+} from "../client/screen.ts";
 import { NOT_FOUND_TITLE } from "../client/shell.tsx";
 import { resolveOptions, type FontSpec, type ResolvedFont } from "../core/config.ts";
 import { RexError } from "../core/errors.ts";
 import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from "../core/page.ts";
 import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import type { Manifest } from "../manifest/types.ts";
+import { CLIENT_HINT_HEADERS } from "./adapters/client-hints.ts";
 import type { RexRequestContext } from "./context.ts";
 import { csrfGrantFor } from "./form.ts";
 import type { Ledger } from "./audit.ts";
@@ -132,6 +144,41 @@ export function matchPage(pages: readonly AnyPage[], pathname: string): PageMatc
     return { page: declared, routeParams: Object.freeze(routeParams) };
   }
   return null;
+}
+
+const MOBILE_AGENT = /Mobi|iPhone|iPod|Windows Phone|BlackBerry|Opera Mini/i;
+const TABLET_AGENT = /iPad|Tablet|PlayBook|Silk|Kindle|Android(?!.*Mobi)/i;
+
+function mobileHint(value: string | null): boolean | null {
+  const hint = value?.trim();
+  if (hint === "?1") return true;
+  if (hint === "?0") return false;
+  return null;
+}
+
+function viewportHint(value: string | null): number | null {
+  if (value === null || !/^\s*\d+(?:\.\d+)?\s*$/.test(value)) return null;
+  const width = Number.parseFloat(value);
+  return width > 0 ? width : null;
+}
+
+export function screenFromRequest(request: Request, context: RexRequestContext): ScreenState {
+  const headers = request.headers;
+  const agent = headers.get(CLIENT_HINT_HEADERS.userAgent) ?? "";
+  const tablet = TABLET_AGENT.test(agent);
+  const mobile =
+    mobileHint(headers.get(CLIENT_HINT_HEADERS.mobile)) ?? (!tablet && MOBILE_AGENT.test(agent));
+  const width = viewportHint(headers.get(CLIENT_HINT_HEADERS.viewportWidth));
+  let screen: RexScreen = DEFAULT_SCREEN;
+  if (width !== null) screen = classifyScreen(width);
+  else if (mobile) screen = "phone";
+  else if (tablet) screen = "tablet";
+  const query = densityFromSearch(new URL(request.url).search);
+  return Object.freeze({
+    screen,
+    pointer: classifyPointer(mobile || tablet),
+    density: screenDensity(isDensityPreference(query) ? query : context.density),
+  });
 }
 
 export function pageRenderMode(manifest: Manifest, declared: AnyPage): PageRender {
@@ -228,6 +275,7 @@ interface DocumentParts {
   readonly data: RexDataPayload;
   readonly hydrate: boolean;
   readonly images: readonly PriorityImage[];
+  readonly screen: ScreenState;
 }
 
 function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): string {
@@ -243,7 +291,9 @@ function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): s
     : `<div id="${escapeHtml(options.rootElement)}">`;
   return [
     "<!doctype html>",
-    `<html lang="${escapeHtml(parts.lang)}">`,
+    `<html lang="${escapeHtml(parts.lang)}"${Object.entries(screenAttributes(parts.screen))
+      .map(([name, value]) => ` ${name}="${escapeHtml(value)}"`)
+      .join("")}>`,
     "<head>",
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
@@ -388,12 +438,17 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     locale: string | null,
     media: RexMediaCollector,
     csrf: string | null,
+    screen: ScreenState,
   ): ReactNode {
     const RexEntry = createRexEntry(
       { registry, manifest, pages },
       { actor: context.actor, baseUrl: url.origin, queryClient },
     );
-    const app = createElement(MediaProvider, { value: media }, createElement(RexEntry));
+    const app = createElement(
+      ScreenSeedContext.Provider,
+      { value: screen },
+      createElement(MediaProvider, { value: media }, createElement(RexEntry)),
+    );
     const entry = createElement(
       StrictMode,
       null,
@@ -415,6 +470,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     queryClient: QueryClient,
     hydrate: boolean,
     locale: string | null,
+    screen: ScreenState,
     images: readonly PriorityImage[] = [],
   ): DocumentParts {
     const page = match === null ? null : match.page.id;
@@ -433,6 +489,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
       },
       hydrate,
       images,
+      screen,
     };
   }
 
@@ -464,9 +521,10 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     context: RexRequestContext,
     locale: string | null,
     csrf: string | null,
+    screen: ScreenState,
   ): Promise<RexRenderResult> {
     const queryClient = new QueryClient();
-    const head = documentHead(resolved, parts(match, context, queryClient, false, locale));
+    const head = documentHead(resolved, parts(match, context, queryClient, false, locale, screen));
     const tail = documentTail(resolved, context.nonce);
     let body: ReadableStream<Uint8Array> | null = null;
     if (match !== null) {
@@ -484,7 +542,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         const pages = bundle.pages.map((entry) => (entry.page === match.page ? eager : entry));
         const media = createMediaCollector(context.nonce);
         const stream = await renderToReadableStream(
-          entryTree(url, context, pages, queryClient, locale, media.collector, csrf),
+          entryTree(url, context, pages, queryClient, locale, media.collector, csrf, screen),
           {
             nonce: context.nonce,
           },
@@ -534,6 +592,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     const locale = requestLocale(source, request, context);
     const match = matchPage(registry.pages, routedPathname(source, url.pathname));
     const csrf = csrfGrantFor(request)?.token ?? null;
+    const screen = screenFromRequest(request, context);
     const queryClient = new QueryClient();
     let kind: RenderKind = "not-found";
     if (match !== null) {
@@ -550,7 +609,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         try {
           await loadedModules(sets.get(match.page.id) as PageModuleSet);
         } catch {
-          return failure(url, match, context, locale, csrf);
+          return failure(url, match, context, locale, csrf, screen);
         }
         if (!(await loadPageData(request, resolution, context, queryClient))) kind = "failed";
       }
@@ -559,7 +618,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     const errors: unknown[] = [];
     let stream: Awaited<ReturnType<typeof renderToReadableStream>>;
     try {
-      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient, locale, media.collector, csrf), {
+      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient, locale, media.collector, csrf, screen), {
         nonce: context.nonce,
         onError(error) {
           if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
@@ -568,18 +627,18 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         },
       });
     } catch {
-      return failure(url, match, context, locale, csrf);
+      return failure(url, match, context, locale, csrf, screen);
     }
     await Promise.race([stream.allReady.catch(() => {}), nextTask()]);
     if (errors.length > 0) {
       await stream.cancel();
-      return failure(url, match, context, locale, csrf);
+      return failure(url, match, context, locale, csrf, screen);
     }
     return {
       kind,
       page: match === null ? null : match.page.id,
       body: documentStream(
-        documentHead(resolved, parts(match, context, queryClient, true, locale, media.images())),
+        documentHead(resolved, parts(match, context, queryClient, true, locale, screen, media.images())),
         stream,
         documentTail(resolved, context.nonce),
       ),

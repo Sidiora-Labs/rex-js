@@ -11,6 +11,8 @@ import {
   TokenButton,
   TokenFrame,
   TokenNav,
+  TokenSheet,
+  SHELL_SHEET_FORMS,
   ariaKeyShortcuts,
   isApplePlatform,
   registerShellComponents,
@@ -137,6 +139,7 @@ describe("shell components", () => {
       <TokenFrame
         appName="wallet"
         links={LINKS}
+        navForm="bar"
         palette={{
           label: "Command palette",
           shortcut: "mod+k",
@@ -168,7 +171,7 @@ describe("shell components", () => {
 
   it("omits the palette trigger when no palette is mounted", () => {
     render(
-      <TokenFrame appName="wallet" links={LINKS} palette={null}>
+      <TokenFrame appName="wallet" links={LINKS} navForm="bar" palette={null}>
         <main>Page body</main>
       </TokenFrame>,
     );
@@ -180,7 +183,7 @@ describe("shell components", () => {
     const unregister = registerShellComponents({ Nav: ListNav });
     try {
       render(
-        <TokenFrame appName="wallet" links={LINKS} palette={null}>
+        <TokenFrame appName="wallet" links={LINKS} navForm="bar" palette={null}>
           <main>Page body</main>
         </TokenFrame>,
       );
@@ -216,3 +219,50 @@ function resolvedNav() {
   render(<Probe />);
   return nav;
 }
+
+describe("screen forms of the token frame and sheet", () => {
+  it("places the Nav in the app bar, in a sidebar beside the content or in a dock after it", () => {
+    for (const form of SHELL_NAV_FORMS) {
+      const { container, unmount } = render(
+        <TokenFrame appName="wallet" links={LINKS} navForm={form} palette={null}>
+          <main>Page body</main>
+        </TokenFrame>,
+      );
+      const frame = container.querySelector("[data-rex-frame]") as HTMLElement;
+      expect(frame.getAttribute("data-rex-nav-form")).toBe(form);
+      const navs = screen.getAllByRole("navigation", { name: "Pages" });
+      expect(navs).toHaveLength(1);
+      const nav = navs[0] as HTMLElement;
+      expect(nav.getAttribute("data-rex-nav-form")).toBe(form);
+      expect(
+        within(nav)
+          .getAllByRole("link")
+          .map((link) => link.getAttribute(NAV_ADDRESS_ATTRIBUTE)),
+      ).toEqual(["home", "send"]);
+      expect(screen.getByRole("banner").contains(nav)).toBe(form === "bar");
+      expect(nav.closest(".rex-frame-aside") !== null).toBe(form === "sidebar");
+      expect(frame.lastElementChild === nav).toBe(form === "dock");
+      const main = screen.getByRole("main");
+      expect(main.closest(".rex-frame-content")?.parentElement?.className).toBe("rex-frame-body");
+      unmount();
+    }
+  });
+
+  it("renders the token sheet in its dialog and bottom-sheet forms", () => {
+    expect(SHELL_SHEET_FORMS).toEqual(["dialog", "bottom-sheet"]);
+    for (const form of SHELL_SHEET_FORMS) {
+      const { container, unmount } = render(
+        <TokenSheet address="send/TokenSheet" title="Token sheet" titleId="sheet-title" form={form}>
+          <p>Pick a token</p>
+        </TokenSheet>,
+      );
+      const sheet = container.firstElementChild as HTMLElement;
+      expect(sheet.className).toBe("rex-sheet");
+      expect(sheet.getAttribute("data-rex-sheet-form")).toBe(form);
+      expect(screen.getByRole("heading", { level: 2 }).id).toBe("sheet-title");
+      expect(sheet.querySelector(".rex-sheet-handle") !== null).toBe(form === "bottom-sheet");
+      expect(sheet.textContent).toContain("Pick a token");
+      unmount();
+    }
+  });
+});

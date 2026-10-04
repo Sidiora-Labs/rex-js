@@ -39,6 +39,7 @@ import { useText, type TextResolver } from "../i18n/context.ts";
 import { useOutcome, type Outcome } from "../outcome.ts";
 import { PageRuntimeContext, usePageQueries } from "../page.tsx";
 import { useActivePage, type PageResolution } from "../router.tsx";
+import { ScreenContext, type ScreenState } from "../screen.ts";
 import { useDataState } from "../states.ts";
 import { useExposedStores } from "../store.ts";
 
@@ -359,6 +360,7 @@ export interface SidecarSource {
   readonly outcome: Outcome | null;
   readonly stores?: Readonly<Record<string, unknown>>;
   readonly text?: TextResolver;
+  readonly screen?: ScreenState | null;
 }
 
 export function sidecarRegions(
@@ -434,6 +436,13 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
     outcome: sidecarOutcome(source.outcome, text),
     ...(regions.length > 0 ? { regions: [...regions] } : {}),
     ...(stores === null ? {} : { stores }),
+    ...(source.screen === undefined || source.screen === null
+      ? {}
+      : {
+          screen: source.screen.screen,
+          pointer: source.screen.pointer,
+          density: source.screen.density,
+        }),
   };
 }
 
@@ -460,6 +469,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
   const outcome = useOutcome(resolution.page.id);
   const stores = useExposedStores();
   const text = useText();
+  const screen = useContext(ScreenContext);
   return useMemo(
     () =>
       buildSidecarPayload({
@@ -474,6 +484,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
         outcome,
         stores,
         text,
+        screen,
       }),
     [
       manifest,
@@ -486,6 +497,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
       outcome,
       stores,
       text,
+      screen,
     ],
   );
 }
