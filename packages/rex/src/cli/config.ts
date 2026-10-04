@@ -14,7 +14,9 @@ import type { DeprecationWarn } from "../core/deprecated.ts";
 import { RexError } from "../core/errors.ts";
 import { memoryLedger } from "../server/audit.ts";
 import { createRexServer } from "../server/app.ts";
+import { locateAppError } from "../vite/overlay.ts";
 import { rex } from "../vite/plugin.ts";
+import { DEFAULT_APP_DIR } from "../vite/virtual.ts";
 
 export { CONFIG_FILE };
 
@@ -52,8 +54,14 @@ export function defaultAppServer(app: RexConfigApp): RexFetchHandler {
 }
 
 export async function importConfigExport(vite: ViteDevServer): Promise<unknown> {
-  const loaded = (await vite.ssrLoadModule(`/${CONFIG_FILE}`)) as { readonly default?: unknown };
-  return loaded.default;
+  try {
+    const loaded = (await vite.ssrLoadModule(`/${CONFIG_FILE}`, { fixStacktrace: true })) as {
+      readonly default?: unknown;
+    };
+    return loaded.default;
+  } catch (error) {
+    throw locateAppError(error, join(vite.config.root, DEFAULT_APP_DIR));
+  }
 }
 
 const servers = new WeakMap<object, RexFetchHandler>();

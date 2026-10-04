@@ -1,3 +1,5 @@
+import { RexError } from "./errors.ts";
+
 export type FlowStatus = "running" | "paused" | "completed" | "rejected" | "failed";
 
 export const FLOW_STATUSES: readonly FlowStatus[] = [
@@ -91,7 +93,7 @@ export function isJournal(value: unknown): value is Journal {
 
 function requireId(field: string, value: unknown): string {
   if (typeof value !== "string" || value.length === 0) {
-    throw new TypeError(`journal: ${field} must be a non-empty string`);
+    throw new RexError("REX302", `journal: ${field} must be a non-empty string`);
   }
   return value;
 }
@@ -101,7 +103,7 @@ export function memoryJournal(): Journal {
 
   const snapshot = (instanceId: string): FlowInstance => {
     const stored = instances.get(instanceId);
-    if (stored === undefined) throw new Error(`journal: unknown instance "${instanceId}"`);
+    if (stored === undefined) throw new RexError("REX303", `journal: unknown instance "${instanceId}"`);
     const entries = structuredClone(stored.entries);
     return {
       flowId: stored.flowId,
@@ -118,7 +120,8 @@ export function memoryJournal(): Journal {
       requireId("instanceId", instanceId);
       const existing = instances.get(instanceId);
       if (existing !== undefined && existing.flowId !== flowId) {
-        throw new Error(
+        throw new RexError(
+          "REX304",
           `journal: instance "${instanceId}" belongs to flow "${existing.flowId}", not "${flowId}"`,
         );
       }
@@ -129,7 +132,7 @@ export function memoryJournal(): Journal {
     },
     async record(instanceId: string, entry: JournalEntry): Promise<FlowInstance> {
       const stored = instances.get(requireId("instanceId", instanceId));
-      if (stored === undefined) throw new Error(`journal: unknown instance "${instanceId}"`);
+      if (stored === undefined) throw new RexError("REX303", `journal: unknown instance "${instanceId}"`);
       stored.entries.push(structuredClone(entry));
       return snapshot(instanceId);
     },

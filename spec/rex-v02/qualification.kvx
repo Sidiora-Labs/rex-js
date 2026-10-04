@@ -95,3 +95,19 @@ symbol = "entityManifest (z.ZodType casts), entity schema test (z.ZodObject), se
 observed = "With the core z now zod/mini, files outside the 0.8 touches still use classic-only z members: build.ts lines 103-104 cast to z.ZodType (TS2694, fails tsc in pnpm build, the rex new check in new.test.ts and the demo typecheck), entity.test.ts line 74 asserts toBeInstanceOf(z.ZodObject), and the two demo hooks call z.string().max (TS2339 in rex check); evidence: revision a6f6eda, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0.8-private/logs/0.8-typecheck.log; command node packages/rex/src/cli/index.ts check in examples/demo, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0.8-private/logs/0.8-demo-check.log."
 assumption = "A follow-up owning those files casts to ZodSchemaLike in build.ts, asserts zm.ZodMiniObject in entity.test.ts and writes z.string().check(z.maxLength(n)) in the demo hooks; with that the demo checker is green (the regenerated manifest already passes the manifest rule)."
 severity = "blocker"
+
+[qualification.211]
+task = "2.1"
+file = "packages/rex/src/core/store.ts, core/registry.ts, core/flow.ts, core/standard.ts, core/actor.ts, core/serialize.ts, manifest/scan.ts, cli/args.ts"
+symbol = "normalizeListQuery, validateStoreId, register, decide, FlowDecisionError, fromStandard, StandardValidationError, actor, escapeInlineJson, ManifestScanError, RexArgsError, parseFlags, command, argument"
+observed = "Every other throw in the 2.1 scope is a catalogued RexError, but these stay as they are because tests outside the touches pin them: store.conformance.ts and store.memory.test.ts expect RangeError and TypeError, registry.test.ts:72, flow.test.ts:376, standard.test.ts:131 and args.test.ts:134/137/138 expect TypeError, flow.test.ts and server/flow.ts read FlowDecisionError.code as NO_PENDING_APPROVAL or FORBIDDEN, standard.test.ts:94 pins the StandardValidationError message, commands.test.ts:368 expects 'rex manifest: manifest scan' with no code prefix, and args.test.ts pins RexArgsError.code as rex.* strings; core/actor.ts and core/serialize.ts are outside the touches; evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex exec vitest run src/core/errors.test.ts src/cli/frame.test.ts && node tools/docs-errors.mjs --check, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.1-private/logs/2.1-verify.log."
+assumption = "Task 5.7 or the owners of those tests move the pins to the catalogued codes (REX5xx/REX6xx and REX3xx are in the catalog, REX500 for ManifestScanError) and then convert these throws; no assertion was relaxed."
+severity = "assumption"
+
+[qualification.212]
+task = "2.1"
+file = "packages/rex/src/core/serialize.test.ts, packages/rex/src/core/entity.test.ts"
+symbol = "SidecarSource.manifest, z.ZodObject"
+observed = "The one typecheck reports two errors outside the 2.1 touches: serialize.test.ts:81 passes a sidecar source without the required manifest field (TS2345) and entity.test.ts:74 uses z.ZodObject on the zod/mini z (TS2551, already in qualification.082); the build.ts z.ZodType casts from qualification.082 are closed by 2.1 (now ZodSchemaLike); evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.1-private/logs/2.1-typecheck.log."
+assumption = "The owner of serialize.test.ts adds the manifest to its sidecar source and the owner of entity.test.ts asserts zm.ZodMiniObject; nothing in 2.1 depends on either."
+severity = "note"

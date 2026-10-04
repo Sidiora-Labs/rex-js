@@ -770,7 +770,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.1]
 title = "Error catalog with source locations in the Vite overlay and the CLI"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["0.8"]
@@ -778,7 +778,7 @@ reqs = ["13.1", "13.2", "13.3"]
 do_1 = "Complete core/errors.ts as the single catalog (REX1xx to REX6xx, including REX330 for region boundaries) with hint and docs for every code; convert every throw in core/, manifest/ and cli/args.ts, cli/load.ts and cli/config.ts to RexError with a catalogued code (server/, client/, vite/, check/ and cli/commands are converted by 5.7)."
 do_2 = "Add vite/overlay.ts mapping RexError thrown while loading app modules to the Vite error overlay with file and line; add cli/frame.ts printing a source frame for errors with a location and make the CLI entry use it."
 do_3 = "Add tools/docs-errors.mjs generating docs/errors.md from the catalog with --check; write core/errors.test.ts and cli/frame.test.ts."
-touches = ["packages/rex/src/core/errors.ts", "packages/rex/src/core/errors.test.ts", "packages/rex/src/core/entity.ts", "packages/rex/src/core/action.ts", "packages/rex/src/core/page.ts", "packages/rex/src/core/policy.ts", "packages/rex/src/core/flow.ts", "packages/rex/src/core/registry.ts", "packages/rex/src/core/ids.ts", "packages/rex/src/core/schema.ts", "packages/rex/src/core/config.ts", "packages/rex/src/core/standard.ts", "packages/rex/src/core/store.ts", "packages/rex/src/core/store.memory.ts", "packages/rex/src/core/journal.ts", "packages/rex/src/core/overlay.ts", "packages/rex/src/core/deprecated.ts", "packages/rex/src/manifest/build.ts", "packages/rex/src/manifest/scan.ts", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/cli/config.ts", "packages/rex/src/cli/frame.ts", "packages/rex/src/cli/frame.test.ts", "packages/rex/src/vite/overlay.ts", "tools/docs-errors.mjs", "docs/errors.md"]
+touches = ["packages/rex/src/core/errors.ts", "packages/rex/src/core/errors.test.ts", "packages/rex/src/core/entity.ts", "packages/rex/src/core/action.ts", "packages/rex/src/core/page.ts", "packages/rex/src/core/flow.ts", "packages/rex/src/core/registry.ts", "packages/rex/src/core/ids.ts", "packages/rex/src/core/schema.ts", "packages/rex/src/core/standard.ts", "packages/rex/src/core/store.ts", "packages/rex/src/core/journal.ts", "packages/rex/src/manifest/build.ts", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/cli/config.ts", "packages/rex/src/cli/frame.ts", "packages/rex/src/cli/frame.test.ts", "packages/rex/src/vite/overlay.ts", "tools/docs-errors.mjs", "docs/errors.md"]
 verify_cmd = "pnpm -C packages/rex exec vitest run src/core/errors.test.ts src/cli/frame.test.ts && node tools/docs-errors.mjs --check"
 gate_kind = "planned"
 max_builds = 1

@@ -1,4 +1,5 @@
 import * as zm from "zod/mini";
+import { RexError, type RexErrorCode } from "./errors.ts";
 import { RexNameError, validateName } from "./ids.ts";
 import {
   fieldKind,
@@ -16,13 +17,30 @@ import {
   type ZodSchemaLike,
 } from "./standard.ts";
 
-export class RexDeclarationError extends Error {
-  readonly declaration: string;
+export type DeclarationName = "entity" | "action" | "page" | "policy" | "predicate" | "flow";
+
+export const DECLARATION_ERROR_CODES = {
+  entity: "REX211",
+  action: "REX212",
+  page: "REX213",
+  policy: "REX214",
+  predicate: "REX215",
+  flow: "REX216",
+} as const satisfies Readonly<Record<DeclarationName, RexErrorCode>>;
+
+export class RexDeclarationError extends RexError {
+  readonly declaration: DeclarationName;
   readonly id: string;
   readonly field: string;
 
-  constructor(declaration: string, id: string, field: string, problem: string) {
-    super(`${declaration} ${JSON.stringify(id)}: field "${field}" ${problem}`);
+  constructor(
+    declaration: DeclarationName,
+    id: string,
+    field: string,
+    problem: string,
+    code: RexErrorCode = DECLARATION_ERROR_CODES[declaration],
+  ) {
+    super(code, `${declaration} ${JSON.stringify(id)}: field "${field}" ${problem}`);
     this.name = "RexDeclarationError";
     this.declaration = declaration;
     this.id = id;
@@ -30,12 +48,12 @@ export class RexDeclarationError extends Error {
   }
 }
 
-export function declarationName<N extends string>(declaration: string, name: N): N {
+export function declarationName<N extends string>(declaration: DeclarationName, name: N): N {
   try {
     return validateName(name, `${declaration} id`);
   } catch (error) {
     if (error instanceof RexNameError) {
-      throw new RexDeclarationError(declaration, String(name), "id", error.message);
+      throw new RexDeclarationError(declaration, String(name), "id", error.detail);
     }
     throw error;
   }

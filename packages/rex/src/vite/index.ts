@@ -70,5 +70,17 @@ export {
   type RexHookContext,
   type RexHookState,
 } from "./hooks.ts";
+export {
+  OVERLAY_PLUGIN,
+  appStackFrame,
+  attachOverlayFields,
+  checkAppModules,
+  locateAppError,
+  overlayError,
+  overlayHook,
+  reportAppError,
+  type FixStacktrace,
+  type OverlayError,
+} from "./overlay.ts";
 export { assemblePlugins, createHookContext, rex, type RexPluginOptions } from "./plugin.ts";
 export { rex as default } from "./plugin.ts";

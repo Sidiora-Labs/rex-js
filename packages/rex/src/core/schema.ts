@@ -1,5 +1,6 @@
 import * as zm from "zod/mini";
 import type { $ZodType, util } from "zod/v4/core";
+import { RexError } from "./errors.ts";
 import { validateName } from "./ids.ts";
 import { standardSource } from "./standard.ts";
 
@@ -134,7 +135,7 @@ export function boolean() {
 
 export function enumOf<const T extends readonly [string, ...string[]]>(values: T) {
   if (new Set(values).size !== values.length) {
-    throw new Error(`enumOf: duplicate value in ${JSON.stringify(values)}`);
+    throw new RexError("REX221", `enumOf: duplicate value in ${JSON.stringify(values)}`);
   }
   return field(zm.enum(values), { [FIELD_KIND_KEY]: "enum" });
 }
