@@ -7,3 +7,11 @@ symbol = "flow, runFlow, decide, FlowDecisionError, memoryJournal"
 observed = "Task 0.8 adds src/core/flow.ts and src/core/journal.ts but its touches exclude src/index.ts, so the package entry does not re-export them; evidence: revision 578db82390865bfc9689e62e74517836a792bca8, command pnpm -C packages/rex exec vitest run src/core/flow.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/0.8-done.log."
 assumption = "A later task that owns packages/rex/src/index.ts adds export * from ./core/journal.ts and ./core/flow.ts."
 severity = "note"
+
+[qualification.2]
+task = "3.6"
+file = "packages/rex/src/check/index.ts"
+symbol = "defaultRules, runCheck"
+observed = "Task 3.6 adds defaultRules and runCheck in src/check/rules/index.ts but its touches exclude src/check/index.ts, so the @sidioralabs/rex/check entry does not re-export them; evidence: revision ccdba7e7adabf0d8182048739c5d5561584c8ce4, command pnpm -C packages/rex exec vitest run src/check/check.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/w-rex-3/logs/3.6-verify.log."
+assumption = "The CLI (4.5) imports runCheck from src/check/rules/index.ts, and a later task owning src/check/index.ts adds export * from ./rules/index.ts."
+severity = "note"

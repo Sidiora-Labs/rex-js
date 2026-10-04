@@ -145,7 +145,7 @@
     - Implement src/check/rules/manifest.ts reporting a stale .rex/manifest.json or AGENTS.md compared with a fresh build.
     - Write src/manifest/scan.test.ts against a fixture app asserting byte-identical output on repeated runs and the freshness finding after a declaration change.
     - _Requirements: 11.1, 11.2, 11.3, 12.1, 12.2, 12.3, 12.4_
-  - [ ] 3.6 Integrate typecheck as a checker rule and assemble the default rule set
+  - [x] 3.6 Integrate typecheck as a checker rule and assemble the default rule set
     - Implement src/check/rules/typecheck.ts running the TypeScript program over the app with the app tsconfig and mapping diagnostics to findings.
     - Implement src/check/rules/index.ts exporting defaultRules in execution order and runCheck(root, {json}) used by the CLI; write src/check/check.test.ts running the full set on the engine pass fixture and asserting zero findings and on a combined fail fixture asserting findings from every rule.
     - _Requirements: 12.1, 12.2, 12.3, 12.4_
