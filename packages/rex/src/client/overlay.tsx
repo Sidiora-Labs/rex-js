@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useLocation, useSearch } from "wouter";
+import { RexError } from "../core/errors.ts";
 import { overlayAddress, overlayName } from "../core/ids.ts";
 import {
   OVERLAY_BINDINGS,
@@ -71,12 +72,14 @@ export function searchWithOverlay(search: string, id: string, open: boolean): st
 function declarationFor(declared: AnyPage, component: OverlayComponent): OverlayDeclaration {
   const found = declared.overlays.find((entry) => entry.id === component.overlayId);
   if (found === undefined) {
-    throw new Error(
+    throw new RexError(
+      "REX307",
       `rex: overlay "${component.overlayId}" is not declared by page "${declared.id}"`,
     );
   }
   if (found.dismiss !== component.dismiss || found.binding !== component.binding) {
-    throw new Error(
+    throw new RexError(
+      "REX307",
       `rex: overlay "${component.overlayId}" declares dismiss "${component.dismiss}" and binding "${component.binding}" but page "${declared.id}" declares dismiss "${found.dismiss}" and binding "${found.binding}"`,
     );
   }
@@ -101,7 +104,8 @@ export interface OverlayHandle {
 
 export function useOverlay(component: OverlayComponent): OverlayHandle {
   const active = useActivePage();
-  if (active === null) throw new Error("rex: useOverlay must be called inside an active page");
+  if (active === null)
+    throw new RexError("REX306", "rex: useOverlay must be called inside an active page");
   const declared = declarationFor(active.page, component);
   const pageId = active.page.id;
   const registry = useOverlayRegistry();
@@ -234,15 +238,22 @@ export function overlay(
 ): OverlayComponent {
   overlayName(id);
   if (typeof options !== "object" || options === null) {
-    throw new TypeError(`overlay ${id}: options must declare dismiss and binding`);
+    throw new RexError("REX313", `overlay ${id}: options must declare dismiss and binding`);
   }
   if (!OVERLAY_DISMISS.includes(options.dismiss)) {
-    throw new TypeError(`overlay ${id}: dismiss must be one of ${OVERLAY_DISMISS.join(", ")}`);
+    throw new RexError(
+      "REX313",
+      `overlay ${id}: dismiss must be one of ${OVERLAY_DISMISS.join(", ")}`,
+    );
   }
   if (!OVERLAY_BINDINGS.includes(options.binding)) {
-    throw new TypeError(`overlay ${id}: binding must be one of ${OVERLAY_BINDINGS.join(", ")}`);
+    throw new RexError(
+      "REX313",
+      `overlay ${id}: binding must be one of ${OVERLAY_BINDINGS.join(", ")}`,
+    );
   }
-  if (typeof render !== "function") throw new TypeError(`overlay ${id}: render must be a function`);
+  if (typeof render !== "function")
+    throw new RexError("REX313", `overlay ${id}: render must be a function`);
 
   const statics = {
     rexKind: "overlay" as const,

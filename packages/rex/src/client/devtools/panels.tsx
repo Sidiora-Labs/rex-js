@@ -1,5 +1,7 @@
 import { useQueryClient, type Query } from "@tanstack/react-query";
 import { useCallback, useEffect, useReducer, useState, type ReactNode } from "react";
+import { errorHint } from "../../core/errors.docs.ts";
+import { RexError, isRexError } from "../../core/errors.ts";
 import type { AuditRecord } from "../../server/audit.ts";
 import { usePageDataState, useSidecarPayload } from "../agent/sidecar.tsx";
 import { useManifest } from "../context.ts";
@@ -183,11 +185,17 @@ export function RendersPanel({ snapshot }: { readonly snapshot: DevtoolsSnapshot
 type AuditTail =
   | { readonly status: "loading" }
   | { readonly status: "ready"; readonly records: readonly AuditRecord[] }
-  | { readonly status: "error"; readonly message: string };
+  | {
+      readonly status: "error";
+      readonly message: string;
+      readonly hint: string | null;
+      readonly docs: string | null;
+    };
 
 export function auditUrl(): string {
   const base = globalThis.location?.href;
-  if (typeof base !== "string") throw new Error("rex devtools: the audit tail needs a location");
+  if (typeof base !== "string")
+    throw new RexError("REX323", "rex devtools: the audit tail needs a location");
   return new URL(DEVTOOLS_AUDIT_PATH, base).toString();
 }
 
@@ -197,11 +205,11 @@ async function fetchAuditTail(signal: AbortSignal): Promise<readonly AuditRecord
     signal,
   });
   if (!response.ok) {
-    throw new Error(`GET ${DEVTOOLS_AUDIT_PATH} answered ${response.status}`);
+    throw new RexError("REX309", `GET ${DEVTOOLS_AUDIT_PATH} answered ${response.status}`);
   }
   const body = (await response.json()) as { readonly records?: unknown };
   if (!Array.isArray(body.records)) {
-    throw new Error(`GET ${DEVTOOLS_AUDIT_PATH} returned no records list`);
+    throw new RexError("REX309", `GET ${DEVTOOLS_AUDIT_PATH} returned no records list`);
   }
   return body.records as readonly AuditRecord[];
 }
@@ -223,6 +231,8 @@ export function AuditPanel() {
         setTail({
           status: "error",
           message: error instanceof Error ? error.message : String(error),
+          hint: isRexError(error) ? errorHint(error) : null,
+          docs: isRexError(error) ? error.docs : null,
         });
       },
     );
@@ -233,7 +243,22 @@ export function AuditPanel() {
   if (tail.status === "loading") {
     body = <p role="status">Loading the audit tail</p>;
   } else if (tail.status === "error") {
-    body = <p role="alert">{tail.message}</p>;
+    body = (
+      <>
+        <p role="alert">{tail.message}</p>
+        {tail.hint === null ? null : (
+          <p data-rex-devtools-hint="audit">
+            {tail.hint}
+            {tail.docs === null ? null : (
+              <>
+                {" "}
+                <a href={tail.docs}>Error reference</a>
+              </>
+            )}
+          </p>
+        )}
+      </>
+    );
   } else if (tail.records.length === 0) {
     body = <p>The audit ledger is empty.</p>;
   } else {

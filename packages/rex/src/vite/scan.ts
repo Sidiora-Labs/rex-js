@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, statSync, type Dirent } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { normalizePath } from "vite";
+import { RexError } from "../core/errors.ts";
 import { isValidName } from "../core/ids.ts";
 import { DEFAULT_APP_DIR } from "./virtual.ts";
 
@@ -38,9 +39,9 @@ export interface AppScan {
   readonly pages: readonly ScannedPage[];
 }
 
-export class RexAppScanError extends Error {
+export class RexAppScanError extends RexError {
   constructor(message: string) {
-    super(message);
+    super("REX460", message);
     this.name = "RexAppScanError";
   }
 }

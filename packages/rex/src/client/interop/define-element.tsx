@@ -1,5 +1,6 @@
 import { createElement, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { RexError } from "../../core/errors.ts";
 
 export type ElementPropKind = "string" | "number" | "boolean" | "json";
 
@@ -32,14 +33,20 @@ export function coerceAttribute(
   if (kind === "number") {
     const parsed = Number(value);
     if (value.trim() === "" || Number.isNaN(parsed)) {
-      throw new TypeError(`rex: <${tagName}> attribute "${attribute}" is not a number: ${value}`);
+      throw new RexError(
+        "REX319",
+        `rex: <${tagName}> attribute "${attribute}" is not a number: ${value}`,
+      );
     }
     return parsed;
   }
   try {
     return JSON.parse(value) as unknown;
   } catch {
-    throw new TypeError(`rex: <${tagName}> attribute "${attribute}" is not JSON: ${value}`);
+    throw new RexError(
+      "REX319",
+      `rex: <${tagName}> attribute "${attribute}" is not JSON: ${value}`,
+    );
   }
 }
 
@@ -49,24 +56,26 @@ export function defineElement<P extends object>(
   options: DefineElementOptions<P>,
 ): RexElementConstructor {
   if (typeof tagName !== "string" || !TAG_NAME.test(tagName)) {
-    throw new TypeError(
+    throw new RexError(
+      "REX319",
       `defineElement: "${String(tagName)}" is not a custom element name; use lowercase letters with a dash, for example rex-holding-row`,
     );
   }
   if (typeof Part !== "function" && (typeof Part !== "object" || Part === null)) {
-    throw new TypeError(`defineElement: <${tagName}> needs a part component`);
+    throw new RexError("REX319", `defineElement: <${tagName}> needs a part component`);
   }
   const Base = globalThis.HTMLElement;
   const registry = globalThis.customElements;
   if (Base === undefined || registry === undefined) {
-    throw new Error(`defineElement: <${tagName}> needs a DOM with customElements`);
+    throw new RexError("REX327", `defineElement: <${tagName}> needs a DOM with customElements`);
   }
   if (registry.get(tagName) !== undefined) {
-    throw new Error(`defineElement: <${tagName}> is already defined`);
+    throw new RexError("REX319", `defineElement: <${tagName}> is already defined`);
   }
   const entries = Object.entries(options?.props ?? {}).map(([prop, kind]) => {
     if (kind !== "string" && kind !== "number" && kind !== "boolean" && kind !== "json") {
-      throw new TypeError(
+      throw new RexError(
+        "REX319",
         `defineElement: <${tagName}> prop "${prop}" has the unknown kind ${String(kind)}`,
       );
     }

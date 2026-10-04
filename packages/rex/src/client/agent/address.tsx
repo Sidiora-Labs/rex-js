@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { RexError } from "../../core/errors.ts";
 import {
   actionAddress,
   actionId,
@@ -67,18 +68,25 @@ export interface AddressScopeProps {
 export function AddressScope({ region, overlay, children }: AddressScopeProps) {
   const outer = useContext(AddressScopeContext);
   const active = useActivePage();
-  if (active === null) throw new Error("rex: AddressScope must render inside an active page");
+  if (active === null)
+    throw new RexError("REX306", "rex: AddressScope must render inside an active page");
   const declared = active.page;
   if (region !== undefined) {
     regionName(region);
     if (!declared.regions.includes(region)) {
-      throw new Error(`rex: region "${region}" is not declared by page "${declared.id}"`);
+      throw new RexError(
+        "REX307",
+        `rex: region "${region}" is not declared by page "${declared.id}"`,
+      );
     }
   }
   if (overlay !== undefined) {
     overlayName(overlay);
     if (!declared.overlays.some((entry) => entry.id === overlay)) {
-      throw new Error(`rex: overlay "${overlay}" is not declared by page "${declared.id}"`);
+      throw new RexError(
+        "REX307",
+        `rex: overlay "${overlay}" is not declared by page "${declared.id}"`,
+      );
     }
   }
   const nextRegion = region ?? outer.region;

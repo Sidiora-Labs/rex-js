@@ -279,7 +279,9 @@ describe("bun adapter", () => {
 
   it("validates the port once the runtime is present", () => {
     runtimeGlobals.Bun = bunGlobal().runtime;
-    expect(() => startBunServer(rexApp("bun-adapter"), { port: 70_000 })).toThrow(RangeError);
+    expect(() => startBunServer(rexApp("bun-adapter"), { port: 70_000 })).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX407" }),
+    );
   });
 });
 
@@ -400,7 +402,7 @@ describe("edge adapter", { timeout: BUNDLE_TIMEOUT_MS }, () => {
     expect(await health.json()).toEqual({ status: "ok" });
     const missing = await handler.fetch(new Request("https://edge.test/rex/unknown"));
     expect(missing.status).toBe(404);
-    expect(() => createEdgeHandler({} as never)).toThrow(TypeError);
+    expect(() => createEdgeHandler({} as never)).toThrow(expect.objectContaining({ name: "RexError", code: "REX400" }));
   });
 
   it("runs the bundled worker against Request objects in a realm with no node globals", async () => {

@@ -1,5 +1,6 @@
 import type { Actor } from "../core/actor.ts";
 import type { I18nConfig } from "../core/config.ts";
+import { RexError } from "../core/errors.ts";
 import { REX_ACTOR_HEADER, REX_CONFIRM_HEADER, REX_DENSITY_HEADER } from "../core/protocol.ts";
 import { resolveRequestLocale } from "./locale.ts";
 
@@ -72,11 +73,14 @@ export function isRexDensity(value: unknown): value is RexDensity {
   return typeof value === "string" && (REX_DENSITIES as readonly string[]).includes(value);
 }
 
-export class RexDensityError extends Error {
+export class RexDensityError extends RexError {
   readonly value: string;
 
   constructor(value: string) {
-    super(`${DENSITY_HEADER} must be one of ${REX_DENSITIES.join(", ")}, received "${value}"`);
+    super(
+      "REX321",
+      `${DENSITY_HEADER} must be one of ${REX_DENSITIES.join(", ")}, received "${value}"`,
+    );
     this.name = "RexDensityError";
     this.value = value;
   }

@@ -1,5 +1,6 @@
 import type { ExecutionContext } from "hono";
 import type { AnyAction } from "../../core/action.ts";
+import { RexError } from "../../core/errors.ts";
 import { mountRexServer, type PrebuiltRexServerOptions } from "../app.ts";
 
 export interface EdgeFetchApp {
@@ -22,7 +23,7 @@ export interface EdgeHandler {
 
 export function createEdgeHandler(app: EdgeFetchApp): EdgeHandler {
   if (typeof app?.fetch !== "function") {
-    throw new TypeError("createEdgeHandler: app must have a fetch(request) method");
+    throw new RexError("REX400", "createEdgeHandler: app must have a fetch(request) method");
   }
   return {
     fetch: async (request, env, executionCtx) => app.fetch(request, env, executionCtx),

@@ -3,7 +3,8 @@ import { InvalidArgumentError, type RexCommand as Command } from "../args.ts";
 import { createServer, type LogLevel, type ServerOptions, type ViteDevServer } from "vite";
 import { isFetchHandler } from "../../core/config.ts";
 import type { DeprecationWarn } from "../../core/deprecated.ts";
-import { formatRexError, isRexError } from "../../core/errors.ts";
+import { explainRexError } from "../../core/errors.docs.ts";
+import { isRexError } from "../../core/errors.ts";
 import { rex, type RexFetchApp, type RexPluginOptions } from "../../vite/index.ts";
 import { loadConfigServer, loadRexConfig, requireConfig } from "../config.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
@@ -24,7 +25,7 @@ export function cliWarn(io: RexCliIO): DeprecationWarn {
 }
 
 export function rexCliExit(error: unknown): never {
-  if (isRexError(error)) throw new RexCliExit(EXIT_FAILURE, `rex: ${formatRexError(error)}`);
+  if (isRexError(error)) throw new RexCliExit(EXIT_FAILURE, `rex: ${explainRexError(error)}`);
   throw error;
 }
 

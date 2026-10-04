@@ -2,7 +2,8 @@ import type { RexCommand as Command } from "../args.ts";
 import { formatFindings, runCheck, summarize } from "../../check/index.ts";
 import { runRuntimeCheck } from "../../check/runtime.ts";
 import type { RexConfigExport } from "../../core/config.ts";
-import { formatRexError, isRexError } from "../../core/errors.ts";
+import { explainRexError } from "../../core/errors.docs.ts";
+import { isRexError } from "../../core/errors.ts";
 import { hasConfig, loadRexConfig } from "../config.ts";
 import { EXIT_FAILURE, EXIT_OK, RexCliExit, type RexCliIO } from "../index.ts";
 
@@ -18,7 +19,7 @@ export async function readAppConfig(
     return (await loadRexConfig(root, { warn: (message) => io.err(`${message}\n`) })).read;
   } catch (error) {
     if (isRexError(error)) {
-      throw new RexCliExit(EXIT_FAILURE, `rex ${command}: ${formatRexError(error)}`);
+      throw new RexCliExit(EXIT_FAILURE, `rex ${command}: ${explainRexError(error)}`);
     }
     return null;
   }

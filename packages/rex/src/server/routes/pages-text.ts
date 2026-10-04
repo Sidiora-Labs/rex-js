@@ -12,6 +12,7 @@ import {
 } from "../../client/router.tsx";
 import { hasContent, resolveDataState, type DataStateQuery } from "../../client/states.ts";
 import type { Actor } from "../../core/actor.ts";
+import { RexError } from "../../core/errors.ts";
 import { actionAddress, overlayAddress, regionAddress } from "../../core/ids.ts";
 import type { AnyPage } from "../../core/page.ts";
 import { evaluate, type PolicyResult } from "../../core/policy.ts";
@@ -106,7 +107,7 @@ function invocationUrl(href: string | null, actionId: string): string | null {
 function listedPage(manifest: Manifest, declared: AnyPage): ManifestPage {
   const listed = manifest.pages.find((entry) => entry.id === declared.id);
   if (listed === undefined) {
-    throw new Error(`rex: the manifest does not list page "${declared.id}"`);
+    throw new RexError("REX308", `rex: the manifest does not list page "${declared.id}"`);
   }
   return listed;
 }
@@ -268,7 +269,8 @@ async function pageState(
   }
   const runner = loaderRunnerFor(request);
   if (runner === undefined) {
-    throw new Error(
+    throw new RexError(
+      "REX408",
       `rex: page "${declared.id}" declares loaders but the request was not served by createRexServer`,
     );
   }

@@ -1,6 +1,7 @@
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { normalizePath, parseSync, type Plugin } from "vite";
-import { REX_ERRORS_DOCS_BASE } from "../core/errors.ts";
+import { REX_ERROR_DOCS } from "../core/errors.docs.ts";
+import { errorDocs } from "../core/errors.ts";
 import type { RexHookContext } from "./hooks.ts";
 import { DECLARATION_FOLDERS } from "./scan.ts";
 import { CORE_SPECIFIER } from "./virtual.ts";
@@ -18,21 +19,17 @@ export const PUBLIC_ENV_PREFIX = "VITE_";
 export const ALLOWED_ENV_NAMES = ["NODE_ENV"] as const;
 export const BOUNDARY_IMPORT_CODE = "REX440";
 export const SECRET_LEAK_CODE = "REX441";
+export const SERVER_ONLY_HANDLER_CODE = "REX442";
 export const SERVER_ONLY_HANDLER_MESSAGE =
   "rex: action handlers run on the server; invoke this action through useAct, ActionForm or the RPC client";
 
-const SERVER_ONLY_HANDLER = `() => { throw new Error(${JSON.stringify(SERVER_ONLY_HANDLER_MESSAGE)}); }`;
+const SERVER_ONLY_ERROR = "__rexServerOnlyError";
+const SERVER_ONLY_HANDLER = `() => { throw new ${SERVER_ONLY_ERROR}(${JSON.stringify(SERVER_ONLY_HANDLER_CODE)}, ${JSON.stringify(SERVER_ONLY_HANDLER_MESSAGE)}); }`;
+const SERVER_ONLY_IMPORT = `import { RexError as ${SERVER_ONLY_ERROR} } from ${JSON.stringify(CORE_SPECIFIER)};`;
 const SCRIPT_FILE = /\.[cm]?[jt]sx?$/;
 const NODE_MODULES = /[\\/]node_modules[\\/]/;
 
 export type BoundaryErrorCode = typeof BOUNDARY_IMPORT_CODE | typeof SECRET_LEAK_CODE;
-
-const BOUNDARY_HINTS: Readonly<Record<BoundaryErrorCode, string>> = {
-  REX440:
-    "Keep server code in action handlers, app/server or modules marked with import \"@sidioralabs/rex/server-only\", and reach it from the client through an action.",
-  REX441:
-    "Read secrets only in action handlers or app/server; expose public values to the client through import.meta.env with the VITE_ prefix.",
-};
 
 export type BoundaryViolation = "rex/server" | "app/server" | "server-only";
 
@@ -241,11 +238,12 @@ export function stripActionHandlers(code: string, file: string): string | null {
   let output = applyEdits(code, edits);
   for (;;) {
     const current = parseProgram(file, output);
-    if (current === null) return output;
+    if (current === null) break;
     const pruned = pruneEdits(output, current, before);
-    if (pruned.length === 0) return output;
+    if (pruned.length === 0) break;
     output = applyEdits(output, pruned);
   }
+  return `${output}\n${SERVER_ONLY_IMPORT}\n`;
 }
 
 function isProcessEnv(node: AstNode | null): boolean {
@@ -340,9 +338,9 @@ export interface BoundaryLog {
 }
 
 export function boundaryError(code: BoundaryErrorCode, message: string, id?: string): BoundaryLog {
-  const docs = `${REX_ERRORS_DOCS_BASE}/${code}`;
+  const docs = errorDocs(code);
   const log = {
-    message: `${code} ${message}\n  hint: ${BOUNDARY_HINTS[code]}\n  docs: ${docs}`,
+    message: `${code} ${message}\n  hint: ${REX_ERROR_DOCS[code].hint}\n  docs: ${docs}`,
     code,
     url: docs,
   };

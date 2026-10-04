@@ -11,6 +11,7 @@ import {
   type RexLoaderError,
 } from "../client/loaders.ts";
 import type { AnyAction } from "../core/action.ts";
+import { RexError } from "../core/errors.ts";
 import type { AnyPage } from "../core/page.ts";
 import type { RexServerSetup } from "./app.ts";
 import type { RexContext } from "./context.ts";
@@ -95,7 +96,11 @@ export async function runPageLoaders(
       if (state?.status === "success") return { name: loader.name, key, ok: true, error: null };
       const error =
         state?.error ??
-        loaderError(declared.id, loader.name, new Error("the loader produced no result"));
+        loaderError(
+          declared.id,
+          loader.name,
+          new RexError("REX324", "the loader produced no result"),
+        );
       return { name: loader.name, key, ok: false, error };
     }),
   );

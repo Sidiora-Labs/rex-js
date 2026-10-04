@@ -2,6 +2,7 @@ import {
   parse as parseCookieHeader,
   serialize as serializeCookie,
 } from "hono/utils/cookie";
+import { RexError } from "../core/errors.ts";
 import type { JsonSchema } from "../core/schema.ts";
 import { issuePath, type StandardIssue } from "../core/standard.ts";
 
@@ -293,7 +294,7 @@ function isSecureRequest(request: Request): boolean {
 
 export function csrfCookie(token: string, request: Request): string {
   if (!isCsrfToken(token))
-    throw new TypeError("csrfCookie: token must be 64 hex characters");
+    throw new RexError("REX400", "csrfCookie: token must be 64 hex characters");
   return serializeCookie(CSRF_COOKIE, token, {
     path: "/",
     sameSite: "Lax",

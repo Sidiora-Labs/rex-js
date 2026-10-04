@@ -19,6 +19,7 @@ import {
   type Parser,
 } from "wouter";
 import type { Actor } from "../core/actor.ts";
+import { RexError } from "../core/errors.ts";
 import { parseRoute, type AnyPage, type PageTransition } from "../core/page.ts";
 import { evaluate, type PolicyResult } from "../core/policy.ts";
 import { RESERVED_QUERY_KEYS, isReservedQueryKey } from "../core/protocol.ts";
@@ -84,7 +85,7 @@ export function paramKeyAccepted(schema: JsonSchema, key: string): boolean {
 export function manifestParamsSchema(manifest: Manifest, declared: AnyPage): JsonSchema {
   const listed = manifest.pages.find((entry) => entry.id === declared.id);
   if (listed === undefined) {
-    throw new Error(`rex: the manifest does not list page "${declared.id}"`);
+    throw new RexError("REX308", `rex: the manifest does not list page "${declared.id}"`);
   }
   return listed.params;
 }

@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, type Dirent } from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 import { CONFIG_FILE, resolveOptions, type ResolvedRexOptions } from "../../core/config.ts";
+import { RexError } from "../../core/errors.ts";
 import { isCssModule } from "../../vite/styles.ts";
 import type { AppFile } from "../engine.ts";
 import { defineRule, finding, type Finding, type SourceLoader } from "../rule.ts";
@@ -352,11 +353,11 @@ export function readTokenTheme(root: string): TokenTheme {
   return Object.freeze({ files: Object.freeze(themed), variables });
 }
 
-class DynamicConfigValue extends Error {
+class DynamicConfigValue extends RexError {
   readonly node: ts.Node;
 
   constructor(node: ts.Node) {
-    super("not a static literal");
+    super("REX508", "not a static literal");
     this.node = node;
   }
 }

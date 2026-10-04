@@ -1,5 +1,6 @@
 import type { Hono } from "hono";
 import type { AnyAction } from "../../core/action.ts";
+import { RexError } from "../../core/errors.ts";
 import type { RexServerOptions, RexServerSetup } from "../app.ts";
 
 declare module "../app.ts" {
@@ -19,7 +20,7 @@ interface ProcessLike {
 export function isDevServer(options: Pick<RexServerOptions<AnyAction>, "dev">): boolean {
   if (options.dev !== undefined) {
     if (typeof options.dev !== "boolean") {
-      throw new TypeError("createRexServer: dev must be true or false");
+      throw new RexError("REX400", "createRexServer: dev must be true or false");
     }
     return options.dev;
   }

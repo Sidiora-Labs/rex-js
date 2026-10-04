@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useLocation, useSearch } from "wouter";
+import { RexError } from "../../core/errors.ts";
 import { readCookie } from "../agent/outcome.tsx";
 import { useRegistry } from "../context.ts";
 import { SSR_ATTRIBUTE } from "../hydrate.ts";
@@ -62,7 +63,7 @@ function ConfiguredI18n({ source, children }: RexProviderProps & { readonly sour
   const setLocale = useCallback(
     (next: string) => {
       if (!settings.locales.includes(next)) {
-        throw new Error(`rex: locale "${next}" is not one of ${settings.locales.join(", ")}`);
+        throw new RexError("REX316", `rex: locale "${next}" is not one of ${settings.locales.join(", ")}`);
       }
       if (globalThis.document !== undefined) globalThis.document.cookie = localeCookie(next);
       setChosen(next);

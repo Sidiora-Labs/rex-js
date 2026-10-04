@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { RexError } from "../core/errors.ts";
 
 export const UNSAFE_HTML_ATTRIBUTE = "data-rex-unsafe-html";
 
@@ -13,11 +14,11 @@ export interface UnsafeHtmlOptions {
 
 export function unsafeHtml(html: string, options: UnsafeHtmlOptions = {}): ReactElement {
   if (typeof html !== "string") {
-    throw new TypeError("unsafeHtml: html must be a string of already sanitised markup");
+    throw new RexError("REX314", "unsafeHtml: html must be a string of already sanitised markup");
   }
   const Tag = options.as ?? "div";
   if (!(UNSAFE_HTML_TAGS as readonly string[]).includes(Tag)) {
-    throw new TypeError(`unsafeHtml: as must be one of ${UNSAFE_HTML_TAGS.join(", ")}`);
+    throw new RexError("REX314", `unsafeHtml: as must be one of ${UNSAFE_HTML_TAGS.join(", ")}`);
   }
   return (
     <Tag

@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
+import { RexError } from "../../core/errors.ts";
 import { createRexEntry, type RexEntryBundle, type RexEntryOptions } from "../entry.tsx";
 import { pageHref } from "../router.tsx";
 
@@ -18,19 +19,23 @@ export function mountRexPage(
 ): UnmountRexPage {
   const Host = globalThis.Element;
   if (Host === undefined || !(element instanceof Host)) {
-    throw new TypeError("mountRexPage: element must be a DOM element");
+    throw new RexError("REX329", "mountRexPage: element must be a DOM element");
   }
   if (typeof app !== "object" || app === null || app.registry === undefined) {
-    throw new TypeError("mountRexPage: the rex:app bundle with registry and pages is required");
+    throw new RexError(
+      "REX313",
+      "mountRexPage: the rex:app bundle with registry and pages is required",
+    );
   }
   const declared = app.registry.find("page", pageId);
   if (declared === undefined) {
-    throw new Error(`mountRexPage: page "${pageId}" is not registered in this app`);
+    throw new RexError("REX301", `mountRexPage: page "${pageId}" is not registered in this app`);
   }
   const { params = {}, ...entryOptions } = options;
   const href = pageHref(declared, params);
   if (!href.ok) {
-    throw new Error(
+    throw new RexError(
+      "REX331",
       `mountRexPage: invalid params for page "${pageId}": ${href.issues
         .map((issue) => `${issue.path} ${issue.message}`)
         .join("; ")}`,

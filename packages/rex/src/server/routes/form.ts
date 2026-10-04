@@ -1,6 +1,7 @@
 import { ORPCError, call } from "@orpc/server";
 import type { Context, Hono } from "hono";
 import type { AnyAction } from "../../core/action.ts";
+import { RexError } from "../../core/errors.ts";
 import type { JsonSchema } from "../../core/schema.ts";
 import type { StandardIssue } from "../../core/standard.ts";
 import type { ManifestAction } from "../../manifest/types.ts";
@@ -186,7 +187,8 @@ export function installFormRoute(app: Hono, setup: RexServerSetup): void {
     if (procedure === undefined) continue;
     const manifest = schemas.get(declared.id);
     if (manifest === undefined) {
-      throw new Error(
+      throw new RexError(
+        "REX308",
         `installFormRoute: action "${declared.id}" is missing from the manifest`,
       );
     }

@@ -394,7 +394,7 @@ describe("buildActionRouter", () => {
       "ledger must implement append and list",
     );
     expect(() => buildActionRouter({ actions: [send] }, { ledger, confirmTtlMs: 0 })).toThrow(
-      RangeError,
+      expect.objectContaining({ name: "RexError", code: "REX400" }),
     );
     expect(() => buildActionRouter({ actions: [send, send] }, { ledger })).toThrow(
       'duplicate action "send"',

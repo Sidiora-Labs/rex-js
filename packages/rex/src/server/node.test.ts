@@ -129,7 +129,7 @@ describe("startNodeServer", () => {
     expect(() => startNodeServer(app, { port: 0, clientDir: join(clientDir, "assets") })).toThrow(
       "has no index.html",
     );
-    expect(() => startNodeServer(app, { port: -1, clientDir })).toThrow(RangeError);
+    expect(() => startNodeServer(app, { port: -1, clientDir })).toThrow(expect.objectContaining({ name: "RexError", code: "REX407" }));
   });
 
   it("classifies API and page route paths", () => {

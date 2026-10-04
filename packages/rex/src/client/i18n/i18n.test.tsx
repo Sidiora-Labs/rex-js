@@ -242,7 +242,7 @@ describe("msg: keys and catalogs", () => {
     expect(ref).toBe("msg:send.done?amount=5&name=Ana+Lu");
     expect(parseMessageRef(ref)).toEqual({ key: "send.done", values: { amount: 5, name: "Ana Lu" } });
     expect(parseMessageRef("Send")).toBeNull();
-    expect(() => t("bad key")).toThrow(TypeError);
+    expect(() => t("bad key")).toThrow(expect.objectContaining({ name: "RexError", code: "REX316" }));
   });
 
   it("resolves through the locale, its base language, then the default, then the key", () => {

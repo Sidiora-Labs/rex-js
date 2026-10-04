@@ -8,6 +8,7 @@ import {
   type ComponentPropsWithRef,
   type ReactNode,
 } from "react";
+import { RexError } from "../core/errors.ts";
 import { REX_DATA_ELEMENT_ID } from "./hydrate.ts";
 import { registerReset } from "./reset.ts";
 
@@ -102,16 +103,16 @@ export function Img({
   ...rest
 }: ImgProps) {
   if (typeof src !== "string" || src === "") {
-    throw new TypeError("Img: src must be a non-empty string");
+    throw new RexError("REX314", "Img: src must be a non-empty string");
   }
   if (typeof alt !== "string") {
-    throw new TypeError(`Img: alt is required for ${src} (use "" for a decorative image)`);
+    throw new RexError("REX314", `Img: alt is required for ${src} (use "" for a decorative image)`);
   }
   if (!isDimension(width) || !isDimension(height)) {
-    throw new TypeError(`Img: width and height are required positive numbers for ${src}`);
+    throw new RexError("REX314", `Img: width and height are required positive numbers for ${src}`);
   }
   if (priority && loading === "lazy") {
-    throw new TypeError(`Img: a priority image cannot load lazily (${src})`);
+    throw new RexError("REX314", `Img: a priority image cannot load lazily (${src})`);
   }
   const media = useContext(MediaContext);
   if (priority && media !== null) {
@@ -154,13 +155,13 @@ export interface LoadScriptOptions {
 
 export function loadScript(src: string, options: LoadScriptOptions = {}): Promise<void> {
   if (typeof src !== "string" || src === "") {
-    throw new TypeError("loadScript: src must be a non-empty string");
+    throw new RexError("REX314", "loadScript: src must be a non-empty string");
   }
   const existing = loadedScripts.get(src);
   if (existing !== undefined) return existing;
   const document = globalThis.document;
   if (document === undefined) {
-    throw new Error(`loadScript: ${src} can only load in a browser document`);
+    throw new RexError("REX327", `loadScript: ${src} can only load in a browser document`);
   }
   const element = document.createElement("script");
   element.src = src;
@@ -174,7 +175,7 @@ export function loadScript(src: string, options: LoadScriptOptions = {}): Promis
     element.addEventListener(
       "error",
       () => {
-        reject(new Error(`Script: ${src} failed to load`));
+        reject(new RexError("REX326", `Script: ${src} failed to load`));
       },
       { once: true },
     );
@@ -217,10 +218,10 @@ function scheduleIdle(run: () => void): () => void {
 
 export function Script({ src, strategy = DEFAULT_SCRIPT_STRATEGY, id, onLoad, onError }: ScriptProps) {
   if (typeof src !== "string" || src === "") {
-    throw new TypeError("Script: src must be a non-empty string");
+    throw new RexError("REX314", "Script: src must be a non-empty string");
   }
   if (!(SCRIPT_STRATEGIES as readonly string[]).includes(strategy)) {
-    throw new TypeError(`Script: strategy must be one of ${SCRIPT_STRATEGIES.join(", ")}`);
+    throw new RexError("REX314", `Script: strategy must be one of ${SCRIPT_STRATEGIES.join(", ")}`);
   }
   const media = useContext(MediaContext);
   const fromServer = useSyncExternalStore(subscribeNever, onClient, onServer);

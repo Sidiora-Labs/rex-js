@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext } from "react";
 import type { I18nConfig } from "../../core/config.ts";
+import { RexError } from "../../core/errors.ts";
 import type { MessageValues } from "./format.ts";
 import { localeSettings, type LocaleSettings } from "./locale.ts";
 import {
@@ -27,7 +28,8 @@ export function defineI18n(input: I18nInput): I18nSource {
   const messages: Record<string, LocaleMessages[string]> = {};
   for (const [locale, value] of Object.entries(input.messages)) {
     if (!settings.locales.includes(locale)) {
-      throw new TypeError(
+      throw new RexError(
+        "REX316",
         `rex: app/locales/${locale}.json is not one of i18n.locales (${settings.locales.join(", ")})`,
       );
     }
@@ -44,7 +46,7 @@ const sources = new WeakMap<object, I18nSource>();
 
 export function registerI18n(registry: object, input: I18nInput | I18nSource): () => void {
   if (typeof registry !== "object" || registry === null) {
-    throw new TypeError("registerI18n: registry must be the app registry object");
+    throw new RexError("REX329", "registerI18n: registry must be the app registry object");
   }
   const source = "settings" in input ? input : defineI18n(input);
   sources.set(registry, source);
@@ -64,7 +66,10 @@ export interface I18nState {
 }
 
 function notConfigured(): never {
-  throw new Error("rex: i18n is not configured; register app/locales with registerI18n");
+  throw new RexError(
+    "REX316",
+    "rex: i18n is not configured; register app/locales with registerI18n",
+  );
 }
 
 export const UNCONFIGURED_I18N: I18nState = Object.freeze({

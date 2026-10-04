@@ -2,6 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { StrictMode, type ComponentType } from "react";
 import { createRoot, hydrateRoot, type Root } from "react-dom/client";
 import { actor as createActor } from "../core/actor.ts";
+import { RexError } from "../core/errors.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import type { Manifest } from "../manifest/types.ts";
 import { DensityProvider } from "./agent/density.ts";
@@ -32,7 +33,10 @@ export function createRexEntry(
   options: RexEntryOptions = {},
 ): ComponentType {
   if (typeof bundle !== "object" || bundle === null || !Array.isArray(bundle.pages)) {
-    throw new TypeError("createRexEntry: the rex:app bundle with registry and pages is required");
+    throw new RexError(
+      "REX313",
+      "createRexEntry: the rex:app bundle with registry and pages is required",
+    );
   }
   const RexApp = createRexApp({
     ...options,
@@ -62,6 +66,14 @@ export interface StartRexOptions extends RexEntryOptions {
 export interface StartedRex {
   readonly mode: "hydrate" | "render";
   readonly root: Root;
+}
+
+export function findRootElement(id: string, document: Document = globalThis.document): Element {
+  const element = document.getElementById(id);
+  if (element === null) {
+    throw new RexError("REX463", `rex: index.html has no element with id "${id}"`);
+  }
+  return element;
 }
 
 export function startRexEntry(

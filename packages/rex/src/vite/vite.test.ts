@@ -115,7 +115,7 @@ describe("scanApp", () => {
     expect(code).toContain(
       "createRoot(container).render(createElement(StrictMode, null, createElement(RexEntry)));",
     );
-    expect(code).toContain('document.getElementById("root")');
+    expect(code).toContain('const container = findRootElement("root");');
     for (const file of [tokens, density]) expect(existsSync(file)).toBe(true);
   });
 
@@ -210,7 +210,7 @@ describe("the client entry build", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
     const code = chunks.map((chunk) => chunk.code).join("\n");
     expect(code).toContain("data-rex-shell");
     expect(code).toContain("application/rex+json");
-    expect(code).toContain('getElementById("root")');
+    expect(code).toContain('findRootElement("root")');
     const css = items
       .filter((item) => item.type === "asset" && item.fileName.endsWith(".css"))
       .map((item) => (item.type === "asset" ? String(item.source) : ""))

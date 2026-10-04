@@ -2,6 +2,7 @@ import { toORPCError } from "@orpc/client";
 import { ORPCError, os, type Procedure } from "@orpc/server";
 import type { AnyAction } from "../core/action.ts";
 import type { Actor } from "../core/actor.ts";
+import { RexError } from "../core/errors.ts";
 import { evaluate } from "../core/policy.ts";
 import { CONFIRM_PROCEDURE } from "../core/protocol.ts";
 import * as zm from "zod/mini";
@@ -303,11 +304,11 @@ export function buildActionRouter<A extends AnyAction>(
     typeof ledger.append !== "function" ||
     typeof ledger.list !== "function"
   ) {
-    throw new TypeError("buildActionRouter: ledger must implement append and list");
+    throw new RexError("REX400", "buildActionRouter: ledger must implement append and list");
   }
   const ttlMs = options.confirmTtlMs ?? DEFAULT_CONFIRM_TTL_MS;
   if (!Number.isInteger(ttlMs) || ttlMs < 1) {
-    throw new RangeError("buildActionRouter: confirmTtlMs must be a positive integer");
+    throw new RexError("REX400", "buildActionRouter: confirmTtlMs must be a positive integer");
   }
   const confirmations = createConfirmations(ttlMs);
   const configured = options.telemetry;
@@ -315,13 +316,13 @@ export function buildActionRouter<A extends AnyAction>(
   const byId = new Map<string, AnyAction>();
   for (const declared of source.actions) {
     if (declared.kind !== "action") {
-      throw new TypeError("buildActionRouter: actions must be action declarations");
+      throw new RexError("REX400", "buildActionRouter: actions must be action declarations");
     }
     if (declared.id === CONFIRM_PROCEDURE) {
-      throw new Error(`buildActionRouter: "${CONFIRM_PROCEDURE}" is reserved`);
+      throw new RexError("REX401", `buildActionRouter: "${CONFIRM_PROCEDURE}" is reserved`);
     }
     if (byId.has(declared.id)) {
-      throw new Error(`buildActionRouter: duplicate action "${declared.id}"`);
+      throw new RexError("REX401", `buildActionRouter: duplicate action "${declared.id}"`);
     }
     byId.set(declared.id, declared);
   }

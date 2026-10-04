@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type MouseEvent, type ReactNode } from "react";
 import { useLocation, useSearch } from "wouter";
+import { RexError } from "../core/errors.ts";
 import { validateName } from "../core/ids.ts";
 import { isReservedQueryKey } from "../core/protocol.ts";
 import { useActivePage } from "./router.tsx";
@@ -50,7 +51,8 @@ function checkSize(size: unknown): number {
     size < 1 ||
     size > MAX_LIST_SIZE
   ) {
-    throw new RangeError(
+    throw new RexError(
+      "REX314",
       `Page.List: size must be an integer 1..${MAX_LIST_SIZE}, received ${String(size)}`,
     );
   }
@@ -59,12 +61,13 @@ function checkSize(size: unknown): number {
 
 function checkParamName(name: unknown, role: keyof ListParamNames): string {
   if (typeof name !== "string" || !/^[a-z][a-zA-Z0-9-]*$/.test(name)) {
-    throw new TypeError(
+    throw new RexError(
+      "REX314",
       `Page.List: the ${role} param must be a lowercase-first query key, received ${String(name)}`,
     );
   }
   if (isReservedQueryKey(name)) {
-    throw new TypeError(`Page.List: the ${role} param "${name}" is reserved by Rex`);
+    throw new RexError("REX314", `Page.List: the ${role} param "${name}" is reserved by Rex`);
   }
   return name;
 }
@@ -75,7 +78,8 @@ export function listParamNames(params: Partial<ListParamNames> = {}): ListParamN
     size: checkParamName(params.size ?? LIST_SIZE_PARAM, "size"),
   };
   if (names.page === names.size) {
-    throw new TypeError(
+    throw new RexError(
+      "REX314",
       `Page.List: the page and size params must differ, both are "${names.page}"`,
     );
   }
@@ -159,7 +163,7 @@ export function List<T>({
   }, [current.shown]);
 
   if (typeof itemKey !== "function" || typeof children !== "function") {
-    throw new TypeError("Page.List: itemKey and children must be functions of the item");
+    throw new RexError("REX314", "Page.List: itemKey and children must be functions of the item");
   }
 
   const state = {

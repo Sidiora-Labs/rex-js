@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useLocation, useSearch } from "wouter";
+import { RexError } from "../core/errors.ts";
 import type { AnyPage, PageDraft, PageParamsInput } from "../core/page.ts";
 import {
   validateStandardSync,
@@ -144,7 +145,7 @@ function writeSession(key: string, value: string | null): void {
 
 export function useDraft<S extends StandardSchemaV1>(schema: S): Draft<StandardInferOutput<S>> {
   const active = useActivePage();
-  if (active === null) throw new Error("rex: useDraft must be called inside an active page");
+  if (active === null) throw new RexError("REX306", "rex: useDraft must be called inside an active page");
   const declared = active.page;
   const [location, navigate] = useLocation();
   const search = useSearch();
@@ -164,7 +165,7 @@ export function useDraft<S extends StandardSchemaV1>(schema: S): Draft<StandardI
   const set = useCallback(
     (next: StandardInferOutput<S> | null) => {
       if (next !== null && validateStandardSync(schema, next).issues !== undefined) {
-        throw new Error(`rex: draft for page "${declared.id}" does not match its schema`);
+        throw new RexError("REX325", `rex: draft for page "${declared.id}" does not match its schema`);
       }
       const encoded = next === null ? null : JSON.stringify(next);
       if (declared.draft === "route") {
@@ -177,7 +178,7 @@ export function useDraft<S extends StandardSchemaV1>(schema: S): Draft<StandardI
         writeSession(storageKey, encoded);
         setSessionRaw(encoded);
       } else {
-        throw new Error(`rex: page "${declared.id}" declares draft "none"`);
+        throw new RexError("REX325", `rex: page "${declared.id}" declares draft "none"`);
       }
     },
     [declared, location, navigate, schema, search, storageKey],

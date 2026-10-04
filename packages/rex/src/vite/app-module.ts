@@ -44,7 +44,7 @@ export interface AppModuleOptions {
 }
 
 const APP_HELPERS = `function rexFail(file, problem) {
-  throw new Error("rex:app: " + file + " " + problem);
+  throw new RexError("REX462", "rex:app: " + file + " " + problem);
 }
 function rexDeclarations(namespace, kind, file) {
   const found = [];
@@ -94,7 +94,7 @@ export function generateAppModule(scan: AppScan, options: AppModuleOptions): str
   const literal = (value: string) => JSON.stringify(value);
   const display = (file: string) => literal(normalizePath(relative(scan.root, file)));
   const imports: string[] = [
-    `import { buildManifest, createRegistry } from ${literal(options.core)};`,
+    `import { RexError, buildManifest, createRegistry } from ${literal(options.core)};`,
   ];
   const lists: Record<keyof typeof DECLARATION_FOLDERS, string[]> = {
     entity: [],

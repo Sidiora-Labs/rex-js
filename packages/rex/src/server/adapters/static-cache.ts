@@ -1,5 +1,6 @@
 import { anonymousActor, type Actor } from "../../core/actor.ts";
 import { isPlainObject } from "../../core/entity.ts";
+import { RexError } from "../../core/errors.ts";
 import { DEFAULT_DENSITY, type RexRequestContext } from "../context.ts";
 import { CSRF_FIELD, ensureCsrfToken } from "../form.ts";
 import type { RexPageRenderer } from "../routes/render.ts";
@@ -28,12 +29,12 @@ export interface PrerenderList {
   readonly pages: readonly StaticPageEntry[];
 }
 
-export class RexStaticPageError extends Error {
+export class RexStaticPageError extends RexError {
   readonly page: string;
   readonly path: string;
 
   constructor(page: string, path: string, problem: string) {
-    super(`page "${page}" at ${path} ${problem}`);
+    super("REX405", `page "${page}" at ${path} ${problem}`);
     this.name = "RexStaticPageError";
     this.page = page;
     this.path = path;
@@ -45,7 +46,9 @@ export function isPrerenderMode(value: unknown): value is PrerenderMode {
 }
 
 export function normalizePagePath(pathname: string): string {
-  if (!pathname.startsWith("/")) throw new TypeError(`page path "${pathname}" must start with /`);
+  if (!pathname.startsWith("/")) {
+    throw new RexError("REX404", `page path "${pathname}" must start with /`);
+  }
   return pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
 }
 
@@ -62,10 +65,10 @@ export function prerenderedFile(path: string): string {
       try {
         decoded = decodeURIComponent(segment);
       } catch {
-        throw new TypeError(`page path "${path}" has a malformed segment "${segment}"`);
+        throw new RexError("REX404", `page path "${path}" has a malformed segment "${segment}"`);
       }
       if (decoded === "" || decoded === "." || decoded === ".." || UNSAFE_SEGMENT.test(decoded)) {
-        throw new TypeError(`page path "${path}" has an unsafe segment "${segment}"`);
+        throw new RexError("REX404", `page path "${path}" has an unsafe segment "${segment}"`);
       }
       return decoded;
     });
@@ -74,7 +77,7 @@ export function prerenderedFile(path: string): string {
 
 function readEntry(value: unknown, index: number): StaticPageEntry {
   const fail = (problem: string): never => {
-    throw new TypeError(`${PRERENDER_LIST_FILE}: pages.${index} ${problem}`);
+    throw new RexError("REX404", `${PRERENDER_LIST_FILE}: pages.${index} ${problem}`);
   };
   if (!isPlainObject(value)) return fail("must be an object");
   const { path, page, render, revalidate, file, generatedAt } = value;
@@ -101,17 +104,20 @@ function readEntry(value: unknown, index: number): StaticPageEntry {
 }
 
 export function parsePrerenderList(value: unknown): PrerenderList {
-  if (!isPlainObject(value)) throw new TypeError(`${PRERENDER_LIST_FILE} must be a JSON object`);
+  if (!isPlainObject(value)) throw new RexError("REX404", `${PRERENDER_LIST_FILE} must be a JSON object`);
   if (value.version !== PRERENDER_LIST_VERSION) {
-    throw new TypeError(
+    throw new RexError(
+      "REX404",
       `${PRERENDER_LIST_FILE} version ${JSON.stringify(value.version)} is not ${PRERENDER_LIST_VERSION}`,
     );
   }
-  if (!Array.isArray(value.pages)) throw new TypeError(`${PRERENDER_LIST_FILE} pages must be a list`);
+  if (!Array.isArray(value.pages)) throw new RexError("REX404", `${PRERENDER_LIST_FILE} pages must be a list`);
   const pages = value.pages.map(readEntry);
   const seen = new Set<string>();
   for (const entry of pages) {
-    if (seen.has(entry.path)) throw new TypeError(`${PRERENDER_LIST_FILE} repeats path ${entry.path}`);
+    if (seen.has(entry.path)) {
+      throw new RexError("REX404", `${PRERENDER_LIST_FILE} repeats path ${entry.path}`);
+    }
     seen.add(entry.path);
   }
   return Object.freeze({ version: PRERENDER_LIST_VERSION, pages: Object.freeze(pages) });
@@ -162,7 +168,7 @@ export function hasCsrfField(html: string): boolean {
 }
 
 export function fillCsrfToken(html: string, token: string): string {
-  if (!/^[0-9a-f]+$/.test(token)) throw new TypeError("fillCsrfToken: token must be hexadecimal");
+  if (!/^[0-9a-f]+$/.test(token)) throw new RexError("REX400", "fillCsrfToken: token must be hexadecimal");
   return html.replace(CSRF_INPUT, (input) =>
     VALUE_ATTRIBUTE.test(input)
       ? input.replace(VALUE_ATTRIBUTE, ` value="${token}"`)
@@ -291,7 +297,7 @@ export function createStaticCache(options: StaticCacheOptions): StaticCache {
   ): Promise<StaticPageEntry> {
     const entry = lookup(pathname);
     if (entry === undefined) {
-      return Promise.reject(new TypeError(`no prerendered page is listed at ${pathname}`));
+      return Promise.reject(new RexError("REX404", `no prerendered page is listed at ${pathname}`));
     }
     const running = inFlight.get(entry.path);
     if (running !== undefined) return running;
@@ -358,10 +364,10 @@ const caches = new WeakMap<object, StaticCache>();
 
 export function registerStaticCache(registry: object, cache: StaticCache): () => void {
   if (typeof registry !== "object" || registry === null) {
-    throw new TypeError("registerStaticCache: registry must be the app registry object");
+    throw new RexError("REX400", "registerStaticCache: registry must be the app registry object");
   }
   if (typeof cache !== "object" || cache === null || typeof cache.serve !== "function") {
-    throw new TypeError("registerStaticCache: cache must come from createStaticCache");
+    throw new RexError("REX400", "registerStaticCache: cache must come from createStaticCache");
   }
   caches.set(registry, cache);
   return () => {

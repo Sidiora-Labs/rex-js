@@ -1,6 +1,7 @@
 import type { Context, Hono, Next } from "hono";
 import type { AnyAction } from "../../core/action.ts";
 import type { RexLogger, TelemetryConfig } from "../../core/config.ts";
+import { RexError } from "../../core/errors.ts";
 import { parseRoute, type AnyPage } from "../../core/page.ts";
 import type { RexServerSetup } from "../app.ts";
 import type { Ledger } from "../audit.ts";
@@ -139,7 +140,7 @@ function errorText(error: unknown): string {
 export function createTelemetry(config: TelemetryConfig = {}): RexTelemetry {
   const tracerOption: unknown = config.tracer;
   if (tracerOption !== undefined && !isTelemetryTracer(tracerOption)) {
-    throw new TypeError("telemetry: tracer must be an OpenTelemetry tracer with startSpan");
+    throw new RexError("REX400", "telemetry: tracer must be an OpenTelemetry tracer with startSpan");
   }
   const tracer: TelemetryTracer | null = tracerOption === undefined ? null : tracerOption;
   const logger = config.logger ?? consoleLogger;
