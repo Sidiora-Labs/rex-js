@@ -9,7 +9,7 @@ import {
   createRexContext,
   type RexRequestContext,
 } from "../context.ts";
-import { bindCsrfGrant, ensureCsrfToken } from "../form.ts";
+import { bindCsrfGrant, clearOutcomeCookie, ensureCsrfToken, readFormOutcome } from "../form.ts";
 import { loaderRunnerFor, withLoaderRunner } from "../loaders.ts";
 
 export const RENDER_STATUS = Object.freeze({
@@ -124,6 +124,9 @@ export function installRenderRoute(app: Hono, setup: RexServerSetup): void {
     });
     if (result.page !== null) headers.set(RENDER_PAGE_HEADER, result.page);
     if (csrf.setCookie !== null) headers.append("set-cookie", csrf.setCookie);
+    if (readFormOutcome(c.req.raw) !== null) {
+      headers.append("set-cookie", clearOutcomeCookie(c.req.raw));
+    }
     return new Response(result.body, { status: RENDER_STATUS[result.kind], headers });
   });
 }

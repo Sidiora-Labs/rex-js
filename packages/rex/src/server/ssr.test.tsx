@@ -3,7 +3,7 @@ import { cpSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { readSidecar } from "../client/agent/sidecar.tsx";
 import { startRexEntry, type RexEntryBundle, type StartedRex } from "../client/entry.tsx";
 import {
@@ -16,6 +16,7 @@ import {
 import { Img, SCRIPT_ATTRIBUTE, Script } from "../client/media.tsx";
 import { ActionForm } from "../client/form.tsx";
 import { region, view, type LazyPageModuleSet, type LoadedPageModules } from "../client/page.tsx";
+import { defaultOutcomeStore } from "../client/outcome.ts";
 import { store, type RexStore } from "../client/store.ts";
 import { action } from "../core/action.ts";
 import { actor } from "../core/actor.ts";
@@ -31,7 +32,14 @@ import { CLIENT_MANIFEST_FILE, ssrAssetsFromManifest, type ViteManifest } from "
 import { createRexServer } from "./app.ts";
 import { memoryLedger } from "./audit.ts";
 import { DEFAULT_DENSITY } from "./context.ts";
-import { CSRF_COOKIE, CSRF_FIELD, bindCsrfGrant, ensureCsrfToken } from "./form.ts";
+import {
+  CSRF_COOKIE,
+  CSRF_FIELD,
+  bindCsrfGrant,
+  ensureCsrfToken,
+  outcomeCookie,
+  type FormOutcome,
+} from "./form.ts";
 import { RENDER_STATUS, type RexPageRenderer } from "./routes/render.ts";
 import { ACCEPT_CH, ACCEPT_CH_HEADER } from "./adapters/client-hints.ts";
 import { createRexContext } from "./context.ts";
@@ -723,6 +731,72 @@ async function hydrateStorePage(path: string): Promise<{
   await waitFor(() => expect(window.__rex?.page).toBe(server.page));
   return { server, container };
 }
+
+describe("a posted form outcome in the server-rendered document", () => {
+  const posted: FormOutcome = {
+    actionId: "add-note",
+    ok: true,
+    message: "Add note succeeded",
+    at: "2026-10-04T12:00:00.000Z",
+    code: null,
+    fields: {},
+  };
+
+  function postedRequest(path: string): Request {
+    const outgoing = request(path);
+    const cookie = outcomeCookie(posted, outgoing).split(";")[0] as string;
+    outgoing.headers.set("cookie", cookie);
+    return outgoing;
+  }
+
+  beforeEach(() => {
+    defaultOutcomeStore.clear("home");
+  });
+
+  afterEach(() => {
+    defaultOutcomeStore.clear("home");
+  });
+
+  it("renders the rex-outcome cookie into the outcome region and its sidecar", async () => {
+    const response = await server.fetch(postedRequest("/"));
+    expect(response.status).toBe(RENDER_STATUS.page);
+    const shell = new DOMParser().parseFromString(await response.text(), "text/html");
+    const outcome = shell.querySelector('[data-rex-outcome="add-note"]');
+    expect(outcome?.getAttribute("data-rex-outcome-ok")).toBe("true");
+    expect(outcome?.getAttribute("data-rex-outcome-at")).toBe(posted.at);
+    expect(outcome?.textContent).toContain("Add note succeeded");
+    expect(shell.querySelector('[data-rex-outcome="none"]')).toBeNull();
+    const sidecar = JSON.parse(
+      shell.querySelector(`script[type="${SIDECAR_MIME_TYPE}"]`)?.textContent ?? "{}",
+    ) as Record<string, unknown>;
+    expect(sidecar.outcome).toMatchObject({ action: "add-note", ok: true, at: posted.at });
+
+    const plain = await (await server.fetch(request("/"))).text();
+    const empty = new DOMParser().parseFromString(plain, "text/html");
+    expect(empty.querySelector('[data-rex-outcome="add-note"]')).toBeNull();
+    expect(empty.querySelector('[data-rex-outcome="none"]')).not.toBeNull();
+  });
+
+  it("hydrates the server-rendered outcome without a mismatch", async () => {
+    const html = await (await server.fetch(postedRequest("/"))).text();
+    const container = mountDocument(html, "/");
+    const serverOutcome = container.querySelector('[data-rex-outcome="add-note"]');
+    expect(serverOutcome).not.toBeNull();
+    const serverSidecar = readSidecar(container);
+    const errors = vi.spyOn(console, "error");
+    const mismatches: HydrationMismatch[] = [];
+
+    await hydrate(container, mismatches);
+    await waitFor(() => expect(window.__rex).toEqual(serverSidecar));
+
+    const outcome = container.querySelector('[data-rex-outcome="add-note"]');
+    expect(outcome).toBe(serverOutcome);
+    expect(outcome?.getAttribute("data-rex-outcome-ok")).toBe("true");
+    expect(defaultOutcomeStore.get("home")).toMatchObject({ actionId: "add-note", at: posted.at });
+    expect(mismatches).toEqual([]);
+    expect(hydrationErrors(errors.mock.calls)).toEqual([]);
+  });
+});
 
 describe("the stores a server render exposes", () => {
   it("lists only the stores the rendered page uses after another page exposed one", async () => {

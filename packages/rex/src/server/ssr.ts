@@ -58,6 +58,12 @@ import {
   type RexScreen,
   type ScreenState,
 } from "../client/screen.ts";
+import {
+  APP_OUTCOME_KEY,
+  OutcomeProvider,
+  createOutcomeStore,
+  type OutcomeStore,
+} from "../client/outcome.ts";
 import { NOT_FOUND_TITLE } from "../client/shell.tsx";
 import type { RexStore } from "../client/store.ts";
 import {
@@ -72,7 +78,7 @@ import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import type { Manifest } from "../manifest/types.ts";
 import { CLIENT_HINT_HEADERS } from "./adapters/client-hints.ts";
 import type { RexRequestContext } from "./context.ts";
-import { csrfGrantFor } from "./form.ts";
+import { csrfGrantFor, readFormOutcome } from "./form.ts";
 import type { Ledger } from "./audit.ts";
 import { createActionLoaderRunner, loaderRunnerFor, runPageLoaders } from "./loaders.ts";
 import { resolveRequestLocale } from "./locale.ts";
@@ -439,23 +445,38 @@ function exposedEntries(stores: StoreRegistry): RexStore<unknown>[] {
   return Object.keys(stores.exposed()).map((id) => stores.get(id) as RexStore<unknown>);
 }
 
-function renderScope(stores: StoreRegistry, children: ReactNode): ReactNode {
+function renderOutcomes(request: Request, match: PageMatch | null): OutcomeStore | null {
+  const posted = readFormOutcome(request);
+  if (posted === null) return null;
+  const outcomes = createOutcomeStore();
+  outcomes.set(match === null ? APP_OUTCOME_KEY : match.page.id, posted);
+  return outcomes;
+}
+
+function renderScope(
+  stores: StoreRegistry,
+  outcomes: OutcomeStore | null,
+  children: ReactNode,
+): ReactNode {
+  const registries = createElement(
+    OverlayRegistryProvider,
+    { registry: createOverlayRegistry() },
+    createElement(
+      AffordanceRegistryProvider,
+      { registry: createAffordanceRegistry() },
+      createElement(
+        RegionFailureRegistryContext.Provider,
+        { value: createRegionFailureRegistry() },
+        children,
+      ),
+    ),
+  );
   return createElement(
     StoreRegistryProvider,
     { registry: stores },
-    createElement(
-      OverlayRegistryProvider,
-      { registry: createOverlayRegistry() },
-      createElement(
-        AffordanceRegistryProvider,
-        { registry: createAffordanceRegistry() },
-        createElement(
-          RegionFailureRegistryContext.Provider,
-          { value: createRegionFailureRegistry() },
-          children,
-        ),
-      ),
-    ),
+    outcomes === null
+      ? registries
+      : createElement(OutcomeProvider, { store: outcomes }, registries),
   );
 }
 
@@ -515,6 +536,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     csrf: string | null,
     screen: ScreenState,
     stores: StoreRegistry,
+    outcomes: OutcomeStore | null,
   ): ReactNode {
     const RexEntry = createRexEntry(
       { registry, manifest, pages },
@@ -523,7 +545,11 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     const app = createElement(
       ScreenSeedContext.Provider,
       { value: screen },
-      createElement(MediaProvider, { value: media }, renderScope(stores, createElement(RexEntry))),
+      createElement(
+        MediaProvider,
+        { value: media },
+        renderScope(stores, outcomes, createElement(RexEntry)),
+      ),
     );
     const entry = createElement(
       StrictMode,
@@ -592,6 +618,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
   }
 
   async function failure(
+    request: Request,
     url: URL,
     match: PageMatch | null,
     context: RexRequestContext,
@@ -628,6 +655,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
               csrf,
               screen,
               stores,
+              renderOutcomes(request, match),
             ),
           {
             nonce: context.nonce,
@@ -698,7 +726,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         try {
           await loadedModules(sets.get(match.page.id) as PageModuleSet);
         } catch {
-          return failure(url, match, context, locale, csrf, screen);
+          return failure(request, url, match, context, locale, csrf, screen);
         }
         if (!(await loadPageData(request, resolution, context, queryClient))) kind = "failed";
       }
@@ -720,6 +748,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
             csrf,
             screen,
             stores,
+            renderOutcomes(request, match),
           );
         },
         {
@@ -737,11 +766,11 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         },
       );
     } catch {
-      return failure(url, match, context, locale, csrf, screen);
+      return failure(request, url, match, context, locale, csrf, screen);
     }
     if (errors.length > 0) {
       await stream.cancel();
-      return failure(url, match, context, locale, csrf, screen);
+      return failure(request, url, match, context, locale, csrf, screen);
     }
     return {
       kind,
