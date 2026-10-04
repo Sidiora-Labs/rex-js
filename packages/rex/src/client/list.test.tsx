@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ReactNode } from "react";
@@ -45,6 +45,12 @@ function mount(location: string, children: ReactNode) {
   const memory = memoryLocation({ path: location, record: true });
   const view = render(<Router hook={memory.hook}>{children}</Router>);
   return { memory, view };
+}
+
+async function mounted(location: string, children: ReactNode) {
+  const result = mount(location, children);
+  await waitFor(() => expect(document.querySelector("[data-rex-list]")).not.toBeNull());
+  return result;
 }
 
 interface TokenListProps {
@@ -106,8 +112,8 @@ describe("Page.List", () => {
     expect("List" in client).toBe(false);
   });
 
-  it("renders the first page with its state, count and a load-more link", () => {
-    mount("/", <TokenList size={2} />);
+  it("renders the first page with its state, count and a load-more link", async () => {
+    await mounted("/", <TokenList size={2} />);
     const root = listRoot("tokens");
     expect(shownSymbols("tokens")).toEqual(["ETH", "PAX"]);
     expect(root.getAttribute("data-rex-list-page")).toBe("1");
@@ -121,14 +127,14 @@ describe("Page.List", () => {
     expect(more?.getAttribute("href")).toBe("/?page=2&size=2");
   });
 
-  it("reads page and size from the URL and keeps unrelated query keys", () => {
-    mount("/?tab=all&page=2&size=2", <TokenList size={3} />);
+  it("reads page and size from the URL and keeps unrelated query keys", async () => {
+    await mounted("/?tab=all&page=2&size=2", <TokenList size={3} />);
     expect(shownSymbols("tokens")).toEqual(["ETH", "PAX", "USDC", "DUST"]);
     expect(moreLink("tokens")?.getAttribute("href")).toBe("/?tab=all&page=3&size=2");
   });
 
   it("appends the next page on load more and focuses the first new row", async () => {
-    const { memory } = mount("/", <TokenList size={2} />);
+    const { memory } = await mounted("/", <TokenList size={2} />);
     const first = listRoot("tokens").querySelector("li");
     const link = moreLink("tokens");
     if (link === null) throw new Error("no load-more link");
@@ -154,11 +160,11 @@ describe("Page.List", () => {
     expect(listRoot("tokens").getAttribute("data-rex-list-page")).toBe("3");
   });
 
-  it("falls back to the declared size and the first page on malformed params and caps size", () => {
-    mount("/?page=0&size=abc", <TokenList size={2} />);
+  it("falls back to the declared size and the first page on malformed params and caps size", async () => {
+    await mounted("/?page=0&size=abc", <TokenList size={2} />);
     expect(shownSymbols("tokens")).toEqual(["ETH", "PAX"]);
     cleanup();
-    mount("/?page=9&size=2", <TokenList />);
+    await mounted("/?page=9&size=2", <TokenList />);
     expect(shownSymbols("tokens")).toHaveLength(5);
     expect(listRoot("tokens").getAttribute("data-rex-list-page")).toBe("3");
     expect(moreLink("tokens")).toBeNull();
@@ -166,8 +172,8 @@ describe("Page.List", () => {
     expect(readListParams("page=-1&size=1.5")).toEqual({ page: 1, size: DEFAULT_LIST_SIZE });
   });
 
-  it("renders the empty content when there are no items", () => {
-    mount(
+  it("renders the empty content when there are no items", async () => {
+    await mounted(
       "/",
       <Page.List name="tokens" items={[] as readonly Token[]} itemKey={(token) => token.id}>
         {(token) => token.symbol}
@@ -177,7 +183,7 @@ describe("Page.List", () => {
     expect(listRoot("tokens").getAttribute("data-rex-list-total")).toBe("0");
     expect(moreLink("tokens")).toBeNull();
     cleanup();
-    mount(
+    await mounted(
       "/",
       <Page.List
         name="tokens"
@@ -200,7 +206,7 @@ describe("Page.List", () => {
       registry,
       standardJsonSchema(portfolio.params, "input"),
     );
-    const { memory } = mount(
+    const { memory } = await mounted(
       "/",
       <ActiveRouteContext.Provider value={resolution}>
         <TokenList size={4} />
@@ -216,7 +222,7 @@ describe("Page.List", () => {
   });
 
   it("keeps two lists on one page apart through their param names", async () => {
-    mount(
+    await mounted(
       "/",
       <>
         <TokenList size={1} />
