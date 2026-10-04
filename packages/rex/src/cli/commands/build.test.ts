@@ -99,6 +99,9 @@ function buildResult(target: BuildTarget, apiOrigin: string | null = null): Buil
     chunks: [],
     prerendered: [],
     prerenderFile: usesStaticPages(target) ? join(outDir, PRERENDER_LIST_FILE) : null,
+    staticManifestFile: null,
+    textFiles: [],
+    shells: [],
   };
 }
 
@@ -148,6 +151,7 @@ describe("server runtime paths", () => {
       node: `${base}/server/node.js`,
       bun: `${base}/server/adapters/bun.js`,
       deno: `${base}/server/adapters/deno.js`,
+      pagesText: `${base}/server/routes/pages-text.js`,
       edge: `${base}/server/adapters/edge.js`,
       server: INSTALLED,
       config: `${base}/core/config.js`,
