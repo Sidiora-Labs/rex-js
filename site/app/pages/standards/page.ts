@@ -1,5 +1,5 @@
 import { page } from "@sidioralabs/rex";
-import { readStandards } from "../../actions/read-standards.ts";
+import { readStandards } from "../../actions/standards/read-standards.ts";
 
 export default page("standards", {
   route: "/standards",

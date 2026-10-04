@@ -1,5 +1,5 @@
 import { page } from "@sidioralabs/rex";
-import { errorsCatalog } from "../../actions/errors-catalog.ts";
+import { errorsCatalog } from "../../actions/errors/errors-catalog.ts";
 
 export default page("errors", {
   route: "/errors",

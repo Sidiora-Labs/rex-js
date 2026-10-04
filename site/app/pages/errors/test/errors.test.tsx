@@ -3,10 +3,7 @@ import { createTestApp, renderPage, setupRexTesting } from "@sidioralabs/rex/tes
 import { fireEvent, waitFor, within } from "@testing-library/react";
 import app from "rex:app";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  REX_ERROR_AREAS,
-  type RexErrorArea,
-} from "../../../../../packages/rex/src/core/errors.docs.ts";
+import { REX_ERROR_AREAS } from "../../../../../packages/rex/src/core/errors.docs.ts";
 
 setupRexTesting({ afterEach });
 
@@ -52,11 +49,13 @@ describe("errors page", () => {
     ) as HTMLElement;
     expect(region).not.toBeNull();
     expect(shownCodes(region)).toEqual(CODES);
-    const areas = Object.keys(REX_ERROR_AREAS) as RexErrorArea[];
+    const areas = Object.values(REX_ERROR_AREAS);
     const sections = [...region.querySelectorAll("[data-site-error-area]")];
-    expect(sections.map((section) => section.getAttribute("data-site-error-area"))).toEqual(areas);
-    for (const section of sections) {
-      const area = REX_ERROR_AREAS[section.getAttribute("data-site-error-area") as RexErrorArea];
+    expect(sections.map((section) => section.getAttribute("data-site-error-area"))).toEqual(
+      areas.map((area) => area.prefix),
+    );
+    for (const [index, section] of sections.entries()) {
+      const area = areas[index] as (typeof areas)[number];
       expect(
         within(section as HTMLElement).getByRole("heading", {
           level: 2,

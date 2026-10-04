@@ -38,8 +38,11 @@ describe("standards page", () => {
     const expected = readStandards();
     const view = await renderPage(siteApp(), "standards");
     await waitFor(() => expect(view.sidecar().state).toBe("ready"));
-    const region = view.container.querySelector('[data-rex-region="standards/table"]');
-    expect(region).not.toBeNull();
+    const region = await waitFor(() => {
+      const found = view.container.querySelector('[data-rex-region="standards/table"]');
+      expect(found).not.toBeNull();
+      return found;
+    });
     const scope = region as HTMLElement;
     await waitFor(() =>
       expect(scope.querySelectorAll("tr[data-site-standard]")).toHaveLength(expected.total),
@@ -83,9 +86,11 @@ describe("standards page", () => {
     const expected = readStandards();
     const view = await renderRegion(siteApp(), "standards", "table");
     await waitFor(() => expect(view.sidecar().state).toBe("ready"));
-    const region = view.container.querySelector(
-      '[data-rex-region="standards/table"]',
-    ) as HTMLElement;
+    const region = await waitFor(() => {
+      const found = view.container.querySelector('[data-rex-region="standards/table"]');
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
     await waitFor(() =>
       expect(
         within(region).getByText(`${expected.met} of ${expected.total} standards met`),

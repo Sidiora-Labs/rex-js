@@ -1,5 +1,5 @@
 import type { ActionOutput } from "@sidioralabs/rex";
-import type { readChangelog } from "../../../../../actions/read-changelog.ts";
+import type { readChangelog } from "../../../../../actions/changelog/read-changelog.ts";
 
 type Block = ActionOutput<typeof readChangelog>["intro"][number];
 type Inline = Extract<Block, { readonly kind: "paragraph" }>["inlines"][number];

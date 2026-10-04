@@ -170,7 +170,7 @@ function checkUnclassified(file: string): Finding {
     message: `${file} does not match any Rex file role`,
     hint: pageDir
       ? `A page folder holds page.ts, view.tsx, states.tsx, hooks/, regions/<region>/region.tsx, regions/<region>/parts/, overlays/ and test/; move ${base} into one of them under ${pageDir}.`
-      : `Move ${base} to app/pages, app/actions, app/entities, app/policies, app/flows, app/components or app/data.`,
+      : `Move ${base} to app/pages, app/actions (at any depth, as a .ts file), app/entities, app/policies, app/flows, app/components, app/data or app/server.`,
   });
 }
 
