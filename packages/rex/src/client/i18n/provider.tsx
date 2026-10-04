@@ -5,18 +5,16 @@ import { readCookie } from "../agent/outcome.tsx";
 import { pageAtPath } from "../app.tsx";
 import { useRegistry } from "../context.ts";
 import { SSR_ATTRIBUTE } from "../hydrate.ts";
-import { useLazyModule } from "../lazy.ts";
+import { useLazyModule, type LazyModule } from "../lazy.ts";
 import { APP_OUTCOME_KEY } from "../outcome.ts";
 import type { RexProviderProps } from "../providers.ts";
 import {
   I18nContext,
   LocaleSeedContext,
   UNCONFIGURED_I18N,
-  i18nFor,
   type I18nSource,
   type I18nState,
 } from "./context.ts";
-import { messageFormatter } from "./formatter.ts";
 import {
   LOCALE_COOKIE,
   localeCookie,
@@ -27,6 +25,8 @@ import {
   stripLocalePrefix,
   type LocaleSettings,
 } from "./locale.ts";
+import type { MessageFormatter } from "./lookup.ts";
+import { i18nRegistration } from "./registration.ts";
 
 function cookieLocale(source: string): string | null {
   const raw = readCookie(LOCALE_COOKIE, source);
@@ -51,7 +51,12 @@ export function detectClientLocale(settings: LocaleSettings): string {
   return resolveLocale(settings, { languages }).locale;
 }
 
-function ConfiguredI18n({ source, children }: RexProviderProps & { readonly source: I18nSource }) {
+interface ConfiguredI18nProps extends RexProviderProps {
+  readonly source: I18nSource;
+  readonly formatter: LazyModule<MessageFormatter>;
+}
+
+function ConfiguredI18n({ source, formatter: formatterModule, children }: ConfiguredI18nProps) {
   const settings = source.settings;
   const registry = useRegistry();
   const { parser } = useRouter();
@@ -65,7 +70,7 @@ function ConfiguredI18n({ source, children }: RexProviderProps & { readonly sour
   const [chosen, setChosen] = useState<string | null>(null);
   const prefixed = settings.routing === "prefix" ? localePrefix(path, settings.locales) : null;
   const page = pageAtPath(registry, parser, stripLocalePrefix(path, settings.locales));
-  const formatter = useLazyModule(messageFormatter, {
+  const formatter = useLazyModule(formatterModule, {
     suspend: "always",
     outcome: page ?? APP_OUTCOME_KEY,
   });
@@ -100,9 +105,13 @@ function ConfiguredI18n({ source, children }: RexProviderProps & { readonly sour
 }
 
 export function I18nProvider({ children }: RexProviderProps) {
-  const source = i18nFor(useRegistry());
-  if (source === null) {
+  const registration = i18nRegistration(useRegistry());
+  if (registration === null) {
     return <I18nContext.Provider value={UNCONFIGURED_I18N}>{children}</I18nContext.Provider>;
   }
-  return <ConfiguredI18n source={source}>{children}</ConfiguredI18n>;
+  return (
+    <ConfiguredI18n source={registration.source} formatter={registration.formatter}>
+      {children}
+    </ConfiguredI18n>
+  );
 }

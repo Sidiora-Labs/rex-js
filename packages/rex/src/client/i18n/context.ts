@@ -12,6 +12,7 @@ import {
   type MessageFormatter,
   type MessageLookup,
 } from "./lookup.ts";
+import { i18nRegistration, setI18nRegistration } from "./registration.ts";
 
 export const UNCONFIGURED_LOCALE = "en";
 
@@ -44,22 +45,18 @@ export function defineI18n(input: I18nInput): I18nSource {
   });
 }
 
-const sources = new WeakMap<object, I18nSource>();
-
 export function registerI18n(registry: object, input: I18nInput | I18nSource): () => void {
   if (typeof registry !== "object" || registry === null) {
     throw new RexError("REX329", "registerI18n: registry must be the app registry object");
   }
   const source = "settings" in input ? input : defineI18n(input);
-  sources.set(registry, source);
+  const unregister = setI18nRegistration(registry, { source, formatter: messageFormatter });
   void messageFormatter.load();
-  return () => {
-    if (sources.get(registry) === source) sources.delete(registry);
-  };
+  return unregister;
 }
 
 export function i18nFor(registry: object): I18nSource | null {
-  return sources.get(registry) ?? null;
+  return i18nRegistration(registry)?.source ?? null;
 }
 
 export interface I18nState {

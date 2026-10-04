@@ -41,7 +41,7 @@ import { PageRuntimeContext, usePageQueries } from "../page.tsx";
 import { useActivePage, type PageResolution } from "../router.tsx";
 import { ScreenContext, type ScreenState } from "../screen.ts";
 import { useDataState } from "../states.ts";
-import { useExposedStores } from "../store.ts";
+import { useExposedStores } from "../store-registry.ts";
 
 declare global {
   interface Window {
