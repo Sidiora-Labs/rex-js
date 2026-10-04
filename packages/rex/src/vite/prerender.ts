@@ -11,7 +11,9 @@ import type { Manifest } from "../manifest/types.ts";
 import {
   PRERENDER_LIST_FILE,
   PRERENDER_LIST_VERSION,
+  PRERENDER_SCREEN,
   RexStaticPageError,
+  applyScreenAttributes,
   isPrerenderMode,
   prerenderedFile,
   renderPrerenderedHtml,
@@ -173,7 +175,10 @@ export async function prerenderPages(
       if (rendered.page !== declared.id) {
         throw new RexStaticPageError(declared.id, path, `renders page "${rendered.page}" instead`);
       }
-      const html = mode === "static" ? stripHydration(rendered.html) : rendered.html;
+      const html = applyScreenAttributes(
+        mode === "static" ? stripHydration(rendered.html) : rendered.html,
+        PRERENDER_SCREEN,
+      );
       if (mode === "static") {
         const missing = missingForms(declared, html);
         if (missing.length > 0) {

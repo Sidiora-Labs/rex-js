@@ -16,6 +16,26 @@ export const TEXT_PREFIX = "/rex/pages/";
 export const DEV_AUDIT_PATH = "/rex/dev/audit";
 
 export type Density = (typeof DENSITIES)[number];
+
+export const ROOT_DENSITY: Readonly<Record<Density, string>> = Object.freeze({
+  default: "comfortable",
+  agent: "agent",
+});
+
+export function rootDensity(density: Density): string {
+  return ROOT_DENSITY[density];
+}
+
+export async function checkRootDensity(page: Page, density: Density): Promise<string> {
+  const attribute = await page.evaluate(() =>
+    document.documentElement.getAttribute("data-rex-density"),
+  );
+  const expected = rootDensity(density);
+  if (attribute !== expected) {
+    throw new Error(`data-rex-density is ${String(attribute)}, expected ${expected}`);
+  }
+  return expected;
+}
 export type Route = "click" | "key" | "url" | "palette";
 
 export interface ManifestAction {

@@ -121,6 +121,151 @@ function registerVitals(durationThreshold: number): void {
   );
 }
 
+const CLS_SESSION_GAP_MS = 1000;
+const CLS_SESSION_LIMIT_MS = 5000;
+
+interface StaticVitalsStore {
+  readonly lcp: { value: number; target: string | null; url: string | null }[];
+  readonly shifts: { value: number; startTime: number }[];
+  readonly events: { duration: number; name: string; interactionId: number }[];
+  firstInput: { duration: number; name: string; inputDelay: number } | null;
+}
+
+interface NavigationReading {
+  readonly timeToFirstByte: number;
+  readonly domContentLoaded: number;
+  readonly load: number;
+}
+
+function registerStaticVitals(durationThreshold: number): void {
+  const store: StaticVitalsStore = { lcp: [], shifts: [], events: [], firstInput: null };
+  (window as unknown as { __rexStaticVitals: StaticVitalsStore }).__rexStaticVitals = store;
+  new PerformanceObserver((list) => {
+    for (const entry of list.getEntries() as (PerformanceEntry & {
+      element?: Element | null;
+      url?: string;
+    })[]) {
+      store.lcp.push({
+        value: entry.startTime,
+        target: entry.element?.tagName.toLowerCase() ?? null,
+        url: entry.url === undefined || entry.url === "" ? null : entry.url,
+      });
+    }
+  }).observe({ type: "largest-contentful-paint", buffered: true });
+  new PerformanceObserver((list) => {
+    for (const entry of list.getEntries() as (PerformanceEntry & {
+      value: number;
+      hadRecentInput: boolean;
+    })[]) {
+      if (!entry.hadRecentInput)
+        store.shifts.push({ value: entry.value, startTime: entry.startTime });
+    }
+  }).observe({ type: "layout-shift", buffered: true });
+  new PerformanceObserver((list) => {
+    for (const entry of list.getEntries() as (PerformanceEntry & { interactionId?: number })[]) {
+      const interactionId = entry.interactionId ?? 0;
+      if (interactionId > 0) {
+        store.events.push({ duration: entry.duration, name: entry.name, interactionId });
+      }
+    }
+  }).observe({ type: "event", buffered: true, durationThreshold } as PerformanceObserverInit);
+  new PerformanceObserver((list) => {
+    for (const entry of list.getEntries() as (PerformanceEntry & { processingStart: number })[]) {
+      store.firstInput ??= {
+        duration: entry.duration,
+        name: entry.name,
+        inputDelay: entry.processingStart - entry.startTime,
+      };
+    }
+  }).observe({ type: "first-input", buffered: true });
+}
+
+function largestShiftSession(shifts: StaticVitalsStore["shifts"]): number {
+  let largest = 0;
+  let session = 0;
+  let first = 0;
+  let previous = 0;
+  for (const shift of [...shifts].sort((a, b) => a.startTime - b.startTime)) {
+    const continues =
+      session > 0 &&
+      shift.startTime - previous < CLS_SESSION_GAP_MS &&
+      shift.startTime - first < CLS_SESSION_LIMIT_MS;
+    if (continues) {
+      session += shift.value;
+    } else {
+      session = shift.value;
+      first = shift.startTime;
+    }
+    previous = shift.startTime;
+    largest = Math.max(largest, session);
+  }
+  return largest;
+}
+
+function rated(value: number, good: number, poor: number): string {
+  if (value <= good) return "good";
+  return value <= poor ? "needs-improvement" : "poor";
+}
+
+async function staticVitals(page: Page): Promise<VitalStore> {
+  const read = await page.evaluate(() => {
+    const store = (window as unknown as { __rexStaticVitals?: StaticVitalsStore })
+      .__rexStaticVitals;
+    const navigation = performance.getEntriesByType("navigation")[0] as
+      PerformanceNavigationTiming | undefined;
+    return {
+      store: store === undefined ? null : JSON.parse(JSON.stringify(store)),
+      navigation:
+        navigation === undefined
+          ? null
+          : {
+              timeToFirstByte: navigation.responseStart,
+              domContentLoaded: navigation.domContentLoadedEventEnd,
+              load: navigation.loadEventEnd,
+            },
+    } as { store: StaticVitalsStore | null; navigation: NavigationReading | null };
+  });
+  const metrics: VitalStore = {};
+  if (read.store === null || read.navigation === null) return metrics;
+  const { store, navigation } = read;
+  const largest = store.lcp.at(-1);
+  if (largest !== undefined) {
+    metrics.LCP = {
+      value: largest.value,
+      rating: rated(largest.value, 2500, 4000),
+      entries: store.lcp.length,
+      attribution: {
+        target: largest.target,
+        url: largest.url,
+        timeToFirstByte: navigation.timeToFirstByte,
+        domContentLoaded: navigation.domContentLoaded,
+        load: navigation.load,
+      },
+    };
+  }
+  const cls = largestShiftSession(store.shifts);
+  metrics.CLS = {
+    value: cls,
+    rating: rated(cls, 0.1, 0.25),
+    entries: store.shifts.length,
+    attribution: { loadState: navigation.load > 0 ? "complete" : "loading" },
+  };
+  const durations = store.events.map((entry) => entry.duration);
+  if (store.firstInput !== null) durations.push(store.firstInput.duration);
+  const inp = durations.length === 0 ? 0 : Math.max(...durations);
+  metrics.INP = {
+    value: inp,
+    rating: rated(inp, 200, 500),
+    entries: store.events.length + (store.firstInput === null ? 0 : 1),
+    attribution: {
+      interactionType: store.firstInput?.name ?? null,
+      inputDelay: store.firstInput?.inputDelay ?? null,
+      eventsOverThreshold: store.events.length,
+    },
+  };
+  return metrics;
+}
+
 let demo: RunningDemo | null = null;
 let served: WalkManifest | null = null;
 const reports: VitalsPageReport[] = [];
@@ -239,17 +384,23 @@ async function measurePage(
   const url = pageUrl(base, pageInfo.route, { density: DENSITY });
   try {
     const page = await context.newPage();
+    if (isStaticPage(pageInfo)) {
+      await page.addInitScript({
+        content: `;(${registerStaticVitals.toString()})(${String(INP_DURATION_THRESHOLD)});`,
+      });
+      await page.goto(url);
+      await waitForSidecar(page, pageInfo.id, { mirror: false });
+      await page.waitForLoadState("load");
+      await settleFrames(page);
+      const interactions = [await typeIntoForm(page)];
+      await settleFrames(page);
+      const metrics = await staticVitals(page);
+      return { page: pageInfo.id, url, interactions, metrics, failures: judge(metrics) };
+    }
     await page.addInitScript({
       content: `${ATTRIBUTION_BUILD}\n;(${registerVitals.toString()})(${String(INP_DURATION_THRESHOLD)});`,
     });
     await page.goto(url);
-    if (isStaticPage(pageInfo)) {
-      await waitForSidecar(page, pageInfo.id, { mirror: false });
-      const interactions = [await typeIntoForm(page)];
-      await settleFrames(page);
-      const metrics = await finalizeVitals(page);
-      return { page: pageInfo.id, url, interactions, metrics, failures: judge(metrics) };
-    }
     await waitForSidecar(page, pageInfo.id);
     const interactions = [await openAndClosePalette(page)];
     const invoked = await invokeReversible(page, base, manifest, pageInfo);

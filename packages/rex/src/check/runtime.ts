@@ -47,6 +47,7 @@ export interface RuntimeMount {
   readonly path: string;
   readonly actions: readonly string[];
   readonly controls: readonly string[];
+  readonly nav: readonly string[];
 }
 
 export interface RuntimeCheckResult extends CheckResult {
@@ -115,6 +116,18 @@ function readControls(root: ParentNode): ControlRead[] {
     });
   }
   return found;
+}
+
+const NAV_LINK_SELECTOR = "nav [data-rex-nav]";
+
+function readNavLinks(root: ParentNode): string[] {
+  const found = new Set<string>();
+  for (const element of root.querySelectorAll(NAV_LINK_SELECTOR)) {
+    const address = element.getAttribute("data-rex-nav");
+    if (address === null || address === "" || !isVisibleControl(element)) continue;
+    found.add(address);
+  }
+  return [...found].sort();
 }
 
 export interface ParityGap {
@@ -384,21 +397,34 @@ async function mountPage(
       h(
         client.PageRuntimeContext.Provider,
         { value: runtimeValue },
-        h(
-          "div",
-          { "data-rex-shell": "" },
-          client.SHELL_SLOTS.map(({ id, Component }) =>
-            id === "body"
-              ? h(ForcedBody, { key: id })
-              : h(Component, {
-                  key: id,
-                  resolution,
-                  active: declared,
-                  modules: pageModules,
-                  navPages,
-                  Outcome: client.AgentOutcome,
-                }),
-          ),
+        h(ForcedShell),
+      ),
+    );
+  }
+
+  function ForcedShell(): ReactNode {
+    const manifest = client.useManifest();
+    const links = client.useNavLinks(declared, navPages);
+    const { screen } = client.useScreen();
+    const Frame = client.useShellComponent("Frame");
+    const palette = react.useMemo(() => client.paletteTrigger(), []);
+    return h(
+      "div",
+      { "data-rex-shell": "" },
+      h(
+        Frame,
+        { appName: manifest.app.name, links, navForm: client.navFormFor(screen), palette },
+        client.SHELL_SLOTS.map(({ id, Component }) =>
+          id === "body"
+            ? h(ForcedBody, { key: id })
+            : h(Component, {
+                key: id,
+                resolution,
+                active: declared,
+                modules: pageModules,
+                navPages,
+                Outcome: client.AgentOutcome,
+              }),
         ),
       ),
     );
@@ -424,6 +450,7 @@ async function mountPage(
   const label = `page "${declared.id}" as ${subject.id} in ${state}`;
   let sidecar: SidecarPayload | null = null;
   let controls: ControlRead[] = [];
+  let nav: string[] = [];
   try {
     root.render(h(RexApp, null, h(client.RexProviders, null, h(ForcedFrame))));
     await settle(traffic, runtime.settleTimeoutMs, label);
@@ -437,6 +464,7 @@ async function mountPage(
         );
       }
       controls = readControls(document);
+      nav = readNavLinks(document);
     }
   } catch (error) {
     errors.push(errorText(error));
@@ -452,6 +480,7 @@ async function mountPage(
       state,
       path: target.href,
       actions: Object.freeze(sidecar === null ? [] : sidecar.actions.map((entry) => entry.id)),
+      nav: Object.freeze(nav),
       controls: Object.freeze(
         [...new Set(controls.filter((control) => control.visible).map((control) => control.address))].sort(),
       ),

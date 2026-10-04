@@ -29,7 +29,9 @@ import { SIDECAR_MIME_TYPE } from "../manifest/sidecar.schema.ts";
 import {
   PRERENDER_LIST_FILE,
   PRERENDER_NONCE,
+  PRERENDER_SCREEN,
   RexStaticPageError,
+  applyScreenAttributes,
   parsePrerenderList,
 } from "../server/adapters/static-cache.ts";
 import { memoryLedger } from "../server/audit.ts";
@@ -341,6 +343,28 @@ describe("rex build prerendering", { timeout: BUILD_TIMEOUT_MS }, () => {
     };
     expect(payload).toMatchObject({ page: "about", state: "ready" });
     expect(JSON.stringify(payload)).toContain("subscribe");
+  });
+
+  it("writes the default screen, pointer and density on the html element and in the sidecar of every prerendered page", () => {
+    expect(PRERENDER_SCREEN).toEqual({ screen: "desktop", pointer: "fine", density: "comfortable" });
+    for (const entry of result.list.pages) {
+      const html = read(entry.file);
+      const root = /<html\b[^>]*>/.exec(html)?.[0] ?? "";
+      expect(root).toContain(' data-rex-screen="desktop"');
+      expect(root).toContain(' data-rex-pointer="fine"');
+      expect(root).toContain(' data-rex-density="comfortable"');
+      expect(applyScreenAttributes(html, PRERENDER_SCREEN)).toBe(html);
+      const sidecar = new RegExp(
+        `<script type="${SIDECAR_MIME_TYPE.replace("+", "\\+")}"[^>]*>([\\s\\S]*?)</script>`,
+      ).exec(html);
+      expect(sidecar).not.toBeNull();
+      expect(JSON.parse(sidecar?.[1] as string)).toMatchObject({
+        page: entry.page,
+        screen: "desktop",
+        pointer: "fine",
+        density: "comfortable",
+      });
+    }
   });
 
   it("writes ssg pages that still hydrate and carry the build nonce for the server to replace", () => {

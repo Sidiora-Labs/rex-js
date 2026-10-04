@@ -8,18 +8,18 @@
   "pages": [
     {
       "page": "about",
-      "url": "http://127.0.0.1:42965/about?density=default",
+      "url": "http://127.0.0.1:39655/about?density=default",
       "lighthouseVersion": "13.5.0",
       "scores": {
         "performance": 100,
         "accessibility": 100
       },
       "metrics": {
-        "first-contentful-paint": 359.985,
-        "largest-contentful-paint": 679.985,
+        "first-contentful-paint": 343.336,
+        "largest-contentful-paint": 663.336,
         "total-blocking-time": 0,
         "cumulative-layout-shift": 0,
-        "speed-index": 467.2256012458801
+        "speed-index": 494.73692032630817
       },
       "accessibilityFindings": [],
       "runWarnings": [],
@@ -27,23 +27,44 @@
     },
     {
       "page": "embed",
-      "url": "http://127.0.0.1:42965/embed?density=default",
+      "url": "http://127.0.0.1:39655/embed?density=default",
       "lighthouseVersion": "13.5.0",
       "scores": {
-        "performance": 88,
+        "performance": 96,
         "accessibility": 100
       },
       "metrics": {
-        "first-contentful-paint": 1380.5904999999998,
-        "largest-contentful-paint": 1645.7269999999999,
-        "total-blocking-time": 81,
+        "first-contentful-paint": 841.3744,
+        "largest-contentful-paint": 1093.6872000000003,
+        "total-blocking-time": 107.5,
         "cumulative-layout-shift": 0.0007126863526252809,
-        "speed-index": 1380.5904999999998
+        "speed-index": 841.3744
       },
       "accessibilityFindings": [],
       "runWarnings": [],
+      "failures": []
+    },
+    {
+      "page": "portfolio",
+      "url": "http://127.0.0.1:39655/?density=default",
+      "lighthouseVersion": "13.5.0",
+      "scores": {
+        "performance": 66,
+        "accessibility": 97
+      },
+      "metrics": {
+        "first-contentful-paint": 1642.7890500000003,
+        "largest-contentful-paint": 1882.1573500000004,
+        "total-blocking-time": 389,
+        "cumulative-layout-shift": 0.00007586062224557102,
+        "speed-index": 1838.6757696609116
+      },
+      "accessibilityFindings": [
+        "color-contrast: Background and foreground colors do not have a sufficient contrast ratio."
+      ],
+      "runWarnings": [],
       "failures": [
-        "performance 88 is under 90"
+        "performance 66 is under 90"
       ]
     }
   ]

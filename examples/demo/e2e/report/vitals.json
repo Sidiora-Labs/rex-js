@@ -1,0 +1,50 @@
+{
+  "thresholds": {
+    "LCP": 2500,
+    "CLS": 0.1,
+    "INP": 200
+  },
+  "density": "default",
+  "pages": [
+    {
+      "page": "about",
+      "url": "http://127.0.0.1:41307/about?density=default",
+      "interactions": [
+        "typed into the first form field"
+      ],
+      "metrics": {
+        "LCP": {
+          "value": 544,
+          "rating": "good",
+          "entries": 1,
+          "attribution": {
+            "target": "p",
+            "url": null,
+            "timeToFirstByte": 149.39999771118164,
+            "domContentLoaded": 480.79999923706055,
+            "load": 484.89999771118164
+          }
+        },
+        "CLS": {
+          "value": 0,
+          "rating": "good",
+          "entries": 0,
+          "attribution": {
+            "loadState": "complete"
+          }
+        },
+        "INP": {
+          "value": 48,
+          "rating": "good",
+          "entries": 9,
+          "attribution": {
+            "interactionType": "pointerdown",
+            "inputDelay": 9.599998474121094,
+            "eventsOverThreshold": 8
+          }
+        }
+      },
+      "failures": []
+    }
+  ]
+}
