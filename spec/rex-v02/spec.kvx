@@ -1998,14 +1998,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.9.7]
 title = "Isolate the stores a server render exposes so a sidecar never carries another page's stores"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 9
 requires = ["9.6"]
 reqs = ["22.2", "3.4"]
 do_1 = "Reproduce the leak the screen-fit work observed on the built demo (qualification entry from task 9.4's screen-fit run): after the server renders /embed, or regenerates the stale /tokens page, every later server-rendered sidecar on / and /send carries stores.watchlist, a store those pages never load, so readSidecar in the walk fails with window.__rex differs from the sidecar script. Write the failing test first in packages/rex/src/server/ssr.node.test.ts or ssr.test.tsx: render a page whose region exposes a store, then render a page that does not, and assert the second sidecar lists only its own stores and that the client-side hydration equality (window.__rex equals the sidecar script) holds; then scope the exposed-store registry per render (the store registry and the sidecar registry must be created inside the render or carried through the request context, never module-level state shared across requests), keeping the client behaviour identical."
 do_2 = "Run the demo's e2e operability walk on the built demo in the page order about, embed, portfolio, send, tokens and keep readSidecar's parity assertion as it is; record in the task report which module held the shared state and how it is scoped now."
-touches = ["packages/rex/src/client/store-registry.ts", "packages/rex/src/client/store.ts", "packages/rex/src/client/store.test.tsx", "packages/rex/src/client/store-registry.test.tsx", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/providers.ts", "packages/rex/src/client/entry.tsx", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/ssr.node.test.ts", "packages/rex/src/server/routes/render.ts", "packages/rex/src/server/context.ts"]
+touches = ["packages/rex/src/client/store-registry.ts", "packages/rex/src/client/store.ts", "packages/rex/src/client/store-registry.test.tsx", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx"]
 verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server src/client && pnpm -C packages/rex build && pnpm -C examples/demo test:unit && pnpm -C examples/demo exec playwright test e2e/operability.spec.ts"
 gate_kind = "planned"
 max_builds = 1

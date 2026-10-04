@@ -2,6 +2,14 @@ import { QueryClient, dehydrate } from "@tanstack/react-query";
 import { StrictMode, createElement, type ComponentType, type ReactNode } from "react";
 import { renderToReadableStream } from "react-dom/server";
 import { Router } from "wouter";
+import {
+  AffordanceRegistryProvider,
+  OverlayRegistryProvider,
+  RegionFailureRegistryContext,
+  createAffordanceRegistry,
+  createOverlayRegistry,
+  createRegionFailureRegistry,
+} from "../client/agent/sidecar.tsx";
 import { createRexEntry, type RexEntryBundle } from "../client/entry.tsx";
 import {
   CLIENT_RENDER_DIGEST,
@@ -46,6 +54,12 @@ import {
   type ScreenState,
 } from "../client/screen.ts";
 import { NOT_FOUND_TITLE } from "../client/shell.tsx";
+import type { RexStore } from "../client/store.ts";
+import {
+  StoreRegistryProvider,
+  createStoreRegistry,
+  type StoreRegistry,
+} from "../client/store-registry.ts";
 import { resolveOptions, type FontSpec, type ResolvedFont } from "../core/config.ts";
 import { RexError } from "../core/errors.ts";
 import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from "../core/page.ts";
@@ -401,6 +415,56 @@ export function routedPathname(source: I18nSource | null, pathname: string): str
   return stripLocalePrefix(pathname, source.settings.locales);
 }
 
+type RenderedStream = Awaited<ReturnType<typeof renderToReadableStream>>;
+type RenderStreamOptions = NonNullable<Parameters<typeof renderToReadableStream>[1]>;
+
+function renderStores(seed: readonly RexStore<unknown>[]): StoreRegistry {
+  const stores = createStoreRegistry({ follow: false });
+  for (const entry of seed) stores.register(entry);
+  return stores;
+}
+
+function exposedEntries(stores: StoreRegistry): RexStore<unknown>[] {
+  return Object.keys(stores.exposed()).map((id) => stores.get(id) as RexStore<unknown>);
+}
+
+function renderScope(stores: StoreRegistry, children: ReactNode): ReactNode {
+  return createElement(
+    StoreRegistryProvider,
+    { registry: stores },
+    createElement(
+      OverlayRegistryProvider,
+      { registry: createOverlayRegistry() },
+      createElement(
+        AffordanceRegistryProvider,
+        { registry: createAffordanceRegistry() },
+        createElement(
+          RegionFailureRegistryContext.Provider,
+          { value: createRegionFailureRegistry() },
+          children,
+        ),
+      ),
+    ),
+  );
+}
+
+async function renderWithOwnStores(
+  tree: (stores: StoreRegistry) => ReactNode,
+  options: RenderStreamOptions,
+  settle: (stream: RenderedStream) => Promise<boolean>,
+): Promise<RenderedStream> {
+  let seed: readonly RexStore<unknown>[] = [];
+  for (;;) {
+    const stores = renderStores(seed);
+    const stream = await renderToReadableStream(tree(stores), options);
+    if (!(await settle(stream))) return stream;
+    const exposed = exposedEntries(stores);
+    if (exposed.length === seed.length) return stream;
+    await stream.cancel();
+    seed = exposed;
+  }
+}
+
 export function createRexRenderer(options: RexRendererOptions): RexPageRenderer {
   const bundle = options.bundle;
   if (typeof bundle !== "object" || bundle === null || !Array.isArray(bundle.pages)) {
@@ -436,6 +500,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     media: RexMediaCollector,
     csrf: string | null,
     screen: ScreenState,
+    stores: StoreRegistry,
   ): ReactNode {
     const RexEntry = createRexEntry(
       { registry, manifest, pages },
@@ -444,7 +509,11 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     const app = createElement(
       ScreenSeedContext.Provider,
       { value: screen },
-      createElement(MediaProvider, { value: media }, createElement(RexEntry)),
+      createElement(
+        MediaProvider,
+        { value: media },
+        renderScope(stores, createElement(RexEntry)),
+      ),
     );
     const entry = createElement(
       StrictMode,
@@ -537,16 +606,28 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
           overlays: (loaded.overlays ?? {}) as Readonly<Record<string, ComponentType>>,
         });
         const pages = bundle.pages.map((entry) => (entry.page === match.page ? eager : entry));
-        const media = createMediaCollector(context.nonce);
-        const stream = await renderToReadableStream(
-          entryTree(url, context, pages, queryClient, locale, media.collector, csrf, screen),
+        body = await renderWithOwnStores(
+          (stores) =>
+            entryTree(
+              url,
+              context,
+              pages,
+              queryClient,
+              locale,
+              createMediaCollector(context.nonce).collector,
+              csrf,
+              screen,
+              stores,
+            ),
           {
             nonce: context.nonce,
             progressiveChunkSize: INLINE_BOUNDARY_BYTES,
           },
+          async (stream) => {
+            await stream.allReady;
+            return true;
+          },
         );
-        await stream.allReady;
-        body = stream;
       } catch {
         body = null;
       }
@@ -612,23 +693,42 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         if (!(await loadPageData(request, resolution, context, queryClient))) kind = "failed";
       }
     }
-    const media = createMediaCollector(context.nonce);
+    let media = createMediaCollector(context.nonce);
     const errors: unknown[] = [];
-    let stream: Awaited<ReturnType<typeof renderToReadableStream>>;
+    let stream: RenderedStream;
     try {
-      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient, locale, media.collector, csrf, screen), {
-        nonce: context.nonce,
-        progressiveChunkSize: INLINE_BOUNDARY_BYTES,
-        onError(error) {
-          if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
-          errors.push(error);
-          return undefined;
+      stream = await renderWithOwnStores(
+        (stores) => {
+          media = createMediaCollector(context.nonce);
+          return entryTree(
+            url,
+            context,
+            serverPages,
+            queryClient,
+            locale,
+            media.collector,
+            csrf,
+            screen,
+            stores,
+          );
         },
-      });
+        {
+          nonce: context.nonce,
+          progressiveChunkSize: INLINE_BOUNDARY_BYTES,
+          onError(error) {
+            if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
+            errors.push(error);
+            return undefined;
+          },
+        },
+        async (rendered) => {
+          await rendered.allReady.catch(() => {});
+          return errors.length === 0;
+        },
+      );
     } catch {
       return failure(url, match, context, locale, csrf, screen);
     }
-    await stream.allReady.catch(() => {});
     if (errors.length > 0) {
       await stream.cancel();
       return failure(url, match, context, locale, csrf, screen);

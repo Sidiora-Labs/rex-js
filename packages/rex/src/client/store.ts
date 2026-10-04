@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import { RexError } from "../core/errors.ts";
 import { validateName } from "../core/ids.ts";
 import { registerReset } from "./reset.ts";
-import { defaultStoreRegistry, toJsonValue } from "./store-registry.ts";
+import { defaultStoreRegistry, toJsonValue, useRenderedStore } from "./store-registry.ts";
 
 export {
   createStoreRegistry,
@@ -109,6 +109,7 @@ export function store<T>(id: string, options: StoreOptions<T>): RexStore<T> {
     },
     subscribe,
     useStore(): T {
+      useRenderedStore(created as RexStore<unknown>);
       return useSyncExternalStore(subscribe, get, () => initial);
     },
     reset() {
