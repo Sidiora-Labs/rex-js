@@ -18,13 +18,15 @@ export function HeaderSlot({ active }: ShellSlotProps) {
       ? undefined
       : registry.find("page", active.chrome.back);
   return (
-    <header>
-      <h1>{active === null ? NOT_FOUND_TITLE : text(active.chrome.title)}</h1>
+    <div className="rex-page-header">
+      <h1 className="rex-page-title">
+        {active === null ? NOT_FOUND_TITLE : text(active.chrome.title)}
+      </h1>
       {backTarget === undefined ? null : (
         <Button type="button" data-rex-nav={backTarget.id} onClick={() => nav.back()}>
           Back to {text(backTarget.chrome.title)}
         </Button>
       )}
-    </header>
+    </div>
   );
 }

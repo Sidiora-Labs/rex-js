@@ -24,7 +24,7 @@ export function RecoverySlot({ resolution }: ShellSlotProps) {
     resolution.kind === "page" && !resolution.policy.allowed ? resolution.recovery : null;
   if (recovery === null) return null;
   return (
-    <p>
+    <p className="rex-recovery">
       <Button type="button" data-rex-nav={recovery.id} onClick={() => nav.to(recovery)}>
         Go to {text(recovery.chrome.title)}
       </Button>
