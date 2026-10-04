@@ -22,6 +22,7 @@ import {
   type PageModuleSet,
   type StateExportComponent,
 } from "../client/page.tsx";
+import { CsrfTokenContext } from "../client/form.tsx";
 import { LocaleSeedContext, i18nFor, type I18nSource } from "../client/i18n/context.ts";
 import { stripLocalePrefix } from "../client/i18n/locale.ts";
 import { translate } from "../client/i18n/messages.ts";
@@ -40,7 +41,9 @@ import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from
 import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import type { Manifest } from "../manifest/types.ts";
 import type { RexRequestContext } from "./context.ts";
-import { loaderRunnerFor, runPageLoaders } from "./loaders.ts";
+import { csrfGrantFor } from "./form.ts";
+import type { Ledger } from "./audit.ts";
+import { createActionLoaderRunner, loaderRunnerFor, runPageLoaders } from "./loaders.ts";
 import { resolveRequestLocale } from "./locale.ts";
 import type { RenderKind, RexPageRenderer, RexRenderResult } from "./routes/render.ts";
 
@@ -74,9 +77,10 @@ export interface RexRendererOptions {
   readonly rootElement?: string;
   readonly lang?: string;
   readonly fonts?: readonly FontSpec[];
+  readonly ledger?: Ledger;
 }
 
-type ResolvedRendererOptions = Required<Omit<RexRendererOptions, "bundle" | "fonts">> & {
+type ResolvedRendererOptions = Required<Omit<RexRendererOptions, "bundle" | "fonts" | "ledger">> & {
   readonly fonts: readonly ResolvedFont[];
 };
 
@@ -366,6 +370,10 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     fonts: resolveOptions({ fonts: options.fonts ?? [] }).fonts,
   };
   const registry = bundle.registry;
+  const ownRunner =
+    options.ledger === undefined
+      ? undefined
+      : createActionLoaderRunner(registry, { ledger: options.ledger });
   const sets = new Map<string, PageModuleSet>();
   for (const set of bundle.pages) sets.set(set.page.id, set);
   const serverPages = bundle.pages.map((set) =>
@@ -379,15 +387,17 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     queryClient: QueryClient,
     locale: string | null,
     media: RexMediaCollector,
+    csrf: string | null,
   ): ReactNode {
     const RexEntry = createRexEntry(
       { registry, manifest, pages },
       { actor: context.actor, baseUrl: url.origin, queryClient },
     );
+    const app = createElement(MediaProvider, { value: media }, createElement(RexEntry));
     const entry = createElement(
       StrictMode,
       null,
-      createElement(MediaProvider, { value: media }, createElement(RexEntry)),
+      csrf === null ? app : createElement(CsrfTokenContext.Provider, { value: csrf }, app),
     );
     return createElement(Router, {
       ssrPath: url.pathname,
@@ -453,6 +463,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     match: PageMatch | null,
     context: RexRequestContext,
     locale: string | null,
+    csrf: string | null,
   ): Promise<RexRenderResult> {
     const queryClient = new QueryClient();
     const head = documentHead(resolved, parts(match, context, queryClient, false, locale));
@@ -473,7 +484,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         const pages = bundle.pages.map((entry) => (entry.page === match.page ? eager : entry));
         const media = createMediaCollector(context.nonce);
         const stream = await renderToReadableStream(
-          entryTree(url, context, pages, queryClient, locale, media.collector),
+          entryTree(url, context, pages, queryClient, locale, media.collector, csrf),
           {
             nonce: context.nonce,
           },
@@ -500,7 +511,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     const declared = resolution.page;
     if (declared.loaders.length === 0) return true;
     if (!resolution.policy.allowed || resolution.issues.length > 0) return true;
-    const runner = loaderRunnerFor(request);
+    const runner = loaderRunnerFor(request) ?? ownRunner;
     if (runner === undefined) {
       throw new RexError(
         "REX408",
@@ -522,6 +533,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     const source = i18nFor(registry);
     const locale = requestLocale(source, request, context);
     const match = matchPage(registry.pages, routedPathname(source, url.pathname));
+    const csrf = csrfGrantFor(request)?.token ?? null;
     const queryClient = new QueryClient();
     let kind: RenderKind = "not-found";
     if (match !== null) {
@@ -538,7 +550,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         try {
           await loadedModules(sets.get(match.page.id) as PageModuleSet);
         } catch {
-          return failure(url, match, context, locale);
+          return failure(url, match, context, locale, csrf);
         }
         if (!(await loadPageData(request, resolution, context, queryClient))) kind = "failed";
       }
@@ -547,7 +559,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     const errors: unknown[] = [];
     let stream: Awaited<ReturnType<typeof renderToReadableStream>>;
     try {
-      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient, locale, media.collector), {
+      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient, locale, media.collector, csrf), {
         nonce: context.nonce,
         onError(error) {
           if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
@@ -556,12 +568,12 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         },
       });
     } catch {
-      return failure(url, match, context, locale);
+      return failure(url, match, context, locale, csrf);
     }
     await Promise.race([stream.allReady.catch(() => {}), nextTask()]);
     if (errors.length > 0) {
       await stream.cancel();
-      return failure(url, match, context, locale);
+      return failure(url, match, context, locale, csrf);
     }
     return {
       kind,

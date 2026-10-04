@@ -17,6 +17,7 @@ import { prerenderBuild, type PrerenderBuildResult } from "../cli/commands/build
 import type { RexEntryBundle } from "../client/entry.tsx";
 import { region, view, type EagerPageModuleSet } from "../client/page.tsx";
 import { action } from "../core/action.ts";
+import { anonymousActor } from "../core/actor.ts";
 import { isRexError } from "../core/errors.ts";
 import { page, type AnyPage } from "../core/page.ts";
 import { always, can } from "../core/policy.ts";
@@ -31,6 +32,7 @@ import {
   RexStaticPageError,
   parsePrerenderList,
 } from "../server/adapters/static-cache.ts";
+import { memoryLedger } from "../server/audit.ts";
 import {
   EMPTY_DOCUMENT_ASSETS,
   createRexRenderer,
@@ -38,8 +40,10 @@ import {
   pageRenderMode,
   type RexDocumentAssets,
 } from "../server/ssr.ts";
+import { useLoader } from "../client/loaders.ts";
 import { rex } from "./plugin.ts";
 import {
+  type PrerenderRuntime,
   expandPagePaths,
   formatPrerenderList,
   prerenderPages,
@@ -138,10 +142,26 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     'export default region("signup", () => <ActionForm action={subscribe} />);',
     "",
   ].join("\n"),
+  "app/actions/list-chapters.ts": [
+    'import { action, always } from "@sidioralabs/rex";',
+    'import { text } from "@sidioralabs/rex/schema";',
+    'import { z } from "zod/mini";',
+    "",
+    'export const listChapters = action("list-chapters", {',
+    "  input: z.object({ slug: text({ min: 1, max: 40 }) }),",
+    "  output: z.object({ titles: z.array(z.string()) }),",
+    "  policy: always(),",
+    '  effect: "read",',
+    '  label: "List chapters",',
+    "  handler: (input) => ({ titles: [`${input.slug} basics`, `${input.slug} next steps`] }),",
+    "});",
+    "",
+  ].join("\n"),
   "app/pages/guide/page.ts": [
     'import { page } from "@sidioralabs/rex";',
     'import { text } from "@sidioralabs/rex/schema";',
     'import { z } from "zod/mini";',
+    'import { listChapters } from "../../actions/list-chapters.ts";',
     "",
     'export default page("guide", {',
     '  route: "/guides/:slug",',
@@ -149,6 +169,7 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     '  render: "ssg",',
     "  revalidate: 60,",
     '  paths: () => [{ slug: "intro" }, { slug: "setup" }, { slug: "intro" }],',
+    "  load: { chapters: { action: listChapters, input: (params) => ({ slug: String(params.slug) }) } },",
     '  chrome: { title: "Guide" },',
     '  regions: ["body"],',
     "});",
@@ -168,12 +189,27 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
   ].join("\n"),
   "app/pages/guide/states.tsx": STATES,
   "app/pages/guide/regions/body/region.tsx": [
+    'import { useLoader } from "@sidioralabs/rex/client";',
+    'import guide from "../../page.ts";',
+    "",
     "export default function Body() {",
-    '  return <section data-rex-region="guide/body">Read the guide</section>;',
+    '  const chapters = useLoader(guide, "chapters");',
+    "  return (",
+    '    <section data-rex-region="guide/body">',
+    "      Read the guide",
+    "      <ol>",
+    "        {(chapters.data?.titles ?? []).map((title) => (",
+    "          <li key={title}>{title}</li>",
+    "        ))}",
+    "      </ol>",
+    "    </section>",
+    "  );",
     "}",
     "",
   ].join("\n"),
 };
+
+const runtime: PrerenderRuntime = { createRexRenderer, pageRenderMode };
 
 const aliasPlugin: Plugin = {
   name: "prerender-fixture-alias",
@@ -318,7 +354,36 @@ describe("rex build prerendering", { timeout: BUILD_TIMEOUT_MS }, () => {
       expect(html).toContain(`nonce="${PRERENDER_NONCE}"`);
     }
   });
+
+  it("runs an ssg page's loaders through the action router and dehydrates them into the static document", () => {
+    for (const slug of ["intro", "setup"]) {
+      const html = read(`guides/${slug}/index.html`);
+      expect(html).toContain(`<li>${slug} basics</li>`);
+      expect(html).toContain(`<li>${slug} next steps</li>`);
+      const queries = dehydratedQueries(html);
+      expect(queries).toHaveLength(1);
+      expect(queries[0]?.queryKey.slice(0, 3)).toEqual(["loader", "guide", "chapters"]);
+      expect(queries[0]?.state).toMatchObject({
+        status: "success",
+        data: { titles: [`${slug} basics`, `${slug} next steps`] },
+      });
+    }
+  });
 });
+
+interface DehydratedQuery {
+  readonly queryKey: readonly unknown[];
+  readonly state: { readonly status: string; readonly data?: unknown };
+}
+
+function dehydratedQueries(html: string): readonly DehydratedQuery[] {
+  const script = /<script type="application\/rex\+data"[^>]*>([\s\S]*?)<\/script>/.exec(html);
+  expect(script, "the document carries the dehydrated loader data").not.toBeNull();
+  const payload = JSON.parse((script as RegExpExecArray)[1] as string) as {
+    readonly queries: { readonly queries: readonly DehydratedQuery[] };
+  };
+  return payload.queries.queries;
+}
 
 describe("path expansion", () => {
   const slugParams = z.object({ slug: text({ min: 1, max: 40 }) });
@@ -447,7 +512,7 @@ describe("prerender guards", () => {
     });
     const clientDir = tempClientDir();
     const failure = prerenderPages(
-      { bundle, ssr: { createRexRenderer, pageRenderMode }, assets: EMPTY_DOCUMENT_ASSETS },
+      { bundle, ssr: runtime, assets: EMPTY_DOCUMENT_ASSETS },
       { clientDir },
     );
     await expect(failure).rejects.toThrow(RexStaticPageError);
@@ -465,10 +530,76 @@ describe("prerender guards", () => {
     });
     await expect(
       prerenderPages(
-        { bundle, ssr: { createRexRenderer, pageRenderMode }, assets: EMPTY_DOCUMENT_ASSETS },
+        { bundle, ssr: runtime, assets: EMPTY_DOCUMENT_ASSETS },
         { clientDir: tempClientDir() },
       ),
     ).rejects.toThrow("render ended as denied");
+  });
+
+  it("runs the loaders of ssg and static pages as the build actor, audits each run and keeps the data only where the page hydrates", async () => {
+    const listHeadlines = action("list-headlines", {
+      input: z.object({}),
+      output: z.object({ titles: z.array(z.string()) }),
+      policy: always(),
+      effect: "read",
+      label: "List headlines",
+      handler: () => ({ titles: ["Rex 0.2 ships", "Loaders run at build time"] }),
+    });
+    const news = page("news", {
+      route: "/news",
+      render: "ssg",
+      load: { headlines: listHeadlines },
+      chrome: { title: "News" },
+    });
+    const bulletin = page("bulletin", {
+      route: "/bulletin",
+      render: "static",
+      load: { headlines: listHeadlines },
+      chrome: { title: "Bulletin" },
+    });
+    const headlinesOf = (declared: typeof news | typeof bulletin) =>
+      view(() => {
+        const headlines = useLoader(declared, "headlines");
+        return createElement(
+          "ul",
+          null,
+          (headlines.data?.titles ?? []).map((title) => createElement("li", { key: title }, title)),
+        );
+      });
+    const registry = createRegistry().register(listHeadlines, news, bulletin).freeze();
+    const bundle: RexEntryBundle = {
+      registry,
+      manifest: buildManifest(registry, { app: "loaders" }),
+      pages: [
+        { page: news, view: headlinesOf(news), states, regions: {}, overlays: {} },
+        { page: bulletin, view: headlinesOf(bulletin), states, regions: {}, overlays: {} },
+      ],
+    };
+    const ledger = memoryLedger();
+    const clientDir = tempClientDir();
+    const list = await prerenderPages(
+      { bundle, ssr: runtime, assets: EMPTY_DOCUMENT_ASSETS },
+      { clientDir, ledger },
+    );
+    expect(list.pages.map((entry) => [entry.path, entry.render])).toEqual([
+      ["/bulletin", "static"],
+      ["/news", "ssg"],
+    ]);
+    const ssg = readFileSync(join(clientDir, "news", "index.html"), "utf8");
+    const zeroJs = readFileSync(join(clientDir, "bulletin", "index.html"), "utf8");
+    for (const html of [ssg, zeroJs]) {
+      expect(html).toContain("<li>Rex 0.2 ships</li>");
+      expect(html).toContain("<li>Loaders run at build time</li>");
+    }
+    expect(dehydratedQueries(ssg).map((query) => [query.queryKey.slice(0, 3), query.state.data])).toEqual([
+      [["loader", "news", "headlines"], { titles: ["Rex 0.2 ships", "Loaders run at build time"] }],
+    ]);
+    expect(zeroJs).not.toContain("application/rex+data");
+    const records = await ledger.list();
+    expect(records.map((record) => [record.actionId, record.actor, record.outcome, record.effect])).toEqual([
+      ["list-headlines", anonymousActor.id, "ok", "read"],
+      ["list-headlines", anonymousActor.id, "ok", "read"],
+    ]);
   });
 
   it("carries the configured font preloads and the font-display swap block into ssg and static pages", async () => {
@@ -487,7 +618,7 @@ describe("prerender guards", () => {
     const list = await prerenderPages(
       {
         bundle,
-        ssr: { createRexRenderer, pageRenderMode },
+        ssr: runtime,
         assets: EMPTY_DOCUMENT_ASSETS,
         fonts: [
           { family: "Inter", src: "/fonts/inter.woff2", weight: "100 900" },

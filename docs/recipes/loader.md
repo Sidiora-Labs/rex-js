@@ -58,6 +58,8 @@ export default page("token", {
 
 `page()` validates the declaration and throws a `RexDeclarationError` with code `REX203` when a loader name is not camelCase, when a value is neither an action nor `{ action, input }`, or when the action's effect is not `read`; `cache.staleTime` (milliseconds) is validated as `REX204`. The manifest lists each loader under the page as `{ name, action, input }`, where `input` is `"params"` for a bare action and `"mapped"` for `{ action, input }`.
 
+In the demo, the portfolio and send pages declare `load: { wallet: loadWallet }` (`examples/demo/app/pages/portfolio/page.ts` and `examples/demo/app/pages/send/page.ts`), and the embed page declares `load: { tokens: listTokens }` (`examples/demo/app/pages/embed/page.ts`).
+
 ## 3. Read it with `useLoader`
 
 `useLoader(page, name)` returns the TanStack Query result for one loader, typed with the action's output. `useLoaders(page)` returns all of them keyed by name.
@@ -83,11 +85,14 @@ export default region("detail", () => {
 });
 ```
 
+The demo reads its wallet loader the same way in `examples/demo/app/pages/portfolio/hooks/useWallet.ts`, which calls `useLoader(active.page, "wallet")` for the active page, and its regions call `useWallet()`.
+
 Every consumer of the same loader with the same input shares one query: the key is `["loader", <page id>, <loader name>, <input digest>]`, so two regions reading `token` send one request. `cache.staleTime` applies to every loader of the page.
 
 ## What happens at run time
 
 - **Server render.** For a page rendered on the server (the default `render: "ssr"`), the server runs the page's loaders in process through the action router, so policy, validation and audit apply, and writes the results into the HTML in a `<script type="application/rex+data">`. The client hydrates them into the QueryClient before the first render, so the first paint has data and sends no request.
+- **Build time.** For a page with `render: "ssg"` or `render: "static"`, `rex build` runs the page's loaders while it prerenders the page, through the same action router as a server render, as the anonymous build actor, so policy, validation and audit apply. An `ssg` page carries the results in its `<script type="application/rex+data">` and hydrates them like a server-rendered page; a `static` page keeps only the rendered HTML, since it ships no JavaScript. When an `ssg` page with `revalidate` is regenerated, its loaders run again.
 - **Client navigation.** On a client-side route change the loaders run as RPC calls to `/rex/rpc`.
 - **Data states.** A page's loaders feed its data state with the same precedence as any other query: a pending loader without data is `loading`; a failed loader without data is `terminal-error` when the action failed with a 4xx status other than 408, 425 or 429 (for example `NOT_FOUND`), and `recoverable-error` otherwise; a mix of succeeded and missing loaders is `partial`. The `RecoverableError` state's `retry` refetches them. Failures arrive as `RexLoaderError` with `page`, `loader`, `code`, `status` and `message`.
 - **Invalidation.** A mutating action refetches every loader it names in `invalidates`, either by loader name or by the loader's read action id:
