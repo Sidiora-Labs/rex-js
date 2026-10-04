@@ -23,6 +23,7 @@ import {
 import { INVALID_ARGUMENT, MAKE_REFUSED, MakeError, writePlan, type PlannedEntry } from "./make.ts";
 import { CONFIG_FILE, UI_KITS, type UiKit } from "../../core/config.ts";
 import { runGenerators } from "../generators.ts";
+import { rexPrettierConfig } from "../../prettier.ts";
 import { InvalidArgumentError } from "../args.ts";
 import {
   DesignxError,
@@ -94,6 +95,19 @@ function json(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+function jsonc(value: unknown): string {
+  return json(value).replace(
+    /^( *)(.*)\[\n([^[\]{}]*?)\n *\](,?)$/gm,
+    (block: string, indent: string, head: string, items: string, comma: string) => {
+      const inline = `${indent}${head}[${items
+        .split("\n")
+        .map((item) => item.trim().replace(/,$/, ""))
+        .join(", ")}]${comma}`;
+      return inline.length <= rexPrettierConfig.printWidth ? inline : block;
+    },
+  );
+}
+
 function lines(...parts: readonly (string | readonly string[])[]): string {
   return `${parts.flat().join("\n")}\n`;
 }
@@ -126,7 +140,7 @@ export function packageJsonTemplate(name: string): string {
 }
 
 export function tsconfigTemplate(): string {
-  return json({
+  return jsonc({
     compilerOptions: {
       target: "ES2022",
       module: "ESNext",
@@ -175,10 +189,7 @@ export function dataTemplate(): string {
     `import { bind, memoryStore } from "${CORE_IMPORT}";`,
     `import { ${APP_ENTITY} } from "../entities/${APP_ENTITY}.ts";`,
     "",
-    `export const ${APP_DATA} = bind(`,
-    `  ${APP_ENTITY},`,
-    `  memoryStore(${APP_ENTITY}, [{ id: "welcome", name: "Welcome to Rex" }]),`,
-    ");",
+    `export const ${APP_DATA} = bind(${APP_ENTITY}, memoryStore(${APP_ENTITY}, [{ id: "welcome", name: "Welcome to Rex" }]));`,
   );
 }
 

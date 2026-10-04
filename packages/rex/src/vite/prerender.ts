@@ -3,6 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import type { RexEntryBundle } from "../client/entry.tsx";
 import type { EagerPageModuleSet, LazyPageModuleSet, PageModuleSet } from "../client/page.tsx";
 import { anonymousActor, type Actor } from "../core/actor.ts";
+import type { FontSpec } from "../core/config.ts";
 import { isPlainObject } from "../core/entity.ts";
 import { RexError } from "../core/errors.ts";
 import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from "../core/page.ts";
@@ -39,6 +40,7 @@ export interface PrerenderSource {
   readonly ssr: PrerenderRuntime;
   readonly assets: RexDocumentAssets;
   readonly rootElement?: string;
+  readonly fonts?: readonly FontSpec[];
 }
 
 export interface PrerenderOptions {
@@ -131,6 +133,7 @@ export async function prerenderPages(
     bundle: { ...bundle, pages },
     assets,
     ...(source.rootElement === undefined ? {} : { rootElement: source.rootElement }),
+    fonts: source.fonts ?? [],
   });
 
   const targets = bundle.pages

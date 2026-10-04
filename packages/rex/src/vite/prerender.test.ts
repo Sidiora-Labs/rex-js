@@ -460,4 +460,49 @@ describe("prerender guards", () => {
       ),
     ).rejects.toThrow("render ended as denied");
   });
+
+  it("carries the configured font preloads and the font-display swap block into ssg and static pages", async () => {
+    const leaflet = page("leaflet", { route: "/leaflet", render: "static", chrome: { title: "Leaflet" } });
+    const digest = page("digest", { route: "/digest", render: "ssg", chrome: { title: "Digest" } });
+    const registry = createRegistry().register(leaflet, digest).freeze();
+    const bundle: RexEntryBundle = {
+      registry,
+      manifest: buildManifest(registry, { app: "fonts" }),
+      pages: [
+        { page: leaflet, view: view(() => createElement("p", null, "Leaflet")), states, regions: {}, overlays: {} },
+        { page: digest, view: view(() => createElement("p", null, "Digest")), states, regions: {}, overlays: {} },
+      ],
+    };
+    const clientDir = tempClientDir();
+    const list = await prerenderPages(
+      {
+        bundle,
+        ssr: { createRexRenderer, pageRenderMode },
+        assets: EMPTY_DOCUMENT_ASSETS,
+        fonts: [
+          { family: "Inter", src: "/fonts/inter.woff2", weight: "100 900" },
+          { family: "Mono", src: "/fonts/mono.ttf", preload: false },
+        ],
+      },
+      { clientDir },
+    );
+    expect(list.pages.map((entry) => [entry.path, entry.render])).toEqual([
+      ["/digest", "ssg"],
+      ["/leaflet", "static"],
+    ]);
+    for (const file of ["digest/index.html", "leaflet/index.html"]) {
+      const html = readFileSync(join(clientDir, file), "utf8");
+      const head = html.slice(0, html.indexOf("</head>"));
+      expect(head).toContain(
+        '<link rel="preload" as="font" href="/fonts/inter.woff2" type="font/woff2" crossorigin="">',
+      );
+      expect(head).not.toContain('as="font" href="/fonts/mono.ttf"');
+      expect(head).toContain(
+        '<style data-rex-fonts="">' +
+          '@font-face{font-family:"Inter";src:url("/fonts/inter.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}' +
+          '@font-face{font-family:"Mono";src:url("/fonts/mono.ttf") format("truetype");font-style:normal;font-display:swap}' +
+          "</style>",
+      );
+    }
+  });
 });

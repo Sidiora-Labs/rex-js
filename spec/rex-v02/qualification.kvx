@@ -390,3 +390,11 @@ symbol = "formatCliError, formatRexError, REX_ERROR_CATALOG.<code>.hint"
 observed = "Splitting the catalog per do_2 moves every hint to core/errors.docs.ts and leaves RexError.hint null unless the throw site gives one, so the CLI entry formatter in cli/frame.ts (outside the 5.7 touches) still calls the runtime formatRexError and prints no catalog hint line, and frame.test.ts lines 76 and 93 read REX_ERROR_CATALOG.REX213.hint and .REX100.hint, which no longer exist (TS2339 in the one typecheck, the only errors it reports); evidence: revision c28531e8944c45feb390f10600fe946ea5bb3155 plus the 5.7 changes, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.7-private/logs/5.7-typecheck.log."
 assumption = "The owner of cli/frame.ts imports explainRexError from core/errors.docs.ts in formatCliError (as cli/commands/check.ts and dev.ts now do), and frame.test.ts reads REX_ERROR_DOCS.REX213.hint and REX_ERROR_DOCS.REX100.hint; no assertion changes otherwise."
 severity = "blocker"
+
+[qualification.7101]
+task = "7.10"
+file = "packages/rex/src/cli/commands/build.ts"
+symbol = "prerenderBuild, PrerenderSource.fonts"
+observed = "prerenderPages now passes PrerenderSource.fonts into both renderers and prerender.test.ts proves the font preload and font-display swap block in ssg and static pages, but prerenderBuild in cli/commands/build.ts (outside the 7.10 touches) calls prerenderPages with bundle, ssr and assets only and the rex:app default export carries no config, so rex build still prerenders without the configured fonts; evidence: revision 32747e71ef800545ba85eb369a22c05bd85e550b, command pnpm -C packages/rex exec vitest run src/cli/new.test.ts src/cli/commands.test.ts src/vite/prerender.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.10-private/logs/7.10-verify.log."
+assumption = "The owner of cli/commands/build.ts loads the config export of rex:app in prerenderBuild and passes fonts: config.fonts to prerenderPages, as the rex:render module does; no assertion was relaxed."
+severity = "assumption"
