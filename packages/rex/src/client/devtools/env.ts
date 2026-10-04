@@ -1,6 +1,6 @@
 declare global {
   interface ImportMetaEnv {
-    readonly DEV: boolean;
+    DEV: boolean;
     readonly REX_DEVTOOLS?: boolean;
   }
 
