@@ -1,5 +1,6 @@
 import type { RexServerInstaller } from "./app.ts";
 import { installFlowRoutes } from "./flow.ts";
+import { installDevRoute } from "./routes/dev.ts";
 import { installFormRoute } from "./routes/form.ts";
 import { installHealthRoute } from "./routes/health.ts";
 import { installManifestRoute } from "./routes/manifest.ts";
@@ -12,5 +13,6 @@ export const REX_ROUTES: readonly RexServerInstaller[] = [
   installRpcRoute,
   installFlowRoutes,
   installFormRoute,
+  installDevRoute,
   installRenderRoute,
 ];

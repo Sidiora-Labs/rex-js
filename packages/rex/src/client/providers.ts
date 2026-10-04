@@ -1,5 +1,6 @@
 import { createElement, type ComponentType, type ReactNode } from "react";
 import { ConfirmProvider } from "./agent/confirm.tsx";
+import { DevtoolsProvider } from "./shell/devtools-slot.tsx";
 
 export interface RexProviderProps {
   readonly children: ReactNode;
@@ -10,7 +11,12 @@ export interface RexProvider {
   readonly Component: ComponentType<RexProviderProps>;
 }
 
-export const REX_PROVIDERS: readonly RexProvider[] = [{ id: "confirm", Component: ConfirmProvider }];
+export const REX_PROVIDERS: readonly RexProvider[] = [
+  { id: "confirm", Component: ConfirmProvider },
+  ...(import.meta.env.DEV && import.meta.env.REX_DEVTOOLS !== false
+    ? [{ id: "devtools", Component: DevtoolsProvider }]
+    : []),
+];
 
 export function composeProviders(
   providers: readonly RexProvider[],

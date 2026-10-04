@@ -5,6 +5,7 @@ import type { RouteResolution } from "../router.tsx";
 import { AnnouncerSlot } from "./announcer.tsx";
 import { BodySlot, RecoverySlot } from "./body.tsx";
 import { withShellComponents } from "./components.ts";
+import { DevtoolsSlot } from "./devtools-slot.tsx";
 import { HeaderSlot } from "./header.tsx";
 import { NavSlot } from "./nav.tsx";
 import { OutcomeSlot, type OutcomeSlotProps } from "./outcome-slot.tsx";
@@ -29,4 +30,7 @@ export const SHELL_SLOTS: readonly ShellSlot[] = [
   { id: "recovery", Component: withShellComponents(RecoverySlot) },
   { id: "outcome", Component: withShellComponents(OutcomeSlot) },
   { id: "announcer", Component: withShellComponents(AnnouncerSlot) },
+  ...(import.meta.env.DEV && import.meta.env.REX_DEVTOOLS !== false
+    ? [{ id: "devtools", Component: withShellComponents(DevtoolsSlot) }]
+    : []),
 ];

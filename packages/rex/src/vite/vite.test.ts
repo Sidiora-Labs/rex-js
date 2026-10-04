@@ -23,6 +23,7 @@ import {
   type RexAppBundle,
 } from "./virtual.ts";
 
+const VITE_TEST_TIMEOUT_MS = 20_000;
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = join(here, "fixtures", "app");
 const coreEntry = join(here, "..", "index.ts");
@@ -163,7 +164,7 @@ describe("rex() with the Vite build API", () => {
   });
 });
 
-describe("the client entry build", () => {
+describe("the client entry build", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
   it("bundles /@rex/entry into a client that mounts the shell, the agent surfaces and the stylesheets", async () => {
     const result = await build({
       root: fixtureRoot,
@@ -256,7 +257,65 @@ describe("the client entry build", () => {
   });
 });
 
-describe("rex() with the Vite dev server", () => {
+describe("the devtools in client builds", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
+  const devtoolsDir = normalizePath(join(here, "..", "client", "devtools"));
+  const devtoolsSlot = normalizePath(join(here, "..", "client", "shell", "devtools-slot.tsx"));
+
+  async function buildClient(nodeEnv: string, devtools?: boolean) {
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = nodeEnv;
+    try {
+      const result = await build({
+        root: fixtureRoot,
+        configFile: false,
+        logLevel: "silent",
+        resolve: { alias },
+        plugins: [rex(devtools === undefined ? { name: "fixture" } : { name: "fixture", devtools })],
+        build: { write: false, minify: false },
+      });
+      const outputs = Array.isArray(result) ? result : [result];
+      const chunks = outputs
+        .flatMap((output) => ("output" in output ? output.output : []))
+        .filter((item) => item.type === "chunk");
+      return {
+        modules: chunks.flatMap((chunk) => chunk.moduleIds.map(normalizePath)),
+        code: chunks.map((chunk) => chunk.code).join("\n"),
+      };
+    } finally {
+      process.env.NODE_ENV = previous;
+    }
+  }
+
+  const devtoolsModules = (modules: readonly string[]) =>
+    modules.filter((id) => id.startsWith(`${devtoolsDir}/`) || id === devtoolsSlot);
+
+  it("leaves the devtools module out of the production bundle", async () => {
+    const { modules, code } = await buildClient("production");
+    expect(modules).toContain(normalizePath(join(here, "..", "client", "shell.tsx")));
+    expect(devtoolsModules(modules)).toEqual([]);
+    expect(code).not.toContain("data-rex-devtools");
+    expect(code).not.toContain("rex-devtools");
+  });
+
+  it("bundles the devtools in development and drops them when devtools is false", async () => {
+    const development = await buildClient("development");
+    expect(devtoolsModules(development.modules)).toEqual(
+      expect.arrayContaining([
+        `${devtoolsDir}/devtools.tsx`,
+        `${devtoolsDir}/provider.tsx`,
+        `${devtoolsDir}/panels.tsx`,
+        devtoolsSlot,
+      ]),
+    );
+    expect(development.code).toContain("data-rex-devtools");
+
+    const disabled = await buildClient("development", false);
+    expect(devtoolsModules(disabled.modules)).toEqual([]);
+    expect(disabled.code).not.toContain("data-rex-devtools");
+  });
+});
+
+describe("rex() with the Vite dev server", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
   let vite: ViteDevServer;
   let http: Server;
   let base: string;

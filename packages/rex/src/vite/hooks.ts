@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import react from "@vitejs/plugin-react";
 import type { Plugin } from "vite";
+import { devtoolsHook } from "../client/devtools/vite.ts";
 import { DEFAULT_APP_NAME } from "../manifest/build.ts";
 import { appModuleHook } from "./app-module.ts";
 import { boundaryHook } from "./boundary.ts";
@@ -64,4 +65,5 @@ export const REX_HOOKS: readonly RexHook[] = [
   nonceHook,
   stylesHook,
   boundaryHook,
+  devtoolsHook,
 ];

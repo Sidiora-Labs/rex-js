@@ -27,6 +27,7 @@
     "./vite": "./src/vite/index.ts",
     "./check": "./src/check/index.ts",
     "./testing": "./src/testing/index.ts",
+    "./devtools": "./src/client/devtools/index.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -84,6 +85,10 @@
       "./testing": {
         "types": "./dist/testing/index.d.ts",
         "import": "./dist/testing/index.js"
+      },
+      "./devtools": {
+        "types": "./dist/client/devtools/index.d.ts",
+        "import": "./dist/client/devtools/index.js"
       },
       "./package.json": "./package.json"
     }
