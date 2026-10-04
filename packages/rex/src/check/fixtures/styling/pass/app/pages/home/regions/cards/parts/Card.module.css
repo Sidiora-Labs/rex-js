@@ -1,0 +1,12 @@
+.card {
+  padding: var(--spacing-gutter);
+  border: 1px solid var(--color-fg);
+}
+
+.title {
+  color: var(--color-fg);
+}
+
+.text-red-600 {
+  background: var(--color-surface);
+}

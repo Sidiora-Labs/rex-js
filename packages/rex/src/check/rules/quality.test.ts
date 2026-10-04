@@ -2,13 +2,30 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { discoverApp, runRules } from "../engine.ts";
+import { createSourceLoader } from "../rule.ts";
+import { runCheck } from "./index.ts";
 import { namingRule } from "./naming.ts";
-import { ARBITRARY_VALUE_CLASS, RAW_COLOR_CLASS, tokensRule } from "./tokens.ts";
+import {
+  ARBITRARY_VALUE_CLASS,
+  classifyClassToken,
+  DEFAULT_TOKEN_SETTINGS,
+  RAW_COLOR_CLASS,
+  rawColors,
+  rawLengths,
+  readTokenConfig,
+  readTokenTheme,
+  splitVariants,
+  tokensRule,
+} from "./tokens.ts";
 import { trapsRule } from "./traps.ts";
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), "../fixtures/quality");
 const passRoot = path.join(fixtures, "pass");
 const failRoot = path.join(fixtures, "fail");
+const styling = path.join(path.dirname(fileURLToPath(import.meta.url)), "../fixtures/styling");
+const stylingPass = path.join(styling, "pass");
+const stylingFail = path.join(styling, "fail");
+const CHECK_TIMEOUT_MS = 60_000;
 const rules = [namingRule, trapsRule, tokensRule];
 
 describe("naming, traps and tokens on the pass fixture", () => {
@@ -123,5 +140,163 @@ describe("naming, traps and tokens on the fail fixture", () => {
     expect(ARBITRARY_VALUE_CLASS.test("w-[13px]")).toBe(true);
     expect(ARBITRARY_VALUE_CLASS.test("bg-[#fff]")).toBe(true);
     expect(ARBITRARY_VALUE_CLASS.test("p-4")).toBe(false);
+  });
+});
+
+describe("token rule with CSS Modules, Tailwind and rex.config allow lists", () => {
+  it("passes rex check on the styling fixture that uses CSS Modules and Tailwind utilities", { timeout: CHECK_TIMEOUT_MS }, async () => {
+    const result = await runCheck(stylingPass);
+    expect(result.findings).toEqual([]);
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toBe("No findings.\n");
+  });
+
+  it("resolves Tailwind utilities through the app @theme", () => {
+    const theme = readTokenTheme(stylingPass);
+    expect(theme.files).toEqual(["styles.css"]);
+    expect([...theme.variables].sort()).toEqual([
+      "--color-fg",
+      "--color-surface",
+      "--color-white",
+      "--spacing-gutter",
+    ]);
+    const themed = { ...DEFAULT_TOKEN_SETTINGS, theme };
+    expect(classifyClassToken("text-white", themed)).toBeNull();
+    expect(classifyClassToken("md:hover:text-white/80", themed)).toBeNull();
+    expect(classifyClassToken("text-white", DEFAULT_TOKEN_SETTINGS)).toEqual({
+      kind: "raw-color",
+      value: "white",
+    });
+    expect(classifyClassToken("bg-red-500", themed)).toEqual({ kind: "raw-color", value: "red-500" });
+  });
+
+  it("reads the allow lists from check.tokens in rex.config.ts", () => {
+    const read = readTokenConfig(stylingPass, createSourceLoader());
+    expect(read.findings).toEqual([]);
+    expect(read.allow).toEqual({ colors: ["#1f2937"], spacing: ["1px"], classes: ["bg-black/50"] });
+    expect(classifyClassToken("bg-black/50", { ...DEFAULT_TOKEN_SETTINGS, allow: read.allow })).toBeNull();
+    expect(classifyClassToken("bg-black/50", DEFAULT_TOKEN_SETTINGS)).toEqual({
+      kind: "raw-color",
+      value: "black",
+    });
+    expect(classifyClassToken("p-[1px]", { ...DEFAULT_TOKEN_SETTINGS, allow: read.allow })).toBeNull();
+    expect(classifyClassToken("p-[1px]", DEFAULT_TOKEN_SETTINGS)).toEqual({
+      kind: "arbitrary-value",
+      value: "1px",
+    });
+    expect(readTokenConfig(failRoot, createSourceLoader())).toEqual({
+      allow: DEFAULT_TOKEN_SETTINGS.allow,
+      findings: [],
+    });
+  });
+
+  it("reports only raw color and spacing literals and a dynamic allow list", async () => {
+    const result = await runRules(discoverApp(stylingFail), [tokensRule]);
+    expect(
+      result.findings.map((entry) => [entry.file, entry.line, entry.column, entry.rule, entry.message]),
+    ).toEqual([
+      [
+        "app/pages/home/regions/cards/region.tsx",
+        3,
+        25,
+        "tokens/raw-color",
+        'raw color utility "text-white" outside app/components',
+      ],
+      [
+        "app/pages/home/regions/cards/region.tsx",
+        3,
+        36,
+        "tokens/arbitrary-value",
+        'arbitrary value utility "p-[3px]" outside app/components',
+      ],
+      [
+        "app/pages/home/regions/cards/region.tsx",
+        3,
+        53,
+        "tokens/arbitrary-value",
+        'arbitrary value utility "[color:#333]" outside app/components',
+      ],
+      [
+        "app/pages/home/regions/cards/region.tsx",
+        3,
+        66,
+        "tokens/arbitrary-value",
+        'arbitrary value utility "bg-[#fafafa]" outside app/components',
+      ],
+      [
+        "app/pages/home/regions/cards/region.tsx",
+        4,
+        19,
+        "tokens/inline-spacing",
+        'inline style paddingTop uses the raw value "12"',
+      ],
+      [
+        "app/pages/home/regions/cards/region.tsx",
+        4,
+        35,
+        "tokens/inline-spacing",
+        'inline style margin uses the raw value "0 4px"',
+      ],
+      [
+        "app/pages/home/regions/cards/region.tsx",
+        5,
+        59,
+        "tokens/inline-color",
+        'inline style outline uses the raw value "1px solid red"',
+      ],
+      [
+        "rex.config.ts",
+        6,
+        55,
+        "tokens/config",
+        "check in rex.config.ts is not a static literal, so rex check cannot read its token allow lists",
+      ],
+    ]);
+    expect(result.exitCode).toBe(1);
+    for (const entry of result.findings) expect(entry.hint).toContain("rex.config.ts");
+  });
+
+  it("classifies raw literals and ignores sizing, typography and token references", () => {
+    expect(splitVariants("md:[&:hover]:bg-[color:#fff]")).toEqual({
+      variants: "md:[&:hover]:",
+      base: "bg-[color:#fff]",
+    });
+    expect(classifyClassToken("md:[&:hover]:bg-[color:#fff]")).toEqual({
+      kind: "arbitrary-value",
+      value: "#fff",
+    });
+    expect(classifyClassToken("-mt-[3px]")).toEqual({ kind: "arbitrary-value", value: "3px" });
+    expect(classifyClassToken("[padding:2px_4px]")).toEqual({
+      kind: "arbitrary-value",
+      value: "2px 4px",
+    });
+    expect(classifyClassToken("shadow-[0_0_2px_#000]")).toEqual({
+      kind: "arbitrary-value",
+      value: "0 0 2px #000",
+    });
+    for (const token of [
+      "w-[13px]",
+      "text-[14px]",
+      "grid-cols-[1fr_2fr]",
+      "bg-[var(--brand)]",
+      "p-[var(--space-2)]",
+      "p-(--gutter)",
+      "p-[0px]",
+      "bg-surface",
+      "border-t-fg",
+      "text-sm",
+      "p-4",
+      "gap-gutter",
+      "[display:grid]",
+    ]) {
+      expect(classifyClassToken(token), token).toBeNull();
+    }
+    expect(rawColors("1px solid var(--brand-red)")).toEqual([]);
+    expect(rawColors("1px solid rgb(0 0 0)")).toEqual(["rgb(0 0 0)"]);
+    expect(rawColors("#ABCDEF", ["#abcdef"])).toEqual([]);
+    expect(rawLengths("calc(var(--spacing) * 4)")).toEqual([]);
+    expect(rawLengths("0 4px -1.5rem")).toEqual(["4px", "-1.5rem"]);
+    expect(rawLengths("12")).toEqual(["12"]);
+    expect(rawLengths("4px", ["4PX"])).toEqual([]);
   });
 });

@@ -119,3 +119,11 @@ symbol = "SidecarSource.manifest, buildSidecarPayload"
 observed = "The package typecheck still fails outside the 3.1 touches: serialize.test.ts line 81 calls buildSidecarPayload without the manifest field that 0.8 made required on SidecarSource (TS2345), beside the build.ts and entity.test.ts errors already recorded in qualification.082; the 3.1 files typecheck clean; evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.1-private/logs/3.1-typecheck-2.log."
 assumption = "The owner of core/serialize.test.ts passes manifest: buildManifest(registry) into buildSidecarPayload; no check was relaxed and the optional stores and regions fields added by 3.1 need no change there."
 severity = "assumption"
+
+[qualification.361]
+task = "3.6"
+file = "packages/rex/src/cli/commands/dev.ts, packages/rex/src/cli/commands/build.ts, packages/rex/src/cli/load.ts, packages/rex/src/cli/config.ts"
+symbol = "rex(), RexPluginOptions.tailwind, RexPluginOptions.ui"
+observed = "The Vite plugin adds @tailwindcss/vite through vite/styles.ts when rex({ tailwind: true }) or rex({ ui: 'designx' }), and the token rule reads check.tokens statically from rex.config.ts, but rex dev, rex build and the module loader (outside the 3.6 touches) call rex() without the tailwind and ui values of the loaded rex.config.ts; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/vite/styles.test.ts src/check/rules/quality.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.6-private/logs/3.6-verify.log."
+assumption = "The task that next owns the dev and build commands passes { tailwind: config.tailwind, ui: config.ui } from the loaded config into rex(), alongside compiler and devtools from qualification.04."
+severity = "assumption"

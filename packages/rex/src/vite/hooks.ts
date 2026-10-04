@@ -11,6 +11,7 @@ import { hmrHook } from "./hmr.ts";
 import { nonceHook } from "./nonce.ts";
 import type { RexPluginOptions } from "./plugin.ts";
 import type { RuntimePaths } from "./resolve.ts";
+import { stylesHook } from "./styles.ts";
 
 export interface RexHookState {
   root: string;
@@ -58,4 +59,5 @@ export const REX_HOOKS: readonly RexHook[] = [
   reactHook,
   hmrHook,
   nonceHook,
+  stylesHook,
 ];
