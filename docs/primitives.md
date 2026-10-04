@@ -214,3 +214,20 @@ interface Manifest {
 Every list is sorted by id, page actions are listed by id, and `stableStringify` writes keys in sorted order, so the output is deterministic. `buildManifest` throws when a page lists an unregistered action or names an unknown page in `recovery` or `chrome.back`.
 
 `rex manifest` writes the manifest to `.rex/manifest.json` and renders `AGENTS.md` from it (pages, actions, entities, policies, flows and the folder convention). `scanManifest(root)` loads the declaration files in a child Node process with `tsx` (60 second timeout); `writeManifest(root)` writes both files. The server serves the same manifest at `GET /rex/manifest`, and the client checks at startup that the manifest and the registry list the same pages and actions.
+
+## Shell components
+
+The derived shell renders through six slots, the `ShellComponents` interface in `packages/rex/src/client/shell/components.ts`. `rex.config.ts` `ui.components` names a module under `app/components` that exports any of them by name; `registerShellComponents` resolves the module app-wide (an export that is not a component, or a module exporting none of the six, is `REX120`) and every slot not exported keeps its token-styled default. `useShellComponents()` and `ShellComponentsProvider` read and scope the resolved set.
+
+| Slot | Props | Default |
+| --- | --- | --- |
+| `Button` | `ShellButtonProps` (button attributes) | `TokenButton`, a plain `button` |
+| `Sheet` | `ShellSheetProps`: `address`, `title`, `titleId`, `children` | `TokenSheet`, the overlay title and body |
+| `PaletteItem` | `ShellPaletteItemProps`: `kind`, `id`, `label`, `detail`, `shortcut`, `allowed`, `reason` | `TokenPaletteItem` |
+| `Outcome` | `ShellOutcomeProps`: `page` | `TokenOutcome`, the outcome message |
+| `Frame` | `ShellFrameProps`: `appName`, `links`, `palette`, `children` | `TokenFrame`, the app bar over the content area |
+| `Nav` | `ShellNavProps`: `links`, `form` (`bar`, `sidebar` or `dock`) | `TokenNav`, a list of page links |
+
+`Frame` receives the app name from the manifest, the navigation links of the active page, the palette trigger and, as `children`, the page header (the `h1` with the page title and the back control), the outcome region, the page body with its `main` landmark, the recovery control and the route announcer. A `ShellNavLink` is `{ id, label, href, current, address, onClick }`: `current` marks the active page (render it as `aria-current="page"`), `address` is the page id for the `data-rex-nav` attribute (`NAV_ADDRESS_ATTRIBUTE`) and `onClick` performs the client-side navigation. `palette` is `{ label, shortcut, address, onOpen }` when the agent outcome mounts the command palette and `null` otherwise; render it as a button carrying `data-rex-palette-trigger` (`PALETTE_TRIGGER_ATTRIBUTE`) and the visible shortcut (`useShortcutText(shortcut)` gives `Ctrl K`, or `⌘K` on Apple platforms, and `ariaKeyShortcuts(shortcut)` the `aria-keyshortcuts` value). `onOpen` opens the palette through its `mod+k` keyboard path. Pages whose chrome sets `nav: false` receive no links, and the default `Nav` then renders nothing.
+
+The defaults are styled by `tokens.css`: `TokenFrame` renders a sticky `header` banner with the app mark and name, `Nav` in its `bar` form and the palette trigger, over a content column with a 72rem measure and fluid gutters; `TokenNav` renders `nav aria-label="Pages"` with `data-rex-nav-form` set to its form. The token sheet also gives documents that use the default frame a type scale, control, table, section and outcome styles, focus rings and the palette, overlay and confirmation surfaces. Under the agent density the bar is static and the navigation and palette label are laid out flat, in the same DOM.

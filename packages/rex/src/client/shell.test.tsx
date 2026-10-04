@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { ComponentType } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
@@ -17,7 +18,19 @@ import * as secondStates from "./fixtures/page-second/states.tsx";
 import SecondView from "./fixtures/page-second/view.tsx";
 import { createOutcomeStore, OutcomeProvider, type OutcomeStore } from "./outcome.ts";
 import { definePageModules, view, type PageModuleSet } from "./page.tsx";
-import { Shell, isNavigable } from "./shell.tsx";
+import { RexProviders } from "./providers.ts";
+import { AgentOutcome, Shell, isNavigable, type OutcomeSlotProps } from "./shell.tsx";
+import {
+  PALETTE_TRIGGER_ATTRIBUTE,
+  ShellComponentsProvider,
+  isApplePlatform,
+  resolveShellComponents,
+  shortcutText,
+  useShellComponents,
+  type ShellComponents,
+  type ShellFrameProps,
+  type ShellNavProps,
+} from "./shell/components.ts";
 
 const home = page("home", { route: "/", chrome: { title: "Home" }, states: ["ready"] });
 const focus = page("focus", {
@@ -39,11 +52,21 @@ const pages: readonly PageModuleSet[] = [
 ];
 
 const registry = createRegistry().register(greet, home, focus, basicPage, secondPage).freeze();
-const manifest = buildManifest(registry);
+const manifest = buildManifest(registry, { app: "wallet" });
 const viewer = actor({ id: "viewer", permissions: ["view"] });
 const stranger = actor({ id: "stranger" });
 
-function mount(path: string, subject: Actor = viewer, modules: readonly PageModuleSet[] = pages) {
+interface MountOptions {
+  readonly outcome?: ComponentType<OutcomeSlotProps>;
+  readonly components?: ShellComponents;
+}
+
+function mount(
+  path: string,
+  subject: Actor = viewer,
+  modules: readonly PageModuleSet[] = pages,
+  options: MountOptions = {},
+) {
   const memory = memoryLocation({ path, record: true });
   const store: OutcomeStore = createOutcomeStore();
   const queryClient = new QueryClient({
@@ -62,11 +85,25 @@ function mount(path: string, subject: Actor = viewer, modules: readonly PageModu
     baseUrl: "http://rex.test",
     queryClient,
   });
+  const shell =
+    options.outcome === undefined ? (
+      <Shell pages={modules} />
+    ) : (
+      <RexProviders>
+        <Shell pages={modules} outcome={options.outcome} />
+      </RexProviders>
+    );
   render(
     <OutcomeProvider store={store}>
       <RexApp>
         <Router hook={memory.hook}>
-          <Shell pages={modules} />
+          {options.components === undefined ? (
+            shell
+          ) : (
+            <ShellComponentsProvider components={options.components}>
+              {shell}
+            </ShellComponentsProvider>
+          )}
         </Router>
       </RexApp>
     </OutcomeProvider>,
@@ -80,6 +117,44 @@ function heading(): string | null {
 
 function navLinks() {
   return within(screen.getByRole("navigation", { name: "Pages" })).getAllByRole("link");
+}
+
+function SidebarFrame({ appName, links, palette, children }: ShellFrameProps) {
+  const { Nav } = useShellComponents();
+  return (
+    <div data-testid="sidebar-frame">
+      <aside aria-label={appName}>
+        <Nav links={links} form="sidebar" />
+        {palette === null ? null : (
+          <button type="button" data-rex-palette-trigger={palette.address} onClick={palette.onOpen}>
+            {palette.label}
+          </button>
+        )}
+      </aside>
+      <div data-testid="sidebar-content">{children}</div>
+    </div>
+  );
+}
+
+function SidebarNav({ links, form }: ShellNavProps) {
+  return (
+    <nav aria-label="Pages" data-form={form}>
+      <ol>
+        {links.map((link) => (
+          <li key={link.id}>
+            <a
+              href={link.href}
+              data-rex-nav={link.address}
+              aria-current={link.current ? "page" : undefined}
+              onClick={link.onClick}
+            >
+              {link.label.toUpperCase()}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
 }
 
 async function click(element: HTMLElement) {
@@ -186,5 +261,89 @@ describe("Shell", () => {
     } finally {
       console.error = original;
     }
+  });
+
+  it("renders the default frame with the app bar, the primary navigation and the content landmarks", () => {
+    mount("/");
+    const frame = document.querySelector("[data-rex-shell] > [data-rex-frame]");
+    expect(frame).not.toBeNull();
+    const banner = screen.getByRole("banner");
+    expect(frame?.contains(banner)).toBe(true);
+    expect(banner.querySelector(".rex-frame-name")?.textContent).toBe("wallet");
+    const nav = within(banner).getByRole("navigation", { name: "Pages" });
+    expect(nav.getAttribute("data-rex-nav-form")).toBe("bar");
+    expect(
+      within(nav)
+        .getAllByRole("link")
+        .map((link) => link.getAttribute("data-rex-nav")),
+    ).toEqual(["home", "second"]);
+    const content = frame?.querySelector(".rex-frame-content");
+    const main = screen.getByRole("main");
+    expect(main.getAttribute("data-rex-page")).toBe("home");
+    expect(content?.contains(main)).toBe(true);
+    expect(content?.contains(screen.getByRole("status", { name: "Outcome" }))).toBe(true);
+    expect(content?.contains(screen.getByRole("heading", { level: 1 }))).toBe(true);
+    expect(banner.contains(main)).toBe(false);
+    expect(screen.getAllByRole("banner")).toHaveLength(1);
+    expect(document.querySelector(`[${PALETTE_TRIGGER_ATTRIBUTE}]`)).toBeNull();
+  });
+
+  it("keeps the app bar without the navigation on pages whose chrome turns the nav off", () => {
+    mount("/focus");
+    const banner = screen.getByRole("banner");
+    expect(banner.querySelector(".rex-frame-name")?.textContent).toBe("wallet");
+    expect(within(banner).queryByRole("navigation")).toBeNull();
+    expect(banner.contains(screen.getByRole("main"))).toBe(false);
+  });
+
+  it("shows the palette trigger with its visible shortcut and opens the palette from it", async () => {
+    mount("/", viewer, pages, { outcome: AgentOutcome });
+    const trigger = within(screen.getByRole("banner")).getByRole("button", {
+      name: /Command palette/,
+    });
+    expect(trigger.getAttribute(PALETTE_TRIGGER_ATTRIBUTE)).toBe("palette");
+    expect(trigger.getAttribute("aria-keyshortcuts")).toBe("Control+K Meta+K");
+    expect(trigger.querySelector("kbd")?.textContent).toBe(
+      shortcutText("mod+k", isApplePlatform()),
+    );
+    expect(screen.queryByRole("dialog", { name: "Command palette" })).toBeNull();
+    trigger.focus();
+    await click(trigger);
+    const palette = await screen.findByRole("dialog", { name: "Command palette" });
+    const values = within(palette)
+      .getAllByRole("option")
+      .map((option) => option.getAttribute("data-value"));
+    expect(values).toEqual(expect.arrayContaining(["page:home", "page:second"]));
+    await act(async () => {
+      fireEvent.keyDown(palette, { key: "Escape" });
+    });
+    expect(screen.queryByRole("dialog", { name: "Command palette" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("renders an overriding Frame and Nav in place of the default frame", async () => {
+    const components = resolveShellComponents({ Frame: SidebarFrame, Nav: SidebarNav });
+    const { memory } = mount("/", viewer, pages, { outcome: AgentOutcome, components });
+    expect(document.querySelector("[data-rex-frame]")).toBeNull();
+    expect(screen.queryByRole("banner")).toBeNull();
+    const frame = screen.getByTestId("sidebar-frame");
+    const sidebar = within(frame).getByRole("complementary", { name: "wallet" });
+    const nav = within(sidebar).getByRole("navigation", { name: "Pages" });
+    expect(nav.getAttribute("data-form")).toBe("sidebar");
+    expect(navLinks().map((link) => link.textContent)).toEqual(["HOME", "SECOND"]);
+    expect(navLinks().map((link) => link.getAttribute("data-rex-nav"))).toEqual(["home", "second"]);
+    expect(navLinks()[0]?.getAttribute("aria-current")).toBe("page");
+    expect(
+      within(sidebar)
+        .getByRole("button", { name: "Command palette" })
+        .getAttribute(PALETTE_TRIGGER_ATTRIBUTE),
+    ).toBe("palette");
+    const content = screen.getByTestId("sidebar-content");
+    expect(content.contains(screen.getByRole("main"))).toBe(true);
+    expect(content.contains(screen.getByRole("heading", { level: 1 }))).toBe(true);
+    await click(navLinks()[1] as HTMLElement);
+    expect(memory.history.at(-1)).toBe("/second");
+    expect(heading()).toBe("Second");
+    expect(navLinks()[1]?.getAttribute("aria-current")).toBe("page");
   });
 });

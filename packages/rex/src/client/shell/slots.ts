@@ -7,7 +7,6 @@ import { BodySlot, RecoverySlot } from "./body.tsx";
 import { withShellComponents } from "./components.ts";
 import { DevtoolsSlot } from "./devtools-slot.tsx";
 import { HeaderSlot } from "./header.tsx";
-import { NavSlot } from "./nav.tsx";
 import { OutcomeSlot, type OutcomeSlotProps } from "./outcome-slot.tsx";
 
 export interface ShellSlotProps {
@@ -25,10 +24,9 @@ export interface ShellSlot {
 
 export const SHELL_SLOTS: readonly ShellSlot[] = [
   { id: "header", Component: withShellComponents(HeaderSlot) },
-  { id: "nav", Component: withShellComponents(NavSlot) },
+  { id: "outcome", Component: withShellComponents(OutcomeSlot) },
   { id: "body", Component: withShellComponents(BodySlot) },
   { id: "recovery", Component: withShellComponents(RecoverySlot) },
-  { id: "outcome", Component: withShellComponents(OutcomeSlot) },
   { id: "announcer", Component: withShellComponents(AnnouncerSlot) },
   ...(import.meta.env.DEV && import.meta.env.REX_DEVTOOLS !== false
     ? [{ id: "devtools", Component: withShellComponents(DevtoolsSlot) }]
