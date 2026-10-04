@@ -191,7 +191,7 @@
     - Make createRexServer set x-rex-actor (URI-encoded JSON of the resolved actor) and x-rex-density on the GET /rex/manifest response, which createRexApp already reads; add the assertion to src/server/server.test.ts.
     - Add src/core/protocol.test.ts proving the client confirm path and the server confirm procedure agree by running useAct against a real RPCHandler built from buildActionRouter for an irreversible action.
     - _Requirements: 2.1, 2.6, 6.4, 15.3_
-  - [ ] 5.1 Implement stable addressing
+  - [x] 5.1 Implement stable addressing
     - Implement src/client/agent/address.tsx: useAddress() returning the current page and region ids; controlProps from useAct include data-rex=<page>/<action>; PageHost sets data-rex-page; Region sets data-rex-region; overlays set data-rex-overlay.
     - Write src/client/agent/address.test.tsx asserting every attribute on the fixture page and that attributes are unchanged when class names change.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_

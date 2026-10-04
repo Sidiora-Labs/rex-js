@@ -864,7 +864,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.1]
 title = "Implement stable addressing"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["2.7"]

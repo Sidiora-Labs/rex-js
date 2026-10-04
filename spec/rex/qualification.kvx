@@ -87,3 +87,11 @@ symbol = "5a5a707"
 observed = "rex-main messaged the running w-rex-4 and the harness forked it into a second run; the duplicate amended the original's 4.2 commit fde50be into 5a5a707 (same tree, same message) and then handed back and ended; evidence: revision 5a5a707, command git log feature/rex..wave/rex/4, exit 0, no log."
 assumption = "The original w-rex-4 continues from 5a5a707 unaffected; rex-main never messages a running worker again."
 severity = "note"
+
+[qualification.50]
+task = "5.1"
+file = "packages/rex/src/client/page.tsx"
+symbol = "Region, AddressScope, useAddress"
+observed = "useAddress reads the region from AddressScope in src/client/agent/address.tsx, but Region in src/client/page.tsx (outside the 5.1 touches) does not wrap its children in AddressScope, so useAddress().region is null inside region() bodies unless the region wraps itself; the router keeps its own RESERVED_QUERY_KEYS copy, asserted equal to core/protocol.ts by protocol.test.ts; evidence: revision 7a1643f8894e446d86ce160be7985da847ba8abb, command pnpm -C packages/rex exec vitest run src/client/agent/address.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/w-rex-5-private/logs/5.1-verify.log."
+assumption = "A later task owning src/client/page.tsx wraps Region children in <AddressScope region={name}> and imports RESERVED_QUERY_KEYS in router.tsx from core/protocol.ts."
+severity = "note"
