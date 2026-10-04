@@ -254,3 +254,11 @@ symbol = "PageLoaderInput, LOADER_INPUT_KEYS, PageLoader"
 observed = "[design] loaders_api and 1.2 do_1 say loaders accept invalidatedBy for explicit keys, but page() (outside the 1.2 touches) rejects any loader key other than action and input with REX203 and PageLoader carries no invalidatedBy, so 1.2 wires invalidation only through action invalidates naming the loader name or its read action id; evidence: revision a4eef5ab9d759aecb674a4b13ba42130c1050dd7, command pnpm -C packages/rex exec vitest run src/client/loaders.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.2-private/logs/1.2-verify.log."
 assumption = "The owner of core/page.ts adds invalidatedBy: string[] (action ids) to PageLoaderInput, LOADER_INPUT_KEYS and PageLoader, and loaderInvalidatedBy in client/loaders.ts then also matches the mutating action id against loader.invalidatedBy."
 severity = "assumption"
+
+[qualification.122]
+task = "1.2"
+file = "packages/rex/src/server/loaders.ts, packages/rex/src/server/middleware/telemetry.ts, packages/rex/src/client/devtools/panels.tsx"
+symbol = "createLoaderRunner, runPageLoaders, traceLoader, SPAN_LOADER, LOADER_QUERY_SCOPE"
+observed = "Merging 1.2 into feature/rex-v02 meets 4.4 and 2.3: 1.2 was built before telemetry merged, so SSR loader runs go through the action router and get only its rex.action span, while traceLoader (the rex.loader span that [design] telemetry_impl requires around each loader run) has no call site; devtools/panels.tsx keeps its own LOADER_QUERY_SCOPE = \"loader\" beside the one client/loaders.ts now exports, with the same [loader, page, name, ...] key shape; both compile, and the merge typecheck shows only the qualification.082 and .212 errors; evidence: revision c2ea127341024e7b7ccc9cfa82fd240d12bdb30a, command pnpm -r typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/fm-rex-v02-merge-1.2.log."
+assumption = "A follow-up owning server/loaders.ts wraps each loader run in runPageLoaders with traceLoader (page id, loader action id, actor id) using the ledger-bound telemetry, and the owner of devtools/panels.tsx imports LOADER_QUERY_SCOPE or isLoaderQueryKey from client/loaders.ts, so Rex keeps one loader key definition; no behaviour, check or test was changed at merge."
+severity = "assumption"
