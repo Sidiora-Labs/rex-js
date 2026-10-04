@@ -209,7 +209,7 @@
     - Implement src/client/agent/confirm.tsx: a confirmation overlay for irreversible actions used by all four routes, obtaining the confirm token on accept.
     - Write src/client/agent/invoke.test.tsx covering palette listing and execution, shortcut invocation, URL invocation with valid and invalid input, and confirmation on each route.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 8.1, 8.2, 8.3_
-  - [ ] 5.5 Implement the density and motion preference
+  - [x] 5.5 Implement the density and motion preference
     - Implement src/client/agent/density.ts: resolveDensity from the density query parameter, the x-rex-density header exposed by the server on the manifest response, the stored preference and default; DensityProvider sets data-rex-density on the root and exposes useDensity and setDensity.
     - Extend tokens.css agent density overrides: motion duration zero, collapsed groups expanded, hit targets at least 44 by 44 pixels.
     - Write src/client/agent/density.test.tsx covering precedence order and the root attribute.
