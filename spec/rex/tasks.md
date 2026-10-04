@@ -58,7 +58,7 @@
     - Implement digest(input) as sha-256 over canonical JSON (sorted keys) using the Web Crypto API so it runs in Node and browsers.
     - Write src/server/audit.test.ts covering filters, digest stability, and that raw input never appears in a record.
     - _Requirements: 16.1, 16.2, 16.3_
-  - [ ] 1.2 Build the oRPC action router with policy, confirmation and audit
+  - [x] 1.2 Build the oRPC action router with policy, confirmation and audit
     - Implement src/server/router.ts: buildActionRouter(registry, {ledger}) producing an oRPC router keyed by action id; each procedure uses os.$context<RexContext>() with actor and density, validates input and output with the declared schemas, evaluates the policy and throws ORPCError FORBIDDEN with the reason before the handler runs.
     - Implement confirmation for irreversible actions: the procedure requires a confirm token obtained from a confirm procedure that returns a short-lived token bound to the action id and input digest; a missing or mismatched token throws PRECONDITION_REQUIRED.
     - Append one audit record after every call including handler failures, with effect and duration.
