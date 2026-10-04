@@ -1,0 +1,101 @@
+:root {
+  --rex-space-1: 0.25rem;
+  --rex-space-2: 0.5rem;
+  --rex-space-3: 0.75rem;
+  --rex-space-4: 1rem;
+  --rex-space-5: 1.5rem;
+  --rex-space-6: 2rem;
+  --rex-space-7: 3rem;
+  --rex-space-8: 4rem;
+  --rex-radius-1: 0.25rem;
+  --rex-radius-2: 0.5rem;
+  --rex-radius-3: 1rem;
+  --rex-radius-full: 9999px;
+  --rex-motion-duration: 150ms;
+  --rex-motion-easing: cubic-bezier(0.2, 0, 0, 1);
+  --rex-hit-target: 2rem;
+}
+
+[data-rex-density="agent"] {
+  --rex-motion-duration: 0ms;
+  --rex-hit-target: 44px;
+}
+
+.rex-space-1 {
+  --rex-gap: var(--rex-space-1);
+}
+.rex-space-2 {
+  --rex-gap: var(--rex-space-2);
+}
+.rex-space-3 {
+  --rex-gap: var(--rex-space-3);
+}
+.rex-space-4 {
+  --rex-gap: var(--rex-space-4);
+}
+.rex-space-5 {
+  --rex-gap: var(--rex-space-5);
+}
+.rex-space-6 {
+  --rex-gap: var(--rex-space-6);
+}
+.rex-space-7 {
+  --rex-gap: var(--rex-space-7);
+}
+.rex-space-8 {
+  --rex-gap: var(--rex-space-8);
+}
+
+.rex-cols-1 {
+  --rex-columns: 1;
+}
+.rex-cols-2 {
+  --rex-columns: 2;
+}
+.rex-cols-3 {
+  --rex-columns: 3;
+}
+.rex-cols-4 {
+  --rex-columns: 4;
+}
+
+.rex-stack,
+.rex-section,
+.rex-outcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rex-gap, var(--rex-space-3));
+}
+
+.rex-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--rex-columns, 1), minmax(0, 1fr));
+  gap: var(--rex-gap, var(--rex-space-3));
+}
+
+.rex-section-title {
+  margin: 0;
+}
+
+.rex-outcome {
+  border-radius: var(--rex-radius-2);
+  padding: var(--rex-space-3);
+}
+
+[data-rex-density="agent"] .rex-grid {
+  --rex-columns: 1;
+}
+
+[data-rex-density="agent"] *,
+[data-rex-density="agent"] *::before,
+[data-rex-density="agent"] *::after {
+  animation-duration: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+[data-rex-density="agent"] :is(a, button, input, select, textarea, summary, [data-rex]) {
+  min-block-size: var(--rex-hit-target);
+  min-inline-size: var(--rex-hit-target);
+}

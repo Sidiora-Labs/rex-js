@@ -53,27 +53,27 @@
 ## Wave 1
 
 - [ ] 1. Server runtime: audit, action router, Hono server, Drizzle store
-  - [ ] 1.1 Implement the audit ledger
+  - [x] 1.1 Implement the audit ledger
     - Implement src/server/audit.ts: AuditRecord (id, actor, actionId, inputDigest, outcome ok|error code, effect, durationMs, at), Ledger interface append and list with filters by actor, actionId, outcome and time range, and the in-memory ledger.
     - Implement digest(input) as sha-256 over canonical JSON (sorted keys) using the Web Crypto API so it runs in Node and browsers.
     - Write src/server/audit.test.ts covering filters, digest stability, and that raw input never appears in a record.
     - _Requirements: 16.1, 16.2, 16.3_
-  - [ ] 1.2 Build the oRPC action router with policy, confirmation and audit
+  - [x] 1.2 Build the oRPC action router with policy, confirmation and audit
     - Implement src/server/router.ts: buildActionRouter(registry, {ledger}) producing an oRPC router keyed by action id; each procedure uses os.$context<RexContext>() with actor and density, validates input and output with the declared schemas, evaluates the policy and throws ORPCError FORBIDDEN with the reason before the handler runs.
     - Implement confirmation for irreversible actions: the procedure requires a confirm token obtained from a confirm procedure that returns a short-lived token bound to the action id and input digest; a missing or mismatched token throws PRECONDITION_REQUIRED.
     - Append one audit record after every call including handler failures, with effect and duration.
     - Write src/server/router.test.ts using call() from @orpc/server covering allowed, forbidden, validation failure, confirmation flow and audit records for success and failure.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 15.1, 15.2, 15.3, 16.1, 16.2, 16.3_
-  - [ ] 1.3 Implement createRexServer on Hono
+  - [x] 1.3 Implement createRexServer on Hono
     - Implement src/server/index.ts: createRexServer({registry, ledger, actor(request) -> Actor}) returning a Hono app with RPCHandler mounted at /rex/rpc, GET /rex/manifest returning buildManifest(registry), GET /rex/health, and the x-rex-density header copied into context.
     - Export the RouterClient type for the built router so the client package can type the oRPC client from the app registry.
     - Write src/server/server.test.ts exercising the app with app.request for manifest, health, an allowed action, a forbidden action and the density header.
     - _Requirements: 11.1, 11.2, 11.3, 14.1, 14.2, 14.3, 15.1, 15.2, 15.3_
-  - [ ] 1.4 Implement the Node server entry and static serving for builds
+  - [x] 1.4 Implement the Node server entry and static serving for builds
     - Implement src/server/node.ts: startNodeServer(app, {port, clientDir}) using @hono/node-server, serving clientDir assets and index.html fallback for page routes while leaving /rex/* to the API.
     - Write src/server/node.test.ts starting the server on an ephemeral port against a temporary client directory and asserting asset, fallback and API responses.
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 1.5 Implement the Drizzle store adapter against libsql
+  - [x] 1.5 Implement the Drizzle store adapter against libsql
     - Implement src/store/drizzle.ts: drizzleStore(entity, db) mapping entity fields to a Drizzle sqlite table definition, with get, list (filter, page, size), put and delete.
     - Write src/store/drizzle.test.ts running runStoreConformance against an in-memory libsql database created with @libsql/client.
     - _Requirements: 21.1, 21.2, 21.3_
@@ -81,37 +81,37 @@
 ## Wave 2
 
 - [ ] 2. Client runtime: providers, router, nav, act, view and regions, states, layout, shell
-  - [ ] 2.1 Implement the client app provider
+  - [x] 2.1 Implement the client app provider
     - Implement src/client/app.tsx: createRexApp({registry, manifest, link}) returning a RexApp component that mounts QueryClientProvider, the oRPC client built from RPCLink at /rex/rpc, the manifest context, the actor context (fetched from /rex/manifest headers or provided) and the density provider slot.
     - Implement src/client/context.ts exposing useManifest, useActor, useRexClient and useRegistry hooks.
     - Write src/client/app.test.tsx rendering RexApp with a mocked fetch of the manifest and asserting the hooks resolve.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 11.1, 11.2, 11.3_
-  - [ ] 2.2 Implement the router and typed navigation
+  - [x] 2.2 Implement the router and typed navigation
     - Implement src/client/router.tsx: routes built from every page declaration with wouter, params parsed and validated with the page params schema, a not-found page and the page policy check producing permission-denied with the recovery target.
     - Implement src/client/nav.ts: useNav() returning to(page, params), back(), replace(page, params) typed against the registry; params failing the schema are a compile error through the declaration types and a runtime validation outcome; draft state is serialized into the URL as declared by page.draft.
     - Write src/client/nav.test.tsx covering navigation, params validation, reload restoration from URL and the denied recovery path.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 2.3 Implement the act hook and the outcome store
+  - [x] 2.3 Implement the act hook and the outcome store
     - Implement src/client/outcome.ts: a small store holding the last outcome per page (actionId, ok, message, at) with subscribe and useOutcome.
     - Implement src/client/act.ts: useAct(action) returning {run(input), pending, allowed, reason, controlProps} where run performs the oRPC call through a TanStack mutation, invalidates the declared query keys, writes the outcome, and for irreversible actions requests a confirm token first; allowed comes from client-side policy evaluation against the current actor.
     - Write src/client/act.test.tsx with a mocked RPC link covering success, validation failure, forbidden, invalidation and the confirm step.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 15.1, 15.2, 15.3_
-  - [ ] 2.4 Implement data state resolution
+  - [x] 2.4 Implement data state resolution
     - Implement src/client/states.ts: resolveDataState({queries, policy, online, hasData}) returning one of the nine states with documented precedence: permission-denied, offline, loading, terminal-error, recoverable-error, empty, partial, stale, ready.
     - Implement useDataState(pageQueries) that observes TanStack query states and navigator.onLine.
     - Write src/client/states.test.ts covering every state and every precedence pair.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
-  - [ ] 2.5 Implement view, region, Region and the page host
+  - [x] 2.5 Implement view, region, Region and the page host
     - Implement src/client/page.tsx: view(render) and region(name, render) wrappers; the Region component that renders the named region as a landmark section with data-rex-region; PageHost that loads the page module set (page.ts, view.tsx, states.tsx, regions, overlays), resolves the data state and renders the matching states export or the view.
     - Provide region render context {act, nav, params, state} so regions never receive callbacks from the view.
     - Write src/client/page.test.tsx with a fixture page covering ready rendering, each non-ready state rendering its export, and the region landmark attributes.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 2.6 Implement layout primitives and the token stylesheet
+  - [x] 2.6 Implement layout primitives and the token stylesheet
     - Implement src/client/layout.tsx: Page.Stack, Page.Grid, Page.Section and Page.Outcome accepting only token-based spacing props (space: 1..8, columns: 1..4) and rendering semantic elements.
     - Implement src/client/tokens.css defining spacing, radius, motion and hit-target tokens, with agent density overrides keyed on data-rex-density=agent.
     - Write src/client/layout.test.tsx asserting element semantics, token class output and rejection of non-token props at the type level.
     - _Requirements: 20.1, 20.2, 20.3_
-  - [ ] 2.7 Implement the derived shell
+  - [x] 2.7 Implement the derived shell
     - Implement src/client/shell.tsx: Shell rendering the header (title and back target from the active page chrome), the navigation (pages with chrome.nav visible), the outcome slot, and the page host; no per-page switch statements.
     - Render the permission-denied state with a control navigating to the page's recovery target.
     - Write src/client/shell.test.tsx with two fixture pages asserting header, nav membership, back behaviour and recovery.
@@ -120,32 +120,32 @@
 ## Wave 3
 
 - [ ] 3. Checker and manifest tooling
-  - [ ] 3.1 Implement the checker engine and findings format
+  - [x] 3.1 Implement the checker engine and findings format
     - Implement src/check/engine.ts: discoverApp(root) mapping the app directory into typed file roles (page, view, states, region, part, hook, overlay, action, entity, policy, flow, component, data); runRules(app, rules) collecting Finding {rule, severity, file, line, column, message, hint}; exit code 1 on any error.
     - Implement src/check/report.ts with JSON and grouped human formatters, and src/check/rule.ts with the Rule interface and a shared TypeScript source loader using the typescript compiler API.
     - Create the fixtures layout src/check/fixtures/<rule>/{pass,fail}/app and write src/check/engine.test.ts covering discovery roles, formatting and exit codes.
     - _Requirements: 12.1, 12.2, 12.3, 12.4_
-  - [ ] 3.2 Implement the import boundary rule
+  - [x] 3.2 Implement the import boundary rule
     - Implement src/check/rules/boundaries.ts encoding the import table from [design] import_table by file role, the cross-page import ban, and the no-direct-fetch rule for component roles; each finding names the offending import and the allowed alternatives.
     - Create pass and fail fixtures under src/check/fixtures/boundaries and write src/check/rules/boundaries.test.ts asserting zero findings on pass and one named finding per violation on fail.
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
-  - [ ] 3.3 Implement the parity and states rules
+  - [x] 3.3 Implement the parity and states rules
     - Implement src/check/rules/parity.ts: regions declared in page.ts match regions folders, overlays declared match overlays files, every action declared on the page is referenced by at least one of its regions, and no region references an action the page does not declare.
     - Implement src/check/rules/states.ts: states.tsx exports one component per declared state, no extra exports, and view.tsx has a default export.
     - Create pass and fail fixtures and write src/check/rules/parity.test.ts covering each mismatch direction.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ] 3.4 Implement the naming, trap and token rules
+  - [x] 3.4 Implement the naming, trap and token rules
     - Implement src/check/rules/naming.ts: parts are PascalCase with one default export, hooks are camelCase starting with use with one named export, region files are region.tsx, overlay files are PascalCase.
     - Implement src/check/rules/traps.ts: onMouseEnter or onMouseOver without onFocus, draggable without a data-rex-alternative attribute, canvas without a data-rex-alternative attribute, and overlays without a declared dismiss.
     - Implement src/check/rules/tokens.ts: raw Tailwind color utilities, arbitrary value brackets and inline style color properties outside app/components.
     - Create pass and fail fixtures and write src/check/rules/quality.test.ts covering every rule.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 9.1, 9.2, 9.3, 10.1, 10.2, 10.3, 10.4, 20.1, 20.2, 20.3_
-  - [ ] 3.5 Implement manifest generation from source and the freshness rule
+  - [x] 3.5 Implement manifest generation from source and the freshness rule
     - Implement src/manifest/scan.ts: loadRegistry(appRoot) that imports app/entities, actions, policies, flows and pages/*/page.ts through tsx in a child process and returns the frozen registry; writeManifest(appRoot) writing .rex/manifest.json with stableStringify and AGENTS.md from src/manifest/agents-md.ts.
     - Implement src/check/rules/manifest.ts reporting a stale .rex/manifest.json or AGENTS.md compared with a fresh build.
     - Write src/manifest/scan.test.ts against a fixture app asserting byte-identical output on repeated runs and the freshness finding after a declaration change.
     - _Requirements: 11.1, 11.2, 11.3, 12.1, 12.2, 12.3, 12.4_
-  - [ ] 3.6 Integrate typecheck as a checker rule and assemble the default rule set
+  - [x] 3.6 Integrate typecheck as a checker rule and assemble the default rule set
     - Implement src/check/rules/typecheck.ts running the TypeScript program over the app with the app tsconfig and mapping diagnostics to findings.
     - Implement src/check/rules/index.ts exporting defaultRules in execution order and runCheck(root, {json}) used by the CLI; write src/check/check.test.ts running the full set on the engine pass fixture and asserting zero findings and on a combined fail fixture asserting findings from every rule.
     - _Requirements: 12.1, 12.2, 12.3, 12.4_
@@ -153,18 +153,18 @@
 ## Wave 4
 
 - [ ] 4. CLI, generators and the Vite plugin
-  - [ ] 4.1 Implement the Vite plugin and the rex:app virtual module
+  - [x] 4.1 Implement the Vite plugin and the rex:app virtual module
     - Implement src/vite/index.ts: rex() Vite plugin resolving the virtual module rex:app that imports app/pages/*/page.ts, view.tsx, states.tsx, regions/*/region.tsx, overlays/*.tsx, app/actions/*.ts, app/entities/*.ts, app/policies/*.ts and app/flows/*.ts by glob and exports a typed app bundle; invalidates on file add and remove.
     - Add a dev middleware option that mounts a provided Hono app under /rex so one Vite process serves client and API, forwarding the x-rex-density header.
     - Write src/vite/vite.test.ts building a fixture app with the Vite JavaScript API and asserting the virtual module exports.
     - Resolve /@rex/entry, which the scaffolded index.html loads, to a generated client entry that mounts createRexApp with the rex:app bundle; the virtual entry is part of the plugin, not a file in the app.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 14.1, 14.2, 14.3_
-  - [ ] 4.2 Implement the CLI skeleton and the canonical templates
+  - [x] 4.2 Implement the CLI skeleton and the canonical templates
     - Implement src/cli/index.ts with commander: rex with version, new, make, promote, dev, build, check and manifest subcommands registered from src/cli/commands/*.ts; unknown commands exit 2.
     - Implement src/cli/templates.ts exporting one template function per file kind: page.ts, view.tsx, states.tsx (all nine exports), region.tsx, Part.tsx, Overlay.tsx, useHook.ts, action.ts, entity.ts, policy.ts, flow.ts; templates are the canonical shapes from [design] and contain no placeholders that fail rex check.
     - Write src/cli/cli.test.ts running the CLI through tsx for version, help and unknown command.
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
-  - [ ] 4.3 Implement rex make
+  - [x] 4.3 Implement rex make
     - Implement src/cli/commands/make.ts: rex make page <id> --regions a,b --overlays X,Y writing the full page folder; rex make region|part|overlay <page> <name>; rex make action|entity|policy|flow <name>; rex make hook <page> <name>; every command refuses to overwrite and reports each written path.
     - Write src/cli/make.test.ts generating into a temporary directory and asserting the exact file set, the page.ts declaration contents and the overwrite refusal.
     - _Requirements: 13.1, 13.2, 13.3, 13.4_

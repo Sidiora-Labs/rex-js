@@ -386,7 +386,7 @@ status  = "pending"
 
 [task.1.1]
 title = "Implement the audit ledger"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 1
 requires = ["0.7"]
@@ -405,7 +405,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.1.2]
 title = "Build the oRPC action router with policy, confirmation and audit"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 1
 requires = ["1.1"]
@@ -425,7 +425,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.1.3]
 title = "Implement createRexServer on Hono"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 1
 requires = ["1.2"]
@@ -444,7 +444,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.1.4]
 title = "Implement the Node server entry and static serving for builds"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 1
 requires = ["1.3"]
@@ -462,7 +462,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.1.5]
 title = "Implement the Drizzle store adapter against libsql"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 1
 requires = ["0.7"]
@@ -485,7 +485,7 @@ status  = "pending"
 
 [task.2.1]
 title = "Implement the client app provider"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["0.7"]
@@ -504,7 +504,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.2]
 title = "Implement the router and typed navigation"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["2.1"]
@@ -523,7 +523,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.3]
 title = "Implement the act hook and the outcome store"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["2.1"]
@@ -542,7 +542,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.4]
 title = "Implement data state resolution"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["2.1"]
@@ -561,7 +561,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.5]
 title = "Implement view, region, Region and the page host"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["2.2", "2.3", "2.4"]
@@ -580,7 +580,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.6]
 title = "Implement layout primitives and the token stylesheet"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["2.1"]
@@ -599,7 +599,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.7]
 title = "Implement the derived shell"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["2.5", "2.6"]
@@ -623,7 +623,7 @@ status  = "pending"
 
 [task.3.1]
 title = "Implement the checker engine and findings format"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["0.7"]
@@ -642,7 +642,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.2]
 title = "Implement the import boundary rule"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["3.1"]
@@ -660,7 +660,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.3]
 title = "Implement the parity and states rules"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["3.1"]
@@ -679,7 +679,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.4]
 title = "Implement the naming, trap and token rules"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["3.1"]
@@ -699,7 +699,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.5]
 title = "Implement manifest generation from source and the freshness rule"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["3.1"]
@@ -718,7 +718,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.6]
 title = "Integrate typecheck as a checker rule and assemble the default rule set"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["3.2", "3.3", "3.4", "3.5"]
@@ -741,7 +741,7 @@ status  = "pending"
 
 [task.4.1]
 title = "Implement the Vite plugin and the rex:app virtual module"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 4
 requires = ["0.7"]
@@ -761,7 +761,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.4.2]
 title = "Implement the CLI skeleton and the canonical templates"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 4
 requires = ["0.7"]
@@ -780,7 +780,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.4.3]
 title = "Implement rex make"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 4
 requires = ["4.2"]
