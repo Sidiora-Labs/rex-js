@@ -1,5 +1,5 @@
 import type { ActionOutput } from "@sidioralabs/rex";
-import type { readChangelog } from "../../../../../actions/read-changelog.ts";
+import type { readChangelog } from "../../../../../actions/changelog/read-changelog.ts";
 import { Separator } from "../../../../../components/ui/separator.tsx";
 import { Typography } from "../../../../../components/ui/typography.tsx";
 import Blocks from "./Blocks.tsx";

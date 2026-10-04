@@ -1,6 +1,6 @@
 import { action, always } from "@sidioralabs/rex";
 import { z } from "zod/mini";
-import { readChangelog as readChangelogFile } from "../server/content/changelog.ts";
+import { readChangelog as readChangelogFile } from "../../server/content/changelog.ts";
 
 const leafInline = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("text"), text: z.string() }),
