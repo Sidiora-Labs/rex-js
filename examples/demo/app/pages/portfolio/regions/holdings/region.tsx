@@ -1,4 +1,4 @@
-import { Page, region } from "@sidioralabs/rex/client";
+import { region } from "@sidioralabs/rex/client";
 import { toggleHideDust } from "../../../../actions/toggle-hide-dust.ts";
 import { useHoldingsFilter } from "../../hooks/useHoldingsFilter.ts";
 import { useWallet } from "../../hooks/useWallet.ts";
@@ -21,16 +21,20 @@ export default region("holdings", ({ act }) => {
       entry.name.toLowerCase().includes(needle),
   );
   return (
-    <Page.Stack space={3}>
-      <DustToggle
-        hideDust={hideDust}
-        hiddenCount={data.tokens.length - shown.length}
-        control={toggle.controlProps}
-        onToggle={() => {
-          void toggle.run({});
-        }}
-      />
-      <HoldingsList holdings={matching} filter={filter.query} />
-    </Page.Stack>
+    <HoldingsList
+      holdings={matching}
+      filter={filter.query}
+      onFilter={filter.setQuery}
+      toolbar={
+        <DustToggle
+          hideDust={hideDust}
+          hiddenCount={data.tokens.length - shown.length}
+          control={toggle.controlProps}
+          onToggle={() => {
+            void toggle.run({});
+          }}
+        />
+      }
+    />
   );
 });

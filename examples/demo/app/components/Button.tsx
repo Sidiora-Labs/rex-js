@@ -1,17 +1,22 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, ComponentProps } from "react";
 import { Button as DesignxButton } from "./ui/button.tsx";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  readonly tone?: "primary" | "quiet";
+  readonly tone?: "primary" | "quiet" | "ghost";
+  readonly size?: ComponentProps<typeof DesignxButton>["size"];
+  readonly render?: ComponentProps<typeof DesignxButton>["render"];
 }
 
-export default function Button({ tone = "quiet", type = "button", ...props }: ButtonProps) {
+const VARIANTS = { primary: "default", quiet: "outline", ghost: "ghost" } as const;
+
+export default function Button({ tone = "quiet", type = "button", render, ...props }: ButtonProps) {
   return (
     <DesignxButton
-      type={type}
+      type={render === undefined ? type : undefined}
+      render={render}
       {...props}
       data-tone={tone}
-      variant={tone === "primary" ? "default" : "outline"}
+      variant={VARIANTS[tone]}
     />
   );
 }

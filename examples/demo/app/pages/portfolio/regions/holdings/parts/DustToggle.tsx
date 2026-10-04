@@ -1,5 +1,6 @@
 import type { ActControlProps } from "@sidioralabs/rex/client";
-import Button from "../../../../../components/Button.tsx";
+import { useId } from "react";
+import { Switch } from "../../../../../components/ui/switch.tsx";
 
 export interface DustToggleProps {
   readonly hideDust: boolean;
@@ -9,16 +10,31 @@ export interface DustToggleProps {
 }
 
 export default function DustToggle({ hideDust, hiddenCount, control, onToggle }: DustToggleProps) {
+  const labelId = useId();
+  const statusId = useId();
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--rex-space-3)" }}>
-      <Button {...control} aria-pressed={hideDust} onClick={onToggle}>
-        {hideDust ? "Show dust" : "Hide dust"}
-      </Button>
-      <p style={{ margin: 0 }} data-demo-dust={hideDust ? "hidden" : "shown"}>
-        {hideDust
-          ? `Dust is hidden (${hiddenCount} ${hiddenCount === 1 ? "token" : "tokens"} under $1)`
-          : "Dust is shown"}
-      </p>
+    <div className="flex items-center gap-3">
+      <Switch
+        {...control}
+        checked={hideDust}
+        aria-labelledby={labelId}
+        aria-describedby={statusId}
+        onCheckedChange={() => onToggle()}
+      />
+      <span className="flex flex-col">
+        <span id={labelId} className="text-sm font-medium">
+          Hide dust
+        </span>
+        <span
+          id={statusId}
+          className="text-xs text-muted-foreground"
+          data-demo-dust={hideDust ? "hidden" : "shown"}
+        >
+          {hideDust
+            ? `Dust is hidden (${hiddenCount} ${hiddenCount === 1 ? "token" : "tokens"} under $1)`
+            : "Dust is shown"}
+        </span>
+      </span>
     </div>
   );
 }

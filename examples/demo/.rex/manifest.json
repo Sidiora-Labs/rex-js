@@ -141,6 +141,12 @@
             ],
             "type": "object"
           },
+          "change24hPct": {
+            "type": "string"
+          },
+          "change24hUsd": {
+            "type": "string"
+          },
           "contacts": {
             "items": {
               "additionalProperties": false,
@@ -181,6 +187,9 @@
                   "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
                   "type": "string",
                   "x-rex-field": "money"
+                },
+                "change24hPct": {
+                  "type": "string"
                 },
                 "dust": {
                   "type": "boolean",
@@ -224,7 +233,8 @@
                 "balance",
                 "priceUsd",
                 "valueUsd",
-                "dust"
+                "dust",
+                "change24hPct"
               ],
               "type": "object"
             },
@@ -241,7 +251,9 @@
           "account",
           "tokens",
           "contacts",
-          "totalUsd"
+          "totalUsd",
+          "change24hUsd",
+          "change24hPct"
         ],
         "type": "object"
       },

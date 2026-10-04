@@ -11,9 +11,18 @@ export const loadWallet = action("load-wallet", {
   input: z.object({}),
   output: z.object({
     account: z.object(account.fields),
-    tokens: z.array(z.object({ ...token.fields, valueUsd: money(), dust: boolean() })),
+    tokens: z.array(
+      z.object({
+        ...token.fields,
+        valueUsd: money(),
+        dust: boolean(),
+        change24hPct: z.string(),
+      }),
+    ),
     contacts: z.array(z.object(contact.fields)),
     totalUsd: money(),
+    change24hUsd: z.string(),
+    change24hPct: z.string(),
   }),
   policy: viewer.can("viewer.read"),
   effect: "read",

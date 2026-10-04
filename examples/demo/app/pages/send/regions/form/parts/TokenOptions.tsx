@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import type { ActControlProps } from "@sidioralabs/rex/client";
 import Button from "../../../../../components/Button.tsx";
 import Field from "../../../../../components/Field.tsx";
+import TokenAvatar from "../../../../../components/TokenAvatar.tsx";
 
 export interface TokenChoice {
   readonly id: string;
@@ -40,10 +41,7 @@ export default function TokenOptions({
     if (first !== undefined) onPick(first.id);
   };
   return (
-    <form
-      onSubmit={submit}
-      style={{ display: "flex", flexDirection: "column", gap: "var(--rex-space-2)" }}
-    >
+    <form onSubmit={submit} className="flex flex-col gap-3">
       <Field
         label="Type a token symbol or name, then press Enter"
         name="token-query"
@@ -52,17 +50,20 @@ export default function TokenOptions({
         onChange={(event) => onQuery(event.target.value)}
       />
       {matches.length === 0 ? (
-        <p>No token matches "{query}"</p>
+        <p className="m-0 text-sm text-muted-foreground">No token matches "{query}"</p>
       ) : (
-        <ul>
+        <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
           {matches.map((entry) => (
             <li key={entry.id}>
               <Button
+                tone={entry.id === selected ? "primary" : "quiet"}
+                className="h-auto min-h-11 w-full justify-start py-2 text-left whitespace-normal"
                 {...control}
                 data-rex-choice={entry.id}
                 aria-pressed={entry.id === selected}
                 onClick={() => onPick(entry.id)}
               >
+                <TokenAvatar symbol={entry.symbol} size="sm" />
                 {`${entry.symbol} ${entry.name}, balance ${entry.balance}`}
                 {entry.id === selected ? " (selected)" : null}
               </Button>

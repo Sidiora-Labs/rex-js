@@ -17,10 +17,7 @@ export default function FilterForm({
     onDone();
   };
   return (
-    <form
-      onSubmit={submit}
-      style={{ display: "flex", flexDirection: "column", gap: "var(--rex-space-2)" }}
-    >
+    <form onSubmit={submit} className="flex flex-col gap-3">
       <Field
         label="Symbol or name contains"
         name="holdings-filter"
@@ -29,7 +26,7 @@ export default function FilterForm({
         autoComplete="off"
         onChange={(event) => onQuery(event.target.value)}
       />
-      <div style={{ display: "flex", gap: "var(--rex-space-2)" }}>
+      <div className="flex flex-wrap gap-2">
         <Button type="submit" tone="primary">
           Apply filter
         </Button>
