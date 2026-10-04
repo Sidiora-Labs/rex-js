@@ -245,11 +245,13 @@ export function overlay(
     if (!open) return null;
     return (
       <LazyOverlaySurface handle={handle} dismiss={options.dismiss}>
-        {render({ page, id, close: handle.hide })}
+        <Content page={page} id={id} close={handle.hide} />
       </LazyOverlaySurface>
     );
   }
   RexOverlay.displayName = `Overlay(${id})`;
+  const Content = render as ComponentType<OverlayRenderContext>;
+  Content.displayName = `OverlayContent(${id})`;
   const Component: OverlayComponent = Object.assign(RexOverlay, statics);
   return Component;
 }
