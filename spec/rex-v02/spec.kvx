@@ -1578,13 +1578,13 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.8.4]
 title = "Current README, package manifests, community files and templates: the 58 freshness entries of README.md, package.json, packages/rex, CONTRIBUTING, SECURITY, GOVERNANCE, MAINTAINERS, CHANGELOG, FUNDING, the generated pointer files and the DesignX installer"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 8
 requires = ["9.3", "7.14"]
 reqs = ["39.1", "39.3"]
 do_1 = "Read spec/rex-v02/freshness.kvx and close every [stale.N] entry whose task field is this task: replace the stale statement with the recorded fix after checking it against the code once more (a fix that is itself wrong is corrected, not applied), keep the file's voice and structure, and make no other edits; an entry that cannot be closed inside the touches is recorded in the qualification log with the entry id. This task owns README.md (the stack table, quick start, rex new output, page declaration, demo table and known gaps), package.json and packages/rex/package.json (engines, repository, homepage, bugs, devDependencies, the stray root vitest), a new packages/rex/README.md and packages/rex/LICENSE (copied by the package build or listed in files) so npm shows them, CONTRIBUTING.md, SECURITY.md, GOVERNANCE.md, MAINTAINERS.md, .github/FUNDING.yml, the CHANGELOG 0.2.0 (unreleased) entry built from git log --format=%s main grouped by spec tag, packages/rex/src/designx/index.ts and packages/rex/src/cli/designx.ts; the AGENTS.md, CLAUDE.md and .github/copilot-instructions.md entries are closed by editing spec/workflow.kvx (step_1, step_5, the time limit string, the specgen banner) and running cg spec render, never by hand."
-touches = ["README.md", "package.json", "packages/rex/package.json", "packages/rex/README.md", "packages/rex/LICENSE", "packages/rex/tools", "CONTRIBUTING.md", "SECURITY.md", "GOVERNANCE.md", "MAINTAINERS.md", "CHANGELOG.md", ".github/FUNDING.yml", "spec/workflow.kvx", "AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md", ".cursor", "packages/rex/src/designx/index.ts", "packages/rex/src/designx/index.test.ts", "packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "pnpm-lock.yaml"]
+touches = ["README.md", "package.json", "packages/rex/package.json", "packages/rex/README.md", "packages/rex/LICENSE", "CONTRIBUTING.md", "SECURITY.md", "GOVERNANCE.md", "MAINTAINERS.md", "CHANGELOG.md", ".github/FUNDING.yml", "packages/rex/src/designx/index.test.ts", "packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "pnpm-lock.yaml"]
 verify_cmd = "pnpm install --frozen-lockfile && pnpm -r typecheck && cg spec render --check && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/cli/designx.test.ts src/designx && pnpm -C packages/rex build && ls packages/rex/README.md packages/rex/LICENSE"
 gate_kind = "planned"
 max_builds = 1

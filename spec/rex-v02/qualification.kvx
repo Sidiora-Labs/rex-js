@@ -710,3 +710,27 @@ symbol = "scripts.test"
 observed = "req 39 ac_2 says the demo test script runs tools/freshness.mjs --check; on 20603147229e022295683fd044413bc5db5a64bd the demo test script is rex check && playwright test ..., and changing it is an edit of an existing script, which [design] shared_lists does not allow (append only) and the 8.5 touches do not cover."
 assumption = "A follow-up owning examples/demo/package.json prefixes the test script with node ../../tools/freshness.mjs --check &&; the root freshness script, src/freshness.test.ts and the CI docs job already run the gate."
 severity = "minor"
+
+[qualification.841]
+task = "8.4"
+file = "spec/workflow.kvx ([loop] step_1, step_5, step_4, [phase.task_qualification] forbidden, [hard_rules] time_limit, [render] adapter_lead), AGENTS.md, CLAUDE.md, .github/copilot-instructions.md, .cursor/rules/spec-workflow.mdc, CONTRIBUTING.md:9"
+symbol = "freshness stale.182 to stale.191 (spec/rex/spec.kvx and spec/rex/qualification.kvx in the loop, the 30-minute strings against max_task_minutes 45, the spec/specgen banner) and the CONTRIBUTING.md half of stale.185"
+observed = "The session permission classifier refused the workflow.kvx edit plus cg spec render as self-modification of agent instruction files, and the 'run spec/specgen' banner is a literal in the cg binary (strings /usr/local/bin/cg), so these entries stay open and CONTRIBUTING.md:9 keeps '30 minutes' to agree with the rendered rule files; evidence: revision 20603147229e022295683fd044413bc5db5a64bd, command pnpm install --frozen-lockfile && pnpm -r typecheck && cg spec render --check && node tools/check-links.mjs (first 8.4 verify_cmd run), exit 1 on the docs/tutorial.md:718 link that 8.7 removed, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-8.4-private/logs/8.4-verify.log."
+assumption = "A maintainer with permission applies the recorded step_1, step_5 and time-limit strings in spec/workflow.kvx and runs cg spec render, the Codify owner changes the renderer banner to cg spec render, and CONTRIBUTING.md:9 then names the task time_limit_minutes (45 by default); no check was relaxed."
+severity = "assumption"
+
+[qualification.842]
+task = "8.4"
+file = "spec/rex-v02/spec.kvx [decision] designx_standard (line 38), packages/rex/src/designx/index.ts"
+symbol = "freshness stale.194: DESIGNX_STANDARD against the decision's kit set (theme-provider, theme-toggle) and its bottom-sheet, dock and swipeable-list forms"
+observed = "The decision names registry:component items that DESIGNX_ITEMS, DESIGNX_STANDARD, task 9.2, docs/recipes/designx.md and rex new do not install, and the freshness fix prefers amending the decision, which is outside the 8.4 touches, so index.ts is unchanged and stale.194 stays open; evidence: revision 723acc7a68fe3206876a03139d3455e7898930ab plus the 8.4 changes, command pnpm -C packages/rex exec vitest run src/cli/designx.test.ts src/designx && pnpm -C packages/rex build && ls packages/rex/README.md packages/rex/LICENSE, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-8.4-private/logs/8.4-verify-4.log."
+assumption = "The spec owner amends designx_standard to end the kit set at typography with the three hooks and to name theme-provider, theme-toggle, bottom-sheet, dock and swipeable-list as registry:component source to adapt outside the standard set; no code change follows."
+severity = "suspect"
+
+[qualification.843]
+task = "8.4"
+file = "packages/rex/src/cli/pack.test.ts, docs/development.md:7, docs/tutorial.md:7, docs/migration.md:78, spec/rex-v02/qualification.kvx [qualification.642] assumption"
+symbol = "freshness stale.27, stale.28, stale.180, stale.193 and stale.196 follow-ups outside the 8.4 touches, and the owner of the standard data-table menu grouping"
+observed = "8.4 commits packages/rex/README.md and packages/rex/LICENSE (npm adds both from the package root), sets repository, homepage and bugs, raises engines to >=22.12 (package) and ^22.19.0 || ^24.11.0 || >=26.0.0 (workspace), and groups the registry data-table column menu in designxFiles (groupDataTableMenu) with a happy-dom test that opens the View menu, but pack.test.ts and the guides that quote 'Node 22 or later' are outside its touches; evidence: revision 723acc7a68fe3206876a03139d3455e7898930ab plus the 8.4 changes, command pnpm -C packages/rex exec vitest run src/cli/designx.test.ts src/designx && pnpm -C packages/rex build && ls packages/rex/README.md packages/rex/LICENSE, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-8.4-private/logs/8.4-verify-4.log."
+assumption = "The pack test owner asserts README.md, LICENSE and repository.url in the tarball, the docs owner quotes the new Node floors in docs/development.md, docs/tutorial.md and docs/migration.md, and the qualification.642 assumption that 9.3 groups the standard data-table label reads as closed by 8.4; no check was relaxed."
+severity = "note"

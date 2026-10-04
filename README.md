@@ -24,16 +24,19 @@ Rex uses these libraries as they are and does not wrap them in its own router, b
 | RPC | oRPC (`@orpc/server`, `@orpc/client`) |
 | Client data | TanStack Query |
 | Schemas | zod |
-| Storage adapter | Drizzle ORM on libsql (in-memory store by default) |
+| Storage adapter | Drizzle ORM on libsql via `@sidioralabs/rex/store/drizzle` (in-memory store by default) |
 | Routing | wouter |
 | Command palette | cmdk |
-| CLI | commander |
+| UI kit | DesignX registry components (`https://dxuireact.com/r`) on Tailwind 4 (`tailwindcss`, `@tailwindcss/vite`), installed into `app/components/ui/` by `rex new --ui designx` (the default); `--ui none` writes a plain `<button>` wrapper and no Tailwind |
+| CLI | a built-in argument parser (`RexCommand` in `packages/rex/src/cli/args.ts`); no commander dependency |
+
+DesignX is the standard UI vocabulary: `@sidioralabs/rex/designx` maps every Rex surface to one registry item, `rex new --ui designx` (the default) installs the standard set into `app/components/ui/`, and the demo uses it everywhere (`ui: { kit: "designx", components: "app/components/Shell.tsx" }` in `examples/demo/rex.config.ts`).
 
 Rex does not use Next.js, React Server Components or server actions. Server code is Hono plus oRPC procedures; client code is React components; the boundary between them is the Action declaration.
 
 ## Quick start
 
-Rex requires Node 22 or later and pnpm (the workspace pins `pnpm@10.27.0`). The `rex` bin is `dist/cli/index.js` of the package, so inside this repository build it first:
+Rex requires Node 22.12 or later (the React Compiler, on by default through the optional peers `@babel/core` 8 and `babel-plugin-react-compiler`, needs Node ^22.18.0 || >=24.11.0) and pnpm (the workspace pins `pnpm@10.27.0` and, through its own tooling, Node ^22.19.0 || ^24.11.0 || >=26.0.0). The `rex` bin is `dist/cli/index.js` of the package, so inside this repository build it first:
 
 ```sh
 pnpm install                    # install the workspace
@@ -43,9 +46,9 @@ pnpm -C packages/rex build      # emit packages/rex/dist, including the rex bin
 Then, with `rex` on your path:
 
 ```sh
-rex new my-app                  # write a complete app into ./my-app
+rex new my-app                  # write a complete app into ./my-app; by default (--ui designx) it fetches the DesignX set from https://dxuireact.com/r and runs the package manager install itself (--no-install skips the install; --ui none writes a plain Button and runs no install)
 cd my-app
-pnpm install                    # the generated package.json depends on @sidioralabs/rex ^0.1.0
+pnpm install                    # only after --ui none or --no-install; the generated package.json depends on @sidioralabs/rex ^0.1.0
 rex make page orders --regions list,detail --overlays FilterSheet
 rex dev                         # Vite client and the app's Hono server on one port (default 5173)
 rex check                       # typecheck and convention rules; exit 1 on any error
@@ -55,13 +58,13 @@ node dist/server.js             # serve the built app (PORT defaults to 3000)
 
 The demo in `examples/demo` calls the same bin through its package scripts (`pnpm -C examples/demo check`, `dev`, `build`). See [docs/cli.md](docs/cli.md) for every command and flag.
 
-`rex new` writes `package.json`, `tsconfig.json`, `index.html`, `rex.config.ts` and an `app/` with one entity (`note`), one policy (`viewer`), one action (`ping`), a data module, a `Button` component and a `home` page at `/` with one region (`welcome`).
+`rex new` writes `package.json`, `tsconfig.json`, `index.html`, `rex.config.ts`, `eslint.config.js`, `.prettierrc`, `.prettierignore`, `app/locales/en.json` and an `app/` with one entity (`note`), one policy (`viewer`), one action (`ping`), a data module, a `Button` component and a `home` page at `/` with one region (`welcome`). With the default `--ui designx` it also writes `dx.json`, the DesignX standard set into `app/components/ui/`, `app/theme.css` (Tailwind 4, linked from `index.html`), `app/components/Shell.tsx` (the `ShellComponents` override named by `ui.components` in `rex.config.ts`) and DesignX-based `states.tsx` and home part, and `Button.tsx` wraps `app/components/ui/button.tsx`; with `--ui none`, `Button.tsx` is a plain `<button>` wrapper.
 
 ## The page folder convention
 
 | Path | Role |
 | --- | --- |
-| `app/pages/<page>/page.ts` | The page declaration: route, params, policy, recovery, draft, actions, chrome, regions, overlays, states. Never imports React. |
+| `app/pages/<page>/page.ts` | The page declaration: route, params, render, revalidate, paths, load, cache, transition, policy, recovery, draft, actions, chrome, regions, overlays, states. Never imports React. |
 | `app/pages/<page>/view.tsx` | Layout of regions only. The ready state. |
 | `app/pages/<page>/states.tsx` | One export per declared non-ready state (`Loading`, `Empty`, `Stale`, `Partial`, `Offline`, `PermissionDenied`, `RecoverableError`, `TerminalError`). |
 | `app/pages/<page>/hooks/use<Name>.ts` | Page-private state and queries. |
@@ -70,7 +73,7 @@ The demo in `examples/demo` calls the same bin through its package scripts (`pnp
 | `app/pages/<page>/overlays/<Overlay>.tsx` | Sheets and dialogs with declared dismissal. |
 | `app/pages/<page>/test/` | Page tests. |
 | `app/actions`, `app/entities`, `app/policies`, `app/flows` | One declaration per file. |
-| `app/components` | Shared components (parts moved here by `rex promote`). |
+| `app/components` | Shared components (parts moved here by `rex promote`), the DesignX copies under `app/components/ui/`, and the app-wide shell override module (`Shell.tsx`, named by `ui.components` in `rex.config.ts` and exporting `ShellComponents`). |
 | `app/data` | Stores and queries. |
 
 The full import table, naming rules and checker rules are in [docs/convention.md](docs/convention.md).
@@ -86,12 +89,13 @@ import { z } from "zod/mini";
 import { wallet } from "../policies/wallet.ts";
 
 export const send = action("send", {
-  input: z.object({ amount: money().default("0.001") }),
+  input: z.object({ amount: z._default(money(), "0.001") }),
   output: z.object({ transfer: text({ min: 1 }), balance: money() }),
   policy: wallet.requires({ unlocked: true, account: true, permissions: ["wallet.send"] }),
   effect: "irreversible",
   label: "Send",
   shortcut: "mod+enter",
+  form: { redirect: "/send" },
   invalidates: ["wallet"],
   handler: async (input, ctx) => {
     // ctx.actor is the resolved actor; return a value matching output
@@ -120,12 +124,13 @@ Every page is in exactly one of these states (`REX_DATA_STATES` in `packages/rex
 An agent drives a Rex app through the same browser UI a human uses. The full contract is in [docs/agent-contract.md](docs/agent-contract.md).
 
 - **Addressing.** `data-rex-page="<page>"` on the page `<main>`, `data-rex-region="<page>/<region>"` on each region `<section>`, `data-rex-overlay="<page>/<Overlay>"` on each open overlay, `data-rex="<page>/<action>"` on each action control. Addresses come from declaration names, never from markup.
-- **Sidecar.** Each page renders exactly one `<script type="application/rex+json" id="rex-page">`. Its JSON lists the page id, params, data state, the actions (id, label, allowed, reason, effect, input JSON schema, routes), the overlays (id, open, dismiss) and the last outcome. The same object is on `window.__rex`.
+- **Sidecar.** Each page renders exactly one `<script type="application/rex+json" id="rex-page">`. Its JSON carries `version`, the page id, params, data state, the actions (id, label, allowed, reason, effect, input JSON schema, `via` routes), the overlays (id, open, dismiss), the last outcome and, when present, the regions, stores, loaders and the `screen`, `pointer` and `density` classification. The same object is on `window.__rex`.
 - **Outcome region.** A persistent `role="status" aria-live="polite"` section labelled `Outcome` states the last action, whether it succeeded, and its message. Rex does not use toasts for action results.
 - **Four invocation routes.** Click the `data-rex` control; press the declared shortcut; load `<route>?act=<action>&input=<json>`; or open the palette with mod+k and select the action. Irreversible actions open a confirmation dialog on all four routes.
-- **Density.** `?density=agent`, the `x-rex-density` header, or a stored preference sets `data-rex-density="agent"` on the document root, which removes animation and transition time, expands collapsed `<details>`, and gives controls a 44 by 44 CSS pixel minimum.
+- **Density.** `?density=agent`, the `x-rex-density` header, or a stored preference (`localStorage` key `rex:density`) sets `data-rex-density="agent"` on the document root (`comfortable` is the default and `compact` the third value), which removes animation and transition time, expands collapsed `<details>`, and gives controls a 44 by 44 CSS pixel minimum.
+- **Screen.** The runtime classifies the screen (`phone`, `tablet`, `desktop`, `wide`), the pointer (`coarse`, `fine`) and the density (`comfortable`, `compact`, `agent`) and writes them on the document root as `data-rex-screen`, `data-rex-pointer` and `data-rex-density`: on the server (`screenFromRequest` in `packages/rex/src/server/ssr.ts`) from the `Sec-CH-UA-Mobile` and `Sec-CH-Viewport-Width` Client Hints (every HTML response sends `Accept-CH`) with a user-agent fallback, on the client from `matchMedia` and a `ResizeObserver`. `useScreen()` returns all three and the sidecar carries them. Overlays render as a dialog on tablet and larger screens and as a bottom sheet on phone; navigation is a dock on phone, a bar on tablet and a sidebar on desktop and wide screens.
 - **Overlays.** Every overlay declares its dismissal (`escape`, `button` or `both`), traps focus while open and returns focus to its opener.
-- **No traps.** The checker reports hover handlers without `onFocus`, draggable elements and canvases without a declared alternative, and animation-only state.
+- **No traps.** The checker reports hover handlers without `onFocus`, draggable elements, canvases and custom elements without a declared alternative (or `tabIndex`), scroll-loading lists that do not use `Page.List`, and animation-only state.
 
 ## The demo and the operability walk
 
@@ -135,35 +140,43 @@ An agent drives a Rex app through the same browser UI a human uses. The full con
 | --- | --- | --- | --- | --- |
 | `portfolio` | `/` | hero, actions, holdings | HoldingsFilterSheet (URL bound) | toggle-hide-dust |
 | `send` | `/send` | form, confirm, success | TokenSelectorSheet, ContactPickerSheet | send, pick-token, pick-contact |
+| `about` | `/about` (static) | intro, feedback | - | send-feedback |
+| `embed` | `/embed` | widget, locale | - | - (loads `list-tokens`) |
+| `tokens` | `/tokens` (ssg, revalidate 60) | prices | - | - |
 
-It declares the entities `account`, `token` and `contact`, the policies `wallet` and `viewer`, and a `load-wallet` read action used by the page hooks. Data lives in seeded in-memory stores (`app/data/wallet.ts`). The server (`examples/demo/server.ts`) resolves the actor from a `demo-actor` cookie: `guest` gets the read-only guest actor, anything else gets the owner.
+It declares the entities `account`, `token` and `contact`, the policies `wallet` and `viewer`, the read actions `load-wallet` and `list-tokens` used as page loaders (`load` in `page.ts`), and `send-feedback` on the about page. Data lives in seeded in-memory stores (`app/data/wallet.ts`, `app/data/watchlist.ts`, `app/data/feedback.ts`); messages live in `app/locales/en.json` and `de.json`. The server (`examples/demo/server.ts`) resolves the actor from a `demo-actor` cookie: `guest` gets the read-only guest actor, anything else gets the owner.
 
-`examples/demo/e2e/operability.spec.ts` is a Playwright walk. It builds the demo with `rex build`, starts `node dist/server.js`, reads `/rex/manifest`, and for every page in both `default` and `agent` density checks the sidecar, the addressed landmarks and sidecar parity, then invokes every declared action by click, shortcut (when declared), URL and palette, accepting the confirmation for `send`. It opens and dismisses every overlay by Escape and by its close control, and checks that each overlay accepts typed input (for the pickers, typing a choice and pressing Enter runs the pick action). A second test logs in as `guest` and checks that disallowed actions are listed with a reason, disabled in the DOM and palette, and refused by URL. It writes one JSON report per page to `examples/demo/e2e/report/`; the committed reports record zero failures.
+`examples/demo/e2e/operability.spec.ts` is a Playwright walk. It builds the demo with `rex build`, starts `node dist/server.js`, reads `/rex/manifest`, and for every page in both `default` and `agent` density checks the sidecar, the addressed landmarks and sidecar parity, then invokes every declared action by click, shortcut (when declared), URL and palette, accepting the confirmation for `send`. It opens and dismisses every overlay by Escape and by its close control, and checks that each overlay accepts typed input (for the pickers, typing a choice and pressing Enter runs the pick action). A second test logs in as `guest` and checks that disallowed actions are listed with a reason, disabled in the DOM and palette, and refused by URL. It writes one JSON report per walked page plus `guest.json`, `vitals.json`, `lighthouse.json` and `screenshots/` to `examples/demo/e2e/report/`. The committed `portfolio.json` records one failure (`window.__rex differs from the sidecar script` in default density) and `lighthouse.json` records `performance 66 is under 90` for the portfolio page; no `tokens.json` is committed.
 
-Run it with `pnpm -C packages/rex build` and then `pnpm -C examples/demo test` (which runs `rex check && playwright test`).
+Run it with `pnpm -C packages/rex build` and then `pnpm -C examples/demo test`, which runs `rex check` and then the Playwright operability walk, the no-JS walk (`e2e/nojs.spec.ts`), the axe pass (`e2e/axe.spec.ts`), the Core Web Vitals gate (`e2e/vitals.spec.ts`), Lighthouse (`e2e/lighthouse.ts`) and the screenshots spec; `pnpm -C examples/demo test:unit` runs the page tests with Vitest.
 
 ## Known gaps
 
 These parts of the specification are not met or not exercised by the code in this revision:
 
-- **Paged routes for infinite lists.** No page in the demo loads more on scroll, and Rex has no mechanism that derives a paged route for such a list. Store adapters do support `page` and `size` in `list()`.
-- **DesignX components.** The demo's `app/components` holds four hand-written components (`Button`, `Card`, `Field`, `Sheet`) styled with Rex token variables. DesignX UI components are not installed.
-- **Drizzle adapter export.** `drizzleStore` lives in `packages/rex/src/store/drizzle.ts` and passes the store conformance suite on libsql, but no entry of the package exports map exposes it.
-- **Flows in the demo.** The demo declares no flow, so flow approval gates are covered by unit tests only, not by the operability walk. Flow decisions are not written to the audit ledger.
-- **Sidecar parity in the checker.** The `parity` rule compares `page.ts` actions with the actions imported by region files. Parity between the rendered sidecar and the visible controls is checked only by the operability walk.
-- **Demo page tests.** The demo page folders contain no `test/` directory; `rex make page` creates an empty one, which git does not track.
+- **Paged lists.** `Page.List` renders a paged list with `page` and `size` URL params and a load-more control, and `traps/infinite-list` reports scroll-loading lists that do not use it. The demo holdings render through the DesignX data-table (`HoldingsTable`) rather than `Page.List`.
+- **Flows in the demo.** The demo declares no flow, so flow approval gates are covered by unit tests only, not by the operability walk. Flow decisions are written to the audit ledger (`buildFlowRouter` in `packages/rex/src/server/flow.ts`).
+- **Sidecar parity in the checker.** The static `parity` rule compares `page.ts` actions with the actions imported by region files; `rex check --runtime` additionally mounts every page in happy-dom per actor and state and compares the rendered sidecar with the visible controls (`parity/runtime`). The default `rex check` run does not include the runtime rule.
+- **Demo page tests.** `portfolio` and `send` have `test/` directories with Vitest page tests (`pnpm -C examples/demo test:unit`); `about`, `embed` and `tokens` have none. `rex make page` creates an empty `test/` directory, which git does not track.
 - **Checker timing.** The requirement that `rex check` completes on the demo in under 30 seconds has no recorded measurement.
 - **Color and motion audit.** The requirement for a manual audit showing that the demo conveys no state only by color or motion has no recorded result. The checker's `traps/motion-only` rule covers `animate-*` classes only.
 
 ## Documentation
 
 - [docs/convention.md](docs/convention.md): page folder layout, file roles, import table, naming, checker rules.
-- [docs/agent-contract.md](docs/agent-contract.md): addressing, sidecar, outcome, palette, URL invocation, confirmation, density, overlays, flow gates, and how an agent operates a Rex app.
-- [docs/primitives.md](docs/primitives.md): `entity`, `action`, `page`, `policy`, `flow`, the manifest, store adapters and the audit ledger.
+- [docs/agent-contract.md](docs/agent-contract.md): addressing, sidecar, outcome, palette, URL invocation, confirmation, density, screen, overlays, flow gates, and how an agent operates a Rex app.
+- [docs/primitives.md](docs/primitives.md): the client entries, the field helpers, `entity`, `action`, `page`, `policy`, `flow`, stores, the audit ledger, the manifest and shell components.
 - [docs/cli.md](docs/cli.md): every `rex` command, flag and exit code.
 - [docs/architecture.md](docs/architecture.md): Vite plugin, client runtime, server, the life of an action, the package exports.
 - [docs/development.md](docs/development.md): working on Rex itself: workspace, tests, gates, the spec-driven workflow.
 - [docs/reference.md](docs/reference.md): index of the source types and test helpers.
+- [docs/tutorial.md](docs/tutorial.md): build the wallet demo step by step.
+- [docs/recipes/README.md](docs/recipes/README.md): loaders, forms without JavaScript, overlays, flow approval, static pages, i18n, web components, incremental adoption and the DesignX map.
+- [docs/platforms.md](docs/platforms.md): the node, bun, deno, edge and static build targets, desktop and mobile shells, terminal agents.
+- [docs/errors.md](docs/errors.md): the REX1xx to REX6xx error codes.
+- [docs/migration.md](docs/migration.md): adopting Rex in a Vite or Next.js app and upgrading from 0.1 to 0.2.
+- [docs/versioning.md](docs/versioning.md): semantic versioning, deprecations and codemods (`rex migrate`).
+- [docs/api/README.md](docs/api/README.md): the generated API reference, one page per package entry.
 - [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## Governance and community
@@ -174,4 +187,4 @@ Rex is MIT licensed ([LICENSE](LICENSE)) and stewarded by Sidiora Labs.
 - [MAINTAINERS.md](MAINTAINERS.md): the current maintainers, release managers and contacts.
 - [SECURITY.md](SECURITY.md): supported versions, how to report a vulnerability privately, and the disclosure timeline.
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): the standards for everyone taking part, how to report a violation, and enforcement.
-- [.github/FUNDING.yml](.github/FUNDING.yml): sponsorship channels, shown as the Sponsor button on the repository.
+- [.github/FUNDING.yml](.github/FUNDING.yml): sponsorship channels, which GitHub shows as the Sponsor button once Sidiora Labs' GitHub Sponsors profile is live.
