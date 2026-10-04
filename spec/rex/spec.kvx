@@ -1000,7 +1000,7 @@ status  = "pending"
 
 [task.6.0]
 title = "Assemble the runtime: mount the shell and agent surfaces in the generated entry, route region actions through confirmation, and export the agent modules"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 6
 requires = ["4.5", "5.7"]
@@ -1020,7 +1020,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.6.1]
 title = "Build the demo application with rex new and rex make"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 6
 requires = ["6.0", "4.5", "5.4", "5.5", "5.6", "1.5"]
@@ -1040,7 +1040,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.6.2]
 title = "Implement the operability walk"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 6
 requires = ["6.1"]

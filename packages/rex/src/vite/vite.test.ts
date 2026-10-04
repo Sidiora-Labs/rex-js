@@ -17,6 +17,7 @@ import {
   RexAppScanError,
   generateEntryModule,
   runtimePaths,
+  runtimeStylesheets,
   scanApp,
   type RexAppBundle,
 } from "./virtual.ts";
@@ -85,14 +86,23 @@ describe("scanApp", () => {
     expect(() => scanApp(join(fixtureRoot, "app", "pages"))).toThrow(RexAppScanError);
   });
 
-  it("generates the client entry that mounts createRexApp with the bundle", () => {
-    const code = generateEntryModule({ client: runtimePaths().client });
-    expect(code).toContain(
-      `import { createRexApp } from ${JSON.stringify(runtimePaths().client)};`,
-    );
+  it("generates the client entry that loads the stylesheets and mounts the assembled app", () => {
+    const client = runtimePaths().client;
+    const code = generateEntryModule({ client });
+    const tokens = normalizePath(join(here, "..", "client", "tokens.css"));
+    const density = normalizePath(join(here, "..", "client", "agent", "density.css"));
+    expect(runtimeStylesheets(client)).toEqual([tokens, density]);
+    const lines = code.split("\n");
+    expect(lines[0]).toBe(`import ${JSON.stringify(tokens)};`);
+    expect(lines[1]).toBe(`import ${JSON.stringify(density)};`);
+    expect(code).toContain(`import { createRexEntry } from ${JSON.stringify(client)};`);
     expect(code).toContain(`import app from "${APP_MODULE_ID}";`);
-    expect(code).toContain("const RexApp = createRexApp(app);");
+    expect(code).toContain("const RexEntry = createRexEntry(app);");
+    expect(code).toContain(
+      "createRoot(container).render(createElement(StrictMode, null, createElement(RexEntry)));",
+    );
     expect(code).toContain('document.getElementById("root")');
+    for (const file of [tokens, density]) expect(existsSync(file)).toBe(true);
   });
 
   it("points the runtime at the package entries next to the plugin", () => {
@@ -149,6 +159,54 @@ describe("rex() with the Vite build API", () => {
     ]) {
       expect(modules).toContain(fixture(file));
     }
+  });
+});
+
+describe("the client entry build", () => {
+  it("bundles /@rex/entry into a client that mounts the shell, the agent surfaces and the stylesheets", async () => {
+    const result = await build({
+      root: fixtureRoot,
+      configFile: false,
+      logLevel: "silent",
+      resolve: { alias },
+      plugins: [rex({ name: "fixture" })],
+      build: { write: false, minify: false },
+    });
+    const outputs = Array.isArray(result) ? result : [result];
+    const items = outputs.flatMap((output) => ("output" in output ? output.output : []));
+    const chunks = items.filter((item) => item.type === "chunk");
+    const entry = chunks.find((chunk) => chunk.isEntry);
+    expect(entry).toBeDefined();
+    const modules = chunks.flatMap((chunk) => chunk.moduleIds.map(normalizePath));
+    expect(modules).toContain(RESOLVED_ENTRY_MODULE_ID);
+    expect(modules).toContain(RESOLVED_APP_MODULE_ID);
+    for (const file of [
+      "shell.tsx",
+      "app.tsx",
+      "agent/confirm.tsx",
+      "agent/outcome.tsx",
+      "agent/sidecar.tsx",
+      "agent/palette.tsx",
+      "agent/shortcuts.ts",
+      "agent/url-invoke.ts",
+      "agent/density.ts",
+    ]) {
+      expect(modules).toContain(normalizePath(join(here, "..", "client", file)));
+    }
+    const code = chunks.map((chunk) => chunk.code).join("\n");
+    expect(code).toContain("data-rex-shell");
+    expect(code).toContain("application/rex+json");
+    expect(code).toContain('getElementById("root")');
+    const css = items
+      .filter((item) => item.type === "asset" && item.fileName.endsWith(".css"))
+      .map((item) => (item.type === "asset" ? String(item.source) : ""))
+      .join("\n");
+    const tokenRule = css.indexOf("--rex-space-1");
+    const densityRule = css.indexOf("animation-delay");
+    expect(tokenRule).toBeGreaterThanOrEqual(0);
+    expect(densityRule).toBeGreaterThan(tokenRule);
+    const html = items.find((item) => item.type === "asset" && item.fileName === "index.html");
+    expect(html?.type === "asset" ? String(html.source) : "").toContain(entry?.fileName ?? "-");
   });
 });
 

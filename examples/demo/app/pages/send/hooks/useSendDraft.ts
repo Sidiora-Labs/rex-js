@@ -1,0 +1,14 @@
+import { useDraft } from "@sidioralabs/rex/client";
+import { MONEY_PATTERN, z } from "@sidioralabs/rex";
+
+const sendDraft = z.object({ amount: z.string().max(32) });
+
+export function useSendDraft() {
+  const draft = useDraft(sendDraft);
+  const amount = draft.value?.amount ?? "";
+  return {
+    amount,
+    valid: amount === "" || MONEY_PATTERN.test(amount),
+    setAmount: (next: string) => draft.set(next === "" ? null : { amount: next }),
+  };
+}
