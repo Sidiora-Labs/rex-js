@@ -224,11 +224,18 @@
     - Run the unchanged size test, the package build and the demo build; if a budget still fails, record the measured number, the five largest contributors and the cause as a blocker; never relax a budget.
     - _Requirements: 3.4, 7.1, 7.2, 5.1, 5.4, 11.3_
   - [ ] 7.3 Re-qualify the tasks that ended implemented once their blockers are merged
-    - For each of 0.7, 0.8, 2.7, 3.7, 5.2, 5.5 and 6.1 (and 6.2 if it ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release.
-    - _Requirements: 7.1, 22.2, 29.1, 32.1, 3.4, 16.2, 34.1_
+    - For each of 0.7, 0.8, 1.7, 2.7, 3.7, 5.2, 5.5, 6.1 and 7.1 (and 6.2 if it ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release.
+    - _Requirements: 7.1, 22.2, 29.1, 32.1, 3.4, 16.2, 34.1, 12.3, 3.3, 25.2_
   - [ ] 7.4 rex/testing sends the request Origin and the demo page tests pass
     - Make testServer and the helpers in src/testing send Origin: <server origin> on every request they issue (RPC, form and flow posts), the same header a browser sends, so the security middleware admits them; the Origin rule itself is not relaxed. Fix whatever else the demo page tests from 2.7 report inside src/testing or the demo tests, never by weakening an assertion; extend src/testing/testing.test.tsx with a case that proves a POST through the helpers is admitted and a foreign Origin is rejected.
     - _Requirements: 16.1, 16.2, 25.2_
+  - [ ] 7.5 Close the recorded integration follow-ups: shell components wired into the build, loader spans, font preloads, the rule-order test and the CLI test defects
+    - Wire the configured shell components into every build (qualification.712): add vite/shell-components.ts, a hook registered in vite/hooks.ts that carries config.shellComponents through configPluginOptions in cli/load.ts into the rex() plugin options, and make the generated rex:app module in vite/app-module.ts import that module and call registerShellComponents before the entry renders, so a rex.config ui.components override is live in dev and in built apps; prove it in vite/shell-components.test.ts with a real build of a fixture app whose override replaces the overlay.
+    - Emit the rex.loader span (qualification.122): in server/loaders.ts wrap each loader run inside runPageLoaders with traceLoader from the telemetry middleware, carrying the page id, the loader action id and the actor id, and make client/devtools/panels.tsx import LOADER_QUERY_SCOPE from client/loaders.ts instead of declaring its own; prove the span in server/loaders.test.ts against the real telemetry exporter.
+    - Carry fonts into built apps (qualification.511): the generated rex:render module in vite/ssr.ts passes fonts: config.fonts into its createRexRenderer call so the font preloads and the font-display swap block that 5.1 added reach SSR output of built apps; cover it in vite/shell-components.test.ts or the existing styles test, whichever already builds a fixture.
+    - Make check/check.test.ts true to the merged checker (qualification.511, .711): the defaultRules order test lists exactly the order check/rules/index.ts declares after every merged rule (security, a11y, render, i18n, media, format and any later addition), and the combined fail fixture expectations name every finding the fixtures produce; never drop a rule from the order or an expectation from a fixture to pass.
+    - Repair the CLI test defects recorded in qualification.171 inside cli/commands.test.ts: the EDGE_PROBE ends with process.exit(0) so the probe process exits, the entryScript baseUrl assertion accepts either a quote or a backtick, the bun and deno target cases stop asserting the absence of createEdgeHandler, and every POST the tests send to rex dev carries the browser Origin header the security middleware requires; the Origin rule, the page budgets and every other assertion stay as they are.
+    - _Requirements: 29.1, 29.3, 26.1, 26.2, 28.1, 28.2, 9.2, 12.3, 3.3_
 
 ## Task Dependency Graph
 
@@ -242,7 +249,7 @@
     { "id": 4,  "tasks": ["4.1", "4.2", "4.3", "4.4", "4.5"] },
     { "id": 5,  "tasks": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9"] },
     { "id": 6,  "tasks": ["6.1", "6.2", "6.3"] },
-    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4"] }
+    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4", "7.5"] }
   ]
 }
 ```
