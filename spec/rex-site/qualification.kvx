@@ -215,3 +215,11 @@ symbol = "the level-one heading"
 observed = "docs/releasing.md line 1 is \"# Releasing Rex The site at [rex.sidioralabs.com](https://rex.sidioralabs.com) has its own path, described at the end of this page.\": the site's sentence was joined to the title, so the /docs/releasing page and its search entry are titled with the whole sentence; read at revision aeb3c04, met by markdown.test.ts, which now compares titles as plain text with link labels kept."
 assumption = "The task owning docs/releasing.md (the site deployment documentation, 2.6, or the 3.3 documentation pass) splits the sentence into its own paragraph under the # Releasing Rex heading; docs/ is outside the 2.2 touches."
 severity = "low"
+
+[qualification.213]
+task = "2.1"
+file = "site/app/server/content/errors.ts"
+symbol = "the errors reader's repository-path import of core/errors.docs.ts"
+observed = "With 2.7 merged the home half of the 2.1 verify_cmd passes on its own (pnpm -C site exec vitest run app/pages/home: exit 0, 16 tests passed, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.1-private/logs/2.1-vitest-4.log) and pnpm -C site exec tsc --noEmit -p tsconfig.json exits 0, but the verify_cmd stops at rex check on the one finding [qualification.272] already records, boundaries/import-table on app/server/content/errors.ts line 4 (task 2.3, outside the 2.1 touches); evidence: revision 6c24f85 plus the 2.1 test repairs, command pnpm -C site check && pnpm -C site exec vitest run app/pages/home, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.1-private/logs/2.1-verify-2.log."
+assumption = "Once 3.3 exports the error docs catalog from a public entry per [qualification.235] and the 2.3 reader imports it, rex check on the site reports no finding and the unchanged 2.1 verify_cmd passes, so 2.1 closes with cg spec done 2.1 on that revision."
+severity = "high"

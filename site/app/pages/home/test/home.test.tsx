@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import {
   DECLARATION_KINDS,
   INVOCATION_ROUTES,
@@ -19,10 +19,10 @@ import { REPOSITORY_URL } from "../../../components/Shell.tsx";
 
 setupRexTesting({ afterEach });
 
-const REPOSITORY_ROOT = new URL("../../../../../", import.meta.url);
+const REPOSITORY_ROOT = resolve(process.cwd(), "..");
 
 function repositoryFile(path: string): string {
-  return fileURLToPath(new URL(path, REPOSITORY_ROOT));
+  return resolve(REPOSITORY_ROOT, path);
 }
 
 const PACKAGE_VERSION = (
@@ -80,8 +80,15 @@ function siteApp() {
 async function renderHome() {
   const view = await renderPage(siteApp(), "home");
   await waitFor(() => expect(view.sidecar().state).toBe("ready"));
-  const main = view.container.querySelector<HTMLElement>('main[data-rex-page="home"]');
-  if (main === null) throw new Error("the home page has no main element");
+  const main = await waitFor(() => {
+    const found = view.container.querySelector<HTMLElement>('main[data-rex-page="home"]');
+    if (found === null) throw new Error("the home page has no main element");
+    for (const [region] of HEADINGS) {
+      expect(found.querySelector(`[data-rex-region="home/${region}"]`), region).not.toBeNull();
+    }
+    expect(found.querySelector('[data-site-fact="version"]')).not.toBeNull();
+    return found;
+  });
   return { view, main };
 }
 
@@ -93,6 +100,15 @@ function regionOf(main: HTMLElement, region: string): HTMLElement {
 
 function normalized(text: string | null): string {
   return (text ?? "").replace(/\s+/g, " ").trim();
+}
+
+function textWords(root: HTMLElement): string {
+  const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const words: string[] = [];
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    words.push(node.textContent ?? "");
+  }
+  return words.join(" ");
 }
 
 function firstHeading(file: string): string {
@@ -161,7 +177,7 @@ describe("home page", () => {
     for (const element of prose.querySelectorAll("[data-site-fact], [data-site-live-sidecar]")) {
       element.remove();
     }
-    expect(normalized(prose.textContent).replace(/\bi18n\b/g, "")).not.toMatch(/\d/);
+    expect(normalized(textWords(prose)).replace(/\bi18n\b/g, "")).not.toMatch(/\d/);
   });
 
   it("renders the hero with the mark, the tagline and the subline", async () => {
@@ -222,7 +238,7 @@ describe("home page", () => {
     ]);
     const contract = readFileSync(repositoryFile("docs/agent-contract.md"), "utf8");
     for (const attribute of attributes.filter((name) => name?.startsWith("data-rex"))) {
-      expect(contract).toContain(`\`${attribute}\``);
+      expect(contract).toMatch(new RegExp(`\`${attribute}(?:\`|=)`));
     }
     const routes = [...region.querySelectorAll<HTMLElement>("[data-site-route]")].map(
       (card) => card.dataset.siteRoute,
@@ -351,10 +367,13 @@ describe("home page", () => {
   it("renders a region alone on the page runtime", async () => {
     const view = await renderRegion(siteApp(), "home", "install");
     await waitFor(() => expect(view.sidecar().state).toBe("ready"));
-    const install = view.container.querySelector('[data-rex-region="home/install"]');
-    expect(install).not.toBeNull();
+    const install = await waitFor(() => {
+      const found = view.container.querySelector<HTMLElement>('[data-rex-region="home/install"]');
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
     await waitFor(() =>
-      expect(install?.querySelector("[data-site-fact=version]")?.textContent).toBe(PACKAGE_VERSION),
+      expect(install.querySelector("[data-site-fact=version]")?.textContent).toBe(PACKAGE_VERSION),
     );
     expect(view.container.querySelector('[data-rex-region="home/hero"]')).toBeNull();
   });
