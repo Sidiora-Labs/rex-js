@@ -6,6 +6,7 @@ export * from "./act.ts";
 export * from "./outcome.ts";
 export * from "./states.ts";
 export * from "./page.tsx";
+export * from "./boundary.tsx";
 export * from "./layout.tsx";
 export * from "./shell.tsx";
 export * from "./providers.ts";

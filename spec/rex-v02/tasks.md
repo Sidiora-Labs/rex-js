@@ -29,7 +29,7 @@
     - Add cli/pack.test.ts: build the package, run npm pack --dry-run --json and assert every export path and its types condition exist in the tarball and that no src or test files are included; regenerate pnpm-lock.yaml.
     - Update the Drizzle store to be importable from the new ./store/drizzle export and the demo and templates to use it where storage is configured.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
-  - [ ] 0.5 Per-page code splitting with Suspense and region error boundaries
+  - [x] 0.5 Per-page code splitting with Suspense and region error boundaries
     - Make vite/app-module.ts import every page's view, states, regions and overlays through dynamic import and expose them as lazy module records on the bundle; add vite/split.ts with the manual chunk naming (page-<id>) and the chunk table builder used by rex build.
     - In client/page.tsx render lazy page modules under Suspense with the page's loading state as fallback; add client/boundary.tsx with a RegionBoundary that catches render errors, reports REX330 with the region address, renders the page's recoverable-error state scoped to the region and offers a retry that remounts it; register the boundary state in the sidecar.
     - Make cli/commands/build.ts print the chunk table (name, raw, gzip, budget) and exit 1 over budget using the defaults from [design] budgets until 0.7 wires rex.config budgets.

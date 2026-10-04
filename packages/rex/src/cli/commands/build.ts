@@ -4,8 +4,16 @@ import { fileURLToPath } from "node:url";
 import type { RexCommand as Command } from "../args.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
 import { rex } from "../../vite/index.ts";
+import {
+  PAGE_BUDGET_KB,
+  chunkTable,
+  formatChunkTable,
+  type ChunkRow,
+  type OutputAssetLike,
+  type OutputChunkLike,
+} from "../../vite/split.ts";
 import { loadRexConfig } from "../config.ts";
-import type { RexCliIO } from "../index.ts";
+import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
 import { ensureCheckPasses } from "./check.ts";
 import { appConfigPath, cliWarn, rexCliExit } from "./dev.ts";
 import type { DeprecationWarn } from "../../core/deprecated.ts";
@@ -101,6 +109,20 @@ export interface BuildResult {
   readonly outDir: string;
   readonly clientDir: string;
   readonly serverFile: string;
+  readonly chunks: readonly ChunkRow[];
+}
+
+type BuildOutput = Awaited<ReturnType<typeof build>>;
+
+export function outputItems(result: BuildOutput): (OutputChunkLike | OutputAssetLike)[] {
+  const outputs = Array.isArray(result) ? result : [result];
+  return outputs.flatMap((output) =>
+    "output" in output ? (output.output as readonly (OutputChunkLike | OutputAssetLike)[]) : [],
+  );
+}
+
+export function overBudget(rows: readonly ChunkRow[]): readonly ChunkRow[] {
+  return rows.filter((row) => row.over);
 }
 
 export async function buildApp(root: string, options: BuildOptions = {}): Promise<BuildResult> {
@@ -116,13 +138,14 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
   const clientDir = join(outDir, CLIENT_DIR);
   rmSync(outDir, { recursive: true, force: true });
 
-  await build({
+  const client = await build({
     root: appRoot,
     configFile: false,
     logLevel,
     plugins: rex(),
     build: { outDir: clientDir, emptyOutDir: true },
   });
+  const chunks = chunkTable(outputItems(client), { page: PAGE_BUDGET_KB });
 
   await build({
     root: appRoot,
@@ -143,7 +166,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     },
   });
 
-  return { outDir, clientDir, serverFile: join(outDir, SERVER_FILE) };
+  return { outDir, clientDir, serverFile: join(outDir, SERVER_FILE), chunks };
 }
 
 export function register(program: Command, io: RexCliIO): void {
@@ -156,7 +179,15 @@ export function register(program: Command, io: RexCliIO): void {
     .action(async (options: { check: boolean }) => {
       if (options.check) await ensureCheckPasses(io.cwd, io, "build");
       const result = await buildApp(io.cwd, { warn: cliWarn(io) });
+      io.out(formatChunkTable(result.chunks));
       io.out(`rex build: wrote ${DIST_DIR}/${CLIENT_DIR}/ and ${DIST_DIR}/${SERVER_FILE}\n`);
+      const over = overBudget(result.chunks);
+      if (over.length > 0) {
+        throw new RexCliExit(
+          EXIT_FAILURE,
+          `rex build: ${over.map((row) => `${row.name} (${(row.gzip / 1024).toFixed(2)} KB gzip, budget ${row.budget} KB)`).join(", ")} over budget`,
+        );
+      }
       io.out(`rex build: start it with node ${DIST_DIR}/${SERVER_FILE} (${result.serverFile})\n`);
     });
 }

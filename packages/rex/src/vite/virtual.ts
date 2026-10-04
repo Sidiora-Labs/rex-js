@@ -7,6 +7,7 @@ export const ROOT_ELEMENT_ID = "root";
 export const CORE_SPECIFIER = "@sidioralabs/rex";
 export const CLIENT_SPECIFIER = "@sidioralabs/rex/client";
 export const RUNTIME_STYLESHEETS = ["tokens.css", "agent/density.css"] as const;
+export const PAGE_CHUNK_PREFIX = "page-";
 
 export {
   DECLARATION_FOLDERS,
@@ -19,9 +20,18 @@ export {
 } from "./scan.ts";
 export { runtimePaths, type RuntimePaths } from "./resolve.ts";
 export {
+  PAGE_BUDGET_KB,
+  chunkTable,
+  formatChunkTable,
+  pageChunkGroups,
+  pageChunkName,
+  type ChunkRow,
+} from "./split.ts";
+export {
   generateAppModule,
   type AppModuleOptions,
   type RexAppBundle,
+  type RexLoadedPageModules,
   type RexPageModule,
 } from "./app-module.ts";
 export {

@@ -15,3 +15,11 @@ symbol = "loadRegistry, scanManifest, manifestRule, generated package.json depen
 observed = "tsx and commander left the package and rex manifest now loads app code through cli/load.ts, but manifest/scan.ts (used by the check manifest rule) still imports tsx, resolved only through the root devDependency, and new.test.ts pins the generated dependency list that now adds the vite, zod, wouter, cmdk, @vitejs/plugin-react and @hono/node-server peers; evidence: revision 1b634ec05443a6be38df09e54994747c9f6ab9b0, command pnpm -C packages/rex exec vitest run src/cli/args.test.ts src/cli/cli.test.ts src/cli/pack.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.4-verify.log."
 assumption = "A follow-up task owning manifest/scan.ts and check/rules/manifest.ts builds the fresh manifest through cli/load.ts so the root tsx devDependency can go, and the owner of new.test.ts updates its dependency expectation to the peer list in commands/new.ts APP_PEERS."
 severity = "assumption"
+
+[qualification.03]
+task = "0.5"
+file = "packages/rex/src/core/errors.ts, packages/rex/src/manifest/sidecar.schema.ts"
+symbol = "REX330, sidecarSchema"
+observed = "The region boundary reports code REX330 but the catalog in core/errors.ts (owned by 2.1) has no REX3xx entries, so the code travels as a REGION_ERROR_CODE string; the strict sidecar schema (outside the touches) has no regions field, so a failing region is reported through the existing state (recoverable-error) and outcome (region address and REX330 message) fields; evidence: revision bef8d5c6201c6c9ac828b9362cead824740876ac, command pnpm -C packages/rex exec vitest run src/client/boundary.test.tsx src/client/page.test.tsx src/vite/vite.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.5-verify.log."
+assumption = "Task 2.1 adds REX330 to the catalog so RegionBoundary can raise a RexError, and a sidecar schema owner may add a regions list with per-region state if agents need more than the page state and outcome."
+severity = "note"

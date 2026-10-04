@@ -118,6 +118,70 @@ export function useOpenOverlays(page: string): readonly string[] {
   );
 }
 
+export interface RegionFailure {
+  readonly region: string;
+  readonly code: string;
+  readonly message: string;
+}
+
+export interface RegionFailureRegistry {
+  fail(page: string, failure: RegionFailure): void;
+  clear(page: string, region: string): void;
+  failures(page: string): readonly RegionFailure[];
+  subscribe(listener: Listener): () => void;
+}
+
+const NO_FAILURES: readonly RegionFailure[] = Object.freeze([]);
+
+export function createRegionFailureRegistry(): RegionFailureRegistry {
+  const byPage = new Map<string, readonly RegionFailure[]>();
+  const listeners = listenerSet();
+  return {
+    fail(page, failure) {
+      const rest = (byPage.get(page) ?? []).filter((entry) => entry.region !== failure.region);
+      byPage.set(
+        page,
+        Object.freeze(
+          [...rest, Object.freeze({ ...failure })].sort((a, b) =>
+            a.region < b.region ? -1 : a.region > b.region ? 1 : 0,
+          ),
+        ),
+      );
+      listeners.notify();
+    },
+    clear(page, region) {
+      const current = byPage.get(page) ?? [];
+      if (!current.some((entry) => entry.region === region)) return;
+      const rest = current.filter((entry) => entry.region !== region);
+      if (rest.length === 0) byPage.delete(page);
+      else byPage.set(page, Object.freeze(rest));
+      listeners.notify();
+    },
+    failures: (page) => byPage.get(page) ?? NO_FAILURES,
+    subscribe: listeners.subscribe,
+  };
+}
+
+export const defaultRegionFailureRegistry: RegionFailureRegistry = createRegionFailureRegistry();
+
+export const RegionFailureRegistryContext = createContext<RegionFailureRegistry>(
+  defaultRegionFailureRegistry,
+);
+RegionFailureRegistryContext.displayName = "RexRegionFailures";
+
+export function useRegionFailureRegistry(): RegionFailureRegistry {
+  return useContext(RegionFailureRegistryContext);
+}
+
+export function useRegionFailures(page: string): readonly RegionFailure[] {
+  const registry = useRegionFailureRegistry();
+  return useSyncExternalStore(
+    registry.subscribe,
+    () => registry.failures(page),
+    () => registry.failures(page),
+  );
+}
+
 export interface Affordance {
   readonly id: string;
   readonly label: string;
@@ -253,6 +317,7 @@ export interface SidecarSource {
   readonly actor: Actor;
   readonly openOverlays: readonly string[];
   readonly affordances?: readonly Affordance[];
+  readonly failures?: readonly RegionFailure[];
   readonly outcome: Outcome | null;
 }
 
@@ -295,7 +360,10 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
     version: SIDECAR_VERSION,
     page: declared.id,
     params: jsonParams(source.params),
-    state: source.state,
+    state:
+      (source.failures ?? []).length > 0 && source.state === "ready"
+        ? "recoverable-error"
+        : source.state,
     actions,
     overlays,
     outcome: sidecarOutcome(source.outcome),
@@ -320,6 +388,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
   const state = usePageDataState(resolution);
   const openOverlays = useOpenOverlays(resolution.page.id);
   const affordances = useAffordances(resolution.page.id);
+  const failures = useRegionFailures(resolution.page.id);
   const outcome = useOutcome(resolution.page.id);
   return useMemo(
     () =>
@@ -330,9 +399,10 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
         actor: subject,
         openOverlays,
         affordances,
+        failures,
         outcome,
       }),
-    [resolution, state, subject, openOverlays, affordances, outcome],
+    [resolution, state, subject, openOverlays, affordances, failures, outcome],
   );
 }
 

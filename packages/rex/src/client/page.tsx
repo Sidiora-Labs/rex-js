@@ -1,6 +1,8 @@
 import { useQueryClient, type Query } from "@tanstack/react-query";
 import {
+  Suspense,
   createContext,
+  lazy,
   useCallback,
   useContext,
   useLayoutEffect,
@@ -8,6 +10,7 @@ import {
   useReducer,
   useRef,
   type ComponentType,
+  type LazyExoticComponent,
   type ReactNode,
 } from "react";
 import type { ActionInput, AnyAction } from "../core/action.ts";
@@ -23,6 +26,7 @@ import {
 import type { ActResult, RunOptions } from "./act.ts";
 import { AddressScope } from "./agent/address.tsx";
 import { ConfirmContext, ConfirmProvider, useInvoke, type InvokeHandle } from "./agent/confirm.tsx";
+import { PageStatesContext, RegionBoundary } from "./boundary.tsx";
 import { useNav, type Nav } from "./nav.ts";
 import { useActivePage, type PageResolution } from "./router.tsx";
 import { useDataState } from "./states.ts";
@@ -100,7 +104,9 @@ export function Region({ name, children }: RegionProps) {
   const scoped = <AddressScope region={name}>{children}</AddressScope>;
   return (
     <section aria-label={titleFromId(name)} data-rex-region={regionAddress(runtime.page.id, name)}>
-      {confirm === null ? <ConfirmProvider>{scoped}</ConfirmProvider> : scoped}
+      <RegionBoundary region={name}>
+        {confirm === null ? <ConfirmProvider>{scoped}</ConfirmProvider> : scoped}
+      </RegionBoundary>
     </section>
   );
 }
@@ -139,12 +145,32 @@ export function region<P = PageParamsValue>(
 
 export type StateExportComponent = ComponentType<StateProps<PageParamsValue>>;
 
-export interface PageModuleSet<Pg extends AnyPage = AnyPage> {
+export interface EagerPageModuleSet<Pg extends AnyPage = AnyPage> {
   readonly page: Pg;
   readonly view: ComponentType;
   readonly states: PageStatesModule<Pg>;
   readonly regions?: Readonly<Record<string, ComponentType>>;
   readonly overlays?: Readonly<Record<string, ComponentType>>;
+}
+
+export interface LoadedPageModules {
+  readonly view: unknown;
+  readonly states: Readonly<Record<string, unknown>>;
+  readonly regions?: Readonly<Record<string, unknown>>;
+  readonly overlays?: Readonly<Record<string, unknown>>;
+}
+
+export interface LazyPageModuleSet<Pg extends AnyPage = AnyPage> {
+  readonly page: Pg;
+  readonly chunk?: string;
+  load(): Promise<LoadedPageModules>;
+}
+
+export type PageModuleSet<Pg extends AnyPage = AnyPage> =
+  EagerPageModuleSet<Pg> | LazyPageModuleSet<Pg>;
+
+export function isLazyPageModules(modules: PageModuleSet): modules is LazyPageModuleSet {
+  return typeof (modules as { load?: unknown }).load === "function";
 }
 
 export class RexPageModuleError extends Error {
@@ -164,7 +190,9 @@ function sameNames(page: string, kind: string, declared: readonly string[], prov
   if (extra.length > 0) throw new RexPageModuleError(page, `undeclared ${kind} ${extra.join(", ")}`);
 }
 
-export function definePageModules<Pg extends AnyPage>(modules: PageModuleSet<Pg>): PageModuleSet<Pg> {
+export function definePageModules<Pg extends AnyPage>(
+  modules: EagerPageModuleSet<Pg>,
+): EagerPageModuleSet<Pg> {
   const declared = modules.page;
   if (declared === undefined || declared.kind !== "page") {
     throw new TypeError("definePageModules: page must be a page declaration");
@@ -261,7 +289,7 @@ export interface PageHostProps {
   readonly modules: PageModuleSet;
 }
 
-export function PageHost({ modules }: PageHostProps) {
+function useActiveResolution(modules: PageModuleSet): PageResolution {
   const resolution = useActivePage();
   if (resolution === null) throw new Error("rex: PageHost must render inside an active page route");
   if (resolution.page !== modules.page) {
@@ -269,6 +297,55 @@ export function PageHost({ modules }: PageHostProps) {
       `rex: PageHost received modules for page "${modules.page.id}" while "${resolution.page.id}" is active`,
     );
   }
+  return resolution;
+}
+
+const lazyPages = new WeakMap<LazyPageModuleSet, LazyExoticComponent<ComponentType>>();
+
+function lazyPage(modules: LazyPageModuleSet): LazyExoticComponent<ComponentType> {
+  let component = lazyPages.get(modules);
+  if (component === undefined) {
+    component = lazy(async () => {
+      const loaded = await modules.load();
+      const eager = definePageModules({
+        page: modules.page,
+        view: loaded.view as ComponentType,
+        states: loaded.states as PageStatesModule<AnyPage>,
+        regions: (loaded.regions ?? {}) as Readonly<Record<string, ComponentType>>,
+        overlays: (loaded.overlays ?? {}) as Readonly<Record<string, ComponentType>>,
+      });
+      function LoadedPage() {
+        return <EagerPageHost modules={eager} />;
+      }
+      LoadedPage.displayName = `RexPage(${modules.page.id})`;
+      return { default: LoadedPage };
+    });
+    lazyPages.set(modules, component);
+  }
+  return component;
+}
+
+function PageLoading({ modules }: { readonly modules: LazyPageModuleSet }) {
+  const resolution = useActiveResolution(modules);
+  return (
+    <main data-rex-page={modules.page.id} data-rex-page-loading="">
+      <DefaultState state="loading" params={resolution.params} retry={() => {}} error={null} />
+    </main>
+  );
+}
+
+export function PageHost({ modules }: PageHostProps) {
+  if (!isLazyPageModules(modules)) return <EagerPageHost modules={modules} />;
+  const Loaded = lazyPage(modules);
+  return (
+    <Suspense fallback={<PageLoading modules={modules} />}>
+      <Loaded />
+    </Suspense>
+  );
+}
+
+function EagerPageHost({ modules }: { readonly modules: EagerPageModuleSet }) {
+  const resolution = useActiveResolution(modules);
   const declared = resolution.page;
   const validated = useMemo(() => definePageModules(modules), [modules]);
   const queryClient = useQueryClient();
@@ -316,7 +393,9 @@ export function PageHost({ modules }: PageHostProps) {
 
   return (
     <PageRuntimeContext.Provider value={runtime}>
-      <main data-rex-page={declared.id}>{body}</main>
+      <PageStatesContext.Provider value={validated.states as Readonly<Record<string, unknown>>}>
+        <main data-rex-page={declared.id}>{body}</main>
+      </PageStatesContext.Provider>
     </PageRuntimeContext.Provider>
   );
 }

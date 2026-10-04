@@ -10,15 +10,21 @@ import type { Manifest } from "../manifest/types.ts";
 import type { RexHookContext } from "./hooks.ts";
 import { resolveRuntimeEntry } from "./resolve.ts";
 import { DECLARATION_FOLDERS, RexAppScanError, scanApp, type AppScan } from "./scan.ts";
+import { pageChunkGroups, pageChunkName } from "./split.ts";
 import { APP_MODULE_ID, CORE_SPECIFIER, RESOLVED_APP_MODULE_ID } from "./virtual.ts";
 
-export interface RexPageModule {
-  readonly id: string;
-  readonly page: AnyPage;
+export interface RexLoadedPageModules {
   readonly view: unknown;
   readonly states: Readonly<Record<string, unknown>>;
   readonly regions: Readonly<Record<string, unknown>>;
   readonly overlays: Readonly<Record<string, unknown>>;
+}
+
+export interface RexPageModule {
+  readonly id: string;
+  readonly page: AnyPage;
+  readonly chunk: string;
+  load(): Promise<RexLoadedPageModules>;
 }
 
 export interface RexAppBundle {
@@ -55,7 +61,7 @@ function rexDefault(namespace, file) {
   if (namespace.default === undefined) rexFail(file, "has no default export");
   return namespace.default;
 }
-function rexPage(id, namespace, file, view, states, regions, overlays) {
+function rexPage(id, namespace, file, chunk, importModules) {
   const declared = rexDeclarations(namespace, "page", file);
   if (declared.length !== 1) {
     rexFail(file, "must export exactly one page declaration, found " + declared.length);
@@ -64,14 +70,24 @@ function rexPage(id, namespace, file, view, states, regions, overlays) {
   if (page.id !== id) {
     rexFail(file, "declares page " + JSON.stringify(page.id) + " but its folder is " + JSON.stringify(id));
   }
-  return Object.freeze({
-    id,
-    page,
-    view,
-    states: Object.freeze({ ...states }),
-    regions: Object.freeze(regions),
-    overlays: Object.freeze(overlays),
-  });
+  let loading = null;
+  const load = () => {
+    if (loading === null) {
+      loading = importModules().then((loaded) =>
+        Object.freeze({
+          view: loaded.view,
+          states: Object.freeze({ ...loaded.states }),
+          regions: Object.freeze(loaded.regions),
+          overlays: Object.freeze(loaded.overlays),
+        }),
+      );
+      loading.catch(() => {
+        loading = null;
+      });
+    }
+    return loading;
+  };
+  return Object.freeze({ id, page, chunk, load });
 }`;
 
 export function generateAppModule(scan: AppScan, options: AppModuleOptions): string {
@@ -97,19 +113,31 @@ export function generateAppModule(scan: AppScan, options: AppModuleOptions): str
   const pageEntries = scan.pages.map((scanned, index) => {
     const base = `page${index}`;
     imports.push(`import * as ${base} from ${literal(scanned.page)};`);
-    imports.push(`import * as ${base}View from ${literal(scanned.view)};`);
-    imports.push(`import * as ${base}States from ${literal(scanned.states)};`);
-    const regions = scanned.regions.map((region, regionIndex) => {
-      const binding = `${base}Region${regionIndex}`;
-      imports.push(`import * as ${binding} from ${literal(region.file)};`);
-      return `${literal(region.name)}: rexDefault(${binding}, ${display(region.file)})`;
-    });
-    const overlays = scanned.overlays.map((overlay, overlayIndex) => {
-      const binding = `${base}Overlay${overlayIndex}`;
-      imports.push(`import * as ${binding} from ${literal(overlay.file)};`);
-      return `${literal(overlay.name)}: rexDefault(${binding}, ${display(overlay.file)})`;
-    });
-    return `rexPage(${literal(scanned.id)}, ${base}, ${display(scanned.page)}, rexDefault(${base}View, ${display(scanned.view)}), ${base}States, { ${regions.join(", ")} }, { ${overlays.join(", ")} })`;
+    const files = [
+      scanned.view,
+      scanned.states,
+      ...scanned.regions.map((region) => region.file),
+      ...scanned.overlays.map((overlay) => overlay.file),
+    ];
+    const bindings = files.map((_file, fileIndex) => `${base}m${fileIndex}`);
+    const dynamic = files.map((file) => `import(${literal(file)})`).join(", ");
+    const regions = scanned.regions.map(
+      (region, regionIndex) =>
+        `${literal(region.name)}: rexDefault(${bindings[2 + regionIndex]}, ${display(region.file)})`,
+    );
+    const overlays = scanned.overlays.map(
+      (overlay, overlayIndex) =>
+        `${literal(overlay.name)}: rexDefault(${bindings[2 + scanned.regions.length + overlayIndex]}, ${display(overlay.file)})`,
+    );
+    const loader = [
+      `() => Promise.all([${dynamic}]).then(([${bindings.join(", ")}]) => ({`,
+      `    view: rexDefault(${bindings[0]}, ${display(scanned.view)}),`,
+      `    states: ${bindings[1]},`,
+      `    regions: { ${regions.join(", ")} },`,
+      `    overlays: { ${overlays.join(", ")} },`,
+      "  }))",
+    ].join("\n");
+    return `rexPage(${literal(scanned.id)}, ${base}, ${display(scanned.page)}, ${literal(pageChunkName(scanned.id))}, ${loader})`;
   });
   const list = (items: readonly string[]) =>
     items.length === 0 ? "Object.freeze([])" : `Object.freeze([\n  ${items.join(",\n  ")},\n])`;
@@ -154,9 +182,13 @@ export function watchApp(vite: ViteDevServer, appPath: string): void {
 }
 
 export function appModuleHook(context: RexHookContext): Plugin {
+  let serverBuild = false;
   return {
     name: "rex:app",
     enforce: "pre",
+    configResolved(config) {
+      serverBuild = Boolean(config.build.ssr);
+    },
     resolveId(id) {
       return id === APP_MODULE_ID ? RESOLVED_APP_MODULE_ID : null;
     },
@@ -170,6 +202,11 @@ export function appModuleHook(context: RexHookContext): Plugin {
         if (error instanceof RexAppScanError) this.error(error.message);
         throw error;
       }
+    },
+    outputOptions(options) {
+      if (options.codeSplitting !== undefined && options.codeSplitting !== true) return null;
+      if (serverBuild) return { ...options, codeSplitting: false };
+      return { ...options, codeSplitting: { groups: pageChunkGroups(context.appPath()) } };
     },
     configureServer(vite) {
       watchApp(vite, context.appPath());
