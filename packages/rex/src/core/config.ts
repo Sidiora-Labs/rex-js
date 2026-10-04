@@ -295,6 +295,24 @@ function originProblem(value: string): string | null {
   return null;
 }
 
+const NON_DOCUMENT_SCHEMES: ReadonlySet<string> = new Set(["ftp:", "ws:", "wss:", "file:"]);
+
+function documentOriginProblem(value: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return "must be an origin such as https://example.com or tauri://localhost";
+  }
+  if (NON_DOCUMENT_SCHEMES.has(url.protocol)) {
+    return "must use http, https or an app scheme such as tauri or capacitor";
+  }
+  if (url.host === "") return "must name a host, such as tauri://localhost";
+  const origin = `${url.protocol}//${url.host}`;
+  if (origin !== value) return `must be an origin without a path, such as ${origin}`;
+  return null;
+}
+
 function flag(value: unknown, field: string, fallback: boolean): boolean {
   if (value === undefined) return fallback;
   if (typeof value !== "boolean") failFor("REX122")(field, "must be true or false");
@@ -343,7 +361,7 @@ function parseSecurity(value: unknown): ResolvedSecurity {
   const origins =
     record.origins === undefined
       ? Object.freeze([])
-      : stringList(record.origins, "security.origins", fail, originProblem);
+      : stringList(record.origins, "security.origins", fail, documentOriginProblem);
   let headers: Readonly<Record<string, string>> = Object.freeze({});
   if (record.headers !== undefined) {
     if (!isRecord(record.headers)) fail("security.headers", "must map header names to values");
@@ -659,6 +677,18 @@ export function readConfigExport(exported: unknown, warn?: DeprecationWarn): Rex
 }
 
 export type DefaultServerFactory = (app: RexConfigApp) => RexFetchHandler;
+
+export interface ConfigServerOptions {
+  readonly security: SecurityConfig;
+  readonly client?: ClientConfig;
+}
+
+export function configServerOptions(read: RexConfigExport): ConfigServerOptions {
+  const { security, client } = read.options;
+  return client.apiOrigin === null
+    ? { security }
+    : { security, client: { apiOrigin: client.apiOrigin } };
+}
 
 export function configServer(read: RexConfigExport, fallback: DefaultServerFactory): RexFetchHandler {
   if (read.kind === "legacy") return read.server;

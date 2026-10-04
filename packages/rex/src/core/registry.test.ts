@@ -66,11 +66,12 @@ describe("createRegistry", () => {
   });
 
   it("rejects values that are not declarations", () => {
+    const incomplete = expect.objectContaining({ name: "RexError", code: "REX224" });
     expect(() => createRegistry().register({ kind: "widget", id: "x" } as never)).toThrow(
-      TypeError,
+      incomplete,
     );
     expect(() => createRegistry().register({ kind: "action" } as never)).toThrow("no id");
-    expect(() => createRegistry().register(null as never)).toThrow(TypeError);
+    expect(() => createRegistry().register(null as never)).toThrow(incomplete);
   });
 
   it("returns an immutable snapshot with lookups", () => {

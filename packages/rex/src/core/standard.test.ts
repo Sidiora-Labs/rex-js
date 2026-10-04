@@ -90,7 +90,9 @@ describe("validateStandard", () => {
       ]),
     ).toBe("amount must be positive; to.0 is required; input is invalid");
     const error = new StandardValidationError([{ message: "bad", path: ["a"] }]);
-    expect(error.message).toBe("a bad");
+    expect(error.code).toBe("REX332");
+    expect(error.detail).toBe("a bad");
+    expect(error.message).toBe("REX332 a bad");
     expect(error.issues).toHaveLength(1);
   });
 });
@@ -127,6 +129,8 @@ describe("fromStandard", () => {
   });
 
   it("refuses values that are not Standard Schemas", () => {
-    expect(() => fromStandard({} as never)).toThrow(TypeError);
+    expect(() => fromStandard({} as never)).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX329" }),
+    );
   });
 });

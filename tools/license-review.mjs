@@ -1,14 +1,28 @@
 #!/usr/bin/env node
-// License review: every package a published workspace package installs through
-// its dependencies and optionalDependencies must carry an allowed license.
-// Peers are chosen and installed by the adopter, so they are not walked.
+// License review ([decision] license_scope): the full production closure of every
+// published workspace package and of the private apps (the demo) must carry an
+// allowed license. Every package is walked through its dependencies,
+// optionalDependencies and required peerDependencies. An optional peer joins the
+// closure when pnpm resolved it for that package (linked beside it in the store),
+// and for a workspace package once another production path installs a package of
+// that name. devDependencies are not shipped and are not walked.
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const ALLOWED = new Set(["MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0", "0BSD", "CC0-1.0"]);
+const ALLOWED = new Set([
+  "MIT",
+  "ISC",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "Apache-2.0",
+  "0BSD",
+  "MPL-2.0",
+  "CC-BY-4.0",
+  "Unlicense",
+]);
 
 function readManifest(dir) {
   return JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
@@ -87,23 +101,32 @@ function resolveInstalled(fromDir, name) {
   }
 }
 
-function publishedWorkspacePackages() {
+const STORE_SEGMENT = `${sep}node_modules${sep}.pnpm${sep}`;
+
+function isResolvedPeer(dir, name) {
+  if (!dir.includes(STORE_SEGMENT)) return false;
+  if (existsSync(join(dir, "node_modules", name, "package.json"))) return true;
+  let parent = dirname(dir);
+  while (basename(parent) !== "node_modules") parent = dirname(parent);
+  return existsSync(join(parent, name, "package.json"));
+}
+
+function workspaceProjects() {
   const output = execFileSync("pnpm", ["ls", "-r", "--json", "--depth", "-1"], { cwd: ROOT, encoding: "utf8" });
+  const root = realpathSync(ROOT);
   return JSON.parse(output)
-    .filter((project) => project.private !== true)
-    .map((project) => realpathSync(project.path));
+    .map((project) => ({ dir: realpathSync(project.path), published: project.private !== true }))
+    .filter((project) => project.dir !== root);
 }
 
 const reviewed = new Map();
 const failures = [];
+const closureNames = new Set();
+const optionalPeers = [];
 
-function review(dir, chain) {
-  if (reviewed.has(dir)) return;
-  const manifest = readManifest(dir);
-  const id = `${manifest.name}@${manifest.version}`;
+function checkLicense(dir, manifest, id, path) {
   const license = declaredLicense(manifest);
   reviewed.set(dir, { id, license: license ?? "(none)" });
-  const path = [...chain, id];
   let allowed = false;
   let reason = license === undefined ? "no license declared" : `license ${license} is not allowed`;
   if (license !== undefined) {
@@ -114,29 +137,69 @@ function review(dir, chain) {
     }
   }
   if (!allowed) failures.push({ id, reason, path });
-  const required = Object.keys(manifest.dependencies ?? {});
-  const optional = Object.keys(manifest.optionalDependencies ?? {});
-  for (const name of required) {
-    if (optional.includes(name)) continue;
+}
+
+function walk(dir, manifest, chain) {
+  const optional = new Set(Object.keys(manifest.optionalDependencies ?? {}));
+  const peerMeta = manifest.peerDependenciesMeta ?? {};
+  const peers = Object.keys(manifest.peerDependencies ?? {});
+  for (const name of peers) {
+    if (peerMeta[name]?.optional !== true || optional.has(name)) continue;
+    if (isResolvedPeer(dir, name)) optional.add(name);
+    else optionalPeers.push({ dir, name, chain });
+  }
+  const required = [
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...peers.filter((name) => peerMeta[name]?.optional !== true),
+  ].filter((name) => !optional.has(name));
+  for (const name of new Set(required)) {
     const installed = resolveInstalled(dir, name);
     if (installed === undefined) {
-      failures.push({ id: name, reason: "dependency is not installed", path: [...path, name] });
+      failures.push({ id: name, reason: "dependency is not installed", path: [...chain, name] });
       continue;
     }
-    review(installed, path);
+    review(installed, chain);
   }
   for (const name of optional) {
     const installed = resolveInstalled(dir, name);
-    if (installed !== undefined) review(installed, path);
+    if (installed !== undefined) review(installed, chain);
   }
 }
 
-const roots = publishedWorkspacePackages();
-if (roots.length === 0) {
+function review(dir, chain) {
+  if (reviewed.has(dir)) return;
+  const manifest = readManifest(dir);
+  const id = `${manifest.name}@${manifest.version}`;
+  const path = [...chain, id];
+  closureNames.add(manifest.name);
+  checkLicense(dir, manifest, id, path);
+  walk(dir, manifest, path);
+}
+
+const projects = workspaceProjects();
+const roots = projects.map((project) => project.dir);
+if (!projects.some((project) => project.published)) {
   console.error("license-review: no published workspace package found");
   process.exit(1);
 }
-for (const root of roots) review(root, []);
+for (const project of projects) {
+  if (project.published) {
+    review(project.dir, []);
+  } else {
+    const manifest = readManifest(project.dir);
+    walk(project.dir, manifest, [manifest.name ?? relative(ROOT, project.dir)]);
+  }
+}
+for (let grown = true; grown; ) {
+  const before = reviewed.size;
+  for (let index = 0; index < optionalPeers.length; index++) {
+    const { dir, name, chain } = optionalPeers[index];
+    if (!closureNames.has(name)) continue;
+    const installed = resolveInstalled(dir, name);
+    if (installed !== undefined) review(installed, chain);
+  }
+  grown = reviewed.size !== before;
+}
 
 const counts = new Map();
 for (const { license } of reviewed.values()) counts.set(license, (counts.get(license) ?? 0) + 1);

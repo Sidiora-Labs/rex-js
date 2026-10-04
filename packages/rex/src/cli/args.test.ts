@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { ARGS_ERROR, InvalidArgumentError, RexArgsError, RexCommand } from "./args.ts";
+import {
+  ARGS_ERROR,
+  ARGS_REFUSED_CODE,
+  ARGS_USAGE_CODE,
+  InvalidArgumentError,
+  RexArgsError,
+  RexCommand,
+} from "./args.ts";
 
 interface Captured {
   readonly program: RexCommand;
@@ -94,9 +101,12 @@ describe("RexCommand parsing", () => {
   ])("rejects %j with exit code 2", async (argv, code, message) => {
     const tool = program();
     const error = await failure(tool.program.parseAsync(argv));
-    expect(error.code).toBe(code);
+    expect(error.code).toBe("REX604");
+    expect(ARGS_USAGE_CODE).toBe("REX604");
+    expect(error.cliCode).toBe(code);
     expect(error.exitCode).toBe(2);
     expect(error.message).toContain(message);
+    expect(error.message.startsWith("REX604 error: ")).toBe(true);
     expect(tool.calls).toEqual([]);
   });
 
@@ -126,17 +136,30 @@ describe("RexCommand parsing", () => {
       root.error("tool: refused", { code: "tool.refused", exitCode: 1 });
     });
     const error = await failure(root.parseAsync(["fail"]));
-    expect([error.message, error.code, error.exitCode]).toEqual(["tool: refused", "tool.refused", 1]);
+    expect(ARGS_REFUSED_CODE).toBe("REX605");
+    expect([error.message, error.detail, error.code, error.cliCode, error.exitCode]).toEqual([
+      "REX605 tool: refused",
+      "tool: refused",
+      "REX605",
+      "tool.refused",
+      1,
+    ]);
   });
 
   it("refuses malformed declarations", () => {
     const root = new RexCommand("tool");
-    expect(() => root.command("Bad")).toThrow(TypeError);
+    const invalidDefinition = expect.objectContaining({ name: "RexError", code: "REX600" });
+    expect(() => root.command("Bad")).toThrow(invalidDefinition);
     root.command("ok");
     expect(() => root.command("ok")).toThrow(/twice/);
-    expect(() => root.command("x").option("port", "no dashes")).toThrow(TypeError);
-    expect(() => root.command("y").argument("name")).toThrow(TypeError);
+    expect(() => root.command("x").option("port", "no dashes")).toThrow(invalidDefinition);
+    expect(() => root.command("y").argument("name")).toThrow(invalidDefinition);
     expect(() => root.command("z").argument("[a]").argument("<b>")).toThrow(/cannot follow/);
     expect(() => root.command("w").option("--no-color <c>")).toThrow(/takes no value/);
+    expect(new InvalidArgumentError("the port must be an integer")).toMatchObject({
+      name: "InvalidArgumentError",
+      code: "REX604",
+      detail: "the port must be an integer",
+    });
   });
 });

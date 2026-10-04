@@ -1,4 +1,4 @@
-import { RexError } from "../core/errors.ts";
+import { RexError, type RexErrorCode } from "../core/errors.ts";
 
 export const ARGS_ERROR = {
   unknownCommand: "rex.unknownCommand",
@@ -13,21 +13,29 @@ export const ARGS_ERROR = {
 
 export const ARGS_USAGE_EXIT = 2;
 
-export class RexArgsError extends Error {
-  readonly code: string;
+export const ARGS_USAGE_CODE = "REX604";
+export const ARGS_REFUSED_CODE = "REX605";
+
+export class RexArgsError extends RexError {
+  readonly cliCode: string;
   readonly exitCode: number;
 
-  constructor(message: string, code: string, exitCode: number = ARGS_USAGE_EXIT) {
-    super(message);
+  constructor(
+    message: string,
+    cliCode: string,
+    exitCode: number = ARGS_USAGE_EXIT,
+    code: RexErrorCode = ARGS_USAGE_CODE,
+  ) {
+    super(code, message);
     this.name = "RexArgsError";
-    this.code = code;
+    this.cliCode = cliCode;
     this.exitCode = exitCode;
   }
 }
 
-export class InvalidArgumentError extends Error {
+export class InvalidArgumentError extends RexError {
   constructor(message: string) {
-    super(message);
+    super(ARGS_USAGE_CODE, message);
     this.name = "InvalidArgumentError";
   }
 }
@@ -97,7 +105,7 @@ function parseFlags(
       valueName = valueMatch[1] as string;
       repeat = valueMatch[2] !== undefined;
     } else {
-      throw new TypeError(`option flags ${JSON.stringify(flags)} cannot be parsed at "${part}"`);
+      throw new RexError("REX600", `option flags ${JSON.stringify(flags)} cannot be parsed at "${part}"`);
     }
   }
   if (long === null) {
@@ -156,7 +164,7 @@ export class RexCommand {
   command(nameAndArguments: string): RexCommand {
     const [name, ...argumentSpecs] = nameAndArguments.trim().split(/\s+/);
     if (name === undefined || !/^[a-z][a-z0-9-]*$/.test(name)) {
-      throw new TypeError(`command name ${JSON.stringify(nameAndArguments)} is not valid`);
+      throw new RexError("REX600", `command name ${JSON.stringify(nameAndArguments)} is not valid`);
     }
     if (this.commands.some((command) => command.name() === name)) {
       throw new RexError("REX600", `command "${name}" is registered twice`);
@@ -175,7 +183,7 @@ export class RexCommand {
   argument(spec: string, description = ""): this {
     const match = ARGUMENT.exec(spec);
     if (match === null || (match[1] === "<") !== (match[3] === ">")) {
-      throw new TypeError(`argument ${JSON.stringify(spec)} must be <name> or [name]`);
+      throw new RexError("REX600", `argument ${JSON.stringify(spec)} must be <name> or [name]`);
     }
     const required = match[1] === "<";
     if (required && this.#arguments.some((argument) => !argument.required)) {
@@ -242,7 +250,12 @@ export class RexCommand {
   }
 
   error(message: string, options: { code?: string; exitCode?: number } = {}): never {
-    throw new RexArgsError(message, options.code ?? "rex.error", options.exitCode ?? 1);
+    throw new RexArgsError(
+      message,
+      options.code ?? "rex.error",
+      options.exitCode ?? 1,
+      ARGS_REFUSED_CODE,
+    );
   }
 
   #allOptions(): OptionSpec[] {
@@ -435,7 +448,7 @@ export class RexCommand {
       } catch (error) {
         if (error instanceof InvalidArgumentError) {
           throw new RexArgsError(
-            `error: option '${option.flags}' argument '${value}' is invalid. ${error.message}`,
+            `error: option '${option.flags}' argument '${value}' is invalid. ${error.detail}`,
             ARGS_ERROR.invalidArgument,
           );
         }

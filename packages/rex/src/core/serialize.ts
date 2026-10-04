@@ -1,3 +1,5 @@
+import { RexError } from "./errors.ts";
+
 const INLINE_ESCAPES: Readonly<Record<string, string>> = {
   "<": "\\u003c",
   ">": "\\u003e",
@@ -11,7 +13,7 @@ const INLINE_UNSAFE = /[<>&\u2028\u2029]/g;
 export function escapeInlineJson(value: unknown): string {
   const json = JSON.stringify(value);
   if (json === undefined) {
-    throw new TypeError("escapeInlineJson: the value has no JSON representation");
+    throw new RexError("REX329", "escapeInlineJson: the value has no JSON representation");
   }
   return json.replace(INLINE_UNSAFE, (character) => INLINE_ESCAPES[character] as string);
 }

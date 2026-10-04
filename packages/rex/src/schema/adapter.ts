@@ -1,4 +1,5 @@
 import * as zm from "zod/mini";
+import { RexError } from "../core/errors.ts";
 import {
   isStandardSchema,
   isZodSchema,
@@ -19,7 +20,8 @@ function issueKeys(issue: StandardIssue): PropertyKey[] {
 export function fromStandard<S extends StandardSchemaV1>(schema: S): AsZodSchema<S> {
   if (isZodSchema(schema)) return schema as AsZodSchema<S>;
   if (!isStandardSchema(schema)) {
-    throw new TypeError(
+    throw new RexError(
+      "REX329",
       "fromStandard: the value does not implement the Standard Schema v1 interface",
     );
   }

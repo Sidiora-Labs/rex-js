@@ -54,11 +54,11 @@ export type AsZodSchema<S extends StandardSchemaV1> = S extends ZodSchemaLike
   ? S
   : zm.ZodMiniType<StandardInferOutput<S>, StandardInferInput<S>>;
 
-export class StandardValidationError extends Error {
+export class StandardValidationError extends RexError {
   readonly issues: readonly StandardIssue[];
 
   constructor(issues: readonly StandardIssue[]) {
-    super(formatIssues(issues));
+    super("REX332", formatIssues(issues));
     this.name = "StandardValidationError";
     this.issues = issues;
   }

@@ -8,6 +8,14 @@ import { createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { action } from "../core/action.ts";
 import { actor, anonymousActor, type Actor } from "../core/actor.ts";
+import {
+  configServer,
+  configServerOptions,
+  defineConfig,
+  readConfigExport,
+} from "../core/config.ts";
+import { createRegistry } from "../core/registry.ts";
+import { generateServerEntry, serverRuntimePaths } from "../cli/commands/build.ts";
 import { page } from "../core/page.ts";
 import { always } from "../core/policy.ts";
 import { boolean, text } from "../schema/index.ts";
@@ -50,6 +58,8 @@ function resolveActor(request: Request): Actor {
 
 const ORIGIN = "http://rex.test";
 const PARTNER = "https://partner.example";
+const TAURI = "tauri://localhost";
+const CAPACITOR = "capacitor://localhost";
 
 type SecurityOptions = Pick<RexServerOptions<typeof toggleDust>, "security" | "client">;
 
@@ -195,10 +205,61 @@ describe("security middleware", () => {
       expect(await hook.text()).toBe("received");
     });
 
+    it("accepts the app-scheme origins of desktop and mobile webviews listed in security.origins", async () => {
+      const app = serverWith(ledger, { security: { origins: [TAURI, CAPACITOR] } });
+      expect((await app.fetch(post("/rex/rpc/toggle-dust", TAURI))).status).toBe(200);
+      expect((await app.fetch(post("/rex/rpc/toggle-dust", CAPACITOR))).status).toBe(200);
+      expect((await app.fetch(post("/rex/rpc/toggle-dust", "ionic://localhost"))).status).toBe(403);
+      expect((await app.fetch(post("/rex/rpc/toggle-dust", "tauri://evil.example"))).status).toBe(
+        403,
+      );
+      expect(await ledger.list()).toHaveLength(2);
+      expect(() =>
+        serverWith(ledger, { security: { origins: ["tauri://localhost/index.html"] } }),
+      ).toThrow(/REX115/);
+    });
+
     it("rejects an invalid security config with the config error code", () => {
       expect(() =>
         serverWith(ledger, { security: { origins: ["https://partner.example/path"] } }),
       ).toThrow(/REX115|security\.origins\.0/);
+    });
+  });
+
+  describe("the default server of the entry rex build generates", () => {
+    it("passes the rex.config security and client options to createRexServer", async () => {
+      const entry = generateServerEntry({
+        config: "/app/rex.config.ts",
+        runtime: serverRuntimePaths(),
+        manifest: "/app/.rex/manifest.json",
+      });
+      expect(entry).toContain("import { configServer, configServerOptions, readConfigExport }");
+      expect(entry).toContain("const config = readConfigExport(exported);");
+      expect(entry).toContain("const server = configServer(config, (app) =>");
+      expect(entry).toContain("    ...configServerOptions(config),");
+
+      const config = readConfigExport(
+        defineConfig({
+          app: { name: "demo", registry: createRegistry().register(toggleDust, portfolio).freeze() },
+          security: { origins: [TAURI] },
+          client: { apiOrigin: "https://api.example" },
+        }),
+      );
+      const app = configServer(config, (bundle) =>
+        createRexServer({
+          registry: bundle.registry,
+          ledger,
+          actor: resolveActor,
+          app: bundle.name,
+          ...configServerOptions(config),
+        }),
+      );
+      const posted = await app.fetch(post("/rex/rpc/toggle-dust", TAURI));
+      expect(posted.status).toBe(200);
+      const policy = posted.headers.get(CSP_HEADER);
+      expect(policy).toBe(strictPolicy(cspNonce(policy), "'self' https://api.example"));
+      expect((await app.fetch(post("/rex/rpc/toggle-dust", PARTNER))).status).toBe(403);
+      expect((await ledger.list()).map((record) => record.actionId)).toEqual(["toggle-dust"]);
     });
   });
 

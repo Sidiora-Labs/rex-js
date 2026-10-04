@@ -3,7 +3,13 @@ import { RPCHandler } from "@orpc/server/fetch";
 import type { Hono } from "hono";
 import type { ActionEffect } from "../core/action.ts";
 import { RexError } from "../core/errors.ts";
-import { FlowDecisionError, decide, runFlow, type AnyFlow } from "../core/flow.ts";
+import {
+  FLOW_DECISION_FORBIDDEN,
+  FlowDecisionError,
+  decide,
+  runFlow,
+  type AnyFlow,
+} from "../core/flow.ts";
 import {
   completedSteps,
   type FlowDecision,
@@ -105,7 +111,7 @@ function lookup(byId: ReadonlyMap<string, AnyFlow>, id: string): AnyFlow {
 
 function decisionError(error: unknown): unknown {
   if (error instanceof FlowDecisionError) {
-    if (error.code === "FORBIDDEN") {
+    if (error.code === FLOW_DECISION_FORBIDDEN) {
       return new ORPCError("FORBIDDEN", { message: error.message, data: { reason: error.reason } });
     }
     return new ORPCError("CONFLICT", { message: error.message });

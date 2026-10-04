@@ -92,6 +92,9 @@ Every error Rex raises is a `RexError` carrying a code, a message naming the fil
 | [REX329](https://rex.sidioralabs.com/errors/REX329) | Invalid Rex API argument | Pass the argument the function documents; the message names the function and the expected value. |
 | [REX330](https://rex.sidioralabs.com/errors/REX330) | Region failed to render | Fix the error thrown by the region; the page shows its recoverable-error state and Retry remounts the region. |
 | [REX331](https://rex.sidioralabs.com/errors/REX331) | Invalid page params | Pass params the page's params schema accepts; rex manifest lists the params of every page. |
+| [REX332](https://rex.sidioralabs.com/errors/REX332) | Value rejected by its schema | Pass a value the schema accepts; the message lists each issue with the path of the field it concerns. |
+| [REX333](https://rex.sidioralabs.com/errors/REX333) | Flow has no pending approval | Decide only on a flow instance that is paused at an approval gate; the flow status shows the pending gate, and a gate is decided once. |
+| [REX334](https://rex.sidioralabs.com/errors/REX334) | Actor may not decide the approval gate | Decide the gate as an actor its approvers policy allows; the error reason names the missing permission or condition. |
 
 ## REX4xx Server and build
 
@@ -137,6 +140,8 @@ Every error Rex raises is a `RexError` carrying a code, a message naming the fil
 | [REX601](https://rex.sidioralabs.com/errors/REX601) | Invalid generator argument | Name things as rex make --help describes: page, region and action ids in lowercase with dashes, components and parts in PascalCase, hooks starting with use. |
 | [REX602](https://rex.sidioralabs.com/errors/REX602) | Generator refused to write | Remove or rename the existing files, or make the missing page or region first; generators never overwrite. |
 | [REX603](https://rex.sidioralabs.com/errors/REX603) | Template dependency not pinned | Reinstall @sidioralabs/rex; its package.json pins every version rex new writes into a new app. |
+| [REX604](https://rex.sidioralabs.com/errors/REX604) | Invalid command line | Run rex --help, or rex <command> --help, for the commands, arguments and options each command accepts. |
+| [REX605](https://rex.sidioralabs.com/errors/REX605) | Command refused | Fix what the message names, such as an existing file or a missing page, and run the command again. |
 | [REX610](https://rex.sidioralabs.com/errors/REX610) | Codemod left a placeholder | Replace the placeholder the codemod wrote, such as Img width and height, with the real values and run rex check. |
 | [REX611](https://rex.sidioralabs.com/errors/REX611) | Unknown migration source | Run rex migrate --list and pass one of the listed versions to --from. |
 | [REX612](https://rex.sidioralabs.com/errors/REX612) | Invalid codemod module | Export codemod = defineCodemod({ id, from, description, run }) from cli/codemods/<id>.ts with the id equal to the file name. |
