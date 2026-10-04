@@ -22,7 +22,19 @@ import { errorDocs } from "../core/errors.ts";
 import { addPageRender, renderTimeBrowserReads } from "./codemods/0.1-page-render.ts";
 import { convertRawImg } from "./codemods/0.1-raw-img.ts";
 import { wrapConfig } from "./codemods/0.1-config.ts";
-import { codemod as schemaEntryCodemod, moveEntryImports } from "./codemods/0.1-schema-entry.ts";
+import {
+  CLIENT_ENTRY_TARGETS,
+  I18N_NAMES,
+  INTEROP_NAMES,
+  MEDIA_NAMES,
+  codemod as schemaEntryCodemod,
+  moveClientImports,
+  moveEntryImports,
+} from "./codemods/0.1-schema-entry.ts";
+import * as clientEntry from "../client/index.ts";
+import * as i18nEntry from "../client/i18n/index.ts";
+import * as interopEntry from "../client/interop/index.ts";
+import * as mediaEntry from "../client/media/index.ts";
 import { parseSource } from "./codemods/codemod.ts";
 import { loadCodemods } from "./commands/migrate.ts";
 import { loadRexConfig } from "./config.ts";
@@ -83,8 +95,9 @@ const MIGRATED_SETTINGS_PAGE = [
 ].join("\n");
 
 const MIGRATED_COVER_REGION = [
-  'import { region, Img } from "@sidioralabs/rex/client";',
+  'import { region } from "@sidioralabs/rex/client";',
   'import Thumb from "./parts/Thumb.tsx";',
+  'import { Img } from "@sidioralabs/rex/client/media";',
   "",
   'export default region("cover", () => (',
   "  <section>",
@@ -107,7 +120,7 @@ const MIGRATED_COVER_REGION = [
 ].join("\n");
 
 const MIGRATED_THUMB = [
-  'import { Img } from "@sidioralabs/rex/client";',
+  'import { Img } from "@sidioralabs/rex/client/media";',
   "",
   "export default function Thumb(props: { readonly src: string; readonly label: string }) {",
   "  return (",
@@ -153,8 +166,8 @@ const THUMB = "app/pages/gallery/regions/cover/parts/Thumb.tsx";
 const SETTINGS_PAGE = "app/pages/settings/page.ts";
 
 const FLAG_LINES = [
-  `REX610 ${COVER}:6:5 Img width, height are placeholders; set the real values (${errorDocs("REX610")})`,
-  `REX610 ${COVER}:13:5 Img alt, width, height are placeholders; set the real values (${errorDocs("REX610")})`,
+  `REX610 ${COVER}:7:5 Img width, height are placeholders; set the real values (${errorDocs("REX610")})`,
+  `REX610 ${COVER}:14:5 Img alt, width, height are placeholders; set the real values (${errorDocs("REX610")})`,
 ];
 
 const temporary: string[] = [];
@@ -289,6 +302,42 @@ describe("rex migrate codemods", () => {
     );
   });
 
+  it("moves the interop, media and i18n names out of the client import, once", () => {
+    const sorted = (names: Iterable<string>) => [...names].sort();
+    expect(sorted(INTEROP_NAMES)).toEqual(sorted(Object.keys(interopEntry)));
+    expect(sorted(MEDIA_NAMES)).toEqual(sorted(Object.keys(mediaEntry)));
+    expect(sorted(I18N_NAMES)).toEqual(
+      sorted(Object.keys(i18nEntry).filter((name) => name !== "registerI18n")),
+    );
+    for (const [, names] of CLIENT_ENTRY_TARGETS) {
+      for (const name of names) expect(Object.keys(clientEntry)).not.toContain(name);
+    }
+    expect(Object.keys(clientEntry)).toContain("registerI18n");
+    const legacy = [
+      'import { Img, region, useT, type ImgProps } from "@sidioralabs/rex/client";',
+      'import type { NativeProps } from "@sidioralabs/rex/client";',
+      'import { defineElement } from "@sidioralabs/rex/client";',
+      'import { registerI18n, useAct } from "@sidioralabs/rex/client";',
+      "",
+    ].join("\n");
+    const moved = [
+      'import { region } from "@sidioralabs/rex/client";',
+      'import { Img, type ImgProps } from "@sidioralabs/rex/client/media";',
+      'import { useT } from "@sidioralabs/rex/client/i18n";',
+      'import type { NativeProps } from "@sidioralabs/rex/client/interop";',
+      'import { defineElement } from "@sidioralabs/rex/client/interop";',
+      'import { registerI18n, useAct } from "@sidioralabs/rex/client";',
+      "",
+    ].join("\n");
+    expect(moveClientImports("region.tsx", legacy)).toBe(moved);
+    expect(moveClientImports("region.tsx", moved)).toBeNull();
+    const root = mkdtempSync(join(tmpdir(), "rex-migrate-client-entries-"));
+    temporary.push(root);
+    mkdirSync(join(root, "app"), { recursive: true });
+    writeFileSync(join(root, "app/region.tsx"), legacy);
+    expect(schemaEntryCodemod.run(root).changes).toEqual([{ file: "app/region.tsx", text: moved }]);
+  });
+
   it("finds render-time browser reads but not effect, handler, guard or local reads", () => {
     const reads = (text: string) =>
       renderTimeBrowserReads(parseSource("hook.tsx", text)).map((node) => node.text);
@@ -340,7 +389,7 @@ describe("rex migrate codemods", () => {
       ),
     ).toBe(
       [
-        'import { Img } from "@sidioralabs/rex/client";',
+        'import { Img } from "@sidioralabs/rex/client/media";',
         "",
         "export default function Avatar() {",
         "  return (",

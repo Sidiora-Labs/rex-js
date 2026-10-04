@@ -4,11 +4,15 @@ import {
   type RexConfigExport,
   type ResolvedBudgets,
 } from "../core/config.ts";
+import { RexError } from "../core/errors.ts";
 import { join } from "node:path";
+import { gzipSync } from "node:zlib";
 import { build } from "vite";
 import type { ChunkBudgets } from "./split.ts";
 
 export const EDGE_BUDGET_KB = 40;
+
+export const LAZY_CHUNK_BUDGET_KB = 10;
 
 export const REACT_EXTERNALS = ["react", "react-dom"] as const;
 
@@ -71,6 +75,8 @@ export function withinBudget(gzipBytes: number, budgetKb: number): boolean {
 export const BUDGET_BUILD_MODE = "production";
 
 export interface BundledChunk {
+  readonly fileName: string;
+  readonly isEntry: boolean;
   readonly code: string;
   readonly imports: readonly string[];
   readonly moduleIds: readonly string[];
@@ -91,9 +97,12 @@ export async function bundleBudgetEntry(
       define: { "process.env.NODE_ENV": JSON.stringify(BUDGET_BUILD_MODE) },
       build: {
         write: false,
-        minify: true,
+        minify: false,
         lib: { entry: join(packageRoot, target.source), formats: ["es"], fileName: "entry" },
-        rolldownOptions: { external: (id: string) => isBudgetExternal(id, target.externals) },
+        rolldownOptions: {
+          external: (id: string) => isBudgetExternal(id, target.externals),
+          output: { minify: true, comments: false },
+        },
       },
     });
     const outputs = Array.isArray(result) ? result : [result];
@@ -103,6 +112,8 @@ export async function bundleBudgetEntry(
         item.type === "chunk"
           ? [
               {
+                fileName: item.fileName,
+                isEntry: item.isEntry,
                 code: item.code,
                 imports: [...item.imports, ...item.dynamicImports],
                 moduleIds: [...item.moduleIds],
@@ -114,4 +125,40 @@ export async function bundleBudgetEntry(
     if (previous === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previous;
   }
+}
+
+export interface ChunkSize {
+  readonly fileName: string;
+  readonly raw: number;
+  readonly gzip: number;
+}
+
+export interface BudgetMeasurement {
+  readonly entry: ChunkSize;
+  readonly lazy: readonly ChunkSize[];
+}
+
+function chunkSize(chunk: BundledChunk): ChunkSize {
+  return {
+    fileName: chunk.fileName,
+    raw: Buffer.byteLength(chunk.code),
+    gzip: gzipSync(chunk.code).byteLength,
+  };
+}
+
+export function measureBudgetChunks(chunks: readonly BundledChunk[]): BudgetMeasurement {
+  const entries = chunks.filter((chunk) => chunk.isEntry);
+  if (entries.length !== 1) {
+    throw new RexError(
+      "REX329",
+      `measureBudgetChunks: expected one entry chunk, found ${entries.length}`,
+    );
+  }
+  return {
+    entry: chunkSize(entries[0] as BundledChunk),
+    lazy: chunks
+      .filter((chunk) => !chunk.isEntry)
+      .map(chunkSize)
+      .sort((a, b) => (a.fileName < b.fileName ? -1 : a.fileName > b.fileName ? 1 : 0)),
+  };
 }

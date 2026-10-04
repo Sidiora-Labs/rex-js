@@ -6,6 +6,10 @@ The manifest is the sixth piece: a generated description of all declarations.
 
 Sources: `packages/rex/src/core/*.ts`, `packages/rex/src/manifest/*.ts`, `packages/rex/src/server/audit.ts`, `packages/rex/src/store/drizzle.ts`.
 
+## Client entries
+
+Components, hooks and the runtime come from `@sidioralabs/rex/client`. Optional capabilities have their own entries so the client entry stays within its 30 KB budget: `@sidioralabs/rex/client/interop` (`defineElement`, `mountRexPage`, `Native`), `@sidioralabs/rex/client/media` (`Img`, `Script`, `loadScript`) and `@sidioralabs/rex/client/i18n` (`useT`, `useLocale`, `t`, `formatMessage`). The checker's import table admits each of them wherever it admits `@sidioralabs/rex/client`, with the same rule for hooks. A budget is measured on the fully minified production entry chunk alone; each lazily loaded chunk is measured on its own against 10 KB.
+
 ## Names and ids
 
 The declaration id is the name you pass. Names must start with a lowercase letter and contain only lowercase letters, digits, dot and dash (`validateName`); otherwise `RexNameError` (code `REX218`) is raised and reported as a `RexDeclarationError` on the `id` field. Overlay ids are PascalCase (`validateComponentName`).

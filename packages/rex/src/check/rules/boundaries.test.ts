@@ -4,7 +4,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { FILE_ROLES, discoverApp, runRules } from "../engine.ts";
-import { IMPORT_TABLE, REX_SCHEMA, boundariesRule } from "./boundaries.ts";
+import {
+  IMPORT_TABLE,
+  REX_CLIENT_CAPABILITIES,
+  REX_CLIENT_I18N,
+  REX_CLIENT_INTEROP,
+  REX_CLIENT_MEDIA,
+  REX_SCHEMA,
+  boundariesRule,
+} from "./boundaries.ts";
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), "../fixtures/boundaries");
 
@@ -181,6 +189,59 @@ describe("boundaries rule", () => {
           expect.arrayContaining([{ role: "page", samePage: true }, { role: "flow" }]),
         );
       }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("admits the optional client entries where @sidioralabs/rex/client is admitted, with the same hook rule", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "rex-boundaries-capabilities-"));
+    try {
+      cpSync(path.join(fixtures, "pass"), root, { recursive: true });
+      const regionFile = path.join(root, "app/pages/send/regions/form/region.tsx");
+      writeFileSync(
+        regionFile,
+        `import { useT } from "${REX_CLIENT_I18N}";\nimport { Img } from "${REX_CLIENT_MEDIA}";\nimport { Native } from "${REX_CLIENT_INTEROP}";\n${readFileSync(regionFile, "utf8")}\nexport const capabilities = [useT, Img, Native];\n`,
+      );
+      const partFile = path.join(root, "app/pages/send/regions/form/parts/TokenChip.tsx");
+      writeFileSync(
+        partFile,
+        `import { Img } from "${REX_CLIENT_MEDIA}";\nimport { t, useLocale } from "${REX_CLIENT_I18N}";\n${readFileSync(partFile, "utf8")}\nexport const media = [Img, t, useLocale];\n`,
+      );
+      const hookFile = path.join(root, "app/pages/send/hooks/useTokens.ts");
+      writeFileSync(
+        hookFile,
+        `import { useLocale as useActiveLocale } from "${REX_CLIENT_I18N}";\n${readFileSync(hookFile, "utf8")}\nexport const localeHook = useActiveLocale;\n`,
+      );
+      const pageFile = path.join(root, "app/pages/send/page.ts");
+      writeFileSync(
+        pageFile,
+        `import { t as message } from "${REX_CLIENT_I18N}";\n${readFileSync(pageFile, "utf8")}\nexport const title = message("send.title");\n`,
+      );
+      const result = await runRules(discoverApp(root), [boundariesRule]);
+      expect(result.findings.map((entry) => [entry.file, entry.line, entry.message])).toEqual([
+        [
+          "app/pages/send/page.ts",
+          1,
+          `page.ts imports the package "${REX_CLIENT_I18N}", which the import table does not allow`,
+        ],
+        [
+          "app/pages/send/regions/form/parts/TokenChip.tsx",
+          2,
+          `part TokenChip.tsx imports the hook "useLocale" from "${REX_CLIENT_I18N}"`,
+        ],
+      ]);
+      expect(REX_CLIENT_CAPABILITIES).toEqual([
+        "@sidioralabs/rex/client/interop",
+        "@sidioralabs/rex/client/media",
+        "@sidioralabs/rex/client/i18n",
+      ]);
+      for (const role of ["region", "part", "hook", "overlay", "states"] as const) {
+        for (const specifier of REX_CLIENT_CAPABILITIES) {
+          expect(IMPORT_TABLE[role].allowed).toContain(specifier);
+        }
+      }
+      expect(IMPORT_TABLE.view.allowed).not.toContain(REX_CLIENT_MEDIA);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

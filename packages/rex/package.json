@@ -19,6 +19,9 @@
     "./schema": "./src/schema/index.ts",
     "./manifest": "./src/manifest/index.ts",
     "./client": "./src/client/index.ts",
+    "./client/interop": "./src/client/interop/index.ts",
+    "./client/media": "./src/client/media/index.ts",
+    "./client/i18n": "./src/client/i18n/index.ts",
     "./server": "./src/server/index.ts",
     "./server/node": "./src/server/node.ts",
     "./server/bun": "./src/server/adapters/bun.ts",
@@ -57,6 +60,18 @@
       "./client": {
         "types": "./dist/client/index.d.ts",
         "import": "./dist/client/index.js"
+      },
+      "./client/interop": {
+        "types": "./dist/client/interop/index.d.ts",
+        "import": "./dist/client/interop/index.js"
+      },
+      "./client/media": {
+        "types": "./dist/client/media/index.d.ts",
+        "import": "./dist/client/media/index.js"
+      },
+      "./client/i18n": {
+        "types": "./dist/client/i18n/index.d.ts",
+        "import": "./dist/client/i18n/index.js"
       },
       "./server": {
         "types": "./dist/server/index.d.ts",

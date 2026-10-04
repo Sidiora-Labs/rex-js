@@ -1,4 +1,5 @@
-import { region, useT } from "@sidioralabs/rex/client";
+import { region } from "@sidioralabs/rex/client";
+import { useT } from "@sidioralabs/rex/client/i18n";
 import { useEffect } from "react";
 import { defineTokenChip } from "../../../../components/token-chip-element.ts";
 import { useTokens } from "../../hooks/useTokens.ts";
