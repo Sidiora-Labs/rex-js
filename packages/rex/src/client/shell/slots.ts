@@ -3,6 +3,7 @@ import type { AnyPage } from "../../core/page.ts";
 import type { PageModuleSet } from "../page.tsx";
 import type { RouteResolution } from "../router.tsx";
 import { BodySlot, RecoverySlot } from "./body.tsx";
+import { DevtoolsSlot } from "./devtools-slot.tsx";
 import { HeaderSlot } from "./header.tsx";
 import { NavSlot } from "./nav.tsx";
 import { OutcomeSlot, type OutcomeSlotProps } from "./outcome-slot.tsx";
@@ -26,4 +27,7 @@ export const SHELL_SLOTS: readonly ShellSlot[] = [
   { id: "body", Component: BodySlot },
   { id: "recovery", Component: RecoverySlot },
   { id: "outcome", Component: OutcomeSlot },
+  ...(import.meta.env.DEV && import.meta.env.REX_DEVTOOLS !== false
+    ? [{ id: "devtools", Component: DevtoolsSlot }]
+    : []),
 ];

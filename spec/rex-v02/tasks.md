@@ -93,7 +93,7 @@
     - Add vite/hmr.ts: part and region edits flow through react-refresh as module updates; page.ts edits invalidate rex:app and the page chunk and send a full reload with a REX320 notice naming the page.
     - Write vite/hmr.test.ts starting the dev server on a copy of the fixture app, editing a part and asserting an update event for that module (not a full reload), then editing page.ts and asserting the full reload notice.
     - _Requirements: 14.1, 14.2_
-  - [ ] 2.3 Dev-only devtools overlay
+  - [x] 2.3 Dev-only devtools overlay
     - Add client/devtools/ with RexDevtools (shift+mod+d toggle) and the Manifest, Page, Sidecar, Outcomes, Queries, Renders and Audit panels per [design] devtools; register a slot in client/shell/slots.ts guarded by import.meta.env.DEV and config.devtools; add server/routes/dev.ts serving GET /rex/dev/audit only in dev mode; add the ./devtools export.
     - Write client/devtools/devtools.test.tsx (toggle, each panel reads real data from the fixture app) and extend vite/vite.test.ts with a production build asserting the devtools module is absent from the bundle.
     - _Requirements: 15.1, 15.2_

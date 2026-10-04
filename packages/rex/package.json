@@ -22,6 +22,7 @@
     "./store/drizzle": "./src/store/index.ts",
     "./vite": "./src/vite/index.ts",
     "./check": "./src/check/index.ts",
+    "./devtools": "./src/client/devtools/index.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -59,6 +60,10 @@
       "./check": {
         "types": "./dist/check/index.d.ts",
         "import": "./dist/check/index.js"
+      },
+      "./devtools": {
+        "types": "./dist/client/devtools/index.d.ts",
+        "import": "./dist/client/devtools/index.js"
       },
       "./package.json": "./package.json"
     }

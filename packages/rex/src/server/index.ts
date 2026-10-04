@@ -6,5 +6,6 @@ export * from "./app.ts";
 export { REX_MIDDLEWARE } from "./middleware.ts";
 export { REX_ROUTES } from "./routes.ts";
 export { HEALTH_PATH, installHealthRoute } from "./routes/health.ts";
+export { DEV_AUDIT_PATH, installDevRoute, isDevServer } from "./routes/dev.ts";
 export { MANIFEST_PATH, installManifestRoute } from "./routes/manifest.ts";
 export { RPC_PREFIX, installRpcRoute } from "./routes/rpc.ts";
