@@ -1,5 +1,4 @@
-import { Command } from "cmdk";
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import type { AnyAction } from "../../core/action.ts";
 import type { AnyPage } from "../../core/page.ts";
 import { evaluate } from "../../core/policy.ts";
@@ -10,7 +9,7 @@ import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
 import { useNav } from "../nav.ts";
 import { useActivePage } from "../router.tsx";
 import { isNavigable } from "../shell.tsx";
-import { useShellComponents } from "../shell/components.ts";
+import { useShellComponents, type ShellPaletteItemProps } from "../shell/components.ts";
 import { useConfirm, usePageInvokers } from "./confirm.tsx";
 import { isModShortcut } from "./shortcuts.ts";
 import { useAffordances, type Affordance } from "./sidecar.tsx";
@@ -40,6 +39,33 @@ export interface PalettePageEntry {
 
 export function paletteValue(kind: "action" | "page", id: string): string {
   return `${kind}:${id}`;
+}
+
+export interface PaletteMenuProps {
+  readonly label: string;
+  readonly page: string | null;
+  readonly actions: readonly PaletteActionEntry[];
+  readonly pages: readonly PalettePageEntry[];
+  readonly Item: ComponentType<ShellPaletteItemProps>;
+  readonly valueOf: typeof paletteValue;
+  onAction(entry: PaletteActionEntry): void;
+  onPage(entry: PalettePageEntry): void;
+  onClose(): void;
+}
+
+type PaletteMenuComponent = ComponentType<PaletteMenuProps>;
+
+let paletteMenu: Promise<PaletteMenuComponent> | null = null;
+
+function loadPaletteMenu(): Promise<PaletteMenuComponent> {
+  if (paletteMenu === null) {
+    const loading = import("./palette-menu.tsx").then((loaded) => loaded.PaletteMenu);
+    loading.catch(() => {
+      if (paletteMenu === loading) paletteMenu = null;
+    });
+    paletteMenu = loading;
+  }
+  return paletteMenu;
 }
 
 function usePaletteEntries(): {
@@ -103,8 +129,8 @@ export interface RexPaletteProps {
 
 export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const [Menu, setMenu] = useState<PaletteMenuComponent | null>(null);
   const opener = useRef<Element | null>(null);
-  const input = useRef<HTMLInputElement>(null);
   const invokers = usePageInvokers();
   const outcomes = useOutcomeStore();
   const confirm = useConfirm();
@@ -129,18 +155,28 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
   }, []);
 
   useEffect(() => {
-    if (open) {
-      input.current?.focus();
-      return;
-    }
+    if (!open || Menu !== null) return;
+    let current = true;
+    void loadPaletteMenu().then((loaded) => {
+      if (current) setMenu(() => loaded);
+    });
+    return () => {
+      current = false;
+    };
+  }, [open, Menu]);
+
+  useEffect(() => {
+    if (open) return;
     const previous = opener.current;
     opener.current = null;
     if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
   }, [open]);
 
-  if (!open) return null;
+  const close = useCallback(() => setOpen(false), []);
 
-  const close = () => setOpen(false);
+  if (!open || Menu === null) return null;
+
+  const pageId = active === null ? null : active.page.id;
 
   const runAction = (entry: PaletteActionEntry) => {
     if (!entry.allowed) return;
@@ -152,7 +188,7 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
           void invokers.invoke(declared.id, { ...PALETTE_INPUT });
           return;
         }
-        outcomes.set(active === null ? APP_OUTCOME_KEY : active.page.id, {
+        outcomes.set(pageId ?? APP_OUTCOME_KEY, {
           actionId: declared.id,
           ok: false,
           message: problem,
@@ -167,86 +203,28 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
       void affordance.invoke({ ...PALETTE_INPUT });
       return;
     }
-    const pending = active === null ? null : active.page.id;
     const subject = { id: affordance.id, label: entry.label, effect: affordance.effect };
-    void confirm({ page: pending, action: subject, input: PALETTE_INPUT }).then((accepted) =>
+    void confirm({ page: pageId, action: subject, input: PALETTE_INPUT }).then((accepted) =>
       accepted ? affordance.invoke({ ...PALETTE_INPUT }) : undefined,
     );
   };
 
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      close();
-    }
+  const goTo = (entry: PalettePageEntry) => {
+    close();
+    nav.to(entry.page);
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={PALETTE_LABEL}
-      data-rex-palette=""
-      onKeyDown={onKeyDown}
-    >
-      <Command label={PALETTE_LABEL} loop>
-        <Command.Input ref={input} placeholder="Search actions and pages" />
-        <Command.List>
-          <Command.Empty>No matching action or page.</Command.Empty>
-          {actions.length === 0 ? null : (
-            <Command.Group heading="Actions">
-              {actions.map((entry) => (
-                <Command.Item
-                  key={entry.id}
-                  value={paletteValue("action", entry.id)}
-                  keywords={[entry.label, entry.id]}
-                  disabled={!entry.allowed}
-                  onSelect={() => runAction(entry)}
-                  data-rex-palette-item={
-                    active === null ? entry.id : `${active.page.id}/${entry.id}`
-                  }
-                  data-rex-allowed={entry.allowed ? "true" : "false"}
-                >
-                  <PaletteItem
-                    kind="action"
-                    id={entry.id}
-                    label={entry.label}
-                    detail={entry.id}
-                    shortcut={entry.shortcut}
-                    allowed={entry.allowed}
-                    reason={entry.reason}
-                  />
-                </Command.Item>
-              ))}
-            </Command.Group>
-          )}
-          <Command.Group heading="Pages">
-            {pages.map((entry) => (
-              <Command.Item
-                key={entry.id}
-                value={paletteValue("page", entry.id)}
-                keywords={[entry.title, entry.id, entry.route]}
-                onSelect={() => {
-                  close();
-                  nav.to(entry.page);
-                }}
-                data-rex-palette-page={entry.id}
-              >
-                <PaletteItem
-                  kind="page"
-                  id={entry.id}
-                  label={`Go to ${entry.title}`}
-                  detail={entry.route}
-                  shortcut={null}
-                  allowed
-                  reason={null}
-                />
-              </Command.Item>
-            ))}
-          </Command.Group>
-        </Command.List>
-      </Command>
-    </div>
+    <Menu
+      label={PALETTE_LABEL}
+      page={pageId}
+      actions={actions}
+      pages={pages}
+      Item={PaletteItem}
+      valueOf={paletteValue}
+      onAction={runAction}
+      onPage={goTo}
+      onClose={close}
+    />
   );
 }

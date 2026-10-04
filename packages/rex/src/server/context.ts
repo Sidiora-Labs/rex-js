@@ -1,14 +1,18 @@
 import type { Actor } from "../core/actor.ts";
 import type { I18nConfig } from "../core/config.ts";
 import { RexError } from "../core/errors.ts";
-import { REX_ACTOR_HEADER, REX_CONFIRM_HEADER, REX_DENSITY_HEADER } from "../core/protocol.ts";
+import {
+  DEFAULT_DENSITY,
+  REX_ACTOR_HEADER,
+  REX_CONFIRM_HEADER,
+  REX_DENSITIES,
+  REX_DENSITY_HEADER,
+  isRexDensity,
+  type RexDensity,
+} from "../core/protocol.ts";
 import { resolveRequestLocale } from "./locale.ts";
 
-export const REX_DENSITIES = ["default", "agent"] as const;
-
-export type RexDensity = (typeof REX_DENSITIES)[number];
-
-export const DEFAULT_DENSITY: RexDensity = "default";
+export { DEFAULT_DENSITY, REX_DENSITIES, isRexDensity, type RexDensity };
 
 export const DENSITY_HEADER = REX_DENSITY_HEADER;
 export const CONFIRM_HEADER = REX_CONFIRM_HEADER;
@@ -68,10 +72,6 @@ class RequestContext implements RexRequestContext {
 }
 
 export type ActorResolver = (request: Request) => Actor | Promise<Actor>;
-
-export function isRexDensity(value: unknown): value is RexDensity {
-  return typeof value === "string" && (REX_DENSITIES as readonly string[]).includes(value);
-}
 
 export class RexDensityError extends RexError {
   readonly value: string;

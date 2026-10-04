@@ -9,8 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import { RexError } from "../../core/errors.ts";
-import { REX_DENSITY_HEADER } from "../../core/protocol.ts";
-import { DEFAULT_DENSITY, isRexDensity, type RexDensity } from "../../server/context.ts";
+import {
+  DEFAULT_DENSITY,
+  REX_DENSITY_HEADER,
+  isRexDensity,
+  type RexDensity,
+} from "../../core/protocol.ts";
 import { RexRuntimeContext } from "../context.ts";
 
 export type { RexDensity };

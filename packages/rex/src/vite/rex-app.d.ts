@@ -13,3 +13,10 @@ declare module "rex:app" {
   const bundle: RexAppBundle;
   export default bundle;
 }
+
+declare module "rex:manifest" {
+  import type { Manifest } from "@sidioralabs/rex/manifest";
+
+  const manifest: Manifest;
+  export default manifest;
+}

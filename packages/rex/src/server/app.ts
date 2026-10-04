@@ -1,8 +1,9 @@
 import type { ClientContext } from "@orpc/client";
 import type { RouterClient } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
-import { Hono } from "hono";
+import { Hono } from "hono/tiny";
 import type { AnyAction } from "../core/action.ts";
+import { resolveOptions, type RexOptionsConfig } from "../core/config.ts";
 import { RexError } from "../core/errors.ts";
 import type { AnyFlow } from "../core/flow.ts";
 import { buildManifest, stableStringify, type ManifestSource } from "../manifest/build.ts";
@@ -67,12 +68,26 @@ function assertActor(options: RexServerOptions<AnyAction>): void {
   }
 }
 
+type ResolvedServerConfig = Pick<RexServerOptions<AnyAction>, "security" | "client">;
+
+function resolveServerConfig(
+  options: Pick<RexOptionsConfig, "security" | "client">,
+): ResolvedServerConfig {
+  const given: { -readonly [K in keyof RexOptionsConfig]: RexOptionsConfig[K] } = {};
+  if (options.security !== undefined) given.security = options.security;
+  if (options.client !== undefined) given.client = options.client;
+  const { security, client } = resolveOptions(given);
+  return client.apiOrigin === null
+    ? { security }
+    : { security, client: { apiOrigin: client.apiOrigin } };
+}
+
 export function createRexServer<A extends AnyAction>(options: RexServerOptions<A>): Hono {
   assertActor(options);
   const manifest =
     options.manifest ??
     buildManifest(options.registry, options.app === undefined ? {} : { app: options.app });
-  return mountRexServer({ ...options, manifest });
+  return mountRexServer({ ...options, ...resolveServerConfig(options), manifest });
 }
 
 export function mountRexServer<A extends AnyAction>(options: PrebuiltRexServerOptions<A>): Hono {

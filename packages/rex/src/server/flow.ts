@@ -10,13 +10,17 @@ import {
   runFlow,
   type AnyFlow,
 } from "../core/flow.ts";
+import { completedSteps, type FlowDecision, type FlowInstance } from "../core/journal.ts";
 import {
-  completedSteps,
-  type FlowDecision,
-  type FlowInstance,
-  type FlowStatus,
-} from "../core/journal.ts";
-import * as zm from "zod/mini";
+  FLOW_RPC_PREFIX,
+  flowDecideInputSchema,
+  flowInstanceInputSchema,
+  flowStartInputSchema,
+  flowStateSchema,
+  type FlowGateState,
+  type FlowState,
+  type FlowStateStatus,
+} from "../core/protocol.ts";
 import type { RexServerSetup } from "./app.ts";
 import { AUDIT_OK, createAuditEntry, type AuditOutcome, type Ledger } from "./audit.ts";
 import {
@@ -27,7 +31,8 @@ import {
 } from "./context.ts";
 import { auditCode } from "./router.ts";
 
-export const FLOW_RPC_PREFIX = "/rex/flow";
+export { FLOW_RPC_PREFIX, flowStateSchema };
+export type { FlowGateState, FlowState, FlowStateStatus };
 
 export const FLOW_DECISION_EFFECT: ActionEffect = "irreversible";
 
@@ -37,48 +42,6 @@ export interface FlowDecisionAuditInput {
   readonly gate: string;
   readonly decision: FlowDecision;
 }
-
-export type FlowStateStatus = FlowStatus | "idle";
-
-export interface FlowGateState {
-  readonly id: string;
-  readonly label: string;
-}
-
-export interface FlowState {
-  readonly flow: string;
-  readonly instance: string;
-  readonly status: FlowStateStatus;
-  readonly gate: FlowGateState | null;
-  readonly completed: number;
-}
-
-const nonEmpty = () => zm.string().check(zm.minLength(1));
-
-const instanceInput = zm.strictObject({
-  flow: nonEmpty(),
-  instance: nonEmpty(),
-});
-
-const startInput = zm.strictObject({
-  flow: nonEmpty(),
-  instance: nonEmpty(),
-  input: zm.optional(zm.unknown()),
-});
-
-const decideInput = zm.strictObject({
-  flow: nonEmpty(),
-  instance: nonEmpty(),
-  decision: zm.enum(["approve", "reject"]),
-});
-
-export const flowStateSchema = zm.strictObject({
-  flow: nonEmpty(),
-  instance: nonEmpty(),
-  status: zm.enum(["idle", "running", "paused", "completed", "rejected", "failed"]),
-  gate: zm.nullable(zm.strictObject({ id: nonEmpty(), label: nonEmpty() })),
-  completed: zm.int().check(zm.gte(0)),
-});
 
 export function flowState(
   declared: AnyFlow,
@@ -158,7 +121,7 @@ export function buildFlowRouter(flows: readonly AnyFlow[], ledger: Ledger) {
   }
   return {
     status: base
-      .input(instanceInput)
+      .input(flowInstanceInputSchema)
       .output(flowStateSchema)
       .handler(async ({ input }) => {
         const declared = lookup(byId, input.flow);
@@ -171,7 +134,7 @@ export function buildFlowRouter(flows: readonly AnyFlow[], ledger: Ledger) {
         return flowState(declared, input.instance, instance);
       }),
     start: base
-      .input(startInput)
+      .input(flowStartInputSchema)
       .output(flowStateSchema)
       .handler(async ({ input, context }) => {
         const declared = lookup(byId, input.flow);
@@ -182,7 +145,7 @@ export function buildFlowRouter(flows: readonly AnyFlow[], ledger: Ledger) {
         return flowState(declared, input.instance, result.instance);
       }),
     decide: base
-      .input(decideInput)
+      .input(flowDecideInputSchema)
       .output(flowStateSchema)
       .handler(async ({ input, context }) => {
         const declared = lookup(byId, input.flow);
