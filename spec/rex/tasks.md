@@ -96,7 +96,7 @@
     - Implement src/client/act.ts: useAct(action) returning {run(input), pending, allowed, reason, controlProps} where run performs the oRPC call through a TanStack mutation, invalidates the declared query keys, writes the outcome, and for irreversible actions requests a confirm token first; allowed comes from client-side policy evaluation against the current actor.
     - Write src/client/act.test.tsx with a mocked RPC link covering success, validation failure, forbidden, invalidation and the confirm step.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 15.1, 15.2, 15.3_
-  - [-] 2.4 Implement data state resolution
+  - [x] 2.4 Implement data state resolution
     - Implement src/client/states.ts: resolveDataState({queries, policy, online, hasData}) returning one of the nine states with documented precedence: permission-denied, offline, loading, terminal-error, recoverable-error, empty, partial, stale, ready.
     - Implement useDataState(pageQueries) that observes TanStack query states and navigator.onLine.
     - Write src/client/states.test.ts covering every state and every precedence pair.
