@@ -140,7 +140,7 @@
     - Implement src/check/rules/tokens.ts: raw Tailwind color utilities, arbitrary value brackets and inline style color properties outside app/components.
     - Create pass and fail fixtures and write src/check/rules/quality.test.ts covering every rule.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 9.1, 9.2, 9.3, 10.1, 10.2, 10.3, 10.4, 20.1, 20.2, 20.3_
-  - [ ] 3.5 Implement manifest generation from source and the freshness rule
+  - [x] 3.5 Implement manifest generation from source and the freshness rule
     - Implement src/manifest/scan.ts: loadRegistry(appRoot) that imports app/entities, actions, policies, flows and pages/*/page.ts through tsx in a child process and returns the frozen registry; writeManifest(appRoot) writing .rex/manifest.json with stableStringify and AGENTS.md from src/manifest/agents-md.ts.
     - Implement src/check/rules/manifest.ts reporting a stale .rex/manifest.json or AGENTS.md compared with a fresh build.
     - Write src/manifest/scan.test.ts against a fixture app asserting byte-identical output on repeated runs and the freshness finding after a declaration change.

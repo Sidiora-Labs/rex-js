@@ -699,7 +699,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.5]
 title = "Implement manifest generation from source and the freshness rule"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["3.1"]
