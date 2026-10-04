@@ -25,19 +25,28 @@ describe("root eslint.config.js", () => {
   );
 
   it(
-    "applies the rex preset to packages/rex/src and examples/demo",
+    "applies the rex preset to the demo app and typescript-eslint to the package, the demo e2e and the tools",
     async () => {
-      for (const file of [INDEX, DEMO_VIEW]) {
+      const view = await eslint.calculateConfigForFile(DEMO_VIEW);
+      expect(Object.keys(view.plugins)).toEqual(["@", "rex", "jsx-a11y"]);
+      for (const rule of lintRules()) expect(view.rules[`rex/${rule.id}`]).toEqual([2]);
+      expect(view.rules["jsx-a11y/alt-text"]).toEqual([2]);
+      expect(view.languageOptions.parser.meta.name).toBe("typescript-eslint/parser");
+      expect(view.languageOptions.parserOptions).toEqual({ ecmaFeatures: { jsx: true } });
+      for (const file of [
+        INDEX,
+        path.join(root, "examples/demo/e2e/walk.ts"),
+        path.join(root, "tools/freshness.mjs"),
+      ]) {
         const config = await eslint.calculateConfigForFile(file);
-        expect(Object.keys(config.plugins)).toEqual(["@", "rex", "jsx-a11y"]);
-        for (const rule of lintRules()) expect(config.rules[`rex/${rule.id}`]).toEqual([2]);
-        expect(config.rules["jsx-a11y/alt-text"]).toEqual([2]);
-        expect(config.languageOptions.parser.meta.name).toBe("typescript-eslint/parser");
-        expect(config.languageOptions.parserOptions).toEqual({ ecmaFeatures: { jsx: true } });
+        expect(Object.keys(config.plugins)).toEqual(["@", "@typescript-eslint"]);
+        expect(config.rules["@typescript-eslint/no-unused-vars"]).toEqual([
+          2,
+          expect.objectContaining({ varsIgnorePattern: "^_", argsIgnorePattern: "^_" }),
+        ]);
+        expect(config.rules["rex/page-folder"]).toBeUndefined();
+        expect(config.rules["jsx-a11y/alt-text"]).toBeUndefined();
       }
-      const tool = await eslint.calculateConfigForFile(path.join(root, "tools/freshness.mjs"));
-      expect(Object.keys(tool.plugins)).toEqual(["@"]);
-      expect(tool.rules).toBeUndefined();
     },
     LOAD_TIMEOUT,
   );

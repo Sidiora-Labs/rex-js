@@ -144,7 +144,6 @@ function bunGlobal(): BunGlobalRecord {
       serve(options) {
         record.served.push(options);
         const hostname = options.hostname ?? "0.0.0.0";
-        let server: BunServer;
         const http = createHttpServer(
           getRequestListener((request: Request) => options.fetch(request, server)),
         );
@@ -152,7 +151,7 @@ function bunGlobal(): BunGlobalRecord {
           http.once("error", fail);
           http.listen(options.port, hostname, () => done());
         });
-        server = {
+        const server: BunServer = {
           port: options.port,
           hostname,
           url: new URL(`http://${hostname}:${options.port}/`),

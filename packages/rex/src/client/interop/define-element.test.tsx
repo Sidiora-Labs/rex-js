@@ -38,7 +38,7 @@ const BadgeElement = defineElement("rex-test-badge", Badge, {
   props: { symbol: "string", amount: "number", muted: "boolean", tags: "json" },
 });
 
-const CounterElement = defineElement("rex-test-counter", Counter, { props: { step: "number" } });
+defineElement("rex-test-counter", Counter, { props: { step: "number" } });
 
 function thrown(run: () => unknown): RexError {
   try {

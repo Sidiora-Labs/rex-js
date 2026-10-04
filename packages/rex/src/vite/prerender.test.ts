@@ -278,7 +278,13 @@ function executableScripts(html: string): string[] {
 describe("rex build prerendering", { timeout: BUILD_TIMEOUT_MS }, () => {
   it("prerenders every ssg and static page to dist/client/<route>/index.html, expanding paths, and lists them", () => {
     expect(
-      result.list.pages.map((entry) => [entry.path, entry.page, entry.render, entry.revalidate, entry.file]),
+      result.list.pages.map((entry) => [
+        entry.path,
+        entry.page,
+        entry.render,
+        entry.revalidate,
+        entry.file,
+      ]),
     ).toEqual([
       ["/about", "about", "static", null, "about/index.html"],
       ["/guides/intro", "guide", "ssg", 60, "guides/intro/index.html"],
@@ -352,7 +358,11 @@ describe("rex build prerendering", { timeout: BUILD_TIMEOUT_MS }, () => {
   });
 
   it("writes the default screen, pointer and density on the html element and in the sidecar of every prerendered page", () => {
-    expect(PRERENDER_SCREEN).toEqual({ screen: "desktop", pointer: "fine", density: "comfortable" });
+    expect(PRERENDER_SCREEN).toEqual({
+      screen: "desktop",
+      pointer: "fine",
+      density: "comfortable",
+    });
     for (const entry of result.list.pages) {
       const html = read(entry.file);
       const root = /<html\b[^>]*>/.exec(html)?.[0] ?? "";
@@ -428,7 +438,11 @@ describe("path expansion", () => {
       route: "/docs/:slug",
       params: slugParams,
       render: "ssg",
-      paths: async () => [{ slug: "getting started" }, { slug: "getting started" }, { slug: "faq" }],
+      paths: async () => [
+        { slug: "getting started" },
+        { slug: "getting started" },
+        { slug: "faq" },
+      ],
     });
     expect(await expandPagePaths(docs)).toEqual(["/docs/getting%20started", "/docs/faq"]);
     expect(routePath(docs, { slug: 42 })).toBe("/docs/42");
@@ -621,27 +635,47 @@ describe("prerender guards", () => {
       expect(html).toContain("<li>Rex 0.2 ships</li>");
       expect(html).toContain("<li>Loaders run at build time</li>");
     }
-    expect(dehydratedQueries(ssg).map((query) => [query.queryKey.slice(0, 3), query.state.data])).toEqual([
+    expect(
+      dehydratedQueries(ssg).map((query) => [query.queryKey.slice(0, 3), query.state.data]),
+    ).toEqual([
       [["loader", "news", "headlines"], { titles: ["Rex 0.2 ships", "Loaders run at build time"] }],
     ]);
     expect(zeroJs).not.toContain("application/rex+data");
     const records = await ledger.list();
-    expect(records.map((record) => [record.actionId, record.actor, record.outcome, record.effect])).toEqual([
+    expect(
+      records.map((record) => [record.actionId, record.actor, record.outcome, record.effect]),
+    ).toEqual([
       ["list-headlines", anonymousActor.id, "ok", "read"],
       ["list-headlines", anonymousActor.id, "ok", "read"],
     ]);
   });
 
   it("carries the configured font preloads and the font-display swap block into ssg and static pages", async () => {
-    const leaflet = page("leaflet", { route: "/leaflet", render: "static", chrome: { title: "Leaflet" } });
+    const leaflet = page("leaflet", {
+      route: "/leaflet",
+      render: "static",
+      chrome: { title: "Leaflet" },
+    });
     const digest = page("digest", { route: "/digest", render: "ssg", chrome: { title: "Digest" } });
     const registry = createRegistry().register(leaflet, digest).freeze();
     const bundle: RexEntryBundle = {
       registry,
       manifest: buildManifest(registry, { app: "fonts" }),
       pages: [
-        { page: leaflet, view: view(() => createElement("p", null, "Leaflet")), states, regions: {}, overlays: {} },
-        { page: digest, view: view(() => createElement("p", null, "Digest")), states, regions: {}, overlays: {} },
+        {
+          page: leaflet,
+          view: view(() => createElement("p", null, "Leaflet")),
+          states,
+          regions: {},
+          overlays: {},
+        },
+        {
+          page: digest,
+          view: view(() => createElement("p", null, "Digest")),
+          states,
+          regions: {},
+          overlays: {},
+        },
       ],
     };
     const clientDir = tempClientDir();
