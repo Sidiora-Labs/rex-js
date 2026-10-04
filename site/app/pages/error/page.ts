@@ -1,6 +1,6 @@
 import { REX_ERROR_CATALOG, page, type RexErrorCode } from "@sidioralabs/rex";
 import { z } from "zod/mini";
-import { errorsDetail } from "../../actions/errors-detail.ts";
+import { errorsDetail } from "../../actions/errors/errors-detail.ts";
 
 const codes = Object.keys(REX_ERROR_CATALOG).sort() as [RexErrorCode, ...RexErrorCode[]];
 
