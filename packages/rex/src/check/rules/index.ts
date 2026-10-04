@@ -4,6 +4,7 @@ import type { Rule } from "../rule.ts";
 import { a11yRule } from "./a11y.ts";
 import { boundariesRule } from "./boundaries.ts";
 import { manifestRule } from "./manifest.ts";
+import { mediaRule } from "./media.ts";
 import { namingRule } from "./naming.ts";
 import { parityRule } from "./parity.ts";
 import { renderRule } from "./render.ts";
@@ -25,6 +26,7 @@ export const defaultRules: readonly Rule[] = Object.freeze([
   securityRule,
   a11yRule,
   renderRule,
+  mediaRule,
 ]);
 
 export interface RunCheckOptions {

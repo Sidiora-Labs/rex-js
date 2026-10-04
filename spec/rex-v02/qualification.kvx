@@ -222,3 +222,11 @@ symbol = "rex build page budget, buildDemo"
 observed = "Neither vitals.spec.ts nor lighthouse.ts reaches a page because buildDemo's rex build exits 1 with page-portfolio at 91.69 KB gzip over the 50 KB page budget (already recorded as qualification.371); the first run also failed in rex check on manifest/build.ts z.ZodType until task 2.1 merged; evidence: revision 7032c93601b3a551e26b74d3951eeca85a662c07 plus the uncommitted 6.1 files, command pnpm -C examples/demo test:vitals, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-6.1-private/logs/6.1-verify.log."
 assumption = "Once the portfolio page chunk fits its budget the unchanged test:vitals builds the demo, measures LCP, CLS and INP and the Lighthouse desktop scores on every page and writes e2e/report/vitals.json and lighthouse.json; no threshold was relaxed and --no-check was not used."
 severity = "blocker"
+
+[qualification.511]
+task = "5.1"
+file = "packages/rex/src/check/check.test.ts, packages/rex/src/vite/ssr.ts"
+symbol = "defaultRules execution order test, generateRenderModule, RexRendererOptions.fonts"
+observed = "Task 5.1 appends mediaRule after renderRule in check/rules/index.ts, but check.test.ts (outside the 5.1 touches) still pins the 0.1 rule id list; createRexRenderer now takes fonts and emits their preloads and the font-display swap block, but the generated rex:render module in vite/ssr.ts (outside the touches) does not yet pass the resolved rex.config fonts into it; evidence: revision 30acd74b21e1d701edc609bfc5fd35d947133b42, command pnpm -C packages/rex exec vitest run src/client/media.test.tsx src/check/rules/media.test.ts src/server/ssr.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.1-private/logs/5.1-verify.log."
+assumption = "The owner of check.test.ts appends \"media\" after \"render\" in the order test, and the owner of vite/ssr.ts emits fonts: config.fonts in the createRexRenderer call of the render module; no assertion was relaxed."
+severity = "assumption"

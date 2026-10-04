@@ -22,8 +22,15 @@ import {
   type PageModuleSet,
   type StateExportComponent,
 } from "../client/page.tsx";
+import {
+  MediaProvider,
+  createMediaCollector,
+  type PriorityImage,
+  type RexMediaCollector,
+} from "../client/media.tsx";
 import { manifestParamsSchema, orderPages, resolvePage } from "../client/router.tsx";
 import { NOT_FOUND_TITLE } from "../client/shell.tsx";
+import { resolveOptions, type FontSpec, type ResolvedFont } from "../core/config.ts";
 import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from "../core/page.ts";
 import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import type { Manifest } from "../manifest/types.ts";
@@ -59,7 +66,12 @@ export interface RexRendererOptions {
   readonly assets?: RexDocumentAssets;
   readonly rootElement?: string;
   readonly lang?: string;
+  readonly fonts?: readonly FontSpec[];
 }
+
+type ResolvedRendererOptions = Required<Omit<RexRendererOptions, "bundle" | "fonts">> & {
+  readonly fonts: readonly ResolvedFont[];
+};
 
 export interface PageMatch {
   readonly page: AnyPage;
@@ -140,6 +152,55 @@ function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
 }
 
+const FONT_FORMATS: Readonly<Record<string, { readonly type: string; readonly format: string }>> = {
+  woff2: { type: "font/woff2", format: "woff2" },
+  woff: { type: "font/woff", format: "woff" },
+  ttf: { type: "font/ttf", format: "truetype" },
+  otf: { type: "font/otf", format: "opentype" },
+};
+
+function fontFormat(src: string) {
+  const extension = /\.([a-z0-9]+)(?:[?#].*)?$/i.exec(src)?.[1]?.toLowerCase();
+  return extension === undefined ? undefined : FONT_FORMATS[extension];
+}
+
+function cssString(value: string): string {
+  const escaped = value.replace(/[\\"<>\n\r]/g, (character) => {
+    if (character === "\\" || character === '"') return `\\${character}`;
+    return `\\${character.charCodeAt(0).toString(16)} `;
+  });
+  return `"${escaped}"`;
+}
+
+export function fontPreloadLinks(fonts: readonly ResolvedFont[]): string[] {
+  return fonts
+    .filter((font) => font.preload)
+    .map((font) => {
+      const type = fontFormat(font.src)?.type;
+      const typed = type === undefined ? "" : ` type="${type}"`;
+      return `<link rel="preload" as="font" href="${escapeHtml(font.src)}"${typed} crossorigin="">`;
+    });
+}
+
+export function fontFaceCss(fonts: readonly ResolvedFont[]): string {
+  return fonts
+    .map((font) => {
+      const format = fontFormat(font.src)?.format;
+      const source = `url(${cssString(font.src)})${format === undefined ? "" : ` format("${format}")`}`;
+      const weight = font.weight === null ? "" : `font-weight:${font.weight};`;
+      return `@font-face{font-family:${cssString(font.family)};src:${source};${weight}font-style:${font.style};font-display:swap}`;
+    })
+    .join("");
+}
+
+export function imagePreloadLinks(images: readonly PriorityImage[]): string[] {
+  return images.map((image) => {
+    const srcSet = image.srcSet === null ? "" : ` imagesrcset="${escapeHtml(image.srcSet)}"`;
+    const sizes = image.sizes === null ? "" : ` imagesizes="${escapeHtml(image.sizes)}"`;
+    return `<link rel="preload" as="image" href="${escapeHtml(image.src)}"${srcSet}${sizes} fetchpriority="high">`;
+  });
+}
+
 export function pageAssets(assets: RexDocumentAssets, page: string | null): RexPageAssets {
   const own = page === null ? undefined : assets.pages[page];
   return {
@@ -154,9 +215,10 @@ interface DocumentParts {
   readonly links: RexPageAssets;
   readonly data: RexDataPayload;
   readonly hydrate: boolean;
+  readonly images: readonly PriorityImage[];
 }
 
-function documentHead(options: Required<Omit<RexRendererOptions, "bundle">>, parts: DocumentParts): string {
+function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): string {
   const nonce = escapeHtml(parts.nonce);
   const stylesheets = parts.links.stylesheets.map(
     (href) => `<link rel="stylesheet" href="${escapeHtml(href)}">`,
@@ -174,6 +236,9 @@ function documentHead(options: Required<Omit<RexRendererOptions, "bundle">>, par
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     `<title>${escapeHtml(parts.title)}</title>`,
+    ...fontPreloadLinks(options.fonts),
+    ...imagePreloadLinks(parts.images),
+    options.fonts.length === 0 ? "" : `<style data-rex-fonts="">${fontFaceCss(options.fonts)}</style>`,
     ...stylesheets,
     ...preloads,
     options.assets.head === undefined ? "" : nonceInlineScripts(options.assets.head, parts.nonce),
@@ -184,7 +249,7 @@ function documentHead(options: Required<Omit<RexRendererOptions, "bundle">>, par
   ].join("");
 }
 
-function documentTail(options: Required<Omit<RexRendererOptions, "bundle">>, nonce: string): string {
+function documentTail(options: ResolvedRendererOptions, nonce: string): string {
   const scripts = options.assets.scripts.map(
     (src) => `<script type="module" src="${escapeHtml(src)}" nonce="${escapeHtml(nonce)}"></script>`,
   );
@@ -270,10 +335,11 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     throw new TypeError("createRexRenderer: the bundle must carry its manifest");
   }
   const manifest: Manifest = bundle.manifest;
-  const resolved: Required<Omit<RexRendererOptions, "bundle">> = {
+  const resolved: ResolvedRendererOptions = {
     assets: options.assets ?? EMPTY_DOCUMENT_ASSETS,
     rootElement: options.rootElement ?? DEFAULT_ROOT_ELEMENT,
     lang: options.lang ?? DEFAULT_DOCUMENT_LANG,
+    fonts: resolveOptions({ fonts: options.fonts ?? [] }).fonts,
   };
   const registry = bundle.registry;
   const sets = new Map<string, PageModuleSet>();
@@ -287,6 +353,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     context: RexRequestContext,
     pages: readonly PageModuleSet[],
     queryClient: QueryClient,
+    media: RexMediaCollector,
   ): ReactNode {
     const RexEntry = createRexEntry(
       { registry, manifest, pages },
@@ -295,7 +362,11 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     return createElement(Router, {
       ssrPath: url.pathname,
       ssrSearch: url.search.replace(/^\?/, ""),
-      children: createElement(StrictMode, null, createElement(RexEntry)),
+      children: createElement(
+        StrictMode,
+        null,
+        createElement(MediaProvider, { value: media }, createElement(RexEntry)),
+      ),
     });
   }
 
@@ -304,6 +375,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     context: RexRequestContext,
     queryClient: QueryClient,
     hydrate: boolean,
+    images: readonly PriorityImage[] = [],
   ): DocumentParts {
     const page = match === null ? null : match.page.id;
     return {
@@ -317,6 +389,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         queries: dehydrate(queryClient),
       },
       hydrate,
+      images,
     };
   }
 
@@ -364,7 +437,8 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
           overlays: (loaded.overlays ?? {}) as Readonly<Record<string, ComponentType>>,
         });
         const pages = bundle.pages.map((entry) => (entry.page === match.page ? eager : entry));
-        const stream = await renderToReadableStream(entryTree(url, context, pages, queryClient), {
+        const media = createMediaCollector(context.nonce);
+        const stream = await renderToReadableStream(entryTree(url, context, pages, queryClient, media.collector), {
           nonce: context.nonce,
         });
         await stream.allReady;
@@ -403,10 +477,11 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
       }
     }
     const queryClient = new QueryClient();
+    const media = createMediaCollector(context.nonce);
     const errors: unknown[] = [];
     let stream: Awaited<ReturnType<typeof renderToReadableStream>>;
     try {
-      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient), {
+      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient, media.collector), {
         nonce: context.nonce,
         onError(error) {
           if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
@@ -426,7 +501,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
       kind,
       page: match === null ? null : match.page.id,
       body: documentStream(
-        documentHead(resolved, parts(match, context, queryClient, true)),
+        documentHead(resolved, parts(match, context, queryClient, true, media.images())),
         stream,
         documentTail(resolved, context.nonce),
       ),
