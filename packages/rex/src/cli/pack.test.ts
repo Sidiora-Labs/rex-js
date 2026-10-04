@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
+import { REX_VERSION } from "../index.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
@@ -12,6 +13,7 @@ const PACK_TEST_TIMEOUT_MS = 300_000;
 type ExportTarget = string | { readonly types?: string; readonly import?: string };
 
 interface PackageManifest {
+  readonly version: string;
   readonly license: string;
   readonly sideEffects: readonly string[];
   readonly files: readonly string[];
@@ -35,6 +37,18 @@ const manifest = JSON.parse(
   readFileSync(join(packageRoot, "package.json"), "utf8"),
 ) as PackageManifest;
 
+const REQUIRED_SUBPATHS = [
+  "./config",
+  "./testing",
+  "./server/node",
+  "./server/bun",
+  "./server/deno",
+  "./server/edge",
+  "./store/drizzle",
+  "./devtools",
+  "./eslint",
+];
+
 function relativePath(target: string): string {
   return target.replace(/^\.\//, "");
 }
@@ -56,7 +70,7 @@ describe("the packed @sidioralabs/rex tarball", { timeout: PACK_TEST_TIMEOUT_MS 
 
   it("publishes every export with its types condition first", () => {
     const entries = Object.entries(manifest.publishConfig.exports);
-    for (const subpath of ["./config", "./server/node", "./store/drizzle"]) {
+    for (const subpath of REQUIRED_SUBPATHS) {
       expect(Object.keys(manifest.publishConfig.exports)).toContain(subpath);
       expect(Object.keys(manifest.exports)).toContain(subpath);
     }
@@ -94,6 +108,11 @@ describe("the packed @sidioralabs/rex tarball", { timeout: PACK_TEST_TIMEOUT_MS 
       expect(file, file).not.toMatch(/\.test\.|\/fixtures\/|\.conformance\./);
       expect(file.startsWith("src/"), file).toBe(false);
     }
+  });
+
+  it("releases version 0.2.0, matching REX_VERSION in the core entry", () => {
+    expect(manifest.version).toBe("0.2.0");
+    expect(REX_VERSION).toBe(manifest.version);
   });
 
   it("declares MIT, CSS-only side effects, provenance and honest dependencies", () => {

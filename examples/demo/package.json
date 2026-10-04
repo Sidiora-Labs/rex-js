@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "rex dev",
     "build": "rex build",
+    "build:static": "rex build --target static",
     "check": "rex check",
     "manifest": "rex manifest",
     "start": "node dist/server.js",

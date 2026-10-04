@@ -12,9 +12,10 @@ import {
 } from "../../client/router.tsx";
 import { hasContent, resolveDataState, type DataStateQuery } from "../../client/states.ts";
 import type { Actor } from "../../core/actor.ts";
+import type { RegistrySnapshot } from "../../core/registry.ts";
 import { RexError } from "../../core/errors.ts";
 import { actionAddress, overlayAddress, regionAddress } from "../../core/ids.ts";
-import type { AnyPage } from "../../core/page.ts";
+import { parseRoute, type AnyPage } from "../../core/page.ts";
 import { evaluate, type PolicyResult } from "../../core/policy.ts";
 import { REX_RPC_PREFIX } from "../../core/protocol.ts";
 import type { JsonSchema } from "../../core/schema.ts";
@@ -24,7 +25,14 @@ import type { Manifest, ManifestPage } from "../../manifest/types.ts";
 import type { RexServerSetup } from "../app.ts";
 import { RexDensityError, createRexContext, type RexRequestContext } from "../context.ts";
 import { CONFIRM_FIELD, CSRF_COOKIE, CSRF_FIELD, formPath } from "../form.ts";
-import { loaderRunnerFor, runPageLoaders } from "../loaders.ts";
+import { prerenderContext } from "../adapters/static-cache.ts";
+import type { Ledger } from "../audit.ts";
+import {
+  createActionLoaderRunner,
+  loaderRunnerFor,
+  runPageLoaders,
+  type LoaderRunner,
+} from "../loaders.ts";
 import { resolveRequestLocale } from "../locale.ts";
 import { RENDER_PAGE_HEADER } from "./render.ts";
 
@@ -255,7 +263,7 @@ function queriesOf(client: QueryClient, keys: readonly (readonly unknown[])[]): 
 }
 
 async function pageState(
-  request: Request,
+  runner: LoaderRunner | undefined,
   declared: AnyPage,
   params: Readonly<Record<string, unknown>>,
   context: RexRequestContext,
@@ -267,7 +275,6 @@ async function pageState(
   if (declared.loaders.length === 0) {
     return resolveDataState({ queries: [], policy, online: true, hasData: true });
   }
-  const runner = loaderRunnerFor(request);
   if (runner === undefined) {
     throw new RexError(
       "REX408",
@@ -287,6 +294,85 @@ async function pageState(
   const queries = queriesOf(client, keys);
   client.clear();
   return resolveDataState({ queries, policy, online: true, hasData });
+}
+
+interface PageTextRequest {
+  readonly request: Request;
+  readonly manifest: Manifest;
+  readonly registry: Parameters<typeof i18nFor>[0];
+  readonly page: AnyPage;
+  readonly routeParams: Readonly<Record<string, string | undefined>>;
+  readonly search: string;
+  readonly context: RexRequestContext;
+  readonly runner: LoaderRunner | undefined;
+}
+
+interface PageTextAnswer {
+  readonly markdown: string;
+  readonly allowed: boolean;
+}
+
+async function pageTextFor(input: PageTextRequest): Promise<PageTextAnswer> {
+  const { request, manifest, page: declared, context } = input;
+  const schema = manifestParamsSchema(manifest, declared);
+  const parsed = parsePageParams(declared, input.routeParams, input.search, schema);
+  const params = parsed.ok ? parsed.params : Object.freeze({});
+  const issues = parsed.ok ? [] : parsed.issues;
+  const policy = evaluate(declared.policy, context.actor);
+  const source = i18nFor(input.registry);
+  const locale = source === null ? null : resolveRequestLocale(request, source.settings).locale;
+  const resolved = parsed.ok ? pageHref(declared, params, {}, schema) : null;
+  let href = resolved !== null && resolved.ok ? resolved.href : null;
+  if (href !== null && source !== null && locale !== null && source.settings.routing === "prefix") {
+    href = localizeHref(href, locale);
+  }
+  const state = await pageState(input.runner, declared, params, context, policy, issues);
+  const { markdown } = renderPageText({
+    manifest,
+    page: declared,
+    params,
+    issues,
+    href,
+    actor: context.actor,
+    policy,
+    state,
+    text:
+      source === null || locale === null ? literal : (value) => translate(source, locale, value),
+  });
+  return { markdown, allowed: policy.allowed };
+}
+
+export interface StaticPageTextOptions {
+  readonly manifest: Manifest;
+  readonly registry: RegistrySnapshot;
+  readonly page: AnyPage;
+  readonly url: URL;
+  readonly actor: Actor;
+  readonly ledger: Ledger;
+}
+
+function pathRouteParams(declared: AnyPage, pathname: string): Record<string, string | undefined> {
+  const segments = pathname.split("/").filter((segment) => segment !== "");
+  const routeParams: Record<string, string | undefined> = {};
+  parseRoute(declared.route).segments.forEach((segment, index) => {
+    if (segment.kind === "param") routeParams[segment.name] = segments[index];
+  });
+  return routeParams;
+}
+
+export async function renderStaticPageText(options: StaticPageTextOptions): Promise<string> {
+  const { page: declared, url } = options;
+  const answer = await pageTextFor({
+    request: new Request(url, { headers: { accept: MARKDOWN_CONTENT_TYPE } }),
+    manifest: options.manifest,
+    registry: options.registry,
+    page: declared,
+    routeParams: pathRouteParams(declared, url.pathname),
+    search: url.search,
+    context: prerenderContext(options.actor),
+    runner: createActionLoaderRunner(options.registry, { ledger: options.ledger }),
+  });
+  return answer.markdown;
 }
 
 function markdownResponse(body: string, status: number, page: string | null): Response {
@@ -323,38 +409,18 @@ export function installPagesTextRoute(app: Hono, setup: RexServerSetup): void {
       throw error;
     }
     const url = new URL(request.url);
-    const schema = manifestParamsSchema(manifest, declared);
     const { routeParams, search } = splitParams(declared, url);
-    const parsed = parsePageParams(declared, routeParams, search, schema);
-    const params = parsed.ok ? parsed.params : Object.freeze({});
-    const issues = parsed.ok ? [] : parsed.issues;
-    const policy = evaluate(declared.policy, context.actor);
-    const source = i18nFor(setup.options.registry);
-    const locale = source === null ? null : resolveRequestLocale(request, source.settings).locale;
-    const resolved = parsed.ok ? pageHref(declared, params, {}, schema) : null;
-    let href = resolved !== null && resolved.ok ? resolved.href : null;
-    if (
-      href !== null &&
-      source !== null &&
-      locale !== null &&
-      source.settings.routing === "prefix"
-    ) {
-      href = localizeHref(href, locale);
-    }
-    const state = await pageState(request, declared, params, context, policy, issues);
-    const { markdown } = renderPageText({
+    const { markdown, allowed } = await pageTextFor({
+      request,
       manifest,
+      registry: setup.options.registry,
       page: declared,
-      params,
-      issues,
-      href,
-      actor: context.actor,
-      policy,
-      state,
-      text:
-        source === null || locale === null ? literal : (value) => translate(source, locale, value),
+      routeParams,
+      search,
+      context,
+      runner: loaderRunnerFor(request),
     });
-    const status = policy.allowed ? PAGES_TEXT_STATUS.page : PAGES_TEXT_STATUS.denied;
+    const status = allowed ? PAGES_TEXT_STATUS.page : PAGES_TEXT_STATUS.denied;
     return markdownResponse(markdown, status, declared.id);
   });
 }

@@ -81,7 +81,17 @@ rex build: prerendered /tokens/eth -> dist/client/tokens/eth/index.html (token, 
 
 The built Node server serves the prerendered files. For a page with `revalidate`, a request after the window still gets the cached HTML immediately while the server regenerates it in the background; the next request gets the new HTML. If regeneration fails, the server logs `rex: regenerating <path> (page "<id>") failed; serving the cached page` and keeps the old file.
 
-`rex build --target static` writes `dist/client` only, for hosting on a static file host; set `client.apiOrigin` in `rex.config.ts` so the client calls a Rex server elsewhere, and list the static host in the `security: { origins }` option of that server's `createRexServer`.
+`rex build --target static` builds no server and writes `dist/client` as a complete static deployment: the same prerendered pages, `index.md` beside each one (the page's text rendering for terminal agents), `rex/manifest` (the manifest JSON), the shell document at the route of every `ssr` and `csr` page without route params, and `404.html` (the shell for every other path), plus `dist/prerender.json`:
+
+```
+rex build: prerendered /help -> dist/client/help/index.html (help, static)
+rex build: wrote dist/client/rex/manifest
+rex build: wrote dist/client/help/index.md
+rex build: wrote dist/client/index.html (home, the shell document for /)
+rex build: wrote dist/client/404.html (the shell document for unknown routes)
+```
+
+Without `client.apiOrigin` the client reads the manifest inlined at build time and never requests `/rex/manifest`. To call a Rex server elsewhere, set `client.apiOrigin` in `rex.config.ts` and list the static host in the `security: { origins }` option of that server's `createRexServer`.
 
 ## Checks
 
