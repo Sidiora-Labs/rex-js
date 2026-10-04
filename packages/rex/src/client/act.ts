@@ -5,8 +5,8 @@ import type { ActionInput, ActionOutput, AnyAction } from "../core/action.ts";
 import { actionAddress } from "../core/ids.ts";
 import { evaluate, type ReasonCode } from "../core/policy.ts";
 import { z } from "../core/schema.ts";
+import { CONFIRM_PROCEDURE } from "../core/protocol.ts";
 import {
-  CONFIRM_PROCEDURE,
   procedureOf,
   useActor,
   useRegistry,

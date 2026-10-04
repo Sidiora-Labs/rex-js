@@ -844,7 +844,7 @@ status  = "pending"
 
 [task.5.0]
 title = "Align the confirm protocol, header names and reserved query keys between client and server"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["1.3", "2.3"]

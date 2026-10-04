@@ -12,6 +12,7 @@ export * from "./core/states.ts";
 export * from "./core/overlay.ts";
 export * from "./core/page.ts";
 export * from "./core/registry.ts";
+export * from "./core/protocol.ts";
 export * from "./manifest/types.ts";
 export * from "./manifest/build.ts";
 export * from "./manifest/sidecar.schema.ts";

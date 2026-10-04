@@ -185,7 +185,7 @@
 ## Wave 5
 
 - [ ] 5. Agent contract: addressing, sidecar, outcome, invocation, density, overlays
-  - [ ] 5.0 Align the confirm protocol, header names and reserved query keys between client and server
+  - [x] 5.0 Align the confirm protocol, header names and reserved query keys between client and server
     - Add src/core/protocol.ts exporting the single source of truth for the wire protocol: CONFIRM_PROCEDURE, the header names REX_CONFIRM_HEADER (x-rex-confirm), REX_ACTOR_HEADER (x-rex-actor), REX_DENSITY_HEADER (x-rex-density), the RPC prefix /rex/rpc and manifest path /rex/manifest, and RESERVED_QUERY_KEYS (act, input, draft, density); export it from src/index.ts.
     - Make src/server/router.ts, src/server/context.ts, src/server/index.ts, src/client/context.ts and src/client/act.ts import those constants instead of their own literals (wave 1 named the confirm procedure _confirm while wave 2 used $confirm; one name must win, taken from protocol.ts).
     - Make createRexServer set x-rex-actor (URI-encoded JSON of the resolved actor) and x-rex-density on the GET /rex/manifest response, which createRexApp already reads; add the assertion to src/server/server.test.ts.
