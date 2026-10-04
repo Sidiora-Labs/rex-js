@@ -81,37 +81,37 @@
 ## Wave 2
 
 - [ ] 2. Client runtime: providers, router, nav, act, view and regions, states, layout, shell
-  - [ ] 2.1 Implement the client app provider
+  - [x] 2.1 Implement the client app provider
     - Implement src/client/app.tsx: createRexApp({registry, manifest, link}) returning a RexApp component that mounts QueryClientProvider, the oRPC client built from RPCLink at /rex/rpc, the manifest context, the actor context (fetched from /rex/manifest headers or provided) and the density provider slot.
     - Implement src/client/context.ts exposing useManifest, useActor, useRexClient and useRegistry hooks.
     - Write src/client/app.test.tsx rendering RexApp with a mocked fetch of the manifest and asserting the hooks resolve.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 11.1, 11.2, 11.3_
-  - [ ] 2.2 Implement the router and typed navigation
+  - [x] 2.2 Implement the router and typed navigation
     - Implement src/client/router.tsx: routes built from every page declaration with wouter, params parsed and validated with the page params schema, a not-found page and the page policy check producing permission-denied with the recovery target.
     - Implement src/client/nav.ts: useNav() returning to(page, params), back(), replace(page, params) typed against the registry; params failing the schema are a compile error through the declaration types and a runtime validation outcome; draft state is serialized into the URL as declared by page.draft.
     - Write src/client/nav.test.tsx covering navigation, params validation, reload restoration from URL and the denied recovery path.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 2.3 Implement the act hook and the outcome store
+  - [x] 2.3 Implement the act hook and the outcome store
     - Implement src/client/outcome.ts: a small store holding the last outcome per page (actionId, ok, message, at) with subscribe and useOutcome.
     - Implement src/client/act.ts: useAct(action) returning {run(input), pending, allowed, reason, controlProps} where run performs the oRPC call through a TanStack mutation, invalidates the declared query keys, writes the outcome, and for irreversible actions requests a confirm token first; allowed comes from client-side policy evaluation against the current actor.
     - Write src/client/act.test.tsx with a mocked RPC link covering success, validation failure, forbidden, invalidation and the confirm step.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 15.1, 15.2, 15.3_
-  - [ ] 2.4 Implement data state resolution
+  - [x] 2.4 Implement data state resolution
     - Implement src/client/states.ts: resolveDataState({queries, policy, online, hasData}) returning one of the nine states with documented precedence: permission-denied, offline, loading, terminal-error, recoverable-error, empty, partial, stale, ready.
     - Implement useDataState(pageQueries) that observes TanStack query states and navigator.onLine.
     - Write src/client/states.test.ts covering every state and every precedence pair.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
-  - [ ] 2.5 Implement view, region, Region and the page host
+  - [x] 2.5 Implement view, region, Region and the page host
     - Implement src/client/page.tsx: view(render) and region(name, render) wrappers; the Region component that renders the named region as a landmark section with data-rex-region; PageHost that loads the page module set (page.ts, view.tsx, states.tsx, regions, overlays), resolves the data state and renders the matching states export or the view.
     - Provide region render context {act, nav, params, state} so regions never receive callbacks from the view.
     - Write src/client/page.test.tsx with a fixture page covering ready rendering, each non-ready state rendering its export, and the region landmark attributes.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 2.6 Implement layout primitives and the token stylesheet
+  - [x] 2.6 Implement layout primitives and the token stylesheet
     - Implement src/client/layout.tsx: Page.Stack, Page.Grid, Page.Section and Page.Outcome accepting only token-based spacing props (space: 1..8, columns: 1..4) and rendering semantic elements.
     - Implement src/client/tokens.css defining spacing, radius, motion and hit-target tokens, with agent density overrides keyed on data-rex-density=agent.
     - Write src/client/layout.test.tsx asserting element semantics, token class output and rejection of non-token props at the type level.
     - _Requirements: 20.1, 20.2, 20.3_
-  - [ ] 2.7 Implement the derived shell
+  - [x] 2.7 Implement the derived shell
     - Implement src/client/shell.tsx: Shell rendering the header (title and back target from the active page chrome), the navigation (pages with chrome.nav visible), the outcome slot, and the page host; no per-page switch statements.
     - Render the permission-denied state with a control navigating to the page's recovery target.
     - Write src/client/shell.test.tsx with two fixture pages asserting header, nav membership, back behaviour and recovery.
