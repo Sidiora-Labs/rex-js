@@ -643,7 +643,6 @@
       "cache": null,
       "chrome": {
         "back": null,
-        "components": [],
         "header": true,
         "nav": true,
         "title": "Portfolio"
@@ -701,7 +700,6 @@
       "cache": null,
       "chrome": {
         "back": "portfolio",
-        "components": [],
         "header": true,
         "nav": true,
         "title": "Send"

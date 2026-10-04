@@ -334,15 +334,6 @@ export function requestOrigin(request: Request): string {
   return new URL(request.url).origin;
 }
 
-export function isAllowedOrigin(
-  request: Request,
-  origins: readonly string[] = [],
-): boolean {
-  const origin = request.headers.get("origin");
-  if (origin === null || origin === "" || origin === "null") return false;
-  return origin === requestOrigin(request) || origins.includes(origin);
-}
-
 export function refererPath(request: Request): string | null {
   const referer = request.headers.get("referer");
   if (referer === null || referer === "") return null;

@@ -71,7 +71,7 @@ describe("entity", () => {
   });
 
   it("builds a zod object schema from the fields", () => {
-    expect(account.schema).toBeInstanceOf(z.ZodObject);
+    expect(account.schema).toBeInstanceOf(z.ZodMiniObject);
     expect(account.parse(sample)).toEqual(sample);
     expect(account.schema.safeParse({ ...sample, balance: 12 }).success).toBe(false);
     expect(() => account.parse({ ...sample, name: "" })).toThrow("name");

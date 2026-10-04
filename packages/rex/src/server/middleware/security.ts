@@ -9,7 +9,9 @@ import {
   type SecurityConfig,
 } from "../../core/config.ts";
 import type { RexServerSetup } from "../app.ts";
-import { createNonce } from "../context.ts";
+import { requestNonce } from "../context.ts";
+
+export { requestNonce };
 
 declare module "../app.ts" {
   interface RexServerOptions<A extends AnyAction> {
@@ -47,17 +49,6 @@ export function resolveSecurityPolicy(input: SecurityPolicyInput = {}): Security
   if (input.client !== undefined) options.client = input.client;
   const resolved = resolveOptions(options);
   return Object.freeze({ security: resolved.security, apiOrigin: resolved.client.apiOrigin });
-}
-
-const NONCES = new WeakMap<Request, string>();
-
-export function requestNonce(request: Request): string {
-  let nonce = NONCES.get(request);
-  if (nonce === undefined) {
-    nonce = createNonce();
-    NONCES.set(request, nonce);
-  }
-  return nonce;
 }
 
 export function isRexPath(path: string): boolean {

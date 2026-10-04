@@ -249,18 +249,15 @@ describe("form protocol helpers", () => {
   });
 
   it("accepts only the request origin or a listed origin", () => {
-    const request = (origin?: string) =>
-      new Request(`${ORIGIN}${formPath("toggle")}`, {
-        method: "POST",
-        headers: origin === undefined ? {} : { origin },
-      });
-    expect(isAllowedOrigin(request(ORIGIN))).toBe(true);
-    expect(isAllowedOrigin(request())).toBe(false);
-    expect(isAllowedOrigin(request("null"))).toBe(false);
-    expect(isAllowedOrigin(request("https://evil.test"))).toBe(false);
-    expect(
-      isAllowedOrigin(request("https://app.test"), ["https://app.test"]),
-    ).toBe(true);
+    const url = `${ORIGIN}${formPath("toggle")}`;
+    expect(isAllowedOrigin(ORIGIN, url, [])).toBe(true);
+    expect(isAllowedOrigin(null, url, [])).toBe(false);
+    expect(isAllowedOrigin("", url, [])).toBe(false);
+    expect(isAllowedOrigin("null", url, [])).toBe(false);
+    expect(isAllowedOrigin("https://evil.test", url, [])).toBe(false);
+    expect(isAllowedOrigin("https://app.test", url, ["https://app.test"])).toBe(
+      true,
+    );
   });
 
   it("round-trips the outcome cookie payload and rejects malformed payloads", () => {
@@ -326,6 +323,32 @@ describe("POST /rex/form/<action>", () => {
     expect(foreign.status).toBe(403);
     expect(await foreign.text()).toContain("origin");
     expect(await ledger.list()).toEqual([]);
+  });
+
+  it("accepts a post from an origin listed in security.origins and still refuses an unlisted one", async () => {
+    const listed = createRexServer({
+      registry: source,
+      ledger,
+      actor: resolveActor,
+      app: "forms",
+      security: { origins: ["https://app.test"] },
+    });
+    const accepted = await post(listed, "toggle", fields({ hide: "on" }, csrf), {
+      origin: "https://app.test",
+      cookie,
+      referer: `${ORIGIN}/settings`,
+    });
+    expect(accepted.status).toBe(303);
+    expect(accepted.headers.get("location")).toBe("/settings");
+    expect(outcomeOf(accepted)).toMatchObject({ actionId: "toggle", ok: true });
+    const foreign = await post(listed, "toggle", fields({ hide: "on" }, csrf), {
+      origin: "https://evil.test",
+      cookie,
+    });
+    expect(foreign.status).toBe(403);
+    expect((await ledger.list()).map((record) => record.outcome)).toEqual([
+      "ok",
+    ]);
   });
 
   it("rejects a post whose _csrf field does not match the rex-csrf cookie with 403", async () => {

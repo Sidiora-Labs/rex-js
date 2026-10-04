@@ -91,6 +91,11 @@ export interface TokenAllowLists {
   readonly classes?: readonly string[];
 }
 
+export interface UiConfig {
+  readonly kit?: UiKit;
+  readonly components?: string;
+}
+
 export interface CheckConfig {
   readonly tokens?: TokenAllowLists;
 }
@@ -103,7 +108,7 @@ export interface RexOptionsConfig {
   readonly images?: ImagesConfig;
   readonly fonts?: readonly FontSpec[];
   readonly telemetry?: TelemetryConfig;
-  readonly ui?: UiKit;
+  readonly ui?: UiKit | UiConfig;
   readonly client?: ClientConfig;
   readonly compiler?: boolean;
   readonly devtools?: boolean;
@@ -152,6 +157,7 @@ export interface ResolvedRexOptions {
   readonly fonts: readonly ResolvedFont[];
   readonly telemetry: { readonly tracer: RexTracer | null; readonly logger: RexLogger | null };
   readonly ui: UiKit;
+  readonly shellComponents: string | null;
   readonly client: { readonly apiOrigin: string | null };
   readonly compiler: boolean;
   readonly devtools: boolean;
@@ -210,6 +216,7 @@ const CONFIG_KEYS: Readonly<Record<string, RexErrorCode>> = {
 const LOCALE_PATTERN = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 const HEADER_NAME_PATTERN = /^[A-Za-z0-9-]+$/;
 const SECRET_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const SHELL_COMPONENTS_PATTERN = /^app\/components\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.tsx?$/;
 
 type Fail = (field: string, problem: string) => never;
 
@@ -498,6 +505,19 @@ function parseClient(value: unknown): ResolvedRexOptions["client"] {
   return Object.freeze({ apiOrigin: record.apiOrigin as string });
 }
 
+function parseUi(value: unknown): Pick<ResolvedRexOptions, "ui" | "shellComponents"> {
+  const fail = failFor("REX120");
+  if (value === undefined) return { ui: "none", shellComponents: null };
+  if (!isRecord(value)) return { ui: oneOf(value, UI_KITS, "ui", fail), shellComponents: null };
+  const record = objectAt(value, "ui", ["kit", "components"], fail);
+  const ui = record.kit === undefined ? "none" : oneOf(record.kit, UI_KITS, "ui.kit", fail);
+  if (record.components === undefined) return { ui, shellComponents: null };
+  if (typeof record.components !== "string" || !SHELL_COMPONENTS_PATTERN.test(record.components)) {
+    fail("ui.components", "must name a module under app/components such as app/components/shell.tsx");
+  }
+  return { ui, shellComponents: record.components as string };
+}
+
 function parseCheck(value: unknown): ResolvedRexOptions["check"] {
   const fail = failFor("REX123");
   const empty = Object.freeze([]) as readonly string[];
@@ -539,7 +559,7 @@ export function resolveOptions(value: RexOptionsConfig = {}): ResolvedRexOptions
     images: parseImages(record.images),
     fonts: parseFonts(record.fonts),
     telemetry: parseTelemetry(record.telemetry),
-    ui: record.ui === undefined ? "none" : oneOf(record.ui, UI_KITS, "ui", failFor("REX120")),
+    ...parseUi(record.ui),
     client: parseClient(record.client),
     compiler: flag(record.compiler, "compiler", true),
     devtools: flag(record.devtools, "devtools", true),

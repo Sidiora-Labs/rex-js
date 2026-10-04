@@ -19,7 +19,6 @@ import {
   fieldErrors,
   formEntries,
   formRedirectTarget,
-  isAllowedOrigin,
   outcomeCookie,
   readCsrfToken,
   refererPath,
@@ -29,6 +28,11 @@ import {
   verifyCsrf,
   type FormOutcome,
 } from "../form.ts";
+import {
+  ORIGIN_HEADER,
+  isAllowedOrigin,
+  resolveSecurityPolicy,
+} from "../middleware/security.ts";
 import {
   CONFIRM_PROCEDURE,
   buildActionRouter,
@@ -189,10 +193,11 @@ export function installFormRoute(app: Hono, setup: RexServerSetup): void {
     targets.set(declared.id, { declared, schema: manifest.input, procedure });
   }
   const confirmProcedure = router[CONFIRM_PROCEDURE];
+  const origins = resolveSecurityPolicy(options).security.origins;
 
   app.post(FORM_ROUTE, async (c) => {
     const request = c.req.raw;
-    if (!isAllowedOrigin(request)) {
+    if (!isAllowedOrigin(request.headers.get(ORIGIN_HEADER), request.url, origins)) {
       return errorPage(
         c,
         403,

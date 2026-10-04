@@ -10,6 +10,7 @@ import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
 import { useNav } from "../nav.ts";
 import { useActivePage } from "../router.tsx";
 import { isNavigable } from "../shell.tsx";
+import { useShellComponents } from "../shell/components.ts";
 import { useConfirm, usePageInvokers } from "./confirm.tsx";
 import { isModShortcut } from "./shortcuts.ts";
 import { useAffordances, type Affordance } from "./sidecar.tsx";
@@ -110,6 +111,7 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
   const nav = useNav();
   const active = useActivePage();
   const { actions, pages } = usePaletteEntries();
+  const { PaletteItem } = useShellComponents();
 
   useEffect(() => {
     const target = globalThis.window;
@@ -206,9 +208,15 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
                   }
                   data-rex-allowed={entry.allowed ? "true" : "false"}
                 >
-                  <span>{entry.label}</span> <code>{entry.id}</code>
-                  {entry.shortcut === null ? null : <kbd>{entry.shortcut}</kbd>}
-                  {entry.allowed ? null : <span> Not allowed: {entry.reason}</span>}
+                  <PaletteItem
+                    kind="action"
+                    id={entry.id}
+                    label={entry.label}
+                    detail={entry.id}
+                    shortcut={entry.shortcut}
+                    allowed={entry.allowed}
+                    reason={entry.reason}
+                  />
                 </Command.Item>
               ))}
             </Command.Group>
@@ -225,7 +233,15 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
                 }}
                 data-rex-palette-page={entry.id}
               >
-                <span>Go to {entry.title}</span> <code>{entry.route}</code>
+                <PaletteItem
+                  kind="page"
+                  id={entry.id}
+                  label={`Go to ${entry.title}`}
+                  detail={entry.route}
+                  shortcut={null}
+                  allowed
+                  reason={null}
+                />
               </Command.Item>
             ))}
           </Command.Group>

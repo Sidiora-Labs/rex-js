@@ -105,6 +105,9 @@ function mount(path: string): Mounted {
   let density: string | null | undefined;
   const fetch: RexFetch = async (input, init) => {
     const request = input instanceof Request ? input : new Request(input, init);
+    if (request.method !== "GET" && !request.headers.has("origin")) {
+      request.headers.set("origin", new URL(request.url).origin);
+    }
     const response = await server.fetch(request);
     if (new URL(request.url).pathname === REX_MANIFEST_PATH) {
       density = response.headers.get(REX_DENSITY_HEADER);

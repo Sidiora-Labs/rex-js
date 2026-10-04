@@ -103,6 +103,7 @@ describe("parseConfig", () => {
     expect(resolved.fonts).toEqual([]);
     expect(resolved.telemetry).toEqual({ tracer: null, logger: null });
     expect(resolved.ui).toBe("none");
+    expect(resolved.shellComponents).toBeNull();
     expect(resolved.client).toEqual({ apiOrigin: null });
     expect(resolved.compiler).toBe(true);
     expect(resolved.devtools).toBe(true);
@@ -179,6 +180,18 @@ describe("parseConfig", () => {
     expect(resolveOptions({ i18n: { locales: ["en"], default: "en" } }).i18n?.routing).toBe("none");
   });
 
+  it("resolves ui as a kit name or as { kit, components } naming the app-wide shell components module", () => {
+    expect(resolveOptions({ ui: "designx" })).toMatchObject({ ui: "designx", shellComponents: null });
+    expect(
+      resolveOptions({ ui: { kit: "designx", components: "app/components/shell.tsx" } }),
+    ).toMatchObject({ ui: "designx", shellComponents: "app/components/shell.tsx" });
+    expect(resolveOptions({ ui: { components: "app/components/chrome/shell.ts" } })).toMatchObject({
+      ui: "none",
+      shellComponents: "app/components/chrome/shell.ts",
+    });
+    expect(resolveOptions({ ui: {} })).toMatchObject({ ui: "none", shellComponents: null });
+  });
+
   it.each([
     [{ app, edge: true }, "REX110", "edge"],
     [{ app: { name: "x" } }, "REX111", "app"],
@@ -205,6 +218,11 @@ describe("parseConfig", () => {
     [{ app, telemetry: { tracer: {} } }, "REX119", "telemetry.tracer"],
     [{ app, telemetry: { logger: { info: () => undefined } } }, "REX119", "telemetry.logger.debug"],
     [{ app, ui: "material" }, "REX120", "ui"],
+    [{ app, ui: { kit: "material" } }, "REX120", "ui.kit"],
+    [{ app, ui: { theme: "dark" } }, "REX120", "ui.theme"],
+    [{ app, ui: { components: "app/pages/home/Shell.tsx" } }, "REX120", "ui.components"],
+    [{ app, ui: { components: "app/components/../server/shell.ts" } }, "REX120", "ui.components"],
+    [{ app, ui: { components: 7 } }, "REX120", "ui.components"],
     [{ app, client: { apiOrigin: "api.example.com" } }, "REX121", "client.apiOrigin"],
     [{ app, compiler: "yes" }, "REX122", "compiler"],
     [{ app, devtools: 1 }, "REX122", "devtools"],

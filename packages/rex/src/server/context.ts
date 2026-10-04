@@ -29,19 +29,32 @@ export function createNonce(): string {
   return globalThis.crypto.randomUUID().replaceAll("-", "");
 }
 
+const NONCES = new WeakMap<Request, string>();
+
+export function requestNonce(request: Request): string {
+  let nonce = NONCES.get(request);
+  if (nonce === undefined) {
+    nonce = createNonce();
+    NONCES.set(request, nonce);
+  }
+  return nonce;
+}
+
 class RequestContext implements RexRequestContext {
   readonly actor: Actor;
   readonly density: RexDensity;
   readonly confirm: string | undefined;
   readonly locale: string | undefined;
-  #nonce: string | null = null;
+  readonly #request: Request;
 
   constructor(
+    request: Request,
     actor: Actor,
     density: RexDensity,
     confirm: string | undefined,
     locale: string | undefined,
   ) {
+    this.#request = request;
     this.actor = actor;
     this.density = density;
     this.confirm = confirm;
@@ -49,8 +62,7 @@ class RequestContext implements RexRequestContext {
   }
 
   get nonce(): string {
-    if (this.#nonce === null) this.#nonce = createNonce();
-    return this.#nonce;
+    return requestNonce(this.#request);
   }
 }
 
@@ -96,6 +108,7 @@ export async function createRexContext(
   const actor = await resolveActor(request);
   const locale = i18n === null ? undefined : resolveRequestLocale(request, i18n).locale;
   return new RequestContext(
+    request,
     actor,
     density,
     confirm === null || confirm === "" ? undefined : confirm,

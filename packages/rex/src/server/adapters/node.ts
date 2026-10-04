@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { serve, type ServerType } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
+import { RENDER_KIND_HEADER } from "../routes/render.ts";
 import { assertPort, serverUrl, type FetchApp } from "./runtime.ts";
 
 export const API_PREFIX = "/rex";
@@ -34,6 +35,10 @@ export function isPageRoutePath(path: string): boolean {
   return !last.includes(".");
 }
 
+function isReadMethod(method: string): boolean {
+  return method === "GET" || method === "HEAD";
+}
+
 export function createNodeApp(app: NodeFetchApp, clientDir: string): Hono {
   const root = resolve(clientDir);
   if (!existsSync(root) || !statSync(root).isDirectory()) {
@@ -47,18 +52,16 @@ export function createNodeApp(app: NodeFetchApp, clientDir: string): Hono {
   const outer = new Hono();
 
   outer.use("*", async (c, next) => {
-    if (isApiPath(c.req.path) || (c.req.method !== "GET" && c.req.method !== "HEAD")) {
-      return next();
-    }
+    if (isApiPath(c.req.path) || !isReadMethod(c.req.method)) return next();
+    if (!isPageRoutePath(c.req.path)) return assets(c, next);
+    const rendered = await app.fetch(c.req.raw, c.env);
+    if (rendered.headers.has(RENDER_KIND_HEADER)) return rendered;
+    await rendered.body?.cancel();
     return assets(c, next);
   });
 
   outer.use("*", async (c, next) => {
-    if (
-      isApiPath(c.req.path) ||
-      (c.req.method !== "GET" && c.req.method !== "HEAD") ||
-      !isPageRoutePath(c.req.path)
-    ) {
+    if (isApiPath(c.req.path) || !isReadMethod(c.req.method) || !isPageRoutePath(c.req.path)) {
       return next();
     }
     return c.html(await readFile(indexPath, "utf8"));

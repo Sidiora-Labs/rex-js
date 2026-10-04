@@ -55,6 +55,76 @@ function copyAllFail(): string {
   return root;
 }
 
+function addStaticPageAndImage(root: string): void {
+  link(root, "zod", path.join(packageRoot, "node_modules/zod"));
+  const files: Record<string, string> = {
+    "app/actions/ping.ts": [
+      'import { action, always } from "@sidioralabs/rex";',
+      'import { z } from "zod/mini";',
+      "",
+      'export const ping = action("ping", {',
+      "  input: z.object({}),",
+      "  output: z.object({}),",
+      "  policy: always(),",
+      '  effect: "reversible",',
+      '  label: "Ping",',
+      '  shortcut: "mod+p",',
+      "  handler: () => ({}),",
+      "});",
+      "",
+    ].join("\n"),
+    "app/pages/about/page.ts": [
+      'import { page } from "@sidioralabs/rex";',
+      'import { ping } from "../../actions/ping.ts";',
+      "",
+      'export default page("about", { route: "/about", render: "static", actions: [ping] });',
+      "",
+    ].join("\n"),
+    "app/pages/about/view.tsx": [
+      "export default function AboutView() {",
+      "  return <p>About</p>;",
+      "}",
+      "",
+    ].join("\n"),
+    "app/pages/about/states.tsx": [
+      'import type { StateProps } from "@sidioralabs/rex";',
+      "",
+      ...[
+        "Loading",
+        "Empty",
+        "Stale",
+        "Partial",
+        "Offline",
+        "PermissionDenied",
+        "RecoverableError",
+        "TerminalError",
+      ].flatMap((name) => [
+        `export function ${name}(_props: StateProps) {`,
+        `  return <p role="status">${name}</p>;`,
+        "}",
+        "",
+      ]),
+    ].join("\n"),
+    "rex.config.ts": [
+      'import { defineConfig } from "@sidioralabs/rex";',
+      'import app from "rex:app";',
+      "",
+      'export default defineConfig({ app, i18n: { locales: ["en"], default: "en" } });',
+      "",
+    ].join("\n"),
+    "app/components/Logo.tsx": [
+      "export default function Logo() {",
+      '  return <img src="/logo.png" width={32} height={32} />;',
+      "}",
+      "",
+    ].join("\n"),
+  };
+  for (const [file, content] of Object.entries(files)) {
+    mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+    writeFileSync(path.join(root, file), content);
+  }
+}
+
 const ruleOf = (entry: Finding) => entry.rule.split("/")[0];
 
 describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
@@ -68,6 +138,10 @@ describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
       "traps",
       "tokens",
       "manifest",
+      "security",
+      "a11y",
+      "render",
+      "i18n",
     ]);
   });
 
@@ -83,6 +157,7 @@ describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
 
   it("reports findings from every rule on the combined fail fixture", async () => {
     const root = copyAllFail();
+    addStaticPageAndImage(root);
     const started = performance.now();
     const result = await runCheck(root, { json: true });
     expect(performance.now() - started).toBeLessThan(30_000);
@@ -119,6 +194,17 @@ describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
     expect(pick("tokens/raw-color")).toEqual([["app/pages/home/regions/main/region.tsx", 5, 25]]);
     expect(pick("manifest/manifest-stale")).toEqual([[".rex/manifest.json", 1, 1]]);
     expect(pick("manifest/agents-missing")).toEqual([["AGENTS.md", 1, 1]]);
+    expect(pick("security/unsafe-html").map(([file]) => file)).toEqual([
+      "app/components/Markup.tsx",
+    ]);
+    expect(pick("a11y/img-alt").map(([file]) => file)).toEqual([
+      "app/components/Logo.tsx",
+      "app/pages/home/regions/extra/region.tsx",
+    ]);
+    expect(pick("render/static-needs-js").map(([file]) => file)).toEqual([
+      "app/pages/about/page.ts",
+    ]);
+    expect(pick("i18n/literal").map(([file]) => file)).toEqual(["app/actions/ping.ts"]);
 
     const human = await runCheck(root);
     expect(human.output).toBe(formatHuman(result.findings));

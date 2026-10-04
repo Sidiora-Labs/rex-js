@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import { buildSidecarPayload, serializeSidecar } from "../client/agent/sidecar.tsx";
+import { buildManifest } from "../manifest/build.ts";
 import {
   SIDECAR_ELEMENT_ID,
   SIDECAR_MIME_TYPE,
@@ -74,11 +75,17 @@ describe("the sidecar script Rex emits", () => {
   });
   const notes = page("notes", {
     route: "/notes",
-    params: z.object({ q: text().optional() }),
+    params: z.object({ q: z.optional(text()) }),
     actions: [hostileAction],
     states: ["ready"],
   });
   const payload = buildSidecarPayload({
+    manifest: buildManifest({
+      entities: [],
+      actions: [hostileAction],
+      pages: [notes],
+      policies: [],
+    }),
     page: notes,
     params: { q: HOSTILE },
     state: "ready",

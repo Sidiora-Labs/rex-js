@@ -3,7 +3,6 @@ import { action } from "./action.ts";
 import { RexDeclarationError } from "./entity.ts";
 import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
 import {
-  CHROME_COMPONENT_NAMES,
   PAGE_RENDER_MODES,
   page,
   parseRoute,
@@ -427,10 +426,10 @@ describe("0.2 page options", () => {
     expect(portfolio.loaders).toEqual([]);
     expect(portfolio.cache).toBeNull();
     expect(portfolio.transition).toBe("none");
-    expect(portfolio.chrome.components).toBeUndefined();
+    expect(portfolio.chrome).toEqual({ header: true, nav: true, back: null, title: "Portfolio" });
   });
 
-  it("records render, revalidate, paths, load, cache, transition and chrome components", async () => {
+  it("records render, revalidate, paths, load, cache and transition", async () => {
     const paths = () => [{ account: "main" }, { account: "savings" }];
     const declared = page("statement", {
       route: "/statement/:account",
@@ -444,7 +443,7 @@ describe("0.2 page options", () => {
       },
       cache: { staleTime: 30_000 },
       transition: "view",
-      chrome: { title: "Statement", components: { Button: ShellButton } },
+      chrome: { title: "Statement" },
     });
     expect(declared.render).toBe("ssg");
     expect(declared.revalidate).toBe(60);
@@ -459,10 +458,9 @@ describe("0.2 page options", () => {
     expect(declared.loaders[1]?.input?.({ account: "main" })).toEqual({});
     expect(declared.cache).toEqual({ staleTime: 30_000 });
     expect(declared.transition).toBe("view");
-    expect(declared.chrome.components).toEqual({ Button: ShellButton });
     expect(declared.chrome.title).toBe("Statement");
     expect(Object.isFrozen(declared.loaders)).toBe(true);
-    expect(Object.isFrozen(declared.chrome.components)).toBe(true);
+    expect(Object.isFrozen(declared.chrome)).toBe(true);
     expectTypeOf(declared.load.holdings).toEqualTypeOf<typeof holdings>();
     const staticPage = page("about", { route: "/about/:section", params: z.object({ section: text() }), render: "static", paths: () => [{ section: "team" }] });
     expect(staticPage.render).toBe("static");
@@ -497,21 +495,13 @@ describe("0.2 page options", () => {
     [{ route: "/", cache: { gcTime: 1, staleTime: 1 } }, "REX204", "cache.gcTime"],
     [{ route: "/", cache: 10 }, "REX204", "cache"],
     [{ route: "/", transition: "fade" }, "REX205", "transition"],
-    [{ route: "/", chrome: { components: { Modal: ShellButton } } }, "REX206", "chrome.components.Modal"],
-    [{ route: "/", chrome: { components: { Button: "button" } } }, "REX206", "chrome.components.Button"],
-    [{ route: "/", chrome: { components: [] } }, "REX206", "chrome.components"],
   ] as const)("rejects %j with %s naming %s", (config, code, field) => {
     expect(optionError(() => page("probe", config as never))).toEqual({ code, field });
   });
 
-  it("accepts every shell component name", () => {
-    const components = Object.fromEntries(CHROME_COMPONENT_NAMES.map((name) => [name, ShellButton]));
-    const declared = page("home", { route: "/", chrome: { components } });
-    expect(Object.keys(declared.chrome.components ?? {})).toEqual([
-      "Button",
-      "Sheet",
-      "PaletteItem",
-      "Outcome",
-    ]);
+  it("rejects chrome.components because shell overrides are app-wide in rex.config ui.components", () => {
+    expect(
+      fieldOf(() => page("home", { route: "/", chrome: { components: { Button: ShellButton } } } as never)),
+    ).toBe("chrome.components");
   });
 });

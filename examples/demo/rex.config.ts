@@ -4,6 +4,6 @@ import { createDemoServer } from "./server.ts";
 
 export default defineConfig({
   app,
-  ui: "designx",
+  ui: { kit: "designx", components: "app/components/Shell.tsx" },
   server: (bundle) => createDemoServer(bundle),
 });
