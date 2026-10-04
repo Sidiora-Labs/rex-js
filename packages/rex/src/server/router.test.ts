@@ -477,7 +477,7 @@ describe("Standard Schema actions through the router", () => {
     expect(refused.code).toBe("BAD_REQUEST");
     expect(refused.data).toEqual({
       action: "payout",
-      issues: [{ code: "custom", message: "must be a positive decimal", path: ["amount"] }],
+      issues: [{ message: "must be a positive decimal", path: ["amount"] }],
     });
     const grant = await call(
       router[CONFIRM_PROCEDURE],

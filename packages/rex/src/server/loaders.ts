@@ -14,9 +14,15 @@ import type { AnyAction } from "../core/action.ts";
 import { RexError } from "../core/errors.ts";
 import type { AnyPage } from "../core/page.ts";
 import type { RexServerSetup } from "./app.ts";
-import type { RexContext } from "./context.ts";
+import type { RexContext, RexRequestContext } from "./context.ts";
 import { telemetryFor, traceLoader, type RexTelemetry } from "./middleware/telemetry.ts";
-import { buildActionRouter, type ActionProcedure } from "./router.ts";
+import {
+  buildActionRouter,
+  type ActionProcedure,
+  type ActionRouterOptions,
+  type ActionRouterSource,
+} from "./router.ts";
+import type { RexPageRenderer } from "./routes/render.ts";
 
 export interface LoaderRunner {
   readonly telemetry: RexTelemetry;
@@ -38,14 +44,13 @@ export interface RunPageLoadersOptions {
   readonly runner: LoaderRunner;
 }
 
-export function createLoaderRunner(setup: RexServerSetup): LoaderRunner {
-  const options = setup.options;
-  const router = buildActionRouter(
-    options.registry,
-    options.confirmTtlMs === undefined
-      ? { ledger: options.ledger }
-      : { ledger: options.ledger, confirmTtlMs: options.confirmTtlMs },
-  ) as unknown as Readonly<Record<string, ActionProcedure<AnyAction> | undefined>>;
+export function createActionLoaderRunner(
+  source: ActionRouterSource<AnyAction>,
+  options: ActionRouterOptions,
+): LoaderRunner {
+  const router = buildActionRouter(source, options) as unknown as Readonly<
+    Record<string, ActionProcedure<AnyAction> | undefined>
+  >;
   return Object.freeze({
     get telemetry(): RexTelemetry {
       return telemetryFor(options.ledger);
@@ -60,6 +65,16 @@ export function createLoaderRunner(setup: RexServerSetup): LoaderRunner {
   });
 }
 
+export function createLoaderRunner(setup: RexServerSetup): LoaderRunner {
+  const options = setup.options;
+  return createActionLoaderRunner(
+    options.registry,
+    options.confirmTtlMs === undefined
+      ? { ledger: options.ledger }
+      : { ledger: options.ledger, confirmTtlMs: options.confirmTtlMs },
+  );
+}
+
 const boundRunners = new WeakMap<Request, LoaderRunner>();
 
 export function bindLoaderRunner(request: Request, runner: LoaderRunner): void {
@@ -68,6 +83,15 @@ export function bindLoaderRunner(request: Request, runner: LoaderRunner): void {
 
 export function loaderRunnerFor(request: Request): LoaderRunner | undefined {
   return boundRunners.get(request);
+}
+
+export function withLoaderRunner(renderer: RexPageRenderer, runner: LoaderRunner): RexPageRenderer {
+  return Object.freeze({
+    render(request: Request, context: RexRequestContext) {
+      bindLoaderRunner(request, runner);
+      return renderer.render(request, context);
+    },
+  });
 }
 
 export function installLoaderRunner(app: Hono, setup: RexServerSetup): void {

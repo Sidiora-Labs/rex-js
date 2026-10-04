@@ -14,6 +14,7 @@ import {
   type HydrationMismatch,
 } from "../client/hydrate.ts";
 import { Img, SCRIPT_ATTRIBUTE, Script } from "../client/media.tsx";
+import { ActionForm } from "../client/form.tsx";
 import { region, view, type LazyPageModuleSet, type LoadedPageModules } from "../client/page.tsx";
 import { action } from "../core/action.ts";
 import { actor } from "../core/actor.ts";
@@ -28,7 +29,9 @@ import { rex } from "../vite/plugin.ts";
 import { CLIENT_MANIFEST_FILE, ssrAssetsFromManifest, type ViteManifest } from "../vite/ssr-css.ts";
 import { createRexServer } from "./app.ts";
 import { memoryLedger } from "./audit.ts";
-import { RENDER_STATUS } from "./routes/render.ts";
+import { DEFAULT_DENSITY } from "./context.ts";
+import { CSRF_COOKIE, CSRF_FIELD, bindCsrfGrant, ensureCsrfToken } from "./form.ts";
+import { RENDER_STATUS, type RexPageRenderer } from "./routes/render.ts";
 import {
   createRexRenderer,
   pageAssets,
@@ -507,5 +510,103 @@ describe("streaming server-side rendering", () => {
     const other = await (await server.fetch(request("/"))).text();
     expect(other).toContain('<style data-rex-fonts="">');
     expect(other).not.toContain(heroPreload);
+  });
+});
+
+const subscribe = action("subscribe", {
+  input: z.object({ email: text({ min: 3, max: 120 }) }),
+  output: z.object({ email: text() }),
+  policy: can("notes.write"),
+  effect: "reversible",
+  label: "Subscribe",
+  handler: (input) => ({ email: input.email }),
+});
+
+const signup = page("signup", {
+  route: "/signup",
+  actions: [subscribe],
+  chrome: { title: "Sign up" },
+  regions: ["form"],
+});
+
+const SignupForm = region("form", () => <ActionForm action={subscribe} />);
+const signupRegistry = createRegistry().register(subscribe, signup).freeze();
+const signupBundle: RexEntryBundle = {
+  registry: signupRegistry,
+  manifest: buildManifest(signupRegistry, { app: "ssr-csrf" }),
+  pages: [
+    lazySet(signup, {
+      view: view(() => <SignupForm />),
+      states: statesFor("Sign up"),
+      regions: { form: SignupForm },
+      overlays: {},
+    }),
+  ],
+};
+let signupRenderer: RexPageRenderer | null = null;
+
+function signupRequest(): Request {
+  return new Request(new URL("/signup", window.location.origin), { headers: { accept: "text/html" } });
+}
+
+async function renderSignup(request: Request): Promise<string> {
+  signupRenderer ??= createRexRenderer({ bundle: signupBundle, assets });
+  const result = await signupRenderer.render(request, {
+    actor: owner,
+    density: DEFAULT_DENSITY,
+    nonce: "0123456789abcdef0123456789abcdef",
+  });
+  expect(result.kind).toBe("page");
+  return new Response(result.body).text();
+}
+
+function csrfFieldOf(html: string): string | null {
+  const input = new RegExp(`<input type="hidden" name="${CSRF_FIELD}" value="([^"]*)"/>`).exec(html);
+  return input === null ? null : (input[1] as string);
+}
+
+describe("the CSRF token in server-rendered forms", () => {
+  afterEach(() => {
+    document.cookie = `${CSRF_COOKIE}=; Path=/; Max-Age=0`;
+  });
+
+  it("renders the rex-csrf token granted to the document request into the form", async () => {
+    const request = signupRequest();
+    const grant = ensureCsrfToken(request);
+    expect(grant.setCookie).toMatch(new RegExp(`^${CSRF_COOKIE}=${grant.token}; Path=/; SameSite=Lax$`));
+    bindCsrfGrant(request, grant);
+    const html = await renderSignup(request);
+    expect(html).toMatch(/<form\b[^>]*\baction="\/rex\/form\/subscribe"[^>]*\bmethod="post"/);
+    expect(csrfFieldOf(html)).toBe(grant.token);
+  });
+
+  it("renders an empty token when no grant is bound, as prerendering does", async () => {
+    expect(csrfFieldOf(await renderSignup(signupRequest()))).toBe("");
+  });
+
+  it("hydrates the server-rendered form with the cookie's token and no mismatch", async () => {
+    const request = signupRequest();
+    const token = "ab".repeat(32);
+    bindCsrfGrant(request, { token, setCookie: null });
+    const html = await renderSignup(request);
+    expect(csrfFieldOf(html)).toBe(token);
+    document.cookie = `${CSRF_COOKIE}=${token}; Path=/`;
+    const container = mountDocument(html, "/signup");
+    const errors = vi.spyOn(console, "error");
+    const mismatches: HydrationMismatch[] = [];
+    await act(async () => {
+      started = startRexEntry(container, signupBundle, {
+        dev: true,
+        fetch: serverFetch,
+        onHydrationMismatch: (mismatch) => {
+          mismatches.push(mismatch);
+        },
+      });
+    });
+    expect(started?.mode).toBe("hydrate");
+    const field = container.querySelector<HTMLInputElement>(`input[name="${CSRF_FIELD}"]`);
+    expect(field?.value).toBe(token);
+    expect(mismatches).toEqual([]);
+    expect(hydrationErrors(errors.mock.calls)).toEqual([]);
   });
 });

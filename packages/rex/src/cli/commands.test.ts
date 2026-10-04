@@ -11,15 +11,16 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import ts from "typescript";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Finding } from "../check/index.ts";
 import { resetDeprecations } from "../core/deprecated.ts";
 import { AGENTS_FILE, MANIFEST_FILE } from "../manifest/scan.ts";
 import type { Manifest } from "../manifest/types.ts";
 import { SSR_ATTRIBUTE } from "../client/hydrate.ts";
-import { RENDER_KIND_HEADER } from "../server/routes/render.ts";
+import { RENDER_KIND_HEADER, RENDER_PAGE_HEADER } from "../server/routes/render.ts";
 import {
   BUILD_TARGETS,
   CLIENT_DIR,
@@ -32,7 +33,11 @@ import {
   startHint,
   writtenLayout,
 } from "./commands/build.ts";
-import { PRERENDER_LIST_FILE } from "../server/adapters/static-cache.ts";
+import {
+  PRERENDER_LIST_FILE,
+  STATIC_HEADER,
+  parsePrerenderList,
+} from "../server/adapters/static-cache.ts";
 import { devUrls, startDev } from "./commands/dev.ts";
 import { loadRexConfig } from "./config.ts";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, run, type RexCliIO } from "./index.ts";
@@ -142,7 +147,11 @@ interface NodeRun {
   readonly stderr: string;
 }
 
-function runNode(args: readonly string[], cwd: string): Promise<NodeRun> {
+function runNode(
+  args: readonly string[],
+  cwd: string,
+  timeoutMs: number = SERVER_START_TIMEOUT_MS,
+): Promise<NodeRun> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [...args], {
       cwd,
@@ -155,7 +164,7 @@ function runNode(args: readonly string[], cwd: string): Promise<NodeRun> {
     const timer = setTimeout(() => {
       child.kill("SIGKILL");
       reject(new Error(`node ${args.join(" ")} did not exit: ${stdout}${stderr}`));
-    }, SERVER_START_TIMEOUT_MS);
+    }, timeoutMs);
     child.stdout?.setEncoding("utf8");
     child.stderr?.setEncoding("utf8");
     child.stdout?.on("data", (chunk: string) => {
@@ -647,5 +656,120 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     const dev = await cli(empty, "dev", "--no-check");
     expect(dev.code).toBe(EXIT_FAILURE);
     expect(dev.err).toContain("rex.config.ts is missing");
+  });
+});
+
+const CLI_EMIT_TIMEOUT_MS = 180_000;
+const DIST_BUILD_TIMEOUT_MS = 180_000;
+const PRERENDER_APP_NAME = "prerender-app";
+
+function emitDistCli(): string {
+  const cache = join(packageRoot, "node_modules", ".cache");
+  mkdirSync(cache, { recursive: true });
+  const outDir = mkdtempSync(join(cache, "rex-dist-cli-"));
+  temporary.push(outDir);
+  const config = ts.getParsedCommandLineOfConfigFile(
+    join(packageRoot, "tsconfig.build.json"),
+    {},
+    {
+      ...ts.sys,
+      onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
+        throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
+      },
+    },
+  );
+  if (config === undefined) throw new Error("tsconfig.build.json could not be read");
+  const program = ts.createProgram({
+    rootNames: config.fileNames,
+    options: { ...config.options, outDir, declaration: false },
+  });
+  expect(program.emit().emitSkipped).toBe(false);
+  const entry = join(outDir, basename(here), "index.js");
+  expect(existsSync(entry)).toBe(true);
+  return entry;
+}
+
+function declareRender(root: string, pageId: string, render: "ssg" | "static"): void {
+  const file = join(root, "app", "pages", pageId, "page.ts");
+  const source = readFileSync(file, "utf8");
+  const route = `  route: ${JSON.stringify(`/${pageId}`)},\n`;
+  expect(source, `${pageId}/page.ts declares its route`).toContain(route);
+  writeFileSync(file, source.replace(route, `${route}  render: ${JSON.stringify(render)},\n`));
+}
+
+describe("rex build from the emitted dist CLI with an ssg and a static page", { timeout: DIST_BUILD_TIMEOUT_MS }, () => {
+  let root: string;
+  let distCli: string;
+
+  beforeAll(async () => {
+    distCli = emitDistCli();
+    const cwd = mkdtempSync(join(tmpdir(), "rex-prerender-app-"));
+    temporary.push(cwd);
+    expect(await run(["new", PRERENDER_APP_NAME, "--ui", "none"], captureIO(cwd).io)).toBe(EXIT_OK);
+    root = join(cwd, PRERENDER_APP_NAME);
+    installDependencies(root);
+    for (const id of ["about", "guide"]) {
+      const made = await cli(root, "make", "page", id);
+      expect(made.err, `rex make page ${id}`).toBe("");
+      expect(made.code).toBe(EXIT_OK);
+    }
+    declareRender(root, "about", "static");
+    declareRender(root, "guide", "ssg");
+    expect((await cli(root, "manifest")).code).toBe(EXIT_OK);
+  }, CLI_EMIT_TIMEOUT_MS + COMMANDS_TEST_TIMEOUT_MS);
+
+  it("prerenders both pages in the app's page runtime and the generated server serves them", async () => {
+    const built = await runNode([distCli, "build"], root, DIST_BUILD_TIMEOUT_MS);
+    expect(built.stderr).not.toMatch(/REX306|REX405/);
+    expect(built.code, `${built.stdout}${built.stderr}`).toBe(EXIT_OK);
+    expect(built.stdout).toContain(
+      `rex build: prerendered /about -> ${DIST_DIR}/${CLIENT_DIR}/about/index.html (about, static)`,
+    );
+    expect(built.stdout).toContain(
+      `rex build: prerendered /guide -> ${DIST_DIR}/${CLIENT_DIR}/guide/index.html (guide, ssg)`,
+    );
+
+    const outDir = join(root, DIST_DIR);
+    const list = parsePrerenderList(JSON.parse(readFileSync(join(outDir, PRERENDER_LIST_FILE), "utf8")));
+    expect(list.pages.map((entry) => [entry.path, entry.page, entry.render])).toEqual([
+      ["/about", "about", "static"],
+      ["/guide", "guide", "ssg"],
+    ]);
+    const about = readFileSync(join(outDir, CLIENT_DIR, "about", "index.html"), "utf8");
+    expect(about).toContain('data-rex-page="about"');
+    expect(about).not.toContain('<script type="module"');
+    expect(about).not.toContain(SSR_ATTRIBUTE);
+    const guide = readFileSync(join(outDir, CLIENT_DIR, "guide", "index.html"), "utf8");
+    expect(guide).toContain('data-rex-page="guide"');
+    expect(guide).toContain(`${SSR_ATTRIBUTE}=""`);
+    expect(guide).toContain('<script type="module"');
+
+    const child = spawn(process.execPath, [join(outDir, SERVER_FILE)], {
+      cwd: root,
+      env: { ...process.env, PORT: "0", HOST: "127.0.0.1" },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    children.push(child);
+    const url = await waitForServing(child);
+    try {
+      for (const [path, pageId] of [
+        ["/about", "about"],
+        ["/guide", "guide"],
+      ] as const) {
+        const response = await fetch(`${url}${path}`, { headers: { accept: "text/html" } });
+        expect(response.status, path).toBe(200);
+        expect(response.headers.get(RENDER_KIND_HEADER), path).toBe("page");
+        expect(response.headers.get(RENDER_PAGE_HEADER), path).toBe(pageId);
+        expect(response.headers.get(STATIC_HEADER), path).toBe("hit");
+        expect(await response.text(), path).toContain(`data-rex-page="${pageId}"`);
+      }
+      const home = await fetch(`${url}/`, { headers: { accept: "text/html" } });
+      expect(home.status).toBe(200);
+      expect(home.headers.get(RENDER_PAGE_HEADER)).toBe("home");
+      expect(home.headers.get(STATIC_HEADER)).toBeNull();
+      expect(await home.text()).toContain(SSR_ATTRIBUTE);
+    } finally {
+      child.kill("SIGTERM");
+    }
   });
 });
