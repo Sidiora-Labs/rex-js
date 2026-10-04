@@ -144,7 +144,7 @@
   - [ ] 3.7 The axe audit in the demo walk
     - Add @axe-core/playwright to the demo and write examples/demo/e2e/axe.spec.ts that builds the demo, starts node dist/server.js on an ephemeral port like the operability walk, runs axe on every manifest page in both densities and fails on serious or critical violations; if the current demo fails, record the violations in the qualification log for 6.2 and report implemented.
     - _Requirements: 22.2_
-  - [ ] 4.1 Explicit unsafe HTML opt-in and the escaping audit
+  - [x] 4.1 Explicit unsafe HTML opt-in and the escaping audit
     - Add client/unsafe-html.tsx exporting unsafeHtml(html) as the only sanctioned raw HTML path; add check/rules/security.ts reporting dangerouslySetInnerHTML outside it (security/unsafe-html) with fixtures.
     - Write check/rules/security.test.ts and core/serialize.test.ts cases proving every inline serialisation escapes <, >, & and U+2028 and U+2029.
     - _Requirements: 25.1_
