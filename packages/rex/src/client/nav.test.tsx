@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
-import { afterEach, describe, expect, expectTypeOf, it } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { actor, type Actor } from "../core/actor.ts";
@@ -11,7 +11,8 @@ import { integer, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { standardJsonSchema } from "../manifest/json-schema.ts";
-import { createRexApp } from "./app.tsx";
+import { STATIC_HOST_ENV_KEY } from "../vite/entry-module.ts";
+import { createRexApp, type RexFetch } from "./app.tsx";
 import { draftStorageKey, useDraft, useNav, type Nav, type NavOutcome } from "./nav.ts";
 import {
   NotFound,
@@ -23,6 +24,7 @@ import {
   type RouteResolution,
   type ViewTransitionHost,
 } from "./router.tsx";
+import { isStaticHost } from "./static-host.ts";
 
 const wallet = policy("wallet", {
   permissions: ["view", "send"],
@@ -348,5 +350,88 @@ describe("hrefs and params", () => {
     }
     expectTypeOf(typeOnly).toBeFunction();
     expectTypeOf<Parameters<Nav["to"]>>().not.toBeNever();
+  });
+});
+
+describe("useNav in a static build", () => {
+  const requested: string[] = [];
+  const recordingFetch: RexFetch = (input, init) => {
+    requested.push(input instanceof Request ? input.url : String(input));
+    return globalThis.fetch(input, init);
+  };
+
+  function mountStatic(path: string, subject: Actor = owner) {
+    vi.stubEnv(STATIC_HOST_ENV_KEY, "true");
+    window.history.replaceState(null, "", "/start");
+    const memory = memoryLocation({ path, record: true });
+    const RexApp = createRexApp({
+      registry,
+      manifest,
+      actor: subject,
+      baseUrl: "http://rex.test",
+      fetch: recordingFetch,
+    });
+    render(
+      <RexApp>
+        <Router hook={memory.hook}>
+          <RexRoutes render={(resolution) => <Screen resolution={resolution} />} />
+        </Router>
+      </RexApp>,
+    );
+    return memory;
+  }
+
+  async function documentAt(href: string): Promise<void> {
+    await vi.waitFor(() =>
+      expect(`${window.location.pathname}${window.location.search}`).toBe(href),
+    );
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    window.history.replaceState(null, "", "/");
+    requested.length = 0;
+  });
+
+  it("loads the target page as a document instead of a router transition, with no fetch", async () => {
+    const memory = mountStatic("/");
+    expect(isStaticHost()).toBe(true);
+    await click("to send");
+    expect(text_("last")).toBe("/send/acc-1?step=2&token=PAX");
+    await documentAt("/send/acc-1?step=2&token=PAX");
+    expect(memory.history).toEqual(["/"]);
+    expect(text_("page")).toBe("portfolio");
+    expect(requested).toEqual([]);
+  });
+
+  it("replaces the document for nav.replace and loads the back target for nav.back", async () => {
+    let memory = mountStatic("/");
+    await click("replace settings");
+    await documentAt("/settings");
+    expect(memory.history).toEqual(["/"]);
+    cleanup();
+
+    memory = mountStatic("/send/acc-1?token=PAX");
+    await click("back");
+    await documentAt("/");
+    expect(memory.history).toEqual(["/send/acc-1?token=PAX"]);
+    expect(text_("page")).toBe("send");
+    expect(requested).toEqual([]);
+  });
+
+  it("loads the recovery page as a document and leaves the document alone on invalid params", async () => {
+    const memory = mountStatic("/send/acc-1", viewer);
+    expect(text_("status")).toBe("denied");
+    await click("recover");
+    await documentAt("/");
+    expect(memory.history).toEqual(["/send/acc-1"]);
+    cleanup();
+
+    window.history.replaceState(null, "", "/start");
+    mountStatic("/");
+    await click("to send invalid");
+    expect(text_("last")).toMatch(/^invalid params for page "send": account /);
+    expect(window.location.pathname).toBe("/start");
+    expect(requested).toEqual([]);
   });
 });

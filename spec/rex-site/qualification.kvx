@@ -127,3 +127,11 @@ symbol = "Header back control for chrome.back"
 observed = "[design] pages gives every page a back target, and the derived header renders it as a type=button Button whose onClick calls nav.back(); on a static page (zero page JavaScript, as standards, changelog and about render) that control does nothing, so the prerendered back control is dead without JavaScript, which the no-JS walk of 3.2 will meet; read from header.tsx on revision d1eac09."
 assumption = "Task 3.3 renders the back control as a link to the back page's route (href from the registry, with the client navigation on click), so it works on static pages and stays addressed by data-rex-nav."
 severity = "medium"
+
+[qualification.281]
+task = "2.8"
+file = "packages/rex/src/server/ssr.ts, packages/rex/src/vite/prerender.ts, packages/rex/src/cli/commands/build.ts"
+symbol = "createRexEntry baseUrl in entryTree, prerenderBuild rex options, ActionForm useFormApiOrigin"
+observed = "2.8 makes a hydrated ActionForm post to <client.apiOrigin>/rex/form/<action> (the runtime that the static entry wires with baseUrl apiOrigin and apiFetch), but the server render and the static prerender build the runtime with baseUrl url.origin and buildApp passes the prerender pluginOptions without apiOrigin, so the prerendered HTML of a static build with client.apiOrigin still carries action=/rex/form/<action> until hydration, and a form submitted without JavaScript posts to the static host; read from ssr.ts entryTree and build.ts buildApp at revision f1e70bc plus the 2.8 changes."
+assumption = "Task 3.3 passes client.apiOrigin to the prerender (and the SSR runtime) so the server-rendered ActionForm action is the absolute apiOrigin URL, matching the hydrated form; the site has no mutating actions, so it does not meet this."
+severity = "low"

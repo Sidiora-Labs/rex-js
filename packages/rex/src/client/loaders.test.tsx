@@ -1,5 +1,5 @@
-import { ORPCError } from "@orpc/client";
-import { QueryClient } from "@tanstack/react-query";
+import { ORPCError, createORPCClient } from "@orpc/client";
+import { QueryClient, focusManager, onlineManager } from "@tanstack/react-query";
 import { act, cleanup, waitFor } from "@testing-library/react";
 import type { ComponentType } from "react";
 import { afterEach, beforeAll, describe, expect, expectTypeOf, it, vi } from "vitest";
@@ -16,7 +16,10 @@ import { createRexServer } from "../server/app.ts";
 import { memoryLedger } from "../server/audit.ts";
 import { RENDER_STATUS } from "../server/routes/render.ts";
 import { createRexRenderer, registerPageRenderer } from "../server/ssr.ts";
+import { STATIC_HOST_ENV_KEY } from "../vite/entry-module.ts";
 import { readSidecar } from "./agent/sidecar.tsx";
+import { createRexLink } from "./app.tsx";
+import type { RexClient } from "./context.ts";
 import { startRexEntry, type RexEntryBundle, type StartedRex } from "./entry.tsx";
 import { readRexData, type HydrationMismatch } from "./hydrate.ts";
 import {
@@ -24,6 +27,8 @@ import {
   RexLoaderError,
   isServerSeeded,
   loaderQueryKey,
+  loaderQueryOptions,
+  pageLoader,
   useLoader,
   useLoaders,
   type LoaderName,
@@ -31,6 +36,7 @@ import {
   type LoaderResults,
 } from "./loaders.ts";
 import { definePageModules, region, view, type PageModuleSet } from "./page.tsx";
+import { STATIC_LOADER_DEFAULTS, isStaticHost } from "./static-host.ts";
 
 interface Note {
   readonly id: string;
@@ -680,5 +686,103 @@ describe("page loaders", () => {
     );
     expect(readSidecar(container)).toMatchObject({ page: "gone", state: "terminal-error" });
     expect(calls.goneFeed).toBe(1);
+  });
+});
+
+describe("page loaders in a static build", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    focusManager.setFocused(undefined);
+    onlineManager.setOnline(true);
+  });
+
+  async function hydrateNotes(queryClient: QueryClient): Promise<HTMLElement> {
+    const response = await server.fetch(request("/notes"));
+    expect(response.status).toBe(RENDER_STATUS.page);
+    const container = mountDocument(await response.text(), "/notes");
+    const mismatches: HydrationMismatch[] = [];
+    await hydrateDocument(container, queryClient, mismatches);
+    await settle();
+    expect(mismatches).toEqual([]);
+    return container;
+  }
+
+  async function focusAndReconnect(): Promise<void> {
+    await act(async () => {
+      focusManager.setFocused(false);
+      focusManager.setFocused(true);
+    });
+    await act(async () => {
+      onlineManager.setOnline(false);
+      onlineManager.setOnline(true);
+    });
+    await settle();
+  }
+
+  it("configures every loader query with staleTime Infinity and no refetch on focus, reconnect or mount", () => {
+    const client = createORPCClient<RexClient>(createRexLink("http://rex.test", serverFetch));
+    const fresh = loaderQueryOptions({
+      page: freshPage,
+      loader: pageLoader(freshPage, "notes"),
+      params: {},
+      client,
+    });
+    expect(isStaticHost()).toBe(false);
+    expect(fresh.staleTime).toBe(60_000);
+    expect(fresh.refetchOnWindowFocus).toBeUndefined();
+    expect(fresh.refetchOnReconnect).toBeUndefined();
+
+    vi.stubEnv(STATIC_HOST_ENV_KEY, "true");
+    expect(isStaticHost()).toBe(true);
+    expect(STATIC_LOADER_DEFAULTS).toEqual({
+      staleTime: Number.POSITIVE_INFINITY,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+    });
+    for (const declared of [notesPage, freshPage]) {
+      for (const consumer of [false, true]) {
+        const options = loaderQueryOptions({
+          page: declared,
+          loader: pageLoader(declared, "notes"),
+          params: {},
+          client,
+          consumer,
+        });
+        expect(options).toMatchObject(STATIC_LOADER_DEFAULTS);
+        expect(options.queryKey).toEqual(loaderQueryKey(declared.id, "notes", {}));
+        expect(options.enabled).toBe(true);
+      }
+    }
+  });
+
+  it("refetches a hydrated loader on window focus outside a static build", async () => {
+    resetData();
+    await hydrateNotes(quietClient());
+    expect(rpcCalls).toEqual([]);
+    await focusAndReconnect();
+    expect(rpcCalls).toContain("list-notes");
+  });
+
+  it("reads a hydrated loader from its dehydrated data and never refetches it on focus, reconnect or remount", async () => {
+    resetData();
+    vi.stubEnv(STATIC_HOST_ENV_KEY, "true");
+    const queryClient = quietClient();
+    const container = await hydrateNotes(queryClient);
+    expect(calls.listNotes).toBe(1);
+    expect(container.querySelector('[data-testid="second-list"]')?.textContent).toBe(
+      "First noteSecond note",
+    );
+    await focusAndReconnect();
+    expect(rpcCalls).toEqual([]);
+
+    await unmountAll();
+    const remounted = await mount("/notes", queryClient);
+    expect(remounted.querySelector('[data-testid="first-list"]')?.textContent).toBe(
+      "First noteSecond note",
+    );
+    await focusAndReconnect();
+    expect(rpcCalls).toEqual([]);
+    expect(calls.listNotes).toBe(1);
   });
 });

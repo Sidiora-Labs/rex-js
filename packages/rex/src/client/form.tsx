@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useState,
+  useSyncExternalStore,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -13,7 +14,7 @@ import { issuePath, validateStandard, type StandardIssue } from "../core/standar
 import { actionLabel, type ActControlProps, type ActResult } from "./act.ts";
 import { useInvoke } from "./agent/confirm.tsx";
 import { outcomeErrors, readCookie, type FieldErrors } from "./agent/outcome.tsx";
-import { useManifest } from "./context.ts";
+import { apiFetch, useManifest, useRexRuntime } from "./context.ts";
 import { lazyModule, useLazyModule } from "./lazy.ts";
 import { APP_OUTCOME_KEY, useOutcome } from "./outcome.ts";
 import { useActivePage } from "./router.tsx";
@@ -27,6 +28,26 @@ export const FORM_ERRORS_KEY = "_form";
 
 export function formActionPath(actionId: string): string {
   return `${REX_FORM_PREFIX}/${actionId}`;
+}
+
+export function formActionUrl(actionId: string, apiOrigin: string | null): string {
+  const path = formActionPath(actionId);
+  return apiOrigin === null ? path : new URL(path, apiOrigin).toString();
+}
+
+function subscribeNever(): () => void {
+  return () => {};
+}
+
+export function useFormApiOrigin(): string | null {
+  const runtime = useRexRuntime();
+  const rendered = useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
+  if (!rendered || runtime.fetch !== apiFetch || runtime.baseUrl === undefined) return null;
+  return runtime.baseUrl;
 }
 
 export const CsrfTokenContext = createContext<string | null>(null);
@@ -236,6 +257,7 @@ export function ActionForm<A extends AnyAction>({
   onResult,
 }: ActionFormProps<A>) {
   const manifest = useManifest();
+  const apiOrigin = useFormApiOrigin();
   const active = useActivePage();
   const handle = useInvoke(declared);
   const csrf = useCsrfToken();
@@ -275,7 +297,7 @@ export function ActionForm<A extends AnyAction>({
   return (
     <ActionFormView
       actionId={declared.id}
-      path={formActionPath(declared.id)}
+      path={formActionUrl(declared.id, apiOrigin)}
       label={label}
       address={handle.controlProps["data-rex"] ?? declared.id}
       hidden={[
