@@ -226,7 +226,7 @@
     - Run the unchanged size test, the package build and the demo build; if a budget still fails, record the measured number, the five largest contributors and the cause as a blocker; never relax a budget.
     - _Requirements: 3.4, 7.1, 7.2, 5.1, 5.4, 11.3_
   - [ ] 7.3 Re-qualify the tasks that ended implemented once their blockers are merged
-    - For each of 0.7, 0.8, 1.7, 2.7, 3.7, 5.2, 5.5, 6.1, 7.1 and 7.4 (and 6.2 if it ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release.
+    - For each of 0.7, 0.8, 1.7, 2.7, 3.7, 5.2, 5.5, 6.1, 7.1, 7.4, 7.5 and 7.6 (and 6.2, 7.8 or 7.9 if they ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release.
     - _Requirements: 7.1, 22.2, 29.1, 32.1, 3.4, 16.2, 34.1, 12.3, 3.3, 25.2_
   - [ ] 7.4 rex/testing sends the request Origin and the demo page tests pass — **Implemented - qualification pending**
     - Make testServer and the helpers in src/testing send Origin: <server origin> on every request they issue (RPC, form and flow posts), the same header a browser sends, so the security middleware admits them; the Origin rule itself is not relaxed. Fix whatever else the demo page tests from 2.7 report inside src/testing or the demo tests, never by weakening an assertion; extend src/testing/testing.test.tsx with a case that proves a POST through the helpers is admitted and a foreign Origin is rejected.
@@ -266,6 +266,10 @@
     - The palette is a lazily loaded module: client/agent/palette.tsx exports a thin trigger that imports the cmdk palette module on the first open (mod+k, the data-rex trigger or ?act=) and the open is awaited where client/runtime.test.tsx relied on it being synchronous; devtools are excluded from production builds.
     - The edge entry carries no config parser and no zod: server/app.ts takes resolved options with config parsing left to the CLI and the vite plugin, server/form.ts decodes form fields through the Standard Schema interface, and src/zod-boundary.test.ts gains the client and edge entries; the client entry passes 30 KB and the edge entry 40 KB with the unchanged assertions.
     - _Requirements: 3.2, 3.4, 7.1, 12.3_
+  - [ ] 7.10 Generated apps are formatted as generated and prerendered pages carry the font preloads
+    - Every file rex new writes passes the rex/prettier preset untouched (qualification.751): the dataTemplate in cli/commands/new.ts and any other template string that the preset would rewrite are written in their formatted form, so rex check on a fresh app reports no format/prettier finding and the zero-findings assertions in commands.test.ts and new.test.ts pass without change.
+    - vite/prerender.ts creates its renderer with the resolved fonts, the same way the rex:render module does after 7.5, so prerendered ssg and static pages carry the font preloads and the font-display swap block; prerender.test.ts asserts a preload link for a fixture font.
+    - _Requirements: 13.2, 28.2_
 
 ## Task Dependency Graph
 
@@ -279,7 +283,7 @@
     { "id": 4,  "tasks": ["4.1", "4.2", "4.3", "4.4", "4.5"] },
     { "id": 5,  "tasks": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9"] },
     { "id": 6,  "tasks": ["6.1", "6.2", "6.3"] },
-    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9"] }
+    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9", "7.10"] }
   ]
 }
 ```
