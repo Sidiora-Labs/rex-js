@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { action } from "../core/action.ts";
+import { RexError } from "../core/errors.ts";
 import { entity } from "../core/entity.ts";
 import { page } from "../core/page.ts";
 import { always, policy } from "../core/policy.ts";
@@ -168,7 +169,13 @@ describe("buildManifest", () => {
       policy: { kind: "can", permission: "send", policy: "wallet" },
       recovery: "portfolio",
       draft: "route",
-      chrome: { header: true, nav: false, back: "portfolio", title: "Send" },
+      render: "ssr",
+      revalidate: null,
+      paths: false,
+      loaders: [],
+      cache: null,
+      transition: "none",
+      chrome: { header: true, nav: false, back: "portfolio", title: "Send", components: [] },
       regions: ["form", "confirm", "success"],
       overlays: [
         { id: "ContactPickerSheet", dismiss: "escape", binding: "region" },
@@ -208,6 +215,7 @@ describe("buildManifest", () => {
     expect(described?.label).toBe("Send");
     expect(described?.shortcut).toBe("mod+enter");
     expect(described?.invalidates).toEqual(["account", "token"]);
+    expect(described?.form).toBeNull();
     expect(described?.policy).toEqual({
       kind: "requires",
       unlocked: true,
@@ -286,6 +294,113 @@ describe("buildManifest", () => {
       'page "orphan" chrome.back names unknown page "home"',
     );
     expect(() => buildManifest(snapshotOf([]), { app: " " })).toThrow("app");
+  });
+});
+
+describe("0.2 manifest options", () => {
+  const listHoldings = action("list-holdings", {
+    input: z.object({ account: text() }),
+    output: z.object({ symbols: z.array(text()) }),
+    policy: always(),
+    effect: "read",
+    handler: () => ({ symbols: [] }),
+  });
+  const quote = action("quote", {
+    input: z.object({}),
+    output: z.object({ price: money() }),
+    policy: always(),
+    effect: "read",
+    handler: () => ({ price: "1" }),
+  });
+  const sendForm = action("send-form", {
+    input: z.object({ amount: money() }),
+    output: z.object({ txId: text() }),
+    policy: always(),
+    effect: "irreversible",
+    form: { redirect: "/", confirmTitle: "Send funds?" },
+    handler: () => ({ txId: "tx" }),
+  });
+  function Button() {
+    return null;
+  }
+  const statement = page("statement", {
+    route: "/statement/:account",
+    params: z.object({ account: text() }),
+    render: "ssg",
+    revalidate: 300,
+    paths: () => [{ account: "main" }],
+    load: { quote: { action: quote, input: () => ({}) }, holdings: listHoldings },
+    cache: { staleTime: 5_000 },
+    transition: "view",
+    actions: [sendForm],
+    chrome: { components: { Outcome: Button, Button } },
+  });
+  const plain = page("plain", { route: "/" });
+
+  function source(pages: readonly (typeof statement | typeof plain)[]): ManifestSource {
+    return {
+      entities: [],
+      actions: [listHoldings, quote, sendForm],
+      pages,
+      policies: [],
+    };
+  }
+
+  it("records render, revalidate, paths, loaders, cache, transition and chrome components", () => {
+    const manifest = buildManifest(source([statement, plain]));
+    const described = manifest.pages.find((item) => item.id === "statement");
+    expect(described).toMatchObject({
+      render: "ssg",
+      revalidate: 300,
+      paths: true,
+      loaders: [
+        { name: "holdings", action: "list-holdings", input: "params" },
+        { name: "quote", action: "quote", input: "mapped" },
+      ],
+      cache: { staleTime: 5_000 },
+      transition: "view",
+      chrome: {
+        header: true,
+        nav: true,
+        back: null,
+        title: "Statement",
+        components: ["Button", "Outcome"],
+      },
+    });
+    expect(stableStringify(manifest)).toContain('"components"');
+  });
+
+  it("uses the configured default render mode for pages that declare none", () => {
+    expect(buildManifest(source([plain])).pages[0]?.render).toBe("ssr");
+    expect(buildManifest(source([plain]), { render: "csr" }).pages[0]?.render).toBe("csr");
+    expect(buildManifest(source([statement]), { render: "csr" }).pages[0]?.render).toBe("ssg");
+  });
+
+  it("records the action form options", () => {
+    const manifest = buildManifest(source([plain]));
+    expect(manifest.actions.find((item) => item.id === "send-form")?.form).toEqual({
+      redirect: "/",
+      confirmTitle: "Send funds?",
+    });
+    expect(manifest.actions.find((item) => item.id === "quote")?.form).toBeNull();
+  });
+
+  it("rejects a loader whose action is not registered with REX209", () => {
+    const unregistered: ManifestSource = {
+      entities: [],
+      actions: [sendForm, listHoldings],
+      pages: [statement],
+      policies: [],
+    };
+    let failure: unknown;
+    try {
+      buildManifest(unregistered);
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(RexError);
+    expect((failure as RexError).code).toBe("REX209");
+    expect((failure as RexError).message).toContain('loader "quote" names action "quote"');
   });
 });
 

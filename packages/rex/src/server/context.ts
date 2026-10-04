@@ -15,6 +15,34 @@ export interface RexContext {
   readonly actor: Actor;
   readonly density: RexDensity;
   readonly confirm?: string | undefined;
+  readonly nonce?: string | undefined;
+  readonly locale?: string | undefined;
+}
+
+export interface RexRequestContext extends RexContext {
+  readonly nonce: string;
+}
+
+export function createNonce(): string {
+  return globalThis.crypto.randomUUID().replaceAll("-", "");
+}
+
+class RequestContext implements RexRequestContext {
+  readonly actor: Actor;
+  readonly density: RexDensity;
+  readonly confirm: string | undefined;
+  #nonce: string | null = null;
+
+  constructor(actor: Actor, density: RexDensity, confirm: string | undefined) {
+    this.actor = actor;
+    this.density = density;
+    this.confirm = confirm;
+  }
+
+  get nonce(): string {
+    if (this.#nonce === null) this.#nonce = createNonce();
+    return this.#nonce;
+  }
 }
 
 export type ActorResolver = (request: Request) => Actor | Promise<Actor>;
@@ -47,7 +75,7 @@ export function encodeActorHeaderValue(subject: Actor): string {
 export async function createRexContext(
   request: Request,
   resolveActor: ActorResolver,
-): Promise<RexContext> {
+): Promise<RexRequestContext> {
   const header = request.headers.get(DENSITY_HEADER);
   let density: RexDensity = DEFAULT_DENSITY;
   if (header !== null) {
@@ -56,5 +84,5 @@ export async function createRexContext(
   }
   const confirm = request.headers.get(CONFIRM_HEADER);
   const actor = await resolveActor(request);
-  return confirm === null || confirm === "" ? { actor, density } : { actor, density, confirm };
+  return new RequestContext(actor, density, confirm === null || confirm === "" ? undefined : confirm);
 }

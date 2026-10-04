@@ -9,6 +9,8 @@ import type { RexCliIO } from "../index.ts";
 import {
   CLIENT_IMPORT,
   CORE_IMPORT,
+  SERVER_IMPORT,
+  configTemplate,
   actionTemplate,
   appPaths,
   entityTemplate,
@@ -18,11 +20,12 @@ import {
   viewTemplate,
 } from "../templates.ts";
 import { INVALID_ARGUMENT, MAKE_REFUSED, MakeError, writePlan, type PlannedEntry } from "./make.ts";
+import { CONFIG_FILE } from "../../core/config.ts";
 
-export const SERVER_IMPORT = "@sidioralabs/rex/server";
+export { SERVER_IMPORT, configTemplate };
 export const REX_PACKAGE = "@sidioralabs/rex";
 export const APP_MODULE_TYPES = "rex-app.d.ts";
-export const CONFIG_FILE = "rex.config.ts";
+export { CONFIG_FILE };
 
 export const HOME_PAGE = "home";
 export const HOME_REGION = "welcome";
@@ -143,21 +146,6 @@ export function indexHtmlTemplate(name: string): string {
     '    <script type="module" src="/@rex/entry"></script>',
     "  </body>",
     "</html>",
-  );
-}
-
-export function configTemplate(): string {
-  return lines(
-    `import { anonymousActor } from "${CORE_IMPORT}";`,
-    `import { createRexServer, memoryLedger } from "${SERVER_IMPORT}";`,
-    'import app from "rex:app";',
-    "",
-    "export default createRexServer({",
-    "  registry: app.registry,",
-    "  ledger: memoryLedger(),",
-    "  actor: () => anonymousActor,",
-    "  app: app.name,",
-    "});",
   );
 }
 

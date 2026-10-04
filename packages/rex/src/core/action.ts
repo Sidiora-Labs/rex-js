@@ -1,5 +1,6 @@
 import type { Actor } from "./actor.ts";
 import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts";
+import { RexDeclarationOptionError } from "./errors.ts";
 import { isValidName } from "./ids.ts";
 import { isPredicate, type Predicate } from "./policy.ts";
 import { toJsonSchema, z, type JsonSchema } from "./schema.ts";
@@ -92,6 +93,26 @@ export function validateShortcut(shortcut: string): string {
   return shortcut;
 }
 
+export interface ActionFormConfig {
+  readonly redirect?: string;
+  readonly confirmTitle?: string;
+}
+
+export interface ActionForm {
+  readonly redirect: string | null;
+  readonly confirmTitle: string | null;
+}
+
+export interface ActionJsonSchemaConfig {
+  readonly input?: JsonSchema;
+  readonly output?: JsonSchema;
+}
+
+export interface ActionJsonSchema {
+  readonly input: JsonSchema | null;
+  readonly output: JsonSchema | null;
+}
+
 export interface ActionContext {
   readonly actor: Actor;
 }
@@ -104,6 +125,8 @@ export interface ActionConfig<I extends z.ZodType, O extends z.ZodType> {
   readonly label?: string;
   readonly shortcut?: string;
   readonly invalidates?: readonly string[];
+  readonly form?: ActionFormConfig;
+  readonly jsonSchema?: ActionJsonSchemaConfig;
   readonly handler: (input: z.output<I>, ctx: ActionContext) => z.input<O> | Promise<z.input<O>>;
 }
 
@@ -122,6 +145,8 @@ export interface ActionDeclaration<
   readonly label: string | null;
   readonly shortcut: string | null;
   readonly invalidates: readonly string[];
+  readonly form: ActionForm | null;
+  readonly jsonSchema: ActionJsonSchema | null;
   readonly inputJsonSchema: JsonSchema;
   readonly outputJsonSchema: JsonSchema;
   handler(input: z.output<I>, ctx: ActionContext): z.input<O> | Promise<z.input<O>>;
@@ -144,8 +169,12 @@ const ACTION_KEYS = new Set([
   "label",
   "shortcut",
   "invalidates",
+  "form",
+  "jsonSchema",
   "handler",
 ]);
+const FORM_KEYS = new Set(["redirect", "confirmTitle"]);
+const JSON_SCHEMA_KEYS = new Set(["input", "output"]);
 
 export function action<const N extends string, I extends z.ZodType, O extends z.ZodType>(
   name: N,
@@ -154,6 +183,9 @@ export function action<const N extends string, I extends z.ZodType, O extends z.
   const id = declarationName("action", name);
   const fail = (field: string, problem: string): never => {
     throw new RexDeclarationError("action", id, field, problem);
+  };
+  const reject = (code: "REX207" | "REX208", field: string, problem: string): never => {
+    throw new RexDeclarationOptionError(code, { declaration: "action", id, field, problem });
   };
 
   if (!isPlainObject(config)) fail("config", "must be a declaration object");
@@ -187,17 +219,72 @@ export function action<const N extends string, I extends z.ZodType, O extends z.
   }
   if (typeof config.handler !== "function") fail("handler", "must be a function");
 
+  let form: ActionForm | null = null;
+  if (config.form !== undefined) {
+    if (!isPlainObject(config.form as unknown)) reject("REX207", "form", "must be an object");
+    for (const property of Object.keys(config.form)) {
+      if (!FORM_KEYS.has(property)) {
+        reject("REX207", `form.${property}`, "is not one of redirect, confirmTitle");
+      }
+    }
+    const { redirect, confirmTitle } = config.form;
+    if (
+      redirect !== undefined &&
+      (typeof redirect !== "string" || !redirect.startsWith("/") || redirect.startsWith("//"))
+    ) {
+      reject("REX207", "form.redirect", "must be a path on this origin starting with /");
+    }
+    if (
+      confirmTitle !== undefined &&
+      (typeof confirmTitle !== "string" || confirmTitle.trim() === "")
+    ) {
+      reject("REX207", "form.confirmTitle", "must be a non-empty string");
+    }
+    form = Object.freeze({ redirect: redirect ?? null, confirmTitle: confirmTitle ?? null });
+  }
+
+  let jsonSchema: ActionJsonSchema | null = null;
+  if (config.jsonSchema !== undefined) {
+    if (!isPlainObject(config.jsonSchema as unknown)) {
+      reject("REX208", "jsonSchema", "must be an object with input and output schemas");
+    }
+    for (const property of Object.keys(config.jsonSchema)) {
+      if (!JSON_SCHEMA_KEYS.has(property)) {
+        reject("REX208", `jsonSchema.${property}`, "is not one of input, output");
+      }
+    }
+    for (const side of ["input", "output"] as const) {
+      const declared = config.jsonSchema[side];
+      if (declared !== undefined && !isPlainObject(declared as unknown)) {
+        reject("REX208", `jsonSchema.${side}`, "must be a JSON Schema object");
+      }
+    }
+    jsonSchema = Object.freeze({
+      input: config.jsonSchema.input === undefined ? null : Object.freeze({ ...config.jsonSchema.input }),
+      output:
+        config.jsonSchema.output === undefined ? null : Object.freeze({ ...config.jsonSchema.output }),
+    });
+  }
+
   let inputJsonSchema: JsonSchema = {};
   let outputJsonSchema: JsonSchema = {};
-  try {
-    inputJsonSchema = toJsonSchema(config.input, "input");
-  } catch (error) {
-    fail("input", `cannot be represented as JSON Schema: ${(error as Error).message}`);
+  if (jsonSchema?.input != null) {
+    inputJsonSchema = jsonSchema.input;
+  } else {
+    try {
+      inputJsonSchema = toJsonSchema(config.input, "input");
+    } catch (error) {
+      fail("input", `cannot be represented as JSON Schema: ${(error as Error).message}`);
+    }
   }
-  try {
-    outputJsonSchema = toJsonSchema(config.output, "output");
-  } catch (error) {
-    fail("output", `cannot be represented as JSON Schema: ${(error as Error).message}`);
+  if (jsonSchema?.output != null) {
+    outputJsonSchema = jsonSchema.output;
+  } else {
+    try {
+      outputJsonSchema = toJsonSchema(config.output, "output");
+    } catch (error) {
+      fail("output", `cannot be represented as JSON Schema: ${(error as Error).message}`);
+    }
   }
 
   const handler = config.handler;
@@ -212,6 +299,8 @@ export function action<const N extends string, I extends z.ZodType, O extends z.
     label: config.label ?? null,
     shortcut: config.shortcut ?? null,
     invalidates: Object.freeze([...new Set(invalidates)]),
+    form,
+    jsonSchema,
     inputJsonSchema: Object.freeze(inputJsonSchema),
     outputJsonSchema: Object.freeze(outputJsonSchema),
     handler(input: z.output<I>, ctx: ActionContext) {

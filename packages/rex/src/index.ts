@@ -1,5 +1,9 @@
 export const REX_VERSION = "0.1.0";
 
+export * from "./core/errors.ts";
+export * from "./core/serialize.ts";
+export * from "./core/deprecated.ts";
+export * from "./core/config.ts";
 export * from "./core/ids.ts";
 export * from "./core/schema.ts";
 export * from "./core/entity.ts";

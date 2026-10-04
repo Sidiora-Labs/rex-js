@@ -7,12 +7,14 @@ import {
   type WriteManifestResult,
 } from "../../manifest/scan.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
+import { readAppConfig } from "./check.ts";
 
 export function register(program: Command, io: RexCliIO): void {
   program
     .command("manifest")
     .description(`write ${MANIFEST_FILE} and ${AGENTS_FILE} from the app declarations`)
     .action(async () => {
+      await readAppConfig(io.cwd, io, "manifest");
       let result: WriteManifestResult;
       try {
         result = await writeManifest(io.cwd);

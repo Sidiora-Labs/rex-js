@@ -10,6 +10,7 @@ import {
 } from "./action.ts";
 import { actor } from "./actor.ts";
 import { RexDeclarationError } from "./entity.ts";
+import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
 import { always, policy } from "./policy.ts";
 import { boolean, money, ref, text, z } from "./schema.ts";
 
@@ -179,5 +180,65 @@ describe("shortcuts", () => {
   it("reserves the palette and dismissal keys", () => {
     expect(() => validateShortcut("mod+k")).toThrow("reserved");
     expect(() => validateShortcut("escape")).toThrow("reserved");
+  });
+});
+
+describe("0.2 action options", () => {
+  it("defaults form and jsonSchema to null", () => {
+    expect(toggle.form).toBeNull();
+    expect(toggle.jsonSchema).toBeNull();
+  });
+
+  it("records form options", () => {
+    const declared = action("send-form", {
+      ...base,
+      effect: "irreversible",
+      form: { redirect: "/sent", confirmTitle: "Send funds?" },
+    });
+    expect(declared.form).toEqual({ redirect: "/sent", confirmTitle: "Send funds?" });
+    expect(Object.isFrozen(declared.form)).toBe(true);
+    const partial = action("partial", { ...base, form: {} });
+    expect(partial.form).toEqual({ redirect: null, confirmTitle: null });
+  });
+
+  it("uses a declared JSON Schema override instead of deriving one", () => {
+    const input = { type: "object", properties: { at: { type: "string", format: "date-time" } } };
+    const declared = action("schedule", {
+      ...base,
+      input: z.object({ at: z.date() }),
+      jsonSchema: { input },
+    });
+    expect(declared.jsonSchema).toEqual({ input, output: null });
+    expect(declared.inputJsonSchema).toEqual(input);
+    expect(declared.outputJsonSchema.type).toBe("object");
+  });
+
+  function optionError(run: () => unknown): { code: RexErrorCode; field: string } {
+    try {
+      run();
+    } catch (error) {
+      expect(error).toBeInstanceOf(RexDeclarationOptionError);
+      const failure = error as RexDeclarationOptionError;
+      expect(failure.declaration).toBe("action");
+      return { code: failure.code, field: failure.field };
+    }
+    throw new Error("expected a RexDeclarationOptionError");
+  }
+
+  it.each([
+    [{ form: "yes" }, "REX207", "form"],
+    [{ form: { redirect: "sent" } }, "REX207", "form.redirect"],
+    [{ form: { redirect: "//evil.example.com" } }, "REX207", "form.redirect"],
+    [{ form: { confirmTitle: " " } }, "REX207", "form.confirmTitle"],
+    [{ form: { method: "get" } }, "REX207", "form.method"],
+    [{ jsonSchema: [] }, "REX208", "jsonSchema"],
+    [{ jsonSchema: { params: {} } }, "REX208", "jsonSchema.params"],
+    [{ jsonSchema: { input: "object" } }, "REX208", "jsonSchema.input"],
+    [{ jsonSchema: { output: [] } }, "REX208", "jsonSchema.output"],
+  ] as const)("rejects %j with %s naming %s", (extra, code, field) => {
+    expect(optionError(() => action("probe", { ...base, ...extra } as never))).toEqual({
+      code,
+      field,
+    });
   });
 });

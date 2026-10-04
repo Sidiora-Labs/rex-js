@@ -14,6 +14,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Finding } from "../check/index.ts";
+import { resetDeprecations } from "../core/deprecated.ts";
 import { AGENTS_FILE, MANIFEST_FILE } from "../manifest/scan.ts";
 import type { Manifest } from "../manifest/types.ts";
 import { DIST_DIR, SERVER_FILE, SERVING_PREFIX, buildApp } from "./commands/build.ts";
@@ -284,6 +285,59 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     } finally {
       rmSync(stray, { recursive: true, force: true });
     }
+  });
+
+  it("rex new writes rex.config.ts with defineConfig and the commands read it", async () => {
+    const configFile = join(root, "rex.config.ts");
+    const generated = readFileSync(configFile, "utf8");
+    expect(generated).toContain("export default defineConfig({");
+    expect(generated).toContain("  app,");
+    expect(generated).toContain("server: (bundle) =>");
+
+    const legacy = [
+      'import { anonymousActor } from "@sidioralabs/rex";',
+      'import { createRexServer, memoryLedger } from "@sidioralabs/rex/server";',
+      'import app from "rex:app";',
+      "",
+      "export default createRexServer({",
+      "  registry: app.registry,",
+      "  ledger: memoryLedger(),",
+      "  actor: () => anonymousActor,",
+      "  app: app.name,",
+      "});",
+      "",
+    ].join("\n");
+    const invalid = generated.replace("  app,", '  app,\n  render: { default: "edge" },');
+    try {
+      resetDeprecations();
+      writeFileSync(configFile, legacy);
+      const first = await cli(root, "check", "--json");
+      expect(first.code).toBe(EXIT_OK);
+      expect(first.out).toBe("[]\n");
+      expect(first.err.split("\n").filter((line) => line.includes("REX101"))).toHaveLength(1);
+      expect(first.err).toContain("https://rex.sidioralabs.com/errors/REX101");
+      const again = await cli(root, "manifest");
+      expect(again.code).toBe(EXIT_OK);
+      expect(again.err).not.toContain("REX101");
+
+      writeFileSync(configFile, invalid);
+      const rejected = await cli(root, "check");
+      expect(rejected.code).toBe(EXIT_FAILURE);
+      expect(rejected.err).toContain("REX113");
+      expect(rejected.err).toContain('field "render.default"');
+      expect(rejected.err).toContain("https://rex.sidioralabs.com/errors/REX113");
+      const manifest = await cli(root, "manifest");
+      expect(manifest.code).toBe(EXIT_FAILURE);
+      expect(manifest.err).toContain("rex manifest: REX113");
+      const build = await cli(root, "build", "--no-check");
+      expect(build.code).toBe(EXIT_FAILURE);
+      expect(build.err).toContain("REX113");
+    } finally {
+      writeFileSync(configFile, generated);
+      resetDeprecations();
+    }
+    const restored = await cli(root, "check", "--json");
+    expect(restored).toEqual({ code: EXIT_OK, out: "[]\n", err: "" });
   });
 
   it("rex manifest, dev and build fail with exit 1 outside a Rex app", async () => {

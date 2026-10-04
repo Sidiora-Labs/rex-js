@@ -1,7 +1,10 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { action } from "./action.ts";
 import { RexDeclarationError } from "./entity.ts";
+import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
 import {
+  CHROME_COMPONENT_NAMES,
+  PAGE_RENDER_MODES,
   page,
   parseRoute,
   titleFromId,
@@ -379,5 +382,136 @@ describe("types", () => {
     >();
     expectTypeOf<StateProps["retry"]>().toEqualTypeOf<() => void>();
     expectTypeOf<StateProps["error"]>().toEqualTypeOf<Error | null>();
+  });
+});
+
+const holdings = action("holdings", {
+  input: z.object({ account: text() }),
+  output: z.object({ total: text() }),
+  policy: always(),
+  effect: "read",
+  handler: (input) => ({ total: input.account }),
+});
+const prices = action("prices", {
+  input: z.object({}),
+  output: z.object({ count: integer() }),
+  policy: always(),
+  effect: "read",
+  handler: () => ({ count: 1 }),
+});
+
+function optionError(run: () => unknown): { code: RexErrorCode; field: string } {
+  try {
+    run();
+  } catch (error) {
+    expect(error).toBeInstanceOf(RexDeclarationOptionError);
+    const failure = error as RexDeclarationOptionError;
+    expect(failure.declaration).toBe("page");
+    expect(failure.message).toContain(`field "${failure.field}"`);
+    return { code: failure.code, field: failure.field };
+  }
+  throw new Error("expected a RexDeclarationOptionError");
+}
+
+function ShellButton() {
+  return null;
+}
+
+describe("0.2 page options", () => {
+  it("defaults render to the app default, transition to none and leaves the rest unset", () => {
+    expect(PAGE_RENDER_MODES).toEqual(["ssr", "csr", "ssg", "static"]);
+    expect(portfolio.render).toBeNull();
+    expect(portfolio.revalidate).toBeNull();
+    expect(portfolio.paths).toBeNull();
+    expect(portfolio.load).toEqual({});
+    expect(portfolio.loaders).toEqual([]);
+    expect(portfolio.cache).toBeNull();
+    expect(portfolio.transition).toBe("none");
+    expect(portfolio.chrome.components).toBeUndefined();
+  });
+
+  it("records render, revalidate, paths, load, cache, transition and chrome components", async () => {
+    const paths = () => [{ account: "main" }, { account: "savings" }];
+    const declared = page("statement", {
+      route: "/statement/:account",
+      params: z.object({ account: text() }),
+      render: "ssg",
+      revalidate: 60,
+      paths,
+      load: {
+        holdings,
+        prices: { action: prices, input: () => ({}) },
+      },
+      cache: { staleTime: 30_000 },
+      transition: "view",
+      chrome: { title: "Statement", components: { Button: ShellButton } },
+    });
+    expect(declared.render).toBe("ssg");
+    expect(declared.revalidate).toBe(60);
+    expect(declared.paths).toBe(paths);
+    expect(await declared.paths?.()).toEqual([{ account: "main" }, { account: "savings" }]);
+    expect(declared.load.holdings).toBe(holdings);
+    expect(declared.loaders.map((loader) => [loader.name, loader.action.id])).toEqual([
+      ["holdings", "holdings"],
+      ["prices", "prices"],
+    ]);
+    expect(declared.loaders[0]?.input).toBeNull();
+    expect(declared.loaders[1]?.input?.({ account: "main" })).toEqual({});
+    expect(declared.cache).toEqual({ staleTime: 30_000 });
+    expect(declared.transition).toBe("view");
+    expect(declared.chrome.components).toEqual({ Button: ShellButton });
+    expect(declared.chrome.title).toBe("Statement");
+    expect(Object.isFrozen(declared.loaders)).toBe(true);
+    expect(Object.isFrozen(declared.chrome.components)).toBe(true);
+    expectTypeOf(declared.load.holdings).toEqualTypeOf<typeof holdings>();
+    const staticPage = page("about", { route: "/about/:section", params: z.object({ section: text() }), render: "static", paths: () => [{ section: "team" }] });
+    expect(staticPage.render).toBe("static");
+  });
+
+  it.each([
+    [{ route: "/", render: "edge" }, "REX200", "render"],
+    [{ route: "/", revalidate: 60 }, "REX201", "revalidate"],
+    [{ route: "/", render: "static", revalidate: 60 }, "REX201", "revalidate"],
+    [{ route: "/", render: "ssg", revalidate: 0 }, "REX201", "revalidate"],
+    [{ route: "/", render: "ssg", revalidate: 1.5 }, "REX201", "revalidate"],
+    [{ route: "/", render: "ssg", paths: () => [] }, "REX202", "paths"],
+    [
+      { route: "/a/:id", params: z.object({ id: text() }), render: "ssr", paths: () => [] },
+      "REX202",
+      "paths",
+    ],
+    [
+      { route: "/a/:id", params: z.object({ id: text() }), render: "ssg", paths: [] },
+      "REX202",
+      "paths",
+    ],
+    [{ route: "/", load: [] }, "REX203", "load"],
+    [{ route: "/", load: { Holdings: holdings } }, "REX203", "load.Holdings"],
+    [{ route: "/", load: { sent: send } }, "REX203", "load.sent"],
+    [{ route: "/", load: { list: { action: holdings } } }, "REX203", "load.list.input"],
+    [{ route: "/", load: { list: { action: send, input: () => ({}) } } }, "REX203", "load.list"],
+    [{ route: "/", load: { list: { action: "holdings", input: () => ({}) } } }, "REX203", "load.list"],
+    [{ route: "/", load: { list: { action: holdings, input: () => ({}), key: 1 } } }, "REX203", "load.list.key"],
+    [{ route: "/", load: { list: "holdings" } }, "REX203", "load.list"],
+    [{ route: "/", cache: { staleTime: -1 } }, "REX204", "cache.staleTime"],
+    [{ route: "/", cache: { gcTime: 1, staleTime: 1 } }, "REX204", "cache.gcTime"],
+    [{ route: "/", cache: 10 }, "REX204", "cache"],
+    [{ route: "/", transition: "fade" }, "REX205", "transition"],
+    [{ route: "/", chrome: { components: { Modal: ShellButton } } }, "REX206", "chrome.components.Modal"],
+    [{ route: "/", chrome: { components: { Button: "button" } } }, "REX206", "chrome.components.Button"],
+    [{ route: "/", chrome: { components: [] } }, "REX206", "chrome.components"],
+  ] as const)("rejects %j with %s naming %s", (config, code, field) => {
+    expect(optionError(() => page("probe", config as never))).toEqual({ code, field });
+  });
+
+  it("accepts every shell component name", () => {
+    const components = Object.fromEntries(CHROME_COMPONENT_NAMES.map((name) => [name, ShellButton]));
+    const declared = page("home", { route: "/", chrome: { components } });
+    expect(Object.keys(declared.chrome.components ?? {})).toEqual([
+      "Button",
+      "Sheet",
+      "PaletteItem",
+      "Outcome",
+    ]);
   });
 });

@@ -13,6 +13,7 @@ import type { Actor } from "../../core/actor.ts";
 import type { AnyPage } from "../../core/page.ts";
 import { evaluate } from "../../core/policy.ts";
 import type { JsonSchema } from "../../core/schema.ts";
+import { escapeInlineJson } from "../../core/serialize.ts";
 import type { RexDataState } from "../../core/states.ts";
 import {
   INVOCATION_ROUTES,
@@ -336,12 +337,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
 }
 
 export function serializeSidecar(payload: SidecarPayload): string {
-  return JSON.stringify(payload)
-    .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/&/g, "\\u0026")
-    .replace(/\u2028/g, "\\u2028")
-    .replace(/\u2029/g, "\\u2029");
+  return escapeInlineJson(payload);
 }
 
 let sidecarOwner: string | null = null;

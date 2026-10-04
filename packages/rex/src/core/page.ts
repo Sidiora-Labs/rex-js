@@ -1,5 +1,6 @@
 import type { AnyAction } from "./action.ts";
 import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts";
+import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
 import { isValidName, validateName } from "./ids.ts";
 import { overlayDeclaration, type OverlayDeclaration } from "./overlay.ts";
 import { always, isPredicate, type Predicate } from "./policy.ts";
@@ -16,11 +17,26 @@ export type PageDraft = "route" | "session" | "none";
 
 export const PAGE_DRAFTS: readonly PageDraft[] = ["route", "session", "none"];
 
+export const PAGE_RENDER_MODES = ["ssr", "csr", "ssg", "static"] as const;
+
+export type PageRender = (typeof PAGE_RENDER_MODES)[number];
+
+export const PAGE_TRANSITIONS = ["view", "none"] as const;
+
+export type PageTransition = (typeof PAGE_TRANSITIONS)[number];
+
+export const CHROME_COMPONENT_NAMES = ["Button", "Sheet", "PaletteItem", "Outcome"] as const;
+
+export type ChromeComponentName = (typeof CHROME_COMPONENT_NAMES)[number];
+
+export type PageChromeComponents = Readonly<Partial<Record<ChromeComponentName, unknown>>>;
+
 export interface PageChromeConfig {
   readonly header?: boolean;
   readonly nav?: boolean;
   readonly back?: string | null;
   readonly title?: string;
+  readonly components?: PageChromeComponents;
 }
 
 export interface PageChrome {
@@ -28,7 +44,33 @@ export interface PageChrome {
   readonly nav: boolean;
   readonly back: string | null;
   readonly title: string;
+  readonly components?: PageChromeComponents;
 }
+
+export interface PageLoaderInput<Act extends AnyAction = AnyAction> {
+  readonly action: Act;
+  input(params: Readonly<Record<string, unknown>>): unknown;
+}
+
+export type PageLoaderSpec = AnyAction | PageLoaderInput;
+
+export type PageLoadMap = Readonly<Record<string, PageLoaderSpec>>;
+
+export interface PageLoader {
+  readonly name: string;
+  readonly action: AnyAction;
+  readonly input: ((params: Readonly<Record<string, unknown>>) => unknown) | null;
+}
+
+export interface PageCacheConfig {
+  readonly staleTime: number;
+}
+
+export type PagePaths<P extends PageParamsSchema = PageParamsSchema> = () =>
+  | readonly z.input<P>[]
+  | Promise<readonly z.input<P>[]>;
+
+export const LOADER_NAME = /^[a-z][a-zA-Z0-9]*$/;
 
 export type RouteSegment =
   | { readonly kind: "static"; readonly value: string }
@@ -78,9 +120,16 @@ export interface PageConfig<
   R extends string,
   O extends string,
   A extends AnyAction,
+  L extends PageLoadMap = PageLoadMap,
 > {
   readonly route: string;
   readonly params?: P;
+  readonly render?: PageRender;
+  readonly revalidate?: number;
+  readonly paths?: PagePaths<P>;
+  readonly load?: L;
+  readonly cache?: PageCacheConfig;
+  readonly transition?: PageTransition;
   readonly policy?: Predicate;
   readonly recovery?: string;
   readonly draft?: PageDraft;
@@ -98,6 +147,7 @@ export interface PageDeclaration<
   R extends string = string,
   O extends string = string,
   A extends AnyAction = AnyAction,
+  L extends PageLoadMap = PageLoadMap,
 > {
   readonly kind: "page";
   readonly id: N;
@@ -114,6 +164,13 @@ export interface PageDeclaration<
   readonly regions: readonly R[];
   readonly overlays: readonly OverlayDeclaration<O>[];
   readonly states: readonly S[];
+  readonly render: PageRender | null;
+  readonly revalidate: number | null;
+  readonly paths: PagePaths<P> | null;
+  readonly load: L;
+  readonly loaders: readonly PageLoader[];
+  readonly cache: PageCacheConfig | null;
+  readonly transition: PageTransition;
 }
 
 export type AnyPage = PageDeclaration<
@@ -122,7 +179,8 @@ export type AnyPage = PageDeclaration<
   RexDataState,
   string,
   string,
-  AnyAction
+  AnyAction,
+  PageLoadMap
 >;
 
 export type PageParams<Pg> =
@@ -159,8 +217,30 @@ const PAGE_KEYS = new Set([
   "regions",
   "overlays",
   "states",
+  "render",
+  "revalidate",
+  "paths",
+  "load",
+  "cache",
+  "transition",
 ]);
-const CHROME_KEYS = new Set(["header", "nav", "back", "title"]);
+const CHROME_KEYS = new Set(["header", "nav", "back", "title", "components"]);
+const LOADER_INPUT_KEYS = new Set(["action", "input"]);
+
+function isActionDeclaration(value: unknown): value is AnyAction {
+  return (
+    typeof value === "object" && value !== null && (value as { kind?: unknown }).kind === "action"
+  );
+}
+
+function isComponentLike(value: unknown): boolean {
+  if (typeof value === "function") return true;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { $$typeof?: unknown }).$$typeof === "symbol"
+  );
+}
 
 export function page<
   const N extends string,
@@ -169,10 +249,17 @@ export function page<
   const R extends string = never,
   const O extends string = never,
   const A extends AnyAction = never,
->(name: N, config: PageConfig<P, S, R, O, A>): PageDeclaration<N, P, S[number], R, O, A> {
+  const L extends PageLoadMap = {},
+>(
+  name: N,
+  config: PageConfig<P, S, R, O, A, L>,
+): PageDeclaration<N, P, S[number], R, O, A, L> {
   const id = declarationName("page", name);
   const fail = (field: string, problem: string): never => {
     throw new RexDeclarationError("page", id, field, problem);
+  };
+  const reject = (code: RexErrorCode, field: string, problem: string): never => {
+    throw new RexDeclarationOptionError(code, { declaration: "page", id, field, problem });
   };
 
   if (!isPlainObject(config)) fail("config", "must be a declaration object");
@@ -254,12 +341,38 @@ export function page<
   ) {
     fail("chrome.title", "must be a non-empty string");
   }
-  const chrome: PageChrome = Object.freeze({
+  let components: PageChromeComponents | undefined;
+  if (chromeConfig.components !== undefined) {
+    if (!isPlainObject(chromeConfig.components as unknown)) {
+      reject("REX206", "chrome.components", "must map shell component names to components");
+    }
+    const entries: [string, unknown][] = [];
+    for (const [componentName, component] of Object.entries(
+      chromeConfig.components as Record<string, unknown>,
+    )) {
+      if (!(CHROME_COMPONENT_NAMES as readonly string[]).includes(componentName)) {
+        reject(
+          "REX206",
+          `chrome.components.${componentName}`,
+          `is not one of ${CHROME_COMPONENT_NAMES.join(", ")}`,
+        );
+      }
+      if (!isComponentLike(component)) {
+        reject("REX206", `chrome.components.${componentName}`, "must be a component");
+      }
+      entries.push([componentName, component]);
+    }
+    components = Object.freeze(Object.fromEntries(entries)) as PageChromeComponents;
+  }
+  const chromeBase = {
     header: chromeConfig.header ?? true,
     nav: chromeConfig.nav ?? true,
     back,
     title: chromeConfig.title ?? titleFromId(id),
-  });
+  };
+  const chrome: PageChrome = Object.freeze(
+    components === undefined ? chromeBase : { ...chromeBase, components },
+  );
 
   const regions = config.regions ?? [];
   if (!Array.isArray(regions)) fail("regions", "must be a list of region names");
@@ -297,6 +410,90 @@ export function page<
   if (!stateSet.has("ready")) fail("states", 'must include "ready"');
   const orderedStates = REX_DATA_STATES.filter((state) => stateSet.has(state));
 
+  let render: PageRender | null = null;
+  if (config.render !== undefined) {
+    if (!(PAGE_RENDER_MODES as readonly string[]).includes(config.render)) {
+      reject("REX200", "render", `must be one of ${PAGE_RENDER_MODES.join(", ")}`);
+    }
+    render = config.render;
+  }
+
+  let revalidate: number | null = null;
+  if (config.revalidate !== undefined) {
+    if (render !== "ssg") reject("REX201", "revalidate", 'is only allowed with render "ssg"');
+    if (!Number.isInteger(config.revalidate) || config.revalidate <= 0) {
+      reject("REX201", "revalidate", "must be a positive whole number of seconds");
+    }
+    revalidate = config.revalidate;
+  }
+
+  let paths: PagePaths<P> | null = null;
+  if (config.paths !== undefined) {
+    if (typeof config.paths !== "function") reject("REX202", "paths", "must be a function");
+    if (render !== "ssg" && render !== "static") {
+      reject("REX202", "paths", 'is only allowed with render "ssg" or "static"');
+    }
+    if (route.params.length === 0) {
+      reject("REX202", "paths", "is only allowed on a route with params");
+    }
+    paths = config.paths;
+  }
+
+  const loadConfig = (config.load ?? {}) as L;
+  if (!isPlainObject(loadConfig as unknown)) {
+    reject("REX203", "load", "must map loader names to read actions");
+  }
+  const loaders: PageLoader[] = [];
+  for (const [loaderName, spec] of Object.entries(loadConfig as PageLoadMap)) {
+    const field = `load.${loaderName}`;
+    if (!LOADER_NAME.test(loaderName)) {
+      reject("REX203", field, "must be a camelCase loader name");
+    }
+    let loaderAction: unknown = spec;
+    let loaderInput: PageLoader["input"] = null;
+    if (!isActionDeclaration(spec)) {
+      if (!isPlainObject(spec as unknown)) {
+        reject("REX203", field, "must be a read action or { action, input }");
+      }
+      for (const property of Object.keys(spec)) {
+        if (!LOADER_INPUT_KEYS.has(property)) {
+          reject("REX203", `${field}.${property}`, "is not one of action, input");
+        }
+      }
+      if (typeof spec.input !== "function") {
+        reject("REX203", `${field}.input`, "must be a function from the page params to the input");
+      }
+      loaderAction = spec.action;
+      const mapper = spec.input.bind(spec);
+      loaderInput = (params) => mapper(params);
+    }
+    if (!isActionDeclaration(loaderAction)) {
+      reject("REX203", field, "must reference an action declaration");
+    }
+    const declared = loaderAction as AnyAction;
+    if (declared.effect !== "read") {
+      reject("REX203", field, `references action "${declared.id}" whose effect is not read`);
+    }
+    loaders.push(Object.freeze({ name: loaderName, action: declared, input: loaderInput }));
+  }
+
+  let cache: PageCacheConfig | null = null;
+  if (config.cache !== undefined) {
+    if (!isPlainObject(config.cache as unknown)) reject("REX204", "cache", "must be an object");
+    for (const property of Object.keys(config.cache)) {
+      if (property !== "staleTime") reject("REX204", `cache.${property}`, "is not staleTime");
+    }
+    if (!Number.isInteger(config.cache.staleTime) || config.cache.staleTime < 0) {
+      reject("REX204", "cache.staleTime", "must be a whole number of milliseconds of zero or more");
+    }
+    cache = Object.freeze({ staleTime: config.cache.staleTime });
+  }
+
+  const transition = config.transition ?? "none";
+  if (!(PAGE_TRANSITIONS as readonly string[]).includes(transition)) {
+    reject("REX205", "transition", `must be one of ${PAGE_TRANSITIONS.join(", ")}`);
+  }
+
   return Object.freeze({
     kind: "page",
     id,
@@ -313,5 +510,12 @@ export function page<
     regions: Object.freeze([...regions]),
     overlays: Object.freeze(overlays),
     states: Object.freeze(orderedStates) as readonly S[number][],
+    render,
+    revalidate,
+    paths,
+    load: Object.freeze({ ...loadConfig }) as L,
+    loaders: Object.freeze(loaders),
+    cache,
+    transition,
   });
 }

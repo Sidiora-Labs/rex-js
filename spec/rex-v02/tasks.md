@@ -10,7 +10,7 @@
     - Create client/entry.tsx holding createRexEntry built from the provider list in client/providers.ts; split shell.tsx into client/shell/header.tsx, nav.tsx, outcome-slot.tsx and client/shell/slots.ts (ordered slot list) with shell.tsx composing them; add client/reset.ts exporting registerReset and resetAll for test helpers.
     - Keep every public export name identical so no existing test changes; run the full existing vite, server and client test files as the verify.
     - _Requirements: 1.1, 1.2, 1.3_
-  - [ ] 0.2 Add rex/config with defineConfig and the 0.2 page, action and context options
+  - [x] 0.2 Add rex/config with defineConfig and the 0.2 page, action and context options
     - Add core/errors.ts with the RexError class (code, hint, docs, file, line, column) and the initial catalog for REX1xx config and REX2xx declaration codes; add core/serialize.ts exporting escapeInlineJson used by every inline script Rex emits and make client/agent/sidecar.tsx use it.
     - Add core/config.ts exporting defineConfig, RexConfig and parseConfig implementing [design] config_schema in full (render, budgets, security with origins, csp, headers and secretNames, i18n, images, fonts, telemetry, ui, client, compiler, devtools, tailwind, check with tokens allow lists); export it from a new src/config.ts entry and from src/index.ts.
     - Extend page() with render, revalidate, paths, load, cache, transition and chrome.components per [design] page_options with validation and manifest output; extend action() with form and jsonSchema per [design] action_options; extend RexContext in server/context.ts with a per-request nonce (crypto.randomUUID based) and a locale field resolved later.
