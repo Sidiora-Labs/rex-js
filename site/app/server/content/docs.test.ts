@@ -4,7 +4,7 @@ import { REX_ERROR_CATALOG } from "@sidioralabs/rex";
 import { describe, expect, it } from "vitest";
 import { docFiles, docSlugs, listDocs, readDoc, readingOrder, searchEntries } from "./docs.ts";
 import { REPOSITORY_URL, repositoryRoot } from "./markdown.ts";
-import { buildSearchIndex } from "./search.ts";
+import { API_SECTION, buildSearchIndex, searchSection } from "./search.ts";
 
 const RENDER_TIMEOUT = 60_000;
 
@@ -73,6 +73,7 @@ describe("the docs reader", () => {
         "a-static-page",
         "a-prerendered-page-with-regeneration",
         "build-and-serve",
+        "navigation-on-a-static-host",
         "checks",
       ]);
       expect(recipe.html).toContain('href="/docs/cli#rex-build"');
@@ -121,7 +122,11 @@ describe("the search index", () => {
       const convention = index.find((entry) => entry.route === "/docs/convention");
       expect(convention?.section).toBe("Guides");
       const errors = Object.keys(REX_ERROR_CATALOG).map((code) => `/errors/${code}`);
-      expect(index.map((entry) => entry.route).sort()).toEqual([...expected, ...errors].sort());
+      const api = (await searchSection(API_SECTION)).map((entry) => entry.route);
+      expect(api.length).toBeGreaterThan(0);
+      expect(index.map((entry) => entry.route).sort()).toEqual(
+        [...expected, ...errors, ...api].sort(),
+      );
       const rex209 = index.find((entry) => entry.route === "/errors/REX209");
       expect(rex209?.section).toBe("Errors");
       expect(rex209?.title.startsWith("REX209 ")).toBe(true);

@@ -28,10 +28,17 @@ function routesOn(dir: string, prefix: string): string[] {
 const GUIDES = routesOn("docs", "/docs");
 const RECIPES = routesOn("docs/recipes", "/docs/recipes");
 const ERRORS = Object.keys(REX_ERROR_CATALOG).map((code) => `/errors/${code}`);
-const INDEXED = GUIDES.length + RECIPES.length + ERRORS.length;
+let API: readonly string[] = [];
+let INDEXED = 0;
 
 beforeAll(async () => {
-  await Promise.all([listDocs("guide"), listDocs("recipe"), buildSearchIndex()]);
+  const [, , index] = await Promise.all([
+    listDocs("guide"),
+    listDocs("recipe"),
+    buildSearchIndex(),
+  ]);
+  API = index.filter((entry) => entry.section === "API").map((entry) => entry.route);
+  INDEXED = index.length;
 }, RENDER_TIMEOUT);
 
 describe("docs page", () => {
@@ -88,7 +95,7 @@ describe("docs page", () => {
           item.getAttribute("data-site-search-result"),
         );
       await waitFor(() => expect(results().length).toBe(INDEXED), READY);
-      expect([...results()].sort()).toEqual([...GUIDES, ...RECIPES, ...ERRORS].sort());
+      expect([...results()].sort()).toEqual([...GUIDES, ...RECIPES, ...ERRORS, ...API].sort());
       expect(within(search).getByText("Guides")).toBeTruthy();
       expect(within(search).getByText("Recipes")).toBeTruthy();
       expect(within(search).getByText("Errors")).toBeTruthy();
