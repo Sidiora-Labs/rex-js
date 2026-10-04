@@ -7,6 +7,7 @@ import { REX_SERVER_ONLY } from "../server-only.ts";
 import {
   BOUNDARY_IMPORT_CODE,
   SECRET_LEAK_CODE,
+  SERVER_ONLY_HANDLER_CODE,
   SERVER_ONLY_HANDLER_MESSAGE,
   boundaryError,
   boundaryViolation,
@@ -198,8 +199,11 @@ describe("vite/boundary helpers", () => {
     const output = stripActionHandlers(source, "/app/actions/one.ts");
     expect(output).not.toBeNull();
     const code = output as string;
-    const stub = `throw new Error(${JSON.stringify(SERVER_ONLY_HANDLER_MESSAGE)})`;
+    const stub = `throw new __rexServerOnlyError(${JSON.stringify(SERVER_ONLY_HANDLER_CODE)}, ${JSON.stringify(SERVER_ONLY_HANDLER_MESSAGE)})`;
     expect(code.split(stub)).toHaveLength(4);
+    expect(code.trimEnd().endsWith('import { RexError as __rexServerOnlyError } from "@sidioralabs/rex";')).toBe(
+      true,
+    );
     expect(code).not.toContain("../server/db.ts");
     expect(code).not.toContain("function load");
     expect(code).not.toContain("const run");

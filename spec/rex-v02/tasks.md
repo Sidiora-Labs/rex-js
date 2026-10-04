@@ -189,7 +189,7 @@
   - [x] 5.6 Page.List paged lists and the infinite-list trap rule
     - Add client/list.tsx exporting Page.List with page and size URL params and a load-more control that appends; use it for the demo holdings and regenerate the demo manifest; add traps/infinite-list to check/rules/traps.ts with fixtures; write client/list.test.tsx.
     - _Requirements: 33.1_
-  - [ ] 5.7 Convert the remaining server, client and Vite errors to catalogued codes
+  - [x] 5.7 Convert the remaining server, client and Vite errors to catalogued codes
     - Convert every throw in server/, client/, vite/, check/ and cli/commands to RexError with a catalogued code, adding codes to core/errors.ts where missing, and regenerate docs/errors.md; the test asserts no bare Error throw remains in those directories by scanning the sources.
     - Split the catalog for the budgets ([decision] zod_boundary, qualification.721): REX_ERROR_CATALOG in core/errors.ts keeps code and message only, and hint and docs move to core/errors.docs.ts, which the CLI, devtools, check, the dev overlay and tools/docs-errors.mjs consume and the core entry does not export, so no runtime bundle carries documentation strings; errors.test.ts proves every catalogued code has a docs entry and that errors.docs.ts is not reachable from src/index.ts.
     - _Requirements: 13.1_

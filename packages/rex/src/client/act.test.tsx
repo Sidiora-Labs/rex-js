@@ -429,9 +429,12 @@ describe("outcome store", () => {
     unsubscribe();
     store.set("home", { actionId: "rename", ok: true, message: "ok", at });
     expect(notified).toBe(4);
-    expect(() => store.set("home", { actionId: "", ok: true, message: "", at })).toThrow(TypeError);
+    const invalidOutcome = expect.objectContaining({ name: "RexError", code: "REX322" });
+    expect(() => store.set("home", { actionId: "", ok: true, message: "", at })).toThrow(
+      invalidOutcome,
+    );
     expect(() => store.set("home", { actionId: "x", ok: true, message: "", at: "later" })).toThrow(
-      TypeError,
+      invalidOutcome,
     );
   });
 });

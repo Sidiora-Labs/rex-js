@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { RexError } from "../../core/errors.ts";
 import { REX_DENSITY_HEADER } from "../../core/protocol.ts";
 import { DEFAULT_DENSITY, isRexDensity, type RexDensity } from "../../server/context.ts";
 import { RexRuntimeContext } from "../context.ts";
@@ -100,7 +101,10 @@ export function DensityProvider({ children, search, header, root }: DensityProvi
 
   const setDensity = useCallback((density: RexDensity) => {
     if (!isRexDensity(density)) {
-      throw new TypeError(`rex: density must be "default" or "agent", received ${String(density)}`);
+      throw new RexError(
+        "REX321",
+        `rex: density must be "default" or "agent", received ${String(density)}`,
+      );
     }
     writeStoredDensity(density);
     setChosen(density);
@@ -140,6 +144,7 @@ export function DensityProvider({ children, search, header, root }: DensityProvi
 
 export function useDensity(): DensityValue {
   const value = useContext(DensityContext);
-  if (value === null) throw new Error("rex: useDensity must be called inside DensityProvider");
+  if (value === null)
+    throw new RexError("REX306", "rex: useDensity must be called inside DensityProvider");
   return value;
 }

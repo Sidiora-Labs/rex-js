@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { normalizePath } from "vite";
+import { RexError } from "../core/errors.ts";
 import type { RexDocumentAssets, RexPageAssets } from "../server/ssr.ts";
 import { pageIdOfModule } from "./split.ts";
 import { DEFAULT_APP_DIR, PAGE_CHUNK_PREFIX } from "./virtual.ts";
@@ -26,9 +27,9 @@ export interface SsrAssetsOptions {
   readonly base?: string;
 }
 
-export class RexClientManifestError extends Error {
+export class RexClientManifestError extends RexError {
   constructor(message: string) {
-    super(`rex client manifest: ${message}`);
+    super("REX461", `rex client manifest: ${message}`);
     this.name = "RexClientManifestError";
   }
 }

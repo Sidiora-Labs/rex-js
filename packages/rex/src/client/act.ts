@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { useCallback, useMemo, useState } from "react";
 import * as zm from "zod/mini";
 import type { ActionInput, ActionOutput, AnyAction } from "../core/action.ts";
+import { RexError, isRexError } from "../core/errors.ts";
 import { actionAddress } from "../core/ids.ts";
 import { evaluate, type ReasonCode } from "../core/policy.ts";
 import { formatIssues, validateStandard } from "../core/standard.ts";
@@ -61,6 +62,7 @@ export function describeError(error: unknown): { code: string; message: string }
   if (error instanceof ORPCError) {
     return { code: String(error.code), message: error.message };
   }
+  if (isRexError(error)) return { code: error.code, message: error.detail };
   if (error instanceof Error) return { code: "ERROR", message: error.message };
   return { code: "ERROR", message: String(error) };
 }
@@ -78,7 +80,7 @@ export async function inputProblem(declared: AnyAction, input: unknown): Promise
 export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
   const registry = useRegistry();
   if (registry.find("action", declared.id) !== declared) {
-    throw new Error(`rex: action "${declared.id}" is not registered in this app`);
+    throw new RexError("REX301", `rex: action "${declared.id}" is not registered in this app`);
   }
   const subject = useActor();
   const client = useRexClient();
@@ -98,7 +100,10 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
         confirmToken === undefined ? await call(input) : await call(input, { context: { confirmToken } });
       const parsed = await validateStandard(declared.output, raw);
       if (parsed.issues !== undefined) {
-        throw new Error(`the server returned an invalid output: ${formatIssues(parsed.issues)}`);
+        throw new RexError(
+          "REX309",
+          `the server returned an invalid output: ${formatIssues(parsed.issues)}`,
+        );
       }
       return parsed.value as ActionOutput<A>;
     },
@@ -130,7 +135,8 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
       const raw = await procedureOf(client, CONFIRM_PROCEDURE)(request);
       const parsed = await validateStandard(confirmGrantSchema, raw);
       if (parsed.issues !== undefined) {
-        throw new Error(
+        throw new RexError(
+          "REX309",
           `the confirm procedure returned an invalid grant: ${formatIssues(parsed.issues)}`,
         );
       }

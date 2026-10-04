@@ -13,6 +13,7 @@ import {
 import { matchRoute, useLocation, useRouter, useSearch } from "wouter";
 import { actor as createActor, anonymousActor, type Actor, type ActorInput } from "../core/actor.ts";
 import { isPlainObject } from "../core/entity.ts";
+import { RexError, type RexErrorCode } from "../core/errors.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import { MANIFEST_VERSION, type Manifest } from "../manifest/types.ts";
 import {
@@ -80,9 +81,9 @@ type Startup =
   | { readonly status: "ready"; readonly value: StartupValue }
   | { readonly status: "error"; readonly message: string };
 
-export class RexStartupError extends Error {
-  constructor(message: string) {
-    super(`rex startup: ${message}`);
+export class RexStartupError extends RexError {
+  constructor(message: string, code: RexErrorCode = "REX311") {
+    super(code, `rex startup: ${message}`);
     this.name = "RexStartupError";
   }
 }
@@ -152,7 +153,7 @@ export function checkManifest(manifest: Manifest, registry: RegistrySnapshot): M
 function resolveBase(baseUrl: string | undefined): string {
   const base = baseUrl ?? globalThis.location?.origin;
   if (typeof base !== "string" || !/^https?:\/\//.test(base)) {
-    throw new RexStartupError("baseUrl must be an http(s) origin when the page has no location");
+    throw new RexStartupError("baseUrl must be an http(s) origin when the page has no location", "REX323");
   }
   return base;
 }
@@ -252,7 +253,7 @@ function PassthroughDensity({ children }: DensitySlotProps) {
 
 export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
   if (typeof options !== "object" || options === null || options.registry === undefined) {
-    throw new TypeError("createRexApp: a frozen registry is required");
+    throw new RexError("REX329", "createRexApp: a frozen registry is required");
   }
   const registry = options.registry;
   const base = resolveBase(options.baseUrl);

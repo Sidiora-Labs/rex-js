@@ -1,6 +1,7 @@
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { RexError } from "../core/errors.ts";
 import type { RexApp } from "./engine.ts";
 
 export const SEVERITIES = ["error", "warning"] as const;
@@ -41,27 +42,28 @@ export function isRuleId(value: unknown): value is string {
 
 export function finding(input: FindingInput): Finding {
   if (typeof input.rule !== "string" || !FINDING_RULE_PATTERN.test(input.rule)) {
-    throw new TypeError(
+    throw new RexError(
+      "REX504",
       `finding: rule ${JSON.stringify(input.rule)} must be "<rule>" or "<rule>/<code>" in kebab-case`,
     );
   }
   const severity = input.severity ?? "error";
   if (!(SEVERITIES as readonly string[]).includes(severity)) {
-    throw new TypeError(`finding: severity must be one of ${SEVERITIES.join(", ")}`);
+    throw new RexError("REX504", `finding: severity must be one of ${SEVERITIES.join(", ")}`);
   }
   if (typeof input.file !== "string" || input.file.length === 0) {
-    throw new TypeError("finding: file must be a non-empty path");
+    throw new RexError("REX504", "finding: file must be a non-empty path");
   }
   const line = input.line ?? 1;
   const column = input.column ?? 1;
   if (!Number.isInteger(line) || line < 1 || !Number.isInteger(column) || column < 1) {
-    throw new TypeError("finding: line and column must be positive integers");
+    throw new RexError("REX504", "finding: line and column must be positive integers");
   }
   if (typeof input.message !== "string" || input.message.trim() === "") {
-    throw new TypeError("finding: message must be a non-empty string");
+    throw new RexError("REX504", "finding: message must be a non-empty string");
   }
   if (typeof input.hint !== "string" || input.hint.trim() === "") {
-    throw new TypeError("finding: hint must be a non-empty string");
+    throw new RexError("REX504", "finding: hint must be a non-empty string");
   }
   return Object.freeze({
     rule: input.rule,
@@ -87,13 +89,13 @@ export interface Rule {
 
 export function defineRule(rule: Rule): Rule {
   if (!isRuleId(rule.id)) {
-    throw new TypeError(`defineRule: id ${JSON.stringify(rule.id)} must be kebab-case`);
+    throw new RexError("REX503", `defineRule: id ${JSON.stringify(rule.id)} must be kebab-case`);
   }
   if (typeof rule.description !== "string" || rule.description.trim() === "") {
-    throw new TypeError(`defineRule: rule "${rule.id}" needs a description`);
+    throw new RexError("REX503", `defineRule: rule "${rule.id}" needs a description`);
   }
   if (typeof rule.check !== "function") {
-    throw new TypeError(`defineRule: rule "${rule.id}" needs a check function`);
+    throw new RexError("REX503", `defineRule: rule "${rule.id}" needs a check function`);
   }
   return Object.freeze({ id: rule.id, description: rule.description, check: rule.check });
 }

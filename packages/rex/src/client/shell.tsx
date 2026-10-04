@@ -1,4 +1,5 @@
 import { useMemo, type ComponentType } from "react";
+import { RexError } from "../core/errors.ts";
 import type { AnyPage } from "../core/page.ts";
 import { validateStandardSync } from "../core/standard.ts";
 import { OutcomeRegion } from "./agent/outcome.tsx";
@@ -59,16 +60,22 @@ export function Shell({ pages, outcome }: ShellProps) {
     const byId = new Map<string, PageModuleSet>();
     for (const set of pages) {
       if (registry.find("page", set.page.id) !== set.page) {
-        throw new Error(`rex: Shell received modules for unregistered page "${set.page.id}"`);
+        throw new RexError(
+          "REX313",
+          `rex: Shell received modules for unregistered page "${set.page.id}"`,
+        );
       }
       if (byId.has(set.page.id)) {
-        throw new Error(`rex: Shell received two module sets for page "${set.page.id}"`);
+        throw new RexError(
+          "REX313",
+          `rex: Shell received two module sets for page "${set.page.id}"`,
+        );
       }
       byId.set(set.page.id, set);
     }
     for (const declared of registry.pages) {
       if (!byId.has(declared.id)) {
-        throw new Error(`rex: Shell has no module set for page "${declared.id}"`);
+        throw new RexError("REX313", `rex: Shell has no module set for page "${declared.id}"`);
       }
     }
     return byId;

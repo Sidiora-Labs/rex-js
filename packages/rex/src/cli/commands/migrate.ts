@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { RexError } from "../../core/errors.ts";
 import { ARGS_ERROR, ARGS_USAGE_EXIT, type RexCommand as Command } from "../args.ts";
 import {
   CODEMOD_FILE,
@@ -34,13 +35,13 @@ export interface MigrateReport {
   readonly flags: readonly CodemodFlag[];
 }
 
-export class MigrateError extends Error {
-  readonly code: string;
+export class MigrateError extends RexError {
+  readonly cliCode: string;
 
-  constructor(message: string, code: string = ARGS_ERROR.invalidArgument) {
-    super(message);
+  constructor(message: string, cliCode: string = ARGS_ERROR.invalidArgument) {
+    super("REX611", message);
     this.name = "MigrateError";
-    this.code = code;
+    this.cliCode = cliCode;
   }
 }
 
@@ -73,10 +74,10 @@ export async function loadCodemods(dir: string = CODEMODS_DIR): Promise<readonly
     const loaded = (await import(pathToFileURL(file).href)) as { readonly codemod?: unknown };
     const stem = path.basename(file).replace(/\.(ts|js)$/, "");
     if (!isCodemod(loaded.codemod)) {
-      throw new Error(`rex: ${file} must export codemod (defineCodemod({ id, from, description, run }))`);
+      throw new RexError("REX612", `rex: ${file} must export codemod (defineCodemod({ id, from, description, run }))`);
     }
     if (loaded.codemod.id !== stem) {
-      throw new Error(`rex: ${file} exports codemod ${loaded.codemod.id}; its id must be ${stem}`);
+      throw new RexError("REX612", `rex: ${file} exports codemod ${loaded.codemod.id}; its id must be ${stem}`);
     }
     codemods.push(loaded.codemod);
   }
@@ -164,7 +165,7 @@ export function register(program: Command, io: RexCliIO): void {
         io.out(formatMigrateReport(await runMigrate(io.cwd, options.from)));
       } catch (error) {
         if (error instanceof MigrateError) {
-          command.error(error.message, { code: error.code, exitCode: ARGS_USAGE_EXIT });
+          command.error(error.detail, { code: error.cliCode, exitCode: ARGS_USAGE_EXIT });
         }
         throw error;
       }

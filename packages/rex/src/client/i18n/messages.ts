@@ -1,3 +1,4 @@
+import { RexError } from "../../core/errors.ts";
 import { formatMessage, type MessageValue, type MessageValues } from "./format.ts";
 
 export const MSG_PREFIX = "msg:";
@@ -24,7 +25,8 @@ export function isMessageRef(text: unknown): text is string {
 
 function assertKey(key: string): void {
   if (!isMessageKey(key)) {
-    throw new TypeError(
+    throw new RexError(
+      "REX316",
       `rex: message key ${JSON.stringify(key)} must be non-empty without spaces or "?"`,
     );
   }
@@ -59,15 +61,21 @@ export function parseMessageRef(text: string): MessageRef | null {
 
 export function validateMessages(locale: string, value: unknown): Messages {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new TypeError(`rex: app/locales/${locale}.json must be a flat object of messages`);
+    throw new RexError("REX316", `rex: app/locales/${locale}.json must be a flat object of messages`);
   }
   const messages: Record<string, string> = {};
   for (const [key, pattern] of Object.entries(value as Record<string, unknown>)) {
     if (!isMessageKey(key)) {
-      throw new TypeError(`rex: app/locales/${locale}.json has an invalid key ${JSON.stringify(key)}`);
+      throw new RexError(
+        "REX316",
+        `rex: app/locales/${locale}.json has an invalid key ${JSON.stringify(key)}`,
+      );
     }
     if (typeof pattern !== "string") {
-      throw new TypeError(`rex: app/locales/${locale}.json key "${key}" must be a string message`);
+      throw new RexError(
+        "REX316",
+        `rex: app/locales/${locale}.json key "${key}" must be a string message`,
+      );
     }
     messages[key] = pattern;
   }

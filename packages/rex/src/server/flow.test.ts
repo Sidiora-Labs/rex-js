@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { beforeEach, describe, expect, it } from "vitest";
 import { action } from "../core/action.ts";
 import { actor, anonymousActor, type Actor } from "../core/actor.ts";
+import { RexError } from "../core/errors.ts";
 import { flow, type AnyFlow } from "../core/flow.ts";
 import { memoryJournal } from "../core/journal.ts";
 import { always, can } from "../core/policy.ts";
@@ -247,10 +248,10 @@ describe("flow decision audit records", () => {
     const payout = payoutFlow();
     const missing = {} as Ledger;
     expect(() => buildFlowRouter([payout], missing)).toThrow(
-      new TypeError("buildFlowRouter: ledger must implement append and list"),
+      new RexError("REX400", "buildFlowRouter: ledger must implement append and list"),
     );
     expect(() =>
       mountFlows(new Hono(), { flows: [payout], actor: resolveActor, ledger: missing }),
-    ).toThrow(new TypeError("mountFlows: ledger must implement append and list"));
+    ).toThrow(new RexError("REX400", "mountFlows: ledger must implement append and list"));
   });
 });

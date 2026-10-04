@@ -95,7 +95,7 @@ export function appModuleConfig(options: {
 }
 
 const APP_HELPERS = `function rexFail(file, problem) {
-  throw new Error("rex:app: " + file + " " + problem);
+  throw new RexError("REX462", "rex:app: " + file + " " + problem);
 }
 function rexDeclarations(namespace, kind, file) {
   const found = [];
@@ -147,7 +147,7 @@ export function generateAppModule(scan: AppScan, options: AppModuleOptions): str
   const shell = shellComponentsLines(options.shellComponents, options.client);
   const i18n = options.config.i18n;
   const imports: string[] = [
-    `import { buildManifest, createRegistry } from ${literal(options.core)};`,
+    `import { RexError, buildManifest, createRegistry } from ${literal(options.core)};`,
     ...shell.imports,
   ];
   const messages: string[] = [];

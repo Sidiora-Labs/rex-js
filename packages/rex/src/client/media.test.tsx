@@ -154,7 +154,7 @@ describe("Script", () => {
       />,
     );
     await waitFor(() => expect(failures).toHaveLength(1));
-    expect(failures[0]?.message).toBe("Script: /vendor/broken.js failed to load");
+    expect(failures[0]?.message).toBe("REX326 Script: /vendor/broken.js failed to load");
     first.unmount();
     render(
       <Script
@@ -165,7 +165,7 @@ describe("Script", () => {
       />,
     );
     await waitFor(() => expect(failures).toHaveLength(2));
-    expect(failures[1]?.message).toBe("Script: /vendor/broken.js failed to load");
+    expect(failures[1]?.message).toBe("REX326 Script: /vendor/broken.js failed to load");
     expect(headScripts("/vendor/broken.js")).toHaveLength(1);
   });
 

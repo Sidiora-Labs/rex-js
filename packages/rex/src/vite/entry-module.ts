@@ -41,16 +41,13 @@ export function generateEntryModule(options: EntryModuleOptions): string {
     'import { StrictMode, createElement } from "react";',
     'import { createRoot } from "react-dom/client";',
     `import { createRexEntry } from ${JSON.stringify(options.client)};`,
-    `import { startRexEntry } from ${JSON.stringify(options.client)};`,
+    `import { findRootElement, startRexEntry } from ${JSON.stringify(options.client)};`,
     ...(apiOrigin === null
       ? []
       : [`import { ${API_FETCH_EXPORT} } from ${JSON.stringify(options.client)};`]),
     `import app from ${JSON.stringify(APP_MODULE_ID)};`,
     "",
-    `const container = document.getElementById(${JSON.stringify(rootElement)});`,
-    "if (container === null) {",
-    `  throw new Error(${JSON.stringify(`rex: index.html has no element with id "${rootElement}"`)});`,
-    "}",
+    `const container = findRootElement(${JSON.stringify(rootElement)});`,
     `if (container.hasAttribute(${JSON.stringify(SSR_ATTRIBUTE)})) {`,
     `  startRexEntry(container, app, { dev: import.meta.env.DEV${baseUrl === null ? "" : `, ${baseUrl}`} });`,
     "} else {",

@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import type { ComponentType, ReactNode } from "react";
 import { createModuleLoader, loadAppBundle, type ModuleLoader } from "../cli/load.ts";
 import { actor, anonymousActor, type Actor } from "../core/actor.ts";
+import { RexError } from "../core/errors.ts";
 import type { AnyPage } from "../core/page.ts";
 import type { AnyPolicy } from "../core/policy.ts";
 import { REX_DATA_STATES, STATE_EXPORT_NAMES, type RexDataState } from "../core/states.ts";
@@ -174,7 +175,8 @@ async function loadHappyDom(): Promise<typeof import("happy-dom")> {
   try {
     return await import("happy-dom");
   } catch (error) {
-    throw new Error(
+    throw new RexError(
+      "REX507",
       `rex check --runtime mounts pages in happy-dom, which could not be loaded (${(error as Error).message}); add it with pnpm add -D happy-dom`,
       { cause: error },
     );
@@ -237,7 +239,7 @@ async function settle(traffic: Traffic, timeoutMs: number, label: string): Promi
   let seen = -1;
   while (quiet < SETTLE_QUIET_TICKS) {
     if (Date.now() - started > timeoutMs) {
-      throw new Error(`${label} did not settle within ${timeoutMs} ms`);
+      throw new RexError("REX507", `${label} did not settle within ${timeoutMs} ms`);
     }
     await sleep(SETTLE_TICK_MS);
     if (traffic.pending === 0 && traffic.mutations === seen) {
@@ -714,10 +716,10 @@ async function loadExternal<T>(
 ): Promise<T> {
   const container = loader.vite.environments.ssr.pluginContainer;
   const importer = await container.resolveId(from, path.join(loader.root, "index.html"));
-  if (importer === null) throw new Error(`runRuntimeCheck: cannot resolve ${from}`);
+  if (importer === null) throw new RexError("REX507", `runRuntimeCheck: cannot resolve ${from}`);
   const resolved = await container.resolveId(specifier, importer.id);
   if (resolved === null || !path.isAbsolute(resolved.id)) {
-    throw new Error(`runRuntimeCheck: cannot resolve ${specifier} from ${importer.id}`);
+    throw new RexError("REX507", `runRuntimeCheck: cannot resolve ${specifier} from ${importer.id}`);
   }
   const loaded = (await import(pathToFileURL(resolved.id).href)) as T & { readonly default?: T };
   return loaded.default ?? loaded;
@@ -753,9 +755,11 @@ export async function runRuntimeCheck(
     };
     const actors = options.actors ?? defaultRuntimeActors(bundle.policies);
     const ids = actors.map((subject) => subject.id);
-    if (actors.length === 0) throw new Error("runRuntimeCheck: at least one actor is required");
+    if (actors.length === 0) {
+      throw new RexError("REX507", "runRuntimeCheck: at least one actor is required");
+    }
     if (new Set(ids).size !== ids.length) {
-      throw new Error(`runRuntimeCheck: actor ids must be unique, got ${ids.join(", ")}`);
+      throw new RexError("REX507", `runRuntimeCheck: actor ids must be unique, got ${ids.join(", ")}`);
     }
     return await inspect(runtime, dom, actors);
   } finally {

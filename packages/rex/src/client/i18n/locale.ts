@@ -1,4 +1,5 @@
 import type { I18nConfig, I18nRouting } from "../../core/config.ts";
+import { RexError } from "../../core/errors.ts";
 
 export const LOCALE_COOKIE = "rex-locale";
 export const LOCALE_COOKIE_MAX_AGE = 31_536_000;
@@ -26,14 +27,17 @@ export interface LocaleInputs {
 export function localeSettings(config: I18nConfig): LocaleSettings {
   const locales = config.locales;
   if (!Array.isArray(locales) || locales.length === 0) {
-    throw new TypeError("rex: i18n.locales must list at least one locale");
+    throw new RexError("REX316", "rex: i18n.locales must list at least one locale");
   }
   if (!locales.includes(config.default)) {
-    throw new TypeError(`rex: i18n.default "${config.default}" must be one of i18n.locales`);
+    throw new RexError(
+      "REX316",
+      `rex: i18n.default "${config.default}" must be one of i18n.locales`,
+    );
   }
   const routing = config.routing ?? "none";
   if (routing !== "prefix" && routing !== "none") {
-    throw new TypeError('rex: i18n.routing must be "prefix" or "none"');
+    throw new RexError("REX316", 'rex: i18n.routing must be "prefix" or "none"');
   }
   return Object.freeze({ locales: Object.freeze([...locales]), default: config.default, routing });
 }

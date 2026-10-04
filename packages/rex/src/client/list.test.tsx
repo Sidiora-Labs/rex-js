@@ -239,7 +239,9 @@ describe("Page.List", () => {
         "Page.List: size must be an integer 1..100, received 0",
       );
       cleanup();
-      expect(() => mount("/", <TokenList size={MAX_LIST_SIZE + 1} />)).toThrow(RangeError);
+      expect(() => mount("/", <TokenList size={MAX_LIST_SIZE + 1} />)).toThrow(
+        expect.objectContaining({ name: "RexError", code: "REX314" }),
+      );
       cleanup();
       expect(() => mount("/", <TokenList params={{ page: "draft" }} />)).toThrow(
         'Page.List: the page param "draft" is reserved by Rex',

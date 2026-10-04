@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import type { ActionInput, AnyAction } from "../../core/action.ts";
+import { RexError } from "../../core/errors.ts";
 import { actionAddress } from "../../core/ids.ts";
 import { validateStandard } from "../../core/standard.ts";
 import { actionLabel, describeError, useAct, type ActHandle, type ActResult } from "../act.ts";
@@ -37,7 +38,10 @@ ConfirmContext.displayName = "RexConfirm";
 export function useConfirm(): ConfirmFn {
   const confirm = useContext(ConfirmContext);
   if (confirm === null) {
-    throw new Error("rex: irreversible actions need a ConfirmProvider above the shell");
+    throw new RexError(
+      "REX306",
+      "rex: irreversible actions need a ConfirmProvider above the shell",
+    );
   }
   return confirm;
 }
@@ -239,7 +243,10 @@ PageInvokersContext.displayName = "RexPageInvokers";
 export function usePageInvokers(): PageInvokerSet {
   const invokers = useContext(PageInvokersContext);
   if (invokers === null) {
-    throw new Error("rex: palette, shortcuts and URL invocation must render inside PageInvokers");
+    throw new RexError(
+      "REX306",
+      "rex: palette, shortcuts and URL invocation must render inside PageInvokers",
+    );
   }
   return invokers;
 }

@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
   cpSync,
+  existsSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -11,17 +12,39 @@ import {
 } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer, normalizePath, type ErrorPayload, type HotPayload, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { formatFindings } from "../check/report.ts";
+import { defineRule } from "../check/rule.ts";
+import { INVALID_ARGUMENT, MAKE_REFUSED, MakeError } from "../cli/commands/make.ts";
+import { MigrateError } from "../cli/commands/migrate.ts";
+import { RexStartupError, createRexApp } from "../client/app.tsx";
+import { RexDataError } from "../client/hydrate.ts";
+import { MessageFormatError } from "../client/i18n/format.ts";
+import { RexPageModuleError } from "../client/page.tsx";
 import { buildManifest } from "../manifest/build.ts";
+import { RuntimeMissingError, assertPort } from "../server/adapters/runtime.ts";
+import { RexStaticPageError, parsePrerenderList } from "../server/adapters/static-cache.ts";
+import { validateAuditEntry } from "../server/audit.ts";
+import { RexDensityError } from "../server/context.ts";
+import { SERVER_ONLY_HANDLER_CODE, stripActionHandlers } from "../vite/boundary.ts";
 import { checkAppModules, rex } from "../vite/index.ts";
+import { RexAppScanError } from "../vite/scan.ts";
+import { RexClientManifestError } from "../vite/ssr-css.ts";
 import { action, validateShortcut } from "./action.ts";
 import { deprecated, deprecationMessage, hasWarned, resetDeprecations } from "./deprecated.ts";
 import { RexDeclarationError, entity } from "./entity.ts";
 import {
   REX_ERROR_AREAS,
+  REX_ERROR_DOCS,
+  errorArea,
+  errorHint,
+  explainRexError,
+  type RexErrorArea,
+} from "./errors.docs.ts";
+import {
   REX_ERROR_CATALOG,
   REX_ERROR_CODE_PATTERN,
   RexDeclarationOptionError,
@@ -33,7 +56,6 @@ import {
   isRexErrorCode,
   locateRexError,
   stackFrames,
-  type RexErrorArea,
   type RexErrorCode,
 } from "./errors.ts";
 import { pageId } from "./ids.ts";
@@ -53,16 +75,15 @@ const docsScript = join(repoRoot, "tools", "docs-errors.mjs");
 const codes = Object.keys(REX_ERROR_CATALOG) as RexErrorCode[];
 
 describe("the error catalog", () => {
-  it("holds every area from REX1xx to REX6xx under its prefix, each code with a title and hint", () => {
+  it("holds every area from REX1xx to REX6xx under its prefix, each code with a message", () => {
     expect(codes.length).toBeGreaterThan(0);
     for (const code of codes) {
-      const entry = REX_ERROR_CATALOG[code];
       expect(code).toMatch(REX_ERROR_CODE_PATTERN);
-      expect(entry.title.trim()).not.toBe("");
-      expect(entry.hint.trim()).not.toBe("");
-      expect(code.startsWith(REX_ERROR_AREAS[entry.area].prefix)).toBe(true);
+      expect(typeof REX_ERROR_CATALOG[code]).toBe("string");
+      expect(REX_ERROR_CATALOG[code].trim()).not.toBe("");
+      expect(code.startsWith(REX_ERROR_AREAS[errorArea(code)].prefix)).toBe(true);
     }
-    const areas = new Set(codes.map((code) => REX_ERROR_CATALOG[code].area));
+    const areas = new Set(codes.map((code) => errorArea(code)));
     expect([...areas].sort()).toEqual(
       (Object.keys(REX_ERROR_AREAS) as RexErrorArea[]).sort(),
     );
@@ -74,6 +95,15 @@ describe("the error catalog", () => {
     }
     expect(isRexErrorCode("REX999")).toBe(false);
     expect(isRexErrorCode("toString")).toBe(false);
+  });
+
+  it("keeps code and message only, with a docs entry holding the hint of every catalogued code", () => {
+    expect(Object.keys(REX_ERROR_DOCS).sort()).toEqual([...codes].sort());
+    for (const code of codes) {
+      expect(Object.keys(REX_ERROR_DOCS[code])).toEqual(["hint"]);
+      expect(REX_ERROR_DOCS[code].hint.trim()).not.toBe("");
+      expect(REX_ERROR_DOCS[code].hint).not.toBe(REX_ERROR_CATALOG[code]);
+    }
   });
 });
 
@@ -88,14 +118,21 @@ describe("RexError", () => {
     expect(error.name).toBe("RexError");
     expect(error.code).toBe("REX113");
     expect(error.message).toBe("REX113 rex.config.ts: render is wrong");
-    expect(error.hint).toBe(REX_ERROR_CATALOG.REX113.hint);
+    expect(error.hint).toBeNull();
+    expect(errorHint(error)).toBe(REX_ERROR_DOCS.REX113.hint);
     expect(error.docs).toBe("https://rex.sidioralabs.com/errors/REX113");
     expect(error.docs).toBe(errorDocs("REX113"));
     expect([error.file, error.line, error.column]).toEqual(["rex.config.ts", 4, 12]);
     expect(formatRexError(error)).toBe(
       [
         "REX113 rex.config.ts: render is wrong (rex.config.ts:4:12)",
-        `  hint: ${REX_ERROR_CATALOG.REX113.hint}`,
+        "  docs: https://rex.sidioralabs.com/errors/REX113",
+      ].join("\n"),
+    );
+    expect(explainRexError(error)).toBe(
+      [
+        "REX113 rex.config.ts: render is wrong (rex.config.ts:4:12)",
+        `  hint: ${REX_ERROR_DOCS.REX113.hint}`,
         "  docs: https://rex.sidioralabs.com/errors/REX113",
       ].join("\n"),
     );
@@ -106,8 +143,13 @@ describe("RexError", () => {
     const error = new RexError("REX100", "missing", { hint: "create it", cause });
     expect([error.file, error.line, error.column]).toEqual([null, null, null]);
     expect(error.hint).toBe("create it");
+    expect(errorHint(error)).toBe("create it");
     expect(error.cause).toBe(cause);
-    expect(formatRexError(error).split("\n")[0]).toBe("REX100 missing");
+    expect(formatRexError(error).split("\n")).toEqual([
+      "REX100 missing",
+      "  hint: create it",
+      "  docs: https://rex.sidioralabs.com/errors/REX100",
+    ]);
   });
 
   it("refuses an uncatalogued code", () => {
@@ -292,6 +334,134 @@ describe("catalogued codes in core and manifest", () => {
   });
 });
 
+const srcRoot = join(here, "..");
+const NATIVE_ERROR = "(?:Error|TypeError|RangeError|SyntaxError|ReferenceError|EvalError|URIError|AggregateError)";
+const BARE_THROW = new RegExp(`(?:\\bthrow\\s+|\\breject\\(\\s*)new\\s+${NATIVE_ERROR}\\(`);
+const NATIVE_SUBCLASS = new RegExp(`\\bclass\\s+(\\w+)\\s+extends\\s+${NATIVE_ERROR}\\b`, "g");
+const CONVERTED_DIRS = ["server", "client", "vite", "check", "cli/commands"] as const;
+const STATIC_SPECIFIER = /^(?:import|export)(\s+type)?\b[^;]*?\bfrom\s+["']([^"']+)["']/gm;
+const SIDE_EFFECT_SPECIFIER = /^import\s+["']([^"']+)["']/gm;
+const DYNAMIC_SPECIFIER = /\bimport\(\s*["']([^"']+)["']\s*\)/g;
+
+function sourceFiles(dir: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "fixtures") files.push(...sourceFiles(full));
+    } else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+function runtimeImports(file: string): string[] {
+  const source = readFileSync(file, "utf8");
+  const specifiers = [
+    ...[...source.matchAll(STATIC_SPECIFIER)]
+      .filter((match) => match[1] === undefined)
+      .map((match) => match[2] as string),
+    ...[...source.matchAll(SIDE_EFFECT_SPECIFIER)].map((match) => match[1] as string),
+    ...[...source.matchAll(DYNAMIC_SPECIFIER)].map((match) => match[1] as string),
+  ];
+  return specifiers
+    .filter((specifier) => specifier.startsWith("."))
+    .map((specifier) => join(dirname(file), specifier))
+    .filter((target) => existsSync(target));
+}
+
+describe("catalogued codes in server, client, vite, check and the CLI commands", () => {
+  it("leaves no bare Error throw and no native Error subclass but the two non-error signals", () => {
+    const scanned: string[] = [];
+    const subclasses: string[] = [];
+    for (const dir of CONVERTED_DIRS) {
+      for (const file of sourceFiles(join(srcRoot, dir))) {
+        const name = relative(srcRoot, file).split(sep).join("/");
+        const source = readFileSync(file, "utf8");
+        scanned.push(name);
+        expect(source, name).not.toMatch(BARE_THROW);
+        for (const match of source.matchAll(NATIVE_SUBCLASS)) {
+          subclasses.push(`${name} ${match[1] as string}`);
+        }
+      }
+    }
+    for (const name of [
+      "server/app.ts",
+      "client/app.tsx",
+      "vite/plugin.ts",
+      "check/engine.ts",
+      "cli/commands/make.ts",
+    ]) {
+      expect(scanned).toContain(name);
+    }
+    expect(subclasses.sort()).toEqual([
+      "client/loaders.ts RexLoaderError",
+      "server/ssr.ts RexClientRenderSignal",
+    ]);
+  });
+
+  it("makes the error classes of those directories catalogued RexErrors", () => {
+    const raised: readonly [Error, RexErrorCode][] = [
+      [new RexStartupError("x"), "REX311"],
+      [new RexStartupError("x", "REX323"), "REX323"],
+      [new RexDataError("x"), "REX312"],
+      [new RexPageModuleError("home", "x"), "REX313"],
+      [new MessageFormatError("{a", 2, "x"), "REX317"],
+      [new RexStaticPageError("home", "/", "x"), "REX405"],
+      [new RexDensityError("compact"), "REX321"],
+      [new RuntimeMissingError("Bun", "startBunServer"), "REX450"],
+      [new RexAppScanError("x"), "REX460"],
+      [new RexClientManifestError("x"), "REX461"],
+      [new MakeError(INVALID_ARGUMENT, "x"), "REX601"],
+      [new MakeError(MAKE_REFUSED, "x"), "REX602"],
+      [new MigrateError("x"), "REX611"],
+    ];
+    for (const [error, code] of raised) {
+      expect(isRexError(error), error.name).toBe(true);
+      expect((error as RexError).code, error.name).toBe(code);
+      expect(error.message.startsWith(`${code} `), error.name).toBe(true);
+      expect(errorHint(error as RexError).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("raises catalogued codes from the converted runtime, server, Vite and checker paths", () => {
+    expect(caught(() => createRexApp({} as never)).code).toBe("REX329");
+    expect(caught(() => validateAuditEntry({} as never)).code).toBe("REX402");
+    expect(caught(() => parsePrerenderList({ version: 0 })).code).toBe("REX404");
+    expect(caught(() => assertPort("startNodeServer", 70_000)).code).toBe("REX407");
+    expect(caught(() => formatFindings([], "xml" as never)).code).toBe("REX506");
+    expect(caught(() => defineRule({ id: "Bad", description: "d", check: () => [] })).code).toBe(
+      "REX503",
+    );
+    const stripped = stripActionHandlers(
+      [
+        'import { action } from "@sidioralabs/rex";',
+        'export const ping = action("ping", { handler: () => 1 });',
+      ].join("\n"),
+      "/app/actions/ping.ts",
+    );
+    expect(stripped).toContain(`"${SERVER_ONLY_HANDLER_CODE}"`);
+    expect(isRexErrorCode(SERVER_ONLY_HANDLER_CODE)).toBe(true);
+  });
+
+  it("keeps errors.docs.ts out of everything the core entry reaches", () => {
+    const docsModule = join(here, "errors.docs.ts");
+    const seen = new Set<string>();
+    const pending = [join(srcRoot, "index.ts")];
+    while (pending.length > 0) {
+      const file = pending.pop() as string;
+      if (seen.has(file)) continue;
+      seen.add(file);
+      pending.push(...runtimeImports(file));
+    }
+    expect(seen).toContain(join(here, "errors.ts"));
+    expect(seen).toContain(join(here, "page.ts"));
+    expect(seen).not.toContain(docsModule);
+    expect(runtimeImports(join(srcRoot, "cli", "commands", "check.ts"))).toContain(docsModule);
+  });
+});
+
 describe("docs/errors.md", () => {
   it("is generated from the catalog and the check fails when it is stale", () => {
     const current = spawnSync(process.execPath, [docsScript, "--check"], { encoding: "utf8" });
@@ -299,7 +469,7 @@ describe("docs/errors.md", () => {
     expect(current.status).toBe(0);
     const doc = readFileSync(join(repoRoot, "docs", "errors.md"), "utf8");
     for (const code of codes) {
-      expect(doc).toContain(`| [${code}](${errorDocs(code)}) | ${REX_ERROR_CATALOG[code].title} |`);
+      expect(doc).toContain(`| [${code}](${errorDocs(code)}) | ${REX_ERROR_CATALOG[code]} |`);
     }
     const dir = mkdtempSync(join(tmpdir(), "rex-errors-doc-"));
     try {
@@ -379,13 +549,13 @@ describe("the Vite error overlay", () => {
     expect(payload.err.plugin).toBe("rex");
     expect(payload.err.id).toBe(file);
     expect(payload.err.loc?.file).toBe(file);
-    expect(payload.err.loc?.line).toBe(3);
+    expect(payload.err.loc?.line).toBe(4);
     expect(payload.err.loc?.column).toBeGreaterThan(0);
-    expect(payload.err.frame).toContain('> 3 | export default page("note", {');
+    expect(payload.err.frame).toContain('> 4 | export default page("note", {');
     expect(payload.err.frame).toContain("^");
 
     const located = await checkAppModules(vite, join(root, "app"));
     expect(located?.code).toBe("REX213");
-    expect([located?.file, located?.line]).toEqual([file, 3]);
+    expect([located?.file, located?.line]).toEqual([file, 4]);
   }, 60_000);
 });

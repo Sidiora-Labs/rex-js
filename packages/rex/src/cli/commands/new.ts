@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RexCommand as Command } from "../args.ts";
+import { RexError } from "../../core/errors.ts";
 import { validateName } from "../../core/ids.ts";
 import { titleFromId } from "../../core/page.ts";
 import { REX_VERSION } from "../../index.ts";
@@ -79,7 +80,7 @@ function versionOf(manifest: PackageManifest, name: string): string {
     manifest.devDependencies?.[name] ??
     manifest.peerDependencies?.[name];
   if (version === undefined) {
-    throw new Error(`rex new: ${REX_PACKAGE} does not pin a version of ${name}`);
+    throw new RexError("REX603", `rex new: ${REX_PACKAGE} does not pin a version of ${name}`);
   }
   return version;
 }
@@ -355,7 +356,13 @@ export function register(program: Command, io: RexCliIO): void {
       try {
         written = await newApp(io.cwd, name, { ui: options.ui, install: options.install });
       } catch (error) {
-        if (error instanceof MakeError || error instanceof DesignxError) {
+        if (error instanceof MakeError) {
+          command.error(`rex new: ${error.detail}`, {
+            code: error.cliCode,
+            exitCode: error.exitCode,
+          });
+        }
+        if (error instanceof DesignxError) {
           command.error(`rex new: ${error.message}`, {
             code: error.code,
             exitCode: error.exitCode,

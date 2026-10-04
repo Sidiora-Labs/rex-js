@@ -3,6 +3,7 @@ import type { RouterClient } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { Hono } from "hono";
 import type { AnyAction } from "../core/action.ts";
+import { RexError } from "../core/errors.ts";
 import type { AnyFlow } from "../core/flow.ts";
 import { buildManifest, stableStringify, type ManifestSource } from "../manifest/build.ts";
 import { MANIFEST_VERSION, type Manifest } from "../manifest/types.ts";
@@ -62,7 +63,7 @@ export const REX_SERVER_COMPOSITION: RexServerComposition = {
 
 function assertActor(options: RexServerOptions<AnyAction>): void {
   if (typeof options.actor !== "function") {
-    throw new TypeError("createRexServer: actor must be a function from request to actor");
+    throw new RexError("REX400", "createRexServer: actor must be a function from request to actor");
   }
 }
 
@@ -82,7 +83,8 @@ export function mountRexServer<A extends AnyAction>(options: PrebuiltRexServerOp
     manifest === null ||
     (manifest as { readonly version?: unknown }).version !== MANIFEST_VERSION
   ) {
-    throw new TypeError(
+    throw new RexError(
+      "REX400",
       `createRexServer: manifest must be a version ${MANIFEST_VERSION} Rex manifest as written by rex build`,
     );
   }

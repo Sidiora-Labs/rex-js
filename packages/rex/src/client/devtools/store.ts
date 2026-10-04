@@ -1,4 +1,5 @@
 import { createContext, useContext, useSyncExternalStore } from "react";
+import { RexError } from "../../core/errors.ts";
 import type { Outcome } from "../outcome.ts";
 
 export const DEVTOOLS_PANELS = [
@@ -91,7 +92,7 @@ export function createDevtoolsStore(): DevtoolsStore {
     },
     showPanel(panel) {
       if (!(DEVTOOLS_PANELS as readonly string[]).includes(panel)) {
-        throw new TypeError(`rex devtools: unknown panel "${String(panel)}"`);
+        throw new RexError("REX328", `rex devtools: unknown panel "${String(panel)}"`);
       }
       if (state.panel !== panel) update({ panel });
     },
@@ -105,7 +106,10 @@ export function createDevtoolsStore(): DevtoolsStore {
       const stats = new Map(state.renders.map((entry) => [entry.address, entry]));
       for (const { address, durationMs } of samples) {
         if (!Number.isFinite(durationMs) || durationMs < 0) {
-          throw new RangeError(`rex devtools: render duration for ${address} must be non-negative`);
+          throw new RexError(
+            "REX328",
+            `rex devtools: render duration for ${address} must be non-negative`,
+          );
         }
         const previous = stats.get(address);
         stats.set(

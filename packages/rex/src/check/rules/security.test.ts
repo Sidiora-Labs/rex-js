@@ -94,7 +94,9 @@ describe("unsafeHtml", () => {
   });
 
   it("refuses anything but a string of markup and an allowed container", () => {
-    expect(() => unsafeHtml({ __html: "<b>x</b>" } as unknown as string)).toThrow(TypeError);
+    expect(() => unsafeHtml({ __html: "<b>x</b>" } as unknown as string)).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX314" }),
+    );
     expect(() => unsafeHtml("<b>x</b>", { as: "script" as UnsafeHtmlTag })).toThrow(
       "unsafeHtml: as must be one of div, span, section, article",
     );

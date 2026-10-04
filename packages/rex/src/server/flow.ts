@@ -2,6 +2,7 @@ import { ORPCError, os } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import type { Hono } from "hono";
 import type { ActionEffect } from "../core/action.ts";
+import { RexError } from "../core/errors.ts";
 import { FlowDecisionError, decide, runFlow, type AnyFlow } from "../core/flow.ts";
 import {
   completedSteps,
@@ -132,7 +133,7 @@ function assertLedger(caller: string, ledger: Ledger): void {
     typeof ledger.append !== "function" ||
     typeof ledger.list !== "function"
   ) {
-    throw new TypeError(`${caller}: ledger must implement append and list`);
+    throw new RexError("REX400", `${caller}: ledger must implement append and list`);
   }
 }
 
@@ -143,8 +144,10 @@ export function buildFlowRouter(flows: readonly AnyFlow[], ledger: Ledger) {
   const byId = new Map<string, AnyFlow>();
   for (const declared of flows) {
     if (declared.kind !== "flow")
-      throw new TypeError("buildFlowRouter: flows must be flow declarations");
-    if (byId.has(declared.id)) throw new Error(`buildFlowRouter: duplicate flow "${declared.id}"`);
+      throw new RexError("REX400", "buildFlowRouter: flows must be flow declarations");
+    if (byId.has(declared.id)) {
+      throw new RexError("REX401", `buildFlowRouter: duplicate flow "${declared.id}"`);
+    }
     byId.set(declared.id, declared);
   }
   return {
@@ -223,7 +226,7 @@ export interface MountFlowsOptions {
 
 export function mountFlows(app: Hono, options: MountFlowsOptions): Hono {
   if (typeof options.actor !== "function") {
-    throw new TypeError("mountFlows: actor must be a function from request to actor");
+    throw new RexError("REX400", "mountFlows: actor must be a function from request to actor");
   }
   assertLedger("mountFlows", options.ledger);
   const handler = new RPCHandler(buildFlowRouter(options.flows, options.ledger));

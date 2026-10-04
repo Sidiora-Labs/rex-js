@@ -57,7 +57,7 @@ export function loadTailwind(
     throw missingTailwind(options, specifier, error);
   }
   if (typeof loaded.default !== "function") {
-    throw missingTailwind(options, specifier, new TypeError(`${specifier} has no default plugin factory`));
+    throw missingTailwind(options, specifier, `${specifier} has no default plugin factory`);
   }
   return loaded.default as TailwindFactory;
 }

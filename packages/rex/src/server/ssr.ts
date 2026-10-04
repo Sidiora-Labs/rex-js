@@ -35,6 +35,7 @@ import {
 import { manifestParamsSchema, orderPages, resolvePage, type PageResolution } from "../client/router.tsx";
 import { NOT_FOUND_TITLE } from "../client/shell.tsx";
 import { resolveOptions, type FontSpec, type ResolvedFont } from "../core/config.ts";
+import { RexError } from "../core/errors.ts";
 import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from "../core/page.ts";
 import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import type { Manifest } from "../manifest/types.ts";
@@ -352,10 +353,10 @@ export function routedPathname(source: I18nSource | null, pathname: string): str
 export function createRexRenderer(options: RexRendererOptions): RexPageRenderer {
   const bundle = options.bundle;
   if (typeof bundle !== "object" || bundle === null || !Array.isArray(bundle.pages)) {
-    throw new TypeError("createRexRenderer: the rex:app bundle with registry and pages is required");
+    throw new RexError("REX313", "createRexRenderer: the rex:app bundle with registry and pages is required");
   }
   if (bundle.manifest === undefined) {
-    throw new TypeError("createRexRenderer: the bundle must carry its manifest");
+    throw new RexError("REX400", "createRexRenderer: the bundle must carry its manifest");
   }
   const manifest: Manifest = bundle.manifest;
   const resolved: ResolvedRendererOptions = {
@@ -501,7 +502,8 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     if (!resolution.policy.allowed || resolution.issues.length > 0) return true;
     const runner = loaderRunnerFor(request);
     if (runner === undefined) {
-      throw new Error(
+      throw new RexError(
+        "REX408",
         `rex: page "${declared.id}" declares loaders but the request was not served by createRexServer`,
       );
     }

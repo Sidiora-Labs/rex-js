@@ -1,6 +1,7 @@
 import type { Client } from "@orpc/client";
 import { createContext, useContext } from "react";
 import type { Actor } from "../core/actor.ts";
+import { RexError } from "../core/errors.ts";
 import {
   CONFIRM_PROCEDURE,
   REX_ACTOR_HEADER,
@@ -42,7 +43,7 @@ export type RexClient = { readonly [procedure: string]: RexProcedureClient };
 export function procedureOf(client: RexClient, id: string): RexProcedureClient {
   const procedure = client[id];
   if (typeof procedure !== "function") {
-    throw new Error(`rex: the oRPC client has no procedure "${id}"`);
+    throw new RexError("REX308", `rex: the oRPC client has no procedure "${id}"`);
   }
   return procedure;
 }
@@ -71,7 +72,10 @@ RexRuntimeContext.displayName = "RexRuntime";
 export function useRexRuntime(): RexRuntime {
   const runtime = useContext(RexRuntimeContext);
   if (runtime === null) {
-    throw new Error("rex: this hook must be called inside the RexApp returned by createRexApp()");
+    throw new RexError(
+      "REX306",
+      "rex: this hook must be called inside the RexApp returned by createRexApp()",
+    );
   }
   return runtime;
 }

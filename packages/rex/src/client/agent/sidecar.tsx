@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { ActionEffect, AnyAction } from "../../core/action.ts";
 import type { Actor } from "../../core/actor.ts";
+import { RexError } from "../../core/errors.ts";
 import { regionAddress } from "../../core/ids.ts";
 import type { AnyPage } from "../../core/page.ts";
 import { evaluate } from "../../core/policy.ts";
@@ -216,7 +217,10 @@ export function createAffordanceRegistry(): AffordanceRegistry {
       const bucket = byPage.get(page) ?? new Map<string, Affordance>();
       for (const entry of entries) {
         if (bucket.has(entry.id)) {
-          throw new Error(`rex: affordance "${entry.id}" is already registered on page "${page}"`);
+          throw new RexError(
+            "REX318",
+            `rex: affordance "${entry.id}" is already registered on page "${page}"`,
+          );
         }
       }
       for (const entry of entries) bucket.set(entry.id, entry);
@@ -301,7 +305,7 @@ export function actionRoutes(declared: AnyAction): readonly InvocationRoute[] {
 export function manifestInputSchema(manifest: Manifest, declared: AnyAction): JsonSchema {
   const listed = manifest.actions.find((entry) => entry.id === declared.id);
   if (listed === undefined) {
-    throw new Error(`rex: the manifest does not list action "${declared.id}"`);
+    throw new RexError("REX308", `rex: the manifest does not list action "${declared.id}"`);
   }
   return listed.input;
 }
@@ -388,13 +392,17 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
   const ids = new Set(actions.map((entry) => entry.id));
   for (const affordance of source.affordances ?? []) {
     if (ids.has(affordance.id)) {
-      throw new Error(
+      throw new RexError(
+        "REX318",
         `rex: affordance "${affordance.id}" collides with an action of page "${declared.id}"`,
       );
     }
     ids.add(affordance.id);
     if (!affordance.allowed && affordance.reason === null) {
-      throw new Error(`rex: disallowed affordance "${affordance.id}" must state its reason`);
+      throw new RexError(
+        "REX318",
+        `rex: disallowed affordance "${affordance.id}" must state its reason`,
+      );
     }
     actions.push({
       id: affordance.id,
@@ -493,7 +501,10 @@ function ActiveSidecar({ resolution }: { readonly resolution: PageResolution }) 
 
   useLayoutEffect(() => {
     if (sidecarOwner !== null && sidecarOwner !== owner) {
-      throw new Error("rex: a page renders exactly one RexSidecar; another one is mounted");
+      throw new RexError(
+        "REX318",
+        "rex: a page renders exactly one RexSidecar; another one is mounted",
+      );
     }
     sidecarOwner = owner;
     return () => {
@@ -531,7 +542,10 @@ export function readSidecar(root: ParentNode = globalThis.document): unknown {
     `script[type="${SIDECAR_MIME_TYPE}"]#${SIDECAR_ELEMENT_ID}`,
   );
   if (elements.length !== 1) {
-    throw new Error(`rex: expected exactly one sidecar element, found ${elements.length}`);
+    throw new RexError(
+      "REX318",
+      `rex: expected exactly one sidecar element, found ${elements.length}`,
+    );
   }
   return JSON.parse((elements[0] as Element).textContent ?? "") as unknown;
 }

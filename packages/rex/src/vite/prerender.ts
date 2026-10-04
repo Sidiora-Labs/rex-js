@@ -121,7 +121,9 @@ export async function prerenderPages(
 ): Promise<PrerenderList> {
   const { bundle, ssr, assets } = source;
   const manifest = bundle.manifest;
-  if (manifest === undefined) throw new TypeError("prerenderPages: the bundle must carry its manifest");
+  if (manifest === undefined) {
+    throw new RexError("REX400", "prerenderPages: the bundle must carry its manifest");
+  }
   const clientDir = resolve(options.clientDir);
   const origin = options.origin ?? PRERENDER_ORIGIN;
   const actor = options.actor ?? anonymousActor;

@@ -313,7 +313,7 @@ describe("createRexServer", () => {
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({
         code: "BAD_REQUEST",
-        message: 'x-rex-density must be one of default, agent, received "compact"',
+        message: 'REX321 x-rex-density must be one of default, agent, received "compact"',
       });
       expect(await ledger.list()).toEqual([]);
       await expect(

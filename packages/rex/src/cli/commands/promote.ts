@@ -193,8 +193,8 @@ export function register(program: Command, io: RexCliIO): void {
         result = promotePart(io.cwd, spec);
       } catch (error) {
         if (error instanceof MakeError) {
-          command.error(`rex promote: ${error.message}`, {
-            code: error.code,
+          command.error(`rex promote: ${error.detail}`, {
+            code: error.cliCode,
             exitCode: error.exitCode,
           });
         }

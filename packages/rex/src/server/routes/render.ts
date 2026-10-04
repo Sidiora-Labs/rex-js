@@ -1,5 +1,6 @@
 import type { Hono } from "hono";
 import { i18nFor } from "../../client/i18n/context.ts";
+import { RexError } from "../../core/errors.ts";
 import { STATIC_HEADER, staticCacheFor, type StaticHit } from "../adapters/static-cache.ts";
 import type { RexServerSetup } from "../app.ts";
 import {
@@ -36,10 +37,13 @@ const renderers = new WeakMap<object, RexPageRenderer>();
 
 export function registerPageRenderer(registry: object, renderer: RexPageRenderer): () => void {
   if (typeof registry !== "object" || registry === null) {
-    throw new TypeError("registerPageRenderer: registry must be the app registry object");
+    throw new RexError("REX400", "registerPageRenderer: registry must be the app registry object");
   }
   if (typeof renderer !== "object" || renderer === null || typeof renderer.render !== "function") {
-    throw new TypeError("registerPageRenderer: renderer must have a render(request, context) method");
+    throw new RexError(
+      "REX400",
+      "registerPageRenderer: renderer must have a render(request, context) method",
+    );
   }
   renderers.set(registry, renderer);
   return () => {

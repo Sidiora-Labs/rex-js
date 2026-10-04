@@ -48,3 +48,4 @@ export * from "./interop/index.ts";
 export * from "./i18n/index.ts";
 export * from "./loaders.ts";
 export * from "./media.tsx";
+export { findRootElement } from "./entry.tsx";

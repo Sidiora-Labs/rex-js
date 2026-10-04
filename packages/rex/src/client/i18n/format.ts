@@ -1,3 +1,5 @@
+import { RexError } from "../../core/errors.ts";
+
 export type MessageValue = string | number | boolean;
 
 export type MessageValues = Readonly<Record<string, MessageValue>>;
@@ -20,12 +22,12 @@ export type MessageNode =
       readonly options: Readonly<Record<string, readonly MessageNode[]>>;
     };
 
-export class MessageFormatError extends Error {
+export class MessageFormatError extends RexError {
   readonly pattern: string;
   readonly position: number;
 
   constructor(pattern: string, position: number, problem: string) {
-    super(`rex: message ${JSON.stringify(pattern)} at ${position}: ${problem}`);
+    super("REX317", `rex: message ${JSON.stringify(pattern)} at ${position}: ${problem}`);
     this.name = "MessageFormatError";
     this.pattern = pattern;
     this.position = position;

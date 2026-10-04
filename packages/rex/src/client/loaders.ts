@@ -11,6 +11,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import type { ActionOutput, AnyAction } from "../core/action.ts";
+import { RexError, isRexError } from "../core/errors.ts";
 import type { AnyPage, PageDeclaration, PageLoader, PageParamsSchema } from "../core/page.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import type { RexDataState } from "../core/states.ts";
@@ -113,7 +114,7 @@ export function loaderError(page: string, loader: string, error: unknown): RexLo
   return new RexLoaderError({
     page,
     loader,
-    code: "ERROR",
+    code: isRexError(error) ? error.code : "ERROR",
     status: null,
     message: error instanceof Error ? error.message : String(error),
   });
@@ -122,7 +123,7 @@ export function loaderError(page: string, loader: string, error: unknown): RexLo
 export function pageLoader(declared: AnyPage, name: string): PageLoader {
   const found = declared.loaders.find((loader) => loader.name === name);
   if (found === undefined) {
-    throw new Error(`rex: page "${declared.id}" declares no loader "${name}"`);
+    throw new RexError("REX307", `rex: page "${declared.id}" declares no loader "${name}"`);
   }
   return found;
 }
@@ -253,7 +254,8 @@ export function loaderQueryOptions(source: LoaderQueryOptionsInput): LoaderQuery
         const raw = await procedureOf(client, declaredAction.id)(input);
         const parsed = await validateStandard(declaredAction.output, raw);
         if (parsed.issues !== undefined) {
-          throw new Error(
+          throw new RexError(
+            "REX309",
             `loader "${loader.name}" of page "${declared.id}": the server returned an invalid output: ${formatIssues(parsed.issues)}`,
           );
         }
@@ -272,7 +274,10 @@ export function loaderQueryOptions(source: LoaderQueryOptionsInput): LoaderQuery
 function useLoaderParams(declared: AnyPage, hook: string): LoaderParams {
   const active = useActivePage();
   if (active === null || active.page !== declared) {
-    throw new Error(`rex: ${hook}(${declared.id}) must render inside the active page "${declared.id}"`);
+    throw new RexError(
+      "REX306",
+      `rex: ${hook}(${declared.id}) must render inside the active page "${declared.id}"`,
+    );
   }
   return active.params;
 }

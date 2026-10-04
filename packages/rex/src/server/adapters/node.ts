@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { serve, type ServerType } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
+import { RexError } from "../../core/errors.ts";
 import { RENDER_KIND_HEADER } from "../routes/render.ts";
 import { assertPort, serverUrl, type FetchApp } from "./runtime.ts";
 
@@ -42,11 +43,11 @@ function isReadMethod(method: string): boolean {
 export function createNodeApp(app: NodeFetchApp, clientDir: string): Hono {
   const root = resolve(clientDir);
   if (!existsSync(root) || !statSync(root).isDirectory()) {
-    throw new Error(`startNodeServer: clientDir "${root}" is not a directory`);
+    throw new RexError("REX406", `startNodeServer: clientDir "${root}" is not a directory`);
   }
   const indexPath = join(root, INDEX_FILE);
   if (!existsSync(indexPath)) {
-    throw new Error(`startNodeServer: clientDir "${root}" has no ${INDEX_FILE}`);
+    throw new RexError("REX406", `startNodeServer: clientDir "${root}" has no ${INDEX_FILE}`);
   }
   const assets = serveStatic({ root });
   const outer = new Hono();

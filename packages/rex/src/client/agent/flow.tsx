@@ -12,6 +12,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { RexError } from "../../core/errors.ts";
 import type { AnyFlow, ApprovalStep } from "../../core/flow.ts";
 import { actionAddress } from "../../core/ids.ts";
 import type { FlowDecision } from "../../core/journal.ts";
@@ -35,7 +36,10 @@ export interface FlowClientOptions {
 export function createFlowClient(options: FlowClientOptions = {}): FlowClient {
   const base = options.baseUrl ?? globalThis.location?.origin;
   if (typeof base !== "string" || !/^https?:\/\//.test(base)) {
-    throw new Error("rex: createFlowClient needs an http(s) baseUrl when the page has no location");
+    throw new RexError(
+      "REX323",
+      "rex: createFlowClient needs an http(s) baseUrl when the page has no location",
+    );
   }
   const url = new URL(FLOW_RPC_PREFIX, base).toString();
   const fetchImpl = options.fetch;

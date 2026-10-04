@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { RexError } from "../core/errors.ts";
 import { validateName } from "../core/ids.ts";
 import { registerReset } from "./reset.ts";
 
@@ -41,7 +42,8 @@ function assertSerialisable(id: string, value: unknown, path: (string | number)[
   if (value === null || typeof value === "string" || typeof value === "boolean") return;
   if (typeof value === "number") {
     if (Number.isFinite(value)) return;
-    throw new TypeError(
+    throw new RexError(
+      "REX315",
       `rex: store "${id}" holds a non-finite number at ${describePath(path)}; store values serialise to JSON`,
     );
   }
@@ -58,7 +60,8 @@ function assertSerialisable(id: string, value: unknown, path: (string | number)[
       return;
     }
   }
-  throw new TypeError(
+  throw new RexError(
+    "REX315",
     `rex: store "${id}" holds a value that does not serialise to JSON at ${describePath(path)}; use plain objects, arrays, strings, finite numbers, booleans and null`,
   );
 }
@@ -81,7 +84,10 @@ export function createStoreRegistry(): StoreRegistry {
   return {
     register(entry) {
       if (entries.has(entry.id)) {
-        throw new Error(`rex: store "${entry.id}" is already declared; store ids are unique`);
+        throw new RexError(
+          "REX315",
+          `rex: store "${entry.id}" is already declared; store ids are unique`,
+        );
       }
       entries.set(entry.id, entry);
       const unsubscribe = entry.expose ? entry.subscribe(notify) : () => {};
@@ -128,12 +134,12 @@ export const defaultStoreRegistry: StoreRegistry = createStoreRegistry();
 export function store<T>(id: string, options: StoreOptions<T>): RexStore<T> {
   validateName(id, "store id");
   if (typeof options !== "object" || options === null || !("initial" in options)) {
-    throw new TypeError(`rex: store "${id}" needs an initial value`);
+    throw new RexError("REX315", `rex: store "${id}" needs an initial value`);
   }
   const { initial } = options;
   const expose = options.expose ?? false;
   if (typeof expose !== "boolean") {
-    throw new TypeError(`rex: store "${id}" expose must be a boolean`);
+    throw new RexError("REX315", `rex: store "${id}" expose must be a boolean`);
   }
   assertSerialisable(id, initial);
 
@@ -161,7 +167,10 @@ export function store<T>(id: string, options: StoreOptions<T>): RexStore<T> {
     set,
     update(change: (value: T) => T) {
       if (typeof change !== "function") {
-        throw new TypeError(`rex: store "${id}" update takes a function of the current value`);
+        throw new RexError(
+          "REX315",
+          `rex: store "${id}" update takes a function of the current value`,
+        );
       }
       set(change(current));
     },

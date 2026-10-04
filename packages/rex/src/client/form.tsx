@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { ActionInput, AnyAction } from "../core/action.ts";
 import { isPlainObject } from "../core/entity.ts";
+import { RexError } from "../core/errors.ts";
 import type { JsonSchema } from "../core/schema.ts";
 import { issuePath, validateStandard, type StandardIssue } from "../core/standard.ts";
 import { actionLabel, type ActResult } from "./act.ts";
@@ -324,13 +325,14 @@ export function ActionForm<A extends AnyAction>({
   const [submitted, setSubmitted] = useState<FieldErrors | null>(null);
 
   if (active !== null && !active.page.actions.includes(declared)) {
-    throw new Error(
+    throw new RexError(
+      "REX307",
       `rex: ActionForm action "${declared.id}" is not declared by page "${active.page.id}"`,
     );
   }
   const listed = manifest.actions.find((entry) => entry.id === declared.id);
   if (listed === undefined) {
-    throw new Error(`rex: ActionForm action "${declared.id}" is not in the manifest`);
+    throw new RexError("REX308", `rex: ActionForm action "${declared.id}" is not in the manifest`);
   }
   const fields = formFields(listed.input);
   const errors = submitted ?? outcomeErrors(outcome, declared.id) ?? {};

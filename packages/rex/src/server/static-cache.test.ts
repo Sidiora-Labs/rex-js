@@ -252,8 +252,8 @@ describe("prerendered page list", () => {
     expect(prerenderedFile("/")).toBe("index.html");
     expect(prerenderedFile("/guides/getting%20started/")).toBe("guides/getting started/index.html");
     expect(normalizePagePath("/news/")).toBe("/news");
-    expect(() => prerenderedFile("/notes/%2E%2E")).toThrow(TypeError);
-    expect(() => prerenderedFile("/notes/a%2Fb")).toThrow(TypeError);
+    expect(() => prerenderedFile("/notes/%2E%2E")).toThrow(expect.objectContaining({ name: "RexError", code: "REX404" }));
+    expect(() => prerenderedFile("/notes/a%2Fb")).toThrow(expect.objectContaining({ name: "RexError", code: "REX404" }));
     expect(() =>
       parsePrerenderList({
         version: 1,

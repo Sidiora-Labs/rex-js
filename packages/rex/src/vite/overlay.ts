@@ -1,5 +1,6 @@
 import { normalizePath, type ErrorPayload, type Plugin, type ViteDevServer } from "vite";
 import { fileFrame } from "../cli/frame.ts";
+import { errorHint } from "../core/errors.docs.ts";
 import {
   isRexError,
   locateRexError,
@@ -68,7 +69,7 @@ export function reportAppError(vite: ViteDevServer, error: unknown, appPath: str
   attachOverlayFields(located);
   const payload = overlayError(located);
   const where = payload.loc === undefined ? "" : ` (${payload.loc.file}:${payload.loc.line})`;
-  vite.config.logger.error(`${located.message}${where}\n  hint: ${located.hint}`, {
+  vite.config.logger.error(`${located.message}${where}\n  hint: ${errorHint(located)}`, {
     timestamp: true,
   });
   vite.environments.client.hot.send({ type: "error", err: payload });

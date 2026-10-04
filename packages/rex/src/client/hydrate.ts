@@ -2,6 +2,7 @@ import { hydrate, type DehydratedState, type QueryClient } from "@tanstack/react
 import type { ErrorInfo } from "react";
 import type { ActorInput } from "../core/actor.ts";
 import { isPlainObject } from "../core/entity.ts";
+import { RexError } from "../core/errors.ts";
 import { escapeInlineJson } from "../core/serialize.ts";
 import { adoptServerLoaders } from "./loaders.ts";
 import { SSR_ATTRIBUTE } from "./ssr-attribute.ts";
@@ -21,9 +22,9 @@ export interface RexDataPayload {
   readonly queries: DehydratedState;
 }
 
-export class RexDataError extends Error {
+export class RexDataError extends RexError {
   constructor(message: string) {
-    super(`rex data: ${message}`);
+    super("REX312", `rex data: ${message}`);
     this.name = "RexDataError";
   }
 }
