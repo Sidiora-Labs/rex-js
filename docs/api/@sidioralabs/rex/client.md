@@ -4,13 +4,13 @@
 
 ## Classes
 
-<a id="messageformaterror"></a>
+<a id="rexloadererror"></a>
 
-### MessageFormatError
+### RexLoaderError
 
 #### Extends
 
-- [`RexError`](../rex.md#rexerror)
+- `Error`
 
 #### Constructors
 
@@ -19,22 +19,98 @@
 ##### Constructor
 
 ```ts
-new MessageFormatError(
-   pattern, 
-   position, 
-   problem
-): MessageFormatError;
+new RexLoaderError(init): RexLoaderError;
 ```
 
 ###### Parameters
 
-###### pattern
+###### init
+
+[`LoaderErrorInit`](#loadererrorinit)
+
+###### Returns
+
+[`RexLoaderError`](#rexloadererror)
+
+###### Overrides
+
+```ts
+Error.constructor
+```
+
+#### Properties
+
+<a id="code"></a>
+
+##### code
+
+```ts
+readonly code: string;
+```
+
+<a id="loader"></a>
+
+##### loader
+
+```ts
+readonly loader: string;
+```
+
+<a id="page"></a>
+
+##### page
+
+```ts
+readonly page: string;
+```
+
+<a id="status"></a>
+
+##### status
+
+```ts
+readonly status: number | null;
+```
+
+#### Methods
+
+<a id="tojson"></a>
+
+##### toJSON()
+
+```ts
+toJSON(): LoaderErrorJson;
+```
+
+###### Returns
+
+[`LoaderErrorJson`](#loadererrorjson)
+
+***
+
+<a id="rexpagemoduleerror"></a>
+
+### RexPageModuleError
+
+#### Extends
+
+- [`RexError`](../rex.md#rexerror)
+
+#### Constructors
+
+<a id="constructor-1"></a>
+
+##### Constructor
+
+```ts
+new RexPageModuleError(page, problem): RexPageModuleError;
+```
+
+###### Parameters
+
+###### page
 
 `string`
-
-###### position
-
-`number`
 
 ###### problem
 
@@ -42,7 +118,7 @@ new MessageFormatError(
 
 ###### Returns
 
-[`MessageFormatError`](#messageformaterror)
+[`RexPageModuleError`](#rexpagemoduleerror)
 
 ###### Overrides
 
@@ -50,7 +126,7 @@ new MessageFormatError(
 
 #### Properties
 
-<a id="code"></a>
+<a id="code-1"></a>
 
 ##### code
 
@@ -159,6 +235,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
@@ -246,342 +325,6 @@ readonly line: number | null;
 
 [`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-3)
 
-<a id="pattern"></a>
-
-##### pattern
-
-```ts
-readonly pattern: string;
-```
-
-<a id="position"></a>
-
-##### position
-
-```ts
-readonly position: number;
-```
-
-***
-
-<a id="rexloadererror"></a>
-
-### RexLoaderError
-
-#### Extends
-
-- `Error`
-
-#### Constructors
-
-<a id="constructor-1"></a>
-
-##### Constructor
-
-```ts
-new RexLoaderError(init): RexLoaderError;
-```
-
-###### Parameters
-
-###### init
-
-[`LoaderErrorInit`](#loadererrorinit)
-
-###### Returns
-
-[`RexLoaderError`](#rexloadererror)
-
-###### Overrides
-
-```ts
-Error.constructor
-```
-
-#### Properties
-
-<a id="code-1"></a>
-
-##### code
-
-```ts
-readonly code: string;
-```
-
-<a id="loader"></a>
-
-##### loader
-
-```ts
-readonly loader: string;
-```
-
-<a id="page"></a>
-
-##### page
-
-```ts
-readonly page: string;
-```
-
-<a id="status"></a>
-
-##### status
-
-```ts
-readonly status: number | null;
-```
-
-#### Methods
-
-<a id="tojson"></a>
-
-##### toJSON()
-
-```ts
-toJSON(): LoaderErrorJson;
-```
-
-###### Returns
-
-[`LoaderErrorJson`](#loadererrorjson)
-
-***
-
-<a id="rexpagemoduleerror"></a>
-
-### RexPageModuleError
-
-#### Extends
-
-- [`RexError`](../rex.md#rexerror)
-
-#### Constructors
-
-<a id="constructor-2"></a>
-
-##### Constructor
-
-```ts
-new RexPageModuleError(page, problem): RexPageModuleError;
-```
-
-###### Parameters
-
-###### page
-
-`string`
-
-###### problem
-
-`string`
-
-###### Returns
-
-[`RexPageModuleError`](#rexpagemoduleerror)
-
-###### Overrides
-
-[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
-
-#### Properties
-
-<a id="code-2"></a>
-
-##### code
-
-```ts
-readonly code: 
-  | "REX100"
-  | "REX101"
-  | "REX102"
-  | "REX110"
-  | "REX111"
-  | "REX112"
-  | "REX113"
-  | "REX114"
-  | "REX115"
-  | "REX116"
-  | "REX117"
-  | "REX118"
-  | "REX119"
-  | "REX120"
-  | "REX121"
-  | "REX122"
-  | "REX123"
-  | "REX200"
-  | "REX201"
-  | "REX202"
-  | "REX203"
-  | "REX204"
-  | "REX205"
-  | "REX206"
-  | "REX207"
-  | "REX208"
-  | "REX209"
-  | "REX210"
-  | "REX211"
-  | "REX212"
-  | "REX213"
-  | "REX214"
-  | "REX215"
-  | "REX216"
-  | "REX217"
-  | "REX218"
-  | "REX219"
-  | "REX220"
-  | "REX221"
-  | "REX222"
-  | "REX223"
-  | "REX224"
-  | "REX300"
-  | "REX301"
-  | "REX302"
-  | "REX303"
-  | "REX304"
-  | "REX305"
-  | "REX306"
-  | "REX307"
-  | "REX308"
-  | "REX309"
-  | "REX310"
-  | "REX311"
-  | "REX312"
-  | "REX313"
-  | "REX314"
-  | "REX315"
-  | "REX316"
-  | "REX317"
-  | "REX318"
-  | "REX319"
-  | "REX320"
-  | "REX321"
-  | "REX322"
-  | "REX323"
-  | "REX324"
-  | "REX325"
-  | "REX326"
-  | "REX327"
-  | "REX328"
-  | "REX329"
-  | "REX330"
-  | "REX331"
-  | "REX332"
-  | "REX333"
-  | "REX334"
-  | "REX400"
-  | "REX401"
-  | "REX402"
-  | "REX403"
-  | "REX404"
-  | "REX405"
-  | "REX406"
-  | "REX407"
-  | "REX408"
-  | "REX440"
-  | "REX441"
-  | "REX442"
-  | "REX450"
-  | "REX460"
-  | "REX461"
-  | "REX462"
-  | "REX463"
-  | "REX500"
-  | "REX501"
-  | "REX502"
-  | "REX503"
-  | "REX504"
-  | "REX505"
-  | "REX506"
-  | "REX507"
-  | "REX508"
-  | "REX600"
-  | "REX601"
-  | "REX602"
-  | "REX603"
-  | "REX604"
-  | "REX605"
-  | "REX610"
-  | "REX611"
-  | "REX612";
-```
-
-###### Inherited from
-
-[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
-
-<a id="column-1"></a>
-
-##### column
-
-```ts
-readonly column: number | null;
-```
-
-###### Inherited from
-
-[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-3)
-
-<a id="detail-1"></a>
-
-##### detail
-
-```ts
-readonly detail: string;
-```
-
-###### Inherited from
-
-[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-3)
-
-<a id="docs-1"></a>
-
-##### docs
-
-```ts
-readonly docs: string;
-```
-
-###### Inherited from
-
-[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-3)
-
-<a id="file-1"></a>
-
-##### file
-
-```ts
-readonly file: string | null;
-```
-
-###### Inherited from
-
-[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-3)
-
-<a id="hint-1"></a>
-
-##### hint
-
-```ts
-readonly hint: string | null;
-```
-
-###### Inherited from
-
-[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-3)
-
-<a id="line-1"></a>
-
-##### line
-
-```ts
-readonly line: number | null;
-```
-
-###### Inherited from
-
-[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-3)
-
 <a id="page-1"></a>
 
 ##### page
@@ -602,7 +345,7 @@ readonly page: string;
 
 #### Constructors
 
-<a id="constructor-3"></a>
+<a id="constructor-2"></a>
 
 ##### Constructor
 
@@ -721,6 +464,9 @@ new RexStartupError(message, code?): RexStartupError;
   \| `"REX506"`
   \| `"REX507"`
   \| `"REX508"`
+  \| `"REX509"`
+  \| `"REX510"`
+  \| `"REX511"`
   \| `"REX600"`
   \| `"REX601"`
   \| `"REX602"`
@@ -741,7 +487,7 @@ new RexStartupError(message, code?): RexStartupError;
 
 #### Properties
 
-<a id="code-3"></a>
+<a id="code-2"></a>
 
 ##### code
 
@@ -850,6 +596,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
@@ -865,7 +614,7 @@ readonly code:
 
 [`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
 
-<a id="column-2"></a>
+<a id="column-1"></a>
 
 ##### column
 
@@ -877,7 +626,7 @@ readonly column: number | null;
 
 [`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-3)
 
-<a id="detail-2"></a>
+<a id="detail-1"></a>
 
 ##### detail
 
@@ -889,7 +638,7 @@ readonly detail: string;
 
 [`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-3)
 
-<a id="docs-2"></a>
+<a id="docs-1"></a>
 
 ##### docs
 
@@ -901,7 +650,7 @@ readonly docs: string;
 
 [`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-3)
 
-<a id="file-2"></a>
+<a id="file-1"></a>
 
 ##### file
 
@@ -913,7 +662,7 @@ readonly file: string | null;
 
 [`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-3)
 
-<a id="hint-2"></a>
+<a id="hint-1"></a>
 
 ##### hint
 
@@ -925,7 +674,7 @@ readonly hint: string | null;
 
 [`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-3)
 
-<a id="line-2"></a>
+<a id="line-1"></a>
 
 ##### line
 
@@ -1077,7 +826,7 @@ requestConfirm(input): Promise<ConfirmGrant>;
 
 ###### Returns
 
-`Promise`\<[`ConfirmGrant`](#confirmgrant)\>
+`Promise`\<[`ConfirmGrant`](../rex.md#confirmgrant)\>
 
 <a id="run"></a>
 
@@ -1167,13 +916,135 @@ readonly optional submitLabel?: string;
 
 ***
 
+<a id="actionformviewprops"></a>
+
+### ActionFormViewProps
+
+#### Properties
+
+<a id="actionid"></a>
+
+##### actionId
+
+```ts
+readonly actionId: string;
+```
+
+<a id="address"></a>
+
+##### address
+
+```ts
+readonly address: string;
+```
+
+<a id="children-1"></a>
+
+##### children?
+
+```ts
+readonly optional children?: ReactNode;
+```
+
+<a id="controlprops-1"></a>
+
+##### controlProps
+
+```ts
+readonly controlProps: ActControlProps;
+```
+
+<a id="errors"></a>
+
+##### errors
+
+```ts
+readonly errors: FieldErrors;
+```
+
+<a id="fields"></a>
+
+##### fields
+
+```ts
+readonly fields: readonly FormField[] | null;
+```
+
+<a id="hidden"></a>
+
+##### hidden
+
+```ts
+readonly hidden: readonly readonly [string, string][];
+```
+
+<a id="label"></a>
+
+##### label
+
+```ts
+readonly label: string;
+```
+
+<a id="onsubmit"></a>
+
+##### onSubmit
+
+```ts
+readonly onSubmit: (event) => void;
+```
+
+###### Parameters
+
+###### event
+
+`FormEvent`\<`HTMLFormElement`\>
+
+###### Returns
+
+`void`
+
+<a id="path"></a>
+
+##### path
+
+```ts
+readonly path: string;
+```
+
+<a id="submitlabel-1"></a>
+
+##### submitLabel
+
+```ts
+readonly submitLabel: string;
+```
+
+<a id="unplaced"></a>
+
+##### unplaced
+
+```ts
+readonly unplaced: readonly readonly [string, string][];
+```
+
+<a id="values"></a>
+
+##### values
+
+```ts
+readonly values: readonly unknown[];
+```
+
+***
+
 <a id="addressscopeprops"></a>
 
 ### AddressScopeProps
 
 #### Properties
 
-<a id="children-1"></a>
+<a id="children-2"></a>
 
 ##### children?
 
@@ -1237,7 +1108,7 @@ readonly id: string;
 readonly input: JsonSchema;
 ```
 
-<a id="label"></a>
+<a id="label-1"></a>
 
 ##### label
 
@@ -1355,7 +1226,7 @@ subscribe(listener): () => void;
 
 #### Properties
 
-<a id="children-2"></a>
+<a id="children-3"></a>
 
 ##### children?
 
@@ -1421,27 +1292,45 @@ readonly page: string | null;
 
 ***
 
-<a id="confirmgrant"></a>
+<a id="confirmpending"></a>
 
-### ConfirmGrant
+### ConfirmPending
 
 #### Properties
 
-<a id="expiresat"></a>
+<a id="opener"></a>
 
-##### expiresAt
-
-```ts
-readonly expiresAt: string;
-```
-
-<a id="token"></a>
-
-##### token
+##### opener
 
 ```ts
-readonly token: string;
+readonly opener: Element | null;
 ```
+
+<a id="request"></a>
+
+##### request
+
+```ts
+readonly request: ConfirmDialogRequest;
+```
+
+<a id="resolve"></a>
+
+##### resolve
+
+```ts
+readonly resolve: (accepted) => void;
+```
+
+###### Parameters
+
+###### accepted
+
+`boolean`
+
+###### Returns
+
+`void`
 
 ***
 
@@ -1451,7 +1340,7 @@ readonly token: string;
 
 #### Properties
 
-<a id="children-3"></a>
+<a id="children-4"></a>
 
 ##### children?
 
@@ -1653,28 +1542,6 @@ readonly status: QueryStatus;
 
 ***
 
-<a id="defineelementoptions"></a>
-
-### DefineElementOptions
-
-#### Type Parameters
-
-##### P
-
-`P`
-
-#### Properties
-
-<a id="props"></a>
-
-##### props
-
-```ts
-readonly props: ElementPropMap<P>;
-```
-
-***
-
 <a id="densityinputs"></a>
 
 ### DensityInputs
@@ -1686,7 +1553,7 @@ readonly props: ElementPropMap<P>;
 ##### fallback?
 
 ```ts
-readonly optional fallback?: "default" | "agent";
+readonly optional fallback?: DensityPreference;
 ```
 
 <a id="header"></a>
@@ -1721,12 +1588,20 @@ readonly optional stored?: string | null;
 
 #### Properties
 
-<a id="children-4"></a>
+<a id="children-5"></a>
 
 ##### children?
 
 ```ts
 readonly optional children?: ReactNode;
+```
+
+<a id="fallback-1"></a>
+
+##### fallback?
+
+```ts
+readonly optional fallback?: DensityPreference;
 ```
 
 <a id="header-1"></a>
@@ -1745,6 +1620,14 @@ readonly optional header?: string | null;
 readonly optional root?: HTMLElement;
 ```
 
+<a id="screen"></a>
+
+##### screen?
+
+```ts
+readonly optional screen?: ScreenSource;
+```
+
 <a id="search"></a>
 
 ##### search?
@@ -1761,7 +1644,7 @@ readonly optional search?: string;
 
 #### Properties
 
-<a id="children-5"></a>
+<a id="children-6"></a>
 
 ##### children
 
@@ -1786,12 +1669,20 @@ readonly children: ReactNode;
 ##### density
 
 ```ts
-readonly density: "default" | "agent";
+readonly density: DensityPreference;
 ```
 
 ###### Inherited from
 
 [`ResolvedDensity`](#resolveddensity).[`density`](#density-2)
+
+<a id="screendensity"></a>
+
+##### screenDensity
+
+```ts
+readonly screenDensity: "comfortable" | "compact" | "agent";
+```
 
 <a id="source"></a>
 
@@ -1803,7 +1694,7 @@ readonly source: DensitySource;
 
 ###### Inherited from
 
-[`ResolvedDensity`](#resolveddensity).[`source`](#source-3)
+[`ResolvedDensity`](#resolveddensity).[`source`](#source-1)
 
 #### Methods
 
@@ -1819,7 +1710,7 @@ setDensity(density): void;
 
 ###### density
 
-`"default"` \| `"agent"`
+[`DensityPreference`](#densitypreference)
 
 ###### Returns
 
@@ -2009,7 +1900,7 @@ readonly optional fetch?: RexFetch;
 
 #### Properties
 
-<a id="children-6"></a>
+<a id="children-7"></a>
 
 ##### children?
 
@@ -2028,81 +1919,19 @@ readonly client: object;
 ###### decide
 
 ```ts
-decide: ProcedureClient<Record<never, never>, ZodMiniObject<{
-  decision: ZodMiniEnum<{
-     approve: "approve";
-     reject: "reject";
-  }>;
-  flow: ZodMiniString<string>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>>;
+decide: ProcedureClient<Record<never, never>, ProtocolSchema<FlowDecideInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
 
 ###### start
 
 ```ts
-start: ProcedureClient<Record<never, never>, ZodMiniObject<{
-  flow: ZodMiniString<string>;
-  input: ZodMiniOptional<ZodMiniUnknown>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>>;
+start: ProcedureClient<Record<never, never>, ProtocolSchema<FlowStartInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
 
 ###### status
 
 ```ts
-status: ProcedureClient<Record<never, never>, ZodMiniObject<{
-  flow: ZodMiniString<string>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>>;
+status: ProcedureClient<Record<never, never>, ProtocolSchema<FlowInstanceInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
 
 ***
@@ -2249,7 +2078,7 @@ start(input?): Promise<void>;
 readonly control: FormFieldControl;
 ```
 
-<a id="label-1"></a>
+<a id="label-2"></a>
 
 ##### label
 
@@ -2265,7 +2094,7 @@ readonly label: string;
 readonly options: readonly string[];
 ```
 
-<a id="path"></a>
+<a id="path-1"></a>
 
 ##### path
 
@@ -2309,7 +2138,7 @@ readonly type: string;
 
 #### Properties
 
-<a id="actionid"></a>
+<a id="actionid-1"></a>
 
 ##### actionId
 
@@ -2319,7 +2148,7 @@ readonly actionId: string;
 
 ###### Inherited from
 
-[`Outcome`](#outcome).[`actionId`](#actionid-1)
+[`Outcome`](#outcome).[`actionId`](#actionid-2)
 
 <a id="at"></a>
 
@@ -2333,7 +2162,7 @@ readonly at: string;
 
 [`Outcome`](#outcome).[`at`](#at-1)
 
-<a id="code-4"></a>
+<a id="code-3"></a>
 
 ##### code
 
@@ -2341,7 +2170,7 @@ readonly at: string;
 readonly code: string | null;
 ```
 
-<a id="fields"></a>
+<a id="fields-1"></a>
 
 ##### fields
 
@@ -2381,7 +2210,7 @@ readonly ok: boolean;
 
 #### Properties
 
-<a id="address"></a>
+<a id="address-1"></a>
 
 ##### address
 
@@ -2394,7 +2223,7 @@ readonly address: string;
 ##### kind
 
 ```ts
-readonly kind: "page" | "action" | "overlay" | "region";
+readonly kind: "page" | "action" | "region" | "overlay";
 ```
 
 ***
@@ -2465,7 +2294,7 @@ readonly optional title?: string;
 
 #### Properties
 
-<a id="children-7"></a>
+<a id="children-8"></a>
 
 ##### children?
 
@@ -2486,214 +2315,7 @@ readonly optional columns?: 1 | 2 | 4 | 3;
 ##### space?
 
 ```ts
-readonly optional space?: 1 | 2 | 4 | 6 | 3 | 5 | 7 | 8;
-```
-
-***
-
-<a id="i18ninput"></a>
-
-### I18nInput
-
-#### Properties
-
-<a id="config"></a>
-
-##### config
-
-```ts
-readonly config: I18nConfig;
-```
-
-<a id="messages"></a>
-
-##### messages
-
-```ts
-readonly messages: Readonly<Record<string, unknown>>;
-```
-
-***
-
-<a id="i18nsource"></a>
-
-### I18nSource
-
-#### Extends
-
-- [`MessageLookup`](#messagelookup)
-
-#### Properties
-
-<a id="default"></a>
-
-##### default
-
-```ts
-readonly default: string;
-```
-
-###### Inherited from
-
-[`MessageLookup`](#messagelookup).[`default`](#default-2)
-
-<a id="messages-1"></a>
-
-##### messages
-
-```ts
-readonly messages: LocaleMessages;
-```
-
-###### Overrides
-
-[`MessageLookup`](#messagelookup).[`messages`](#messages-2)
-
-<a id="settings"></a>
-
-##### settings
-
-```ts
-readonly settings: LocaleSettings;
-```
-
-***
-
-<a id="i18nstate"></a>
-
-### I18nState
-
-#### Properties
-
-<a id="locale"></a>
-
-##### locale
-
-```ts
-readonly locale: string;
-```
-
-<a id="source-1"></a>
-
-##### source
-
-```ts
-readonly source: I18nSource | null;
-```
-
-#### Methods
-
-<a id="setlocale"></a>
-
-##### setLocale()
-
-```ts
-setLocale(locale): void;
-```
-
-###### Parameters
-
-###### locale
-
-`string`
-
-###### Returns
-
-`void`
-
-***
-
-<a id="imgprops"></a>
-
-### ImgProps
-
-#### Extends
-
-- `Omit`\<`NativeImgProps`, 
-  \| `"src"`
-  \| `"alt"`
-  \| `"width"`
-  \| `"height"`
-  \| `"loading"`
-  \| `"decoding"`
-  \| `"fetchPriority"`
-  \| `"srcSet"`
-  \| `"sizes"`
-  \| `"children"`
-  \| `"dangerouslySetInnerHTML"`\>
-
-#### Properties
-
-<a id="alt"></a>
-
-##### alt
-
-```ts
-readonly alt: string;
-```
-
-<a id="decoding"></a>
-
-##### decoding?
-
-```ts
-readonly optional decoding?: "auto" | "async" | "sync";
-```
-
-<a id="height"></a>
-
-##### height
-
-```ts
-readonly height: number;
-```
-
-<a id="loading"></a>
-
-##### loading?
-
-```ts
-readonly optional loading?: "lazy" | "eager";
-```
-
-<a id="priority"></a>
-
-##### priority?
-
-```ts
-readonly optional priority?: boolean;
-```
-
-<a id="sizes"></a>
-
-##### sizes?
-
-```ts
-readonly optional sizes?: string;
-```
-
-<a id="src"></a>
-
-##### src
-
-```ts
-readonly src: string;
-```
-
-<a id="srcset"></a>
-
-##### srcSet?
-
-```ts
-readonly optional srcSet?: string;
-```
-
-<a id="width"></a>
-
-##### width
-
-```ts
-readonly width: number;
+readonly optional space?: 1 | 2 | 4 | 6 | 3 | 8 | 5 | 7;
 ```
 
 ***
@@ -2738,7 +2360,7 @@ readonly allowed: boolean;
 
 [`ActHandle`](#acthandle).[`allowed`](#allowed)
 
-<a id="controlprops-1"></a>
+<a id="controlprops-2"></a>
 
 ##### controlProps
 
@@ -2822,7 +2444,7 @@ requestConfirm(input): Promise<ConfirmGrant>;
 
 ###### Returns
 
-`Promise`\<[`ConfirmGrant`](#confirmgrant)\>
+`Promise`\<[`ConfirmGrant`](../rex.md#confirmgrant)\>
 
 ###### Inherited from
 
@@ -2960,7 +2582,7 @@ readonly size: number;
 
 #### Properties
 
-<a id="children-8"></a>
+<a id="children-9"></a>
 
 ##### children
 
@@ -3020,7 +2642,7 @@ readonly itemKey: (item, index) => string;
 readonly items: readonly T[];
 ```
 
-<a id="label-2"></a>
+<a id="label-3"></a>
 
 ##### label?
 
@@ -3156,7 +2778,7 @@ readonly view: unknown;
 
 #### Properties
 
-<a id="code-5"></a>
+<a id="code-4"></a>
 
 ##### code
 
@@ -3204,7 +2826,7 @@ readonly status: number | null;
 
 #### Properties
 
-<a id="code-6"></a>
+<a id="code-5"></a>
 
 ##### code
 
@@ -3306,394 +2928,6 @@ readonly page: AnyPage;
 
 ```ts
 readonly params: LoaderParams;
-```
-
-***
-
-<a id="loadscriptoptions"></a>
-
-### LoadScriptOptions
-
-#### Properties
-
-<a id="id-1"></a>
-
-##### id?
-
-```ts
-readonly optional id?: string;
-```
-
-<a id="nonce"></a>
-
-##### nonce?
-
-```ts
-readonly optional nonce?: string | null;
-```
-
-<a id="strategy"></a>
-
-##### strategy?
-
-```ts
-readonly optional strategy?: "idle" | "beforeHydration" | "afterHydration";
-```
-
-***
-
-<a id="localeinfo"></a>
-
-### LocaleInfo
-
-#### Properties
-
-<a id="defaultlocale"></a>
-
-##### defaultLocale
-
-```ts
-readonly defaultLocale: string;
-```
-
-<a id="locale-1"></a>
-
-##### locale
-
-```ts
-readonly locale: string;
-```
-
-<a id="locales-1"></a>
-
-##### locales
-
-```ts
-readonly locales: readonly string[];
-```
-
-<a id="routing"></a>
-
-##### routing
-
-```ts
-readonly routing: "none" | "prefix" | null;
-```
-
-#### Methods
-
-<a id="set-1"></a>
-
-##### set()
-
-```ts
-set(locale): void;
-```
-
-###### Parameters
-
-###### locale
-
-`string`
-
-###### Returns
-
-`void`
-
-***
-
-<a id="localeinputs"></a>
-
-### LocaleInputs
-
-#### Properties
-
-<a id="cookie"></a>
-
-##### cookie?
-
-```ts
-readonly optional cookie?: string | null;
-```
-
-<a id="languages"></a>
-
-##### languages?
-
-```ts
-readonly optional languages?: readonly string[];
-```
-
-<a id="pathname"></a>
-
-##### pathname?
-
-```ts
-readonly optional pathname?: string | null;
-```
-
-***
-
-<a id="localeresolution"></a>
-
-### LocaleResolution
-
-#### Properties
-
-<a id="locale-2"></a>
-
-##### locale
-
-```ts
-readonly locale: string;
-```
-
-<a id="source-2"></a>
-
-##### source
-
-```ts
-readonly source: "default" | "accept-language" | "prefix" | "cookie";
-```
-
-***
-
-<a id="localesettings"></a>
-
-### LocaleSettings
-
-#### Properties
-
-<a id="default-1"></a>
-
-##### default
-
-```ts
-readonly default: string;
-```
-
-<a id="locales-2"></a>
-
-##### locales
-
-```ts
-readonly locales: readonly string[];
-```
-
-<a id="routing-1"></a>
-
-##### routing
-
-```ts
-readonly routing: "none" | "prefix";
-```
-
-***
-
-<a id="mediaproviderprops"></a>
-
-### MediaProviderProps
-
-#### Properties
-
-<a id="children-9"></a>
-
-##### children?
-
-```ts
-readonly optional children?: ReactNode;
-```
-
-<a id="value-1"></a>
-
-##### value
-
-```ts
-readonly value: RexMediaCollector;
-```
-
-***
-
-<a id="messagelookup"></a>
-
-### MessageLookup
-
-#### Extended by
-
-- [`I18nSource`](#i18nsource)
-
-#### Properties
-
-<a id="default-2"></a>
-
-##### default
-
-```ts
-readonly default: string;
-```
-
-<a id="messages-2"></a>
-
-##### messages
-
-```ts
-readonly messages: LocaleMessages;
-```
-
-***
-
-<a id="messageref"></a>
-
-### MessageRef
-
-#### Properties
-
-<a id="key"></a>
-
-##### key
-
-```ts
-readonly key: string;
-```
-
-<a id="values"></a>
-
-##### values
-
-```ts
-readonly values: MessageValues;
-```
-
-***
-
-<a id="mountrexpageoptions"></a>
-
-### MountRexPageOptions
-
-#### Extends
-
-- [`RexEntryOptions`](#rexentryoptions)
-
-#### Properties
-
-<a id="actor-1"></a>
-
-##### actor?
-
-```ts
-readonly optional actor?: Actor;
-```
-
-###### Inherited from
-
-[`CreateRexAppOptions`](#createrexappoptions).[`actor`](#actor)
-
-<a id="baseurl-2"></a>
-
-##### baseUrl?
-
-```ts
-readonly optional baseUrl?: string;
-```
-
-###### Inherited from
-
-[`CreateRexAppOptions`](#createrexappoptions).[`baseUrl`](#baseurl)
-
-<a id="fetch-2"></a>
-
-##### fetch?
-
-```ts
-readonly optional fetch?: RexFetch;
-```
-
-###### Inherited from
-
-[`CreateRexAppOptions`](#createrexappoptions).[`fetch`](#fetch)
-
-<a id="link-1"></a>
-
-##### link?
-
-```ts
-readonly optional link?: ClientLink<RexClientContext>;
-```
-
-###### Inherited from
-
-[`CreateRexAppOptions`](#createrexappoptions).[`link`](#link)
-
-<a id="onnavigate-1"></a>
-
-##### onNavigate?
-
-```ts
-readonly optional onNavigate?: RexNavigateHook;
-```
-
-###### Inherited from
-
-[`CreateRexAppOptions`](#createrexappoptions).[`onNavigate`](#onnavigate)
-
-<a id="onoutcome-1"></a>
-
-##### onOutcome?
-
-```ts
-readonly optional onOutcome?: RexOutcomeHook;
-```
-
-###### Inherited from
-
-[`CreateRexAppOptions`](#createrexappoptions).[`onOutcome`](#onoutcome)
-
-<a id="params-2"></a>
-
-##### params?
-
-```ts
-readonly optional params?: Readonly<Record<string, unknown>>;
-```
-
-<a id="queryclient-1"></a>
-
-##### queryClient?
-
-```ts
-readonly optional queryClient?: QueryClient;
-```
-
-###### Inherited from
-
-[`CreateRexAppOptions`](#createrexappoptions).[`queryClient`](#queryclient)
-
-***
-
-<a id="nativeprops"></a>
-
-### NativeProps
-
-#### Extends
-
-- `Omit`\<`HTMLAttributes`\<`HTMLElement`\>, `"children"` \| `"dangerouslySetInnerHTML"`\>
-
-#### Properties
-
-<a id="as"></a>
-
-##### as?
-
-```ts
-readonly optional as?: NativeTag;
-```
-
-<a id="mount"></a>
-
-##### mount?
-
-```ts
-readonly optional mount?: NativeMount;
 ```
 
 ***
@@ -3956,7 +3190,7 @@ readonly optional scroll?: "after-transition" | "manual";
 readonly kind: "not-found";
 ```
 
-<a id="path-1"></a>
+<a id="path-2"></a>
 
 ##### path
 
@@ -3977,7 +3211,7 @@ readonly path: string;
 
 #### Properties
 
-<a id="actionid-1"></a>
+<a id="actionid-2"></a>
 
 ##### actionId
 
@@ -4030,7 +3264,7 @@ readonly optional children?: ReactNode;
 ##### space?
 
 ```ts
-readonly optional space?: 1 | 2 | 4 | 6 | 3 | 5 | 7 | 8;
+readonly optional space?: 1 | 2 | 4 | 6 | 3 | 8 | 5 | 7;
 ```
 
 ***
@@ -4133,7 +3367,7 @@ get(page): Outcome | null;
 
 [`Outcome`](#outcome) \| `null`
 
-<a id="set-2"></a>
+<a id="set-1"></a>
 
 ##### set()
 
@@ -4181,7 +3415,7 @@ subscribe(listener): () => void;
 
 #### Properties
 
-<a id="address-1"></a>
+<a id="address-2"></a>
 
 ##### address
 
@@ -4189,7 +3423,7 @@ subscribe(listener): () => void;
 readonly address: string;
 ```
 
-<a id="id-2"></a>
+<a id="id-1"></a>
 
 ##### id
 
@@ -4439,7 +3673,7 @@ readonly registry: OverlayRegistry;
 
 #### Properties
 
-<a id="id-3"></a>
+<a id="id-2"></a>
 
 ##### id
 
@@ -4468,6 +3702,98 @@ close(): void;
 ###### Returns
 
 `void`
+
+***
+
+<a id="overlaysurfaceprops"></a>
+
+### OverlaySurfaceProps
+
+#### Properties
+
+<a id="address-3"></a>
+
+##### address
+
+```ts
+readonly address: string;
+```
+
+<a id="button"></a>
+
+##### Button
+
+```ts
+readonly Button: ComponentType<ShellButtonProps>;
+```
+
+<a id="children-13"></a>
+
+##### children?
+
+```ts
+readonly optional children?: ReactNode;
+```
+
+<a id="closelabel"></a>
+
+##### closeLabel
+
+```ts
+readonly closeLabel: string | null;
+```
+
+<a id="dismiss-1"></a>
+
+##### dismiss
+
+```ts
+readonly dismiss: OverlayDismiss;
+```
+
+<a id="escape"></a>
+
+##### escape
+
+```ts
+readonly escape: boolean;
+```
+
+<a id="form"></a>
+
+##### form
+
+```ts
+readonly form: "dialog" | "bottom-sheet";
+```
+
+<a id="hide-1"></a>
+
+##### hide
+
+```ts
+readonly hide: () => void;
+```
+
+###### Returns
+
+`void`
+
+<a id="sheet"></a>
+
+##### Sheet
+
+```ts
+readonly Sheet: ComponentType<ShellSheetProps>;
+```
+
+<a id="title-2"></a>
+
+##### title
+
+```ts
+readonly title: string;
+```
 
 ***
 
@@ -4551,7 +3877,7 @@ invoke(actionId, input): Promise<ActResult<AnyAction>>;
 
 #### Properties
 
-<a id="children-13"></a>
+<a id="children-14"></a>
 
 ##### children?
 
@@ -4591,7 +3917,7 @@ readonly kind: "page";
 readonly page: AnyPage;
 ```
 
-<a id="params-3"></a>
+<a id="params-2"></a>
 
 ##### params
 
@@ -4639,7 +3965,7 @@ readonly search: string;
 readonly page: AnyPage;
 ```
 
-<a id="params-4"></a>
+<a id="params-3"></a>
 
 ##### params
 
@@ -4704,7 +4030,7 @@ readonly affordance: Affordance | null;
 readonly allowed: boolean;
 ```
 
-<a id="id-4"></a>
+<a id="id-3"></a>
 
 ##### id
 
@@ -4720,7 +4046,7 @@ readonly id: string;
 readonly kind: "action";
 ```
 
-<a id="label-3"></a>
+<a id="label-4"></a>
 
 ##### label
 
@@ -4746,13 +4072,133 @@ readonly shortcut: string | null;
 
 ***
 
+<a id="palettemenuprops"></a>
+
+### PaletteMenuProps
+
+#### Properties
+
+<a id="actions"></a>
+
+##### actions
+
+```ts
+readonly actions: readonly PaletteActionEntry[];
+```
+
+<a id="item"></a>
+
+##### Item
+
+```ts
+readonly Item: ComponentType<ShellPaletteItemProps>;
+```
+
+<a id="label-5"></a>
+
+##### label
+
+```ts
+readonly label: string;
+```
+
+<a id="page-18"></a>
+
+##### page
+
+```ts
+readonly page: string | null;
+```
+
+<a id="pages-2"></a>
+
+##### pages
+
+```ts
+readonly pages: readonly PalettePageEntry[];
+```
+
+<a id="valueof"></a>
+
+##### valueOf
+
+```ts
+readonly valueOf: (kind, id) => string;
+```
+
+###### Parameters
+
+###### kind
+
+`"page"` \| `"action"`
+
+###### id
+
+`string`
+
+###### Returns
+
+`string`
+
+#### Methods
+
+<a id="onaction"></a>
+
+##### onAction()
+
+```ts
+onAction(entry): void;
+```
+
+###### Parameters
+
+###### entry
+
+[`PaletteActionEntry`](#paletteactionentry)
+
+###### Returns
+
+`void`
+
+<a id="onclose"></a>
+
+##### onClose()
+
+```ts
+onClose(): void;
+```
+
+###### Returns
+
+`void`
+
+<a id="onpage"></a>
+
+##### onPage()
+
+```ts
+onPage(entry): void;
+```
+
+###### Parameters
+
+###### entry
+
+[`PalettePageEntry`](#palettepageentry)
+
+###### Returns
+
+`void`
+
+***
+
 <a id="palettepageentry"></a>
 
 ### PalettePageEntry
 
 #### Properties
 
-<a id="id-5"></a>
+<a id="id-4"></a>
 
 ##### id
 
@@ -4768,7 +4214,7 @@ readonly id: string;
 readonly kind: "page";
 ```
 
-<a id="page-18"></a>
+<a id="page-19"></a>
 
 ##### page
 
@@ -4784,7 +4230,7 @@ readonly page: AnyPage;
 readonly route: string;
 ```
 
-<a id="title-2"></a>
+<a id="title-3"></a>
 
 ##### title
 
@@ -4808,44 +4254,12 @@ readonly title: string;
 readonly message: string;
 ```
 
-<a id="path-2"></a>
+<a id="path-3"></a>
 
 ##### path
 
 ```ts
 readonly path: string;
-```
-
-***
-
-<a id="priorityimage"></a>
-
-### PriorityImage
-
-#### Properties
-
-<a id="sizes-1"></a>
-
-##### sizes
-
-```ts
-readonly sizes: string | null;
-```
-
-<a id="src-1"></a>
-
-##### src
-
-```ts
-readonly src: string;
-```
-
-<a id="srcset-1"></a>
-
-##### srcSet
-
-```ts
-readonly srcSet: string | null;
 ```
 
 ***
@@ -4896,7 +4310,7 @@ readonly status: QueryStatus;
 
 #### Properties
 
-<a id="children-14"></a>
+<a id="children-15"></a>
 
 ##### children?
 
@@ -4958,7 +4372,7 @@ readonly act: <A>(declared) => InvokeHandle<A>;
 readonly nav: Nav;
 ```
 
-<a id="page-19"></a>
+<a id="page-20"></a>
 
 ##### page
 
@@ -4966,7 +4380,7 @@ readonly nav: Nav;
 readonly page: string;
 ```
 
-<a id="params-5"></a>
+<a id="params-4"></a>
 
 ##### params
 
@@ -5007,7 +4421,7 @@ readonly state:
 
 #### Properties
 
-<a id="code-7"></a>
+<a id="code-6"></a>
 
 ##### code
 
@@ -5127,7 +4541,7 @@ subscribe(listener): () => void;
 
 #### Properties
 
-<a id="children-15"></a>
+<a id="children-16"></a>
 
 ##### children?
 
@@ -5160,10 +4574,10 @@ readonly name: string;
 ##### density
 
 ```ts
-readonly density: "default" | "agent";
+readonly density: DensityPreference;
 ```
 
-<a id="source-3"></a>
+<a id="source-1"></a>
 
 ##### source
 
@@ -5195,7 +4609,7 @@ readonly overlay: string | null;
 readonly overlayAddress: string | null;
 ```
 
-<a id="page-20"></a>
+<a id="page-21"></a>
 
 ##### page
 
@@ -5255,7 +4669,7 @@ action(id): string | null;
 
 #### Properties
 
-<a id="children-16"></a>
+<a id="children-17"></a>
 
 ##### children?
 
@@ -5281,60 +4695,6 @@ readonly optional confirmToken?: string;
 
 ***
 
-<a id="rexelementconstructor"></a>
-
-### RexElementConstructor
-
-#### Extends
-
-- `CustomElementConstructor`
-
-#### Constructors
-
-<a id="constructor-4"></a>
-
-##### Constructor
-
-```ts
-new RexElementConstructor(...params): HTMLElement;
-```
-
-###### Parameters
-
-###### params
-
-...`any`[]
-
-###### Returns
-
-`HTMLElement`
-
-###### Inherited from
-
-```ts
-CustomElementConstructor.constructor
-```
-
-#### Properties
-
-<a id="observedattributes"></a>
-
-##### observedAttributes
-
-```ts
-readonly observedAttributes: readonly string[];
-```
-
-<a id="tagname"></a>
-
-##### tagName
-
-```ts
-readonly tagName: string;
-```
-
-***
-
 <a id="rexentrybundle"></a>
 
 ### RexEntryBundle
@@ -5349,7 +4709,7 @@ readonly tagName: string;
 readonly optional manifest?: Manifest;
 ```
 
-<a id="pages-2"></a>
+<a id="pages-3"></a>
 
 ##### pages
 
@@ -5364,72 +4724,6 @@ readonly pages: readonly PageModuleSet[];
 ```ts
 readonly registry: RegistrySnapshot;
 ```
-
-***
-
-<a id="rexmediacollector"></a>
-
-### RexMediaCollector
-
-#### Properties
-
-<a id="nonce-1"></a>
-
-##### nonce
-
-```ts
-readonly nonce: string | null;
-```
-
-#### Methods
-
-<a id="preloadimage"></a>
-
-##### preloadImage()
-
-```ts
-preloadImage(image): void;
-```
-
-###### Parameters
-
-###### image
-
-[`PriorityImage`](#priorityimage)
-
-###### Returns
-
-`void`
-
-***
-
-<a id="rexmediarequest"></a>
-
-### RexMediaRequest
-
-#### Properties
-
-<a id="collector"></a>
-
-##### collector
-
-```ts
-readonly collector: RexMediaCollector;
-```
-
-#### Methods
-
-<a id="images"></a>
-
-##### images()
-
-```ts
-images(): readonly PriorityImage[];
-```
-
-###### Returns
-
-readonly [`PriorityImage`](#priorityimage)[]
 
 ***
 
@@ -5455,7 +4749,7 @@ readonly from: string | null;
 readonly href: string;
 ```
 
-<a id="page-21"></a>
+<a id="page-22"></a>
 
 ##### page
 
@@ -5463,7 +4757,7 @@ readonly href: string;
 readonly page: string | null;
 ```
 
-<a id="path-3"></a>
+<a id="path-4"></a>
 
 ##### path
 
@@ -5491,7 +4785,7 @@ readonly search: string;
 
 #### Properties
 
-<a id="actionid-2"></a>
+<a id="actionid-3"></a>
 
 ##### actionId
 
@@ -5501,7 +4795,7 @@ readonly actionId: string;
 
 ###### Inherited from
 
-[`Outcome`](#outcome).[`actionId`](#actionid-1)
+[`Outcome`](#outcome).[`actionId`](#actionid-2)
 
 <a id="at-2"></a>
 
@@ -5539,7 +4833,7 @@ readonly ok: boolean;
 
 [`Outcome`](#outcome).[`ok`](#ok-1)
 
-<a id="page-22"></a>
+<a id="page-23"></a>
 
 ##### page
 
@@ -5579,7 +4873,7 @@ readonly optional defaultOpen?: boolean;
 readonly Component: ComponentType<RexProviderProps>;
 ```
 
-<a id="id-6"></a>
+<a id="id-5"></a>
 
 ##### id
 
@@ -5595,7 +4889,7 @@ readonly id: string;
 
 #### Properties
 
-<a id="children-17"></a>
+<a id="children-18"></a>
 
 ##### children
 
@@ -5627,12 +4921,20 @@ readonly render: RouteRender;
 
 #### Properties
 
-<a id="actor-2"></a>
+<a id="actor-1"></a>
 
 ##### actor
 
 ```ts
 readonly actor: Actor;
+```
+
+<a id="baseurl-2"></a>
+
+##### baseUrl?
+
+```ts
+readonly optional baseUrl?: string;
 ```
 
 <a id="client-2"></a>
@@ -5649,6 +4951,14 @@ readonly client: RexClient;
 
 ```ts
 readonly density: string | null;
+```
+
+<a id="fetch-2"></a>
+
+##### fetch?
+
+```ts
+readonly optional fetch?: ApiFetch;
 ```
 
 <a id="manifest-2"></a>
@@ -5689,7 +4999,7 @@ readonly registry: RegistrySnapshot;
 readonly expose: boolean;
 ```
 
-<a id="id-7"></a>
+<a id="id-6"></a>
 
 ##### id
 
@@ -5723,7 +5033,7 @@ reset(): void;
 
 `void`
 
-<a id="set-3"></a>
+<a id="set-2"></a>
 
 ##### set()
 
@@ -5817,7 +5127,7 @@ useStore(): T;
 readonly href: string;
 ```
 
-<a id="page-23"></a>
+<a id="page-24"></a>
 
 ##### page
 
@@ -5843,65 +5153,197 @@ readonly optional confirmToken?: string;
 
 ***
 
-<a id="scriptprops"></a>
+<a id="screenproviderprops"></a>
 
-### ScriptProps
+### ScreenProviderProps
 
 #### Properties
 
-<a id="id-8"></a>
+<a id="children-19"></a>
 
-##### id?
+##### children?
 
 ```ts
-readonly optional id?: string;
+readonly optional children?: ReactNode;
 ```
 
-<a id="onerror"></a>
+<a id="density-4"></a>
 
-##### onError?
+##### density
 
 ```ts
-readonly optional onError?: (error) => void;
+readonly density: "comfortable" | "compact" | "agent";
+```
+
+<a id="root-1"></a>
+
+##### root?
+
+```ts
+readonly optional root?: HTMLElement;
+```
+
+<a id="source-2"></a>
+
+##### source?
+
+```ts
+readonly optional source?: ScreenSource;
+```
+
+***
+
+<a id="screensnapshot"></a>
+
+### ScreenSnapshot
+
+#### Extended by
+
+- [`ScreenState`](#screenstate)
+
+#### Properties
+
+<a id="pointer"></a>
+
+##### pointer
+
+```ts
+readonly pointer: "coarse" | "fine";
+```
+
+<a id="screen-1"></a>
+
+##### screen
+
+```ts
+readonly screen: "phone" | "tablet" | "desktop" | "wide";
+```
+
+***
+
+<a id="screensource"></a>
+
+### ScreenSource
+
+#### Methods
+
+<a id="get-2"></a>
+
+##### get()
+
+```ts
+get(): ScreenSnapshot;
+```
+
+###### Returns
+
+[`ScreenSnapshot`](#screensnapshot)
+
+<a id="subscribe-5"></a>
+
+##### subscribe()
+
+```ts
+subscribe(listener): () => void;
 ```
 
 ###### Parameters
 
-###### error
+###### listener
 
-`Error`
-
-###### Returns
-
-`void`
-
-<a id="onload"></a>
-
-##### onLoad?
-
-```ts
-readonly optional onLoad?: () => void;
-```
+() => `void`
 
 ###### Returns
 
-`void`
+() => `void`
 
-<a id="src-2"></a>
+***
 
-##### src
+<a id="screensourceoptions"></a>
+
+### ScreenSourceOptions
+
+#### Properties
+
+<a id="matchmedia"></a>
+
+##### matchMedia?
 
 ```ts
-readonly src: string;
+readonly optional matchMedia?: MatchMedia;
 ```
 
-<a id="strategy-1"></a>
+<a id="resizeobserver"></a>
 
-##### strategy?
+##### ResizeObserver?
 
 ```ts
-readonly optional strategy?: "idle" | "beforeHydration" | "afterHydration";
+readonly optional ResizeObserver?: ResizeObserverConstructor;
 ```
+
+<a id="root-2"></a>
+
+##### root?
+
+```ts
+readonly optional root?: Element;
+```
+
+<a id="width"></a>
+
+##### width?
+
+```ts
+readonly optional width?: () => number;
+```
+
+###### Returns
+
+`number`
+
+***
+
+<a id="screenstate"></a>
+
+### ScreenState
+
+#### Extends
+
+- [`ScreenSnapshot`](#screensnapshot)
+
+#### Properties
+
+<a id="density-5"></a>
+
+##### density
+
+```ts
+readonly density: "comfortable" | "compact" | "agent";
+```
+
+<a id="pointer-1"></a>
+
+##### pointer
+
+```ts
+readonly pointer: "coarse" | "fine";
+```
+
+###### Inherited from
+
+[`ScreenSnapshot`](#screensnapshot).[`pointer`](#pointer)
+
+<a id="screen-2"></a>
+
+##### screen
+
+```ts
+readonly screen: "phone" | "tablet" | "desktop" | "wide";
+```
+
+###### Inherited from
+
+[`ScreenSnapshot`](#screensnapshot).[`screen`](#screen-1)
 
 ***
 
@@ -5911,7 +5353,7 @@ readonly optional strategy?: "idle" | "beforeHydration" | "afterHydration";
 
 #### Properties
 
-<a id="children-18"></a>
+<a id="children-20"></a>
 
 ##### children?
 
@@ -5924,10 +5366,10 @@ readonly optional children?: ReactNode;
 ##### space?
 
 ```ts
-readonly optional space?: 1 | 2 | 4 | 6 | 3 | 5 | 7 | 8;
+readonly optional space?: 1 | 2 | 4 | 6 | 3 | 8 | 5 | 7;
 ```
 
-<a id="title-3"></a>
+<a id="title-4"></a>
 
 ##### title
 
@@ -5971,12 +5413,28 @@ readonly dataUpdatedAt: number;
 
 #### Properties
 
-<a id="button"></a>
+<a id="button-1"></a>
 
 ##### Button
 
 ```ts
 readonly Button: ComponentType<ShellButtonProps>;
+```
+
+<a id="frame"></a>
+
+##### Frame
+
+```ts
+readonly Frame: ComponentType<ShellFrameProps>;
+```
+
+<a id="nav-2"></a>
+
+##### Nav
+
+```ts
+readonly Nav: ComponentType<ShellNavProps>;
 ```
 
 <a id="outcome-1"></a>
@@ -5995,7 +5453,7 @@ readonly Outcome: ComponentType<OutcomeSlotProps>;
 readonly PaletteItem: ComponentType<ShellPaletteItemProps>;
 ```
 
-<a id="sheet"></a>
+<a id="sheet-1"></a>
 
 ##### Sheet
 
@@ -6011,7 +5469,7 @@ readonly Sheet: ComponentType<ShellSheetProps>;
 
 #### Properties
 
-<a id="children-19"></a>
+<a id="children-21"></a>
 
 ##### children?
 
@@ -6025,6 +5483,144 @@ readonly optional children?: ReactNode;
 
 ```ts
 readonly components: ShellComponents;
+```
+
+***
+
+<a id="shellframeprops"></a>
+
+### ShellFrameProps
+
+#### Properties
+
+<a id="appname"></a>
+
+##### appName
+
+```ts
+readonly appName: string;
+```
+
+<a id="children-22"></a>
+
+##### children?
+
+```ts
+readonly optional children?: ReactNode;
+```
+
+<a id="links"></a>
+
+##### links
+
+```ts
+readonly links: readonly ShellNavLink[];
+```
+
+<a id="navform"></a>
+
+##### navForm
+
+```ts
+readonly navForm: "sidebar" | "bar" | "dock";
+```
+
+<a id="palette"></a>
+
+##### palette
+
+```ts
+readonly palette: ShellPaletteTriggerProps | null;
+```
+
+***
+
+<a id="shellnavlink"></a>
+
+### ShellNavLink
+
+#### Properties
+
+<a id="address-4"></a>
+
+##### address
+
+```ts
+readonly address: string;
+```
+
+<a id="current"></a>
+
+##### current
+
+```ts
+readonly current: boolean;
+```
+
+<a id="href-3"></a>
+
+##### href
+
+```ts
+readonly href: string | undefined;
+```
+
+<a id="id-7"></a>
+
+##### id
+
+```ts
+readonly id: string;
+```
+
+<a id="label-6"></a>
+
+##### label
+
+```ts
+readonly label: string;
+```
+
+<a id="onclick-1"></a>
+
+##### onClick
+
+```ts
+readonly onClick: (event) => void;
+```
+
+###### Parameters
+
+###### event
+
+`MouseEvent`\<`HTMLAnchorElement`\>
+
+###### Returns
+
+`void`
+
+***
+
+<a id="shellnavprops"></a>
+
+### ShellNavProps
+
+#### Properties
+
+<a id="form-1"></a>
+
+##### form
+
+```ts
+readonly form: "sidebar" | "bar" | "dock";
+```
+
+<a id="links-1"></a>
+
+##### links
+
+```ts
+readonly links: readonly ShellNavLink[];
 ```
 
 ***
@@ -6043,7 +5639,7 @@ readonly components: ShellComponents;
 readonly allowed: boolean;
 ```
 
-<a id="detail-3"></a>
+<a id="detail-2"></a>
 
 ##### detail
 
@@ -6051,7 +5647,7 @@ readonly allowed: boolean;
 readonly detail: string;
 ```
 
-<a id="id-9"></a>
+<a id="id-8"></a>
 
 ##### id
 
@@ -6067,7 +5663,7 @@ readonly id: string;
 readonly kind: "page" | "action";
 ```
 
-<a id="label-4"></a>
+<a id="label-7"></a>
 
 ##### label
 
@@ -6093,6 +5689,50 @@ readonly shortcut: string | null;
 
 ***
 
+<a id="shellpalettetriggerprops"></a>
+
+### ShellPaletteTriggerProps
+
+#### Properties
+
+<a id="address-5"></a>
+
+##### address
+
+```ts
+readonly address: string;
+```
+
+<a id="label-8"></a>
+
+##### label
+
+```ts
+readonly label: string;
+```
+
+<a id="onopen"></a>
+
+##### onOpen
+
+```ts
+readonly onOpen: () => void;
+```
+
+###### Returns
+
+`void`
+
+<a id="shortcut-2"></a>
+
+##### shortcut
+
+```ts
+readonly shortcut: string;
+```
+
+***
+
 <a id="shellprops"></a>
 
 ### ShellProps
@@ -6107,7 +5747,7 @@ readonly shortcut: string | null;
 readonly optional outcome?: ComponentType<OutcomeSlotProps>;
 ```
 
-<a id="pages-3"></a>
+<a id="pages-4"></a>
 
 ##### pages
 
@@ -6123,7 +5763,7 @@ readonly pages: readonly PageModuleSet[];
 
 #### Properties
 
-<a id="address-2"></a>
+<a id="address-6"></a>
 
 ##### address
 
@@ -6131,7 +5771,7 @@ readonly pages: readonly PageModuleSet[];
 readonly address: string;
 ```
 
-<a id="children-20"></a>
+<a id="children-23"></a>
 
 ##### children?
 
@@ -6139,7 +5779,15 @@ readonly address: string;
 readonly optional children?: ReactNode;
 ```
 
-<a id="title-4"></a>
+<a id="form-2"></a>
+
+##### form
+
+```ts
+readonly form: "dialog" | "bottom-sheet";
+```
+
+<a id="title-5"></a>
 
 ##### title
 
@@ -6171,7 +5819,7 @@ readonly titleId: string;
 readonly Component: ComponentType<ShellSlotProps>;
 ```
 
-<a id="id-10"></a>
+<a id="id-9"></a>
 
 ##### id
 
@@ -6243,7 +5891,7 @@ readonly resolution: RouteResolution;
 readonly altKey: boolean;
 ```
 
-<a id="code-8"></a>
+<a id="code-7"></a>
 
 ##### code?
 
@@ -6259,7 +5907,7 @@ readonly optional code?: string;
 readonly ctrlKey: boolean;
 ```
 
-<a id="key-1"></a>
+<a id="key"></a>
 
 ##### key
 
@@ -6291,7 +5939,7 @@ readonly shiftKey: boolean;
 
 #### Properties
 
-<a id="actor-3"></a>
+<a id="actor-2"></a>
 
 ##### actor
 
@@ -6339,7 +5987,7 @@ readonly openOverlays: readonly string[];
 readonly outcome: Outcome | null;
 ```
 
-<a id="page-24"></a>
+<a id="page-25"></a>
 
 ##### page
 
@@ -6347,12 +5995,20 @@ readonly outcome: Outcome | null;
 readonly page: AnyPage;
 ```
 
-<a id="params-6"></a>
+<a id="params-5"></a>
 
 ##### params
 
 ```ts
 readonly params: Readonly<Record<string, unknown>>;
+```
+
+<a id="screen-3"></a>
+
+##### screen?
+
+```ts
+readonly optional screen?: ScreenState | null;
 ```
 
 <a id="state-4"></a>
@@ -6396,7 +6052,7 @@ readonly optional text?: TextResolver;
 
 #### Properties
 
-<a id="children-21"></a>
+<a id="children-24"></a>
 
 ##### children?
 
@@ -6409,7 +6065,7 @@ readonly optional children?: ReactNode;
 ##### space?
 
 ```ts
-readonly optional space?: 1 | 2 | 4 | 6 | 3 | 5 | 7 | 8;
+readonly optional space?: 1 | 2 | 4 | 6 | 3 | 8 | 5 | 7;
 ```
 
 ***
@@ -6428,7 +6084,7 @@ readonly optional space?: 1 | 2 | 4 | 6 | 3 | 5 | 7 | 8;
 readonly mode: "hydrate" | "render";
 ```
 
-<a id="root-1"></a>
+<a id="root-3"></a>
 
 ##### root
 
@@ -6448,7 +6104,7 @@ readonly root: Root;
 
 #### Properties
 
-<a id="actor-4"></a>
+<a id="actor-3"></a>
 
 ##### actor?
 
@@ -6492,7 +6148,7 @@ readonly optional fetch?: RexFetch;
 
 [`CreateRexAppOptions`](#createrexappoptions).[`fetch`](#fetch)
 
-<a id="link-2"></a>
+<a id="link-1"></a>
 
 ##### link?
 
@@ -6512,7 +6168,7 @@ readonly optional link?: ClientLink<RexClientContext>;
 readonly optional onHydrationMismatch?: HydrationReporter;
 ```
 
-<a id="onnavigate-2"></a>
+<a id="onnavigate-1"></a>
 
 ##### onNavigate?
 
@@ -6524,7 +6180,7 @@ readonly optional onNavigate?: RexNavigateHook;
 
 [`CreateRexAppOptions`](#createrexappoptions).[`onNavigate`](#onnavigate)
 
-<a id="onoutcome-2"></a>
+<a id="onoutcome-1"></a>
 
 ##### onOutcome?
 
@@ -6536,7 +6192,7 @@ readonly optional onOutcome?: RexOutcomeHook;
 
 [`CreateRexAppOptions`](#createrexappoptions).[`onOutcome`](#onoutcome)
 
-<a id="queryclient-2"></a>
+<a id="queryclient-1"></a>
 
 ##### queryClient?
 
@@ -6598,7 +6254,7 @@ exposed(): Readonly<Record<string, unknown>>;
 
 `Readonly`\<`Record`\<`string`, `unknown`\>\>
 
-<a id="get-2"></a>
+<a id="get-3"></a>
 
 ##### get()
 
@@ -6634,7 +6290,7 @@ register(entry): () => void;
 
 () => `void`
 
-<a id="subscribe-5"></a>
+<a id="subscribe-6"></a>
 
 ##### subscribe()
 
@@ -6672,7 +6328,7 @@ toJSON(): Readonly<Record<string, unknown>>;
 
 #### Properties
 
-<a id="as-1"></a>
+<a id="as"></a>
 
 ##### as?
 
@@ -6726,7 +6382,7 @@ readonly optional policy?: Pick<PolicyResult, "allowed">;
 
 #### Properties
 
-<a id="params-7"></a>
+<a id="params-6"></a>
 
 ##### params
 
@@ -6852,6 +6508,18 @@ type ConfirmSubject = Pick<AnyAction, "id" | "label" | "effect">;
 
 ***
 
+<a id="densitypreference"></a>
+
+### DensityPreference
+
+```ts
+type DensityPreference = 
+  | RexDensity
+  | RexScreenDensity;
+```
+
+***
+
 <a id="densitysource"></a>
 
 ### DensitySource
@@ -6859,32 +6527,6 @@ type ConfirmSubject = Pick<AnyAction, "id" | "label" | "effect">;
 ```ts
 type DensitySource = "query" | "header" | "stored" | "default" | "set";
 ```
-
-***
-
-<a id="elementpropkind"></a>
-
-### ElementPropKind
-
-```ts
-type ElementPropKind = "string" | "number" | "boolean" | "json";
-```
-
-***
-
-<a id="elementpropmap"></a>
-
-### ElementPropMap
-
-```ts
-type ElementPropMap<P> = { readonly [K in keyof P & string]?: ElementPropKind };
-```
-
-#### Type Parameters
-
-##### P
-
-`P`
 
 ***
 
@@ -7079,120 +6721,23 @@ type LoaderResults<Pg> = { readonly [N in LoaderName<Pg>]: LoaderResult<Pg, N> }
 
 ***
 
-<a id="localemessages"></a>
+<a id="matchmedia-1"></a>
 
-### LocaleMessages
-
-```ts
-type LocaleMessages = Readonly<Record<string, Messages>>;
-```
-
-***
-
-<a id="localesource"></a>
-
-### LocaleSource
+### MatchMedia
 
 ```ts
-type LocaleSource = typeof LOCALE_SOURCES[number];
-```
-
-***
-
-<a id="messagenode"></a>
-
-### MessageNode
-
-```ts
-type MessageNode = 
-  | {
-  kind: "text";
-  value: string;
-}
-  | {
-  kind: "arg";
-  name: string;
-}
-  | {
-  kind: "number";
-  name: string;
-}
-  | {
-  kind: "pound";
-}
-  | {
-  kind: "plural";
-  name: string;
-  offset: number;
-  options: Readonly<Record<string, readonly MessageNode[]>>;
-  ordinal: boolean;
-}
-  | {
-  kind: "select";
-  name: string;
-  options: Readonly<Record<string, readonly MessageNode[]>>;
-};
-```
-
-***
-
-<a id="messages-3"></a>
-
-### Messages
-
-```ts
-type Messages = Readonly<Record<string, string>>;
-```
-
-***
-
-<a id="messagevalue"></a>
-
-### MessageValue
-
-```ts
-type MessageValue = string | number | boolean;
-```
-
-***
-
-<a id="messagevalues"></a>
-
-### MessageValues
-
-```ts
-type MessageValues = Readonly<Record<string, MessageValue>>;
-```
-
-***
-
-<a id="nativemount"></a>
-
-### NativeMount
-
-```ts
-type NativeMount = (node) => void | (() => void);
+type MatchMedia = (query) => MediaQueryList;
 ```
 
 #### Parameters
 
-##### node
+##### query
 
-`HTMLElement`
+`string`
 
 #### Returns
 
-`void` \| (() => `void`)
-
-***
-
-<a id="nativetag"></a>
-
-### NativeTag
-
-```ts
-type NativeTag = "div" | "span" | "section" | "article" | "figure";
-```
+`MediaQueryList`
 
 ***
 
@@ -7385,6 +6930,26 @@ readonly rexKind: "region";
 
 ***
 
+<a id="resizeobserverconstructor"></a>
+
+### ResizeObserverConstructor
+
+```ts
+type ResizeObserverConstructor = (callback) => ResizeObserver;
+```
+
+#### Parameters
+
+##### callback
+
+`ResizeObserverCallback`
+
+#### Returns
+
+`ResizeObserver`
+
+***
+
 <a id="rexappcomponent"></a>
 
 ### RexAppComponent
@@ -7571,16 +7136,6 @@ type RouteResolution =
 
 ***
 
-<a id="scriptstrategy"></a>
-
-### ScriptStrategy
-
-```ts
-type ScriptStrategy = typeof SCRIPT_STRATEGIES[number];
-```
-
-***
-
 <a id="shellbuttonprops"></a>
 
 ### ShellButtonProps
@@ -7611,12 +7166,32 @@ type ShellComponentsModule = Readonly<Partial<ShellComponents>>;
 
 ***
 
+<a id="shellnavform"></a>
+
+### ShellNavForm
+
+```ts
+type ShellNavForm = typeof SHELL_NAV_FORMS[number];
+```
+
+***
+
 <a id="shelloutcomeprops"></a>
 
 ### ShellOutcomeProps
 
 ```ts
 type ShellOutcomeProps = OutcomeSlotProps;
+```
+
+***
+
+<a id="shellsheetform"></a>
+
+### ShellSheetForm
+
+```ts
+type ShellSheetForm = typeof SHELL_SHEET_FORMS[number];
 ```
 
 ***
@@ -7654,68 +7229,6 @@ type StoreValue<S> = S extends RexStore<infer T> ? T : never;
 ##### S
 
 `S`
-
-***
-
-<a id="textresolver"></a>
-
-### TextResolver
-
-```ts
-type TextResolver = (text, values?) => string;
-```
-
-#### Parameters
-
-##### text
-
-`string`
-
-##### values?
-
-[`MessageValues`](#messagevalues)
-
-#### Returns
-
-`string`
-
-***
-
-<a id="translate"></a>
-
-### Translate
-
-```ts
-type Translate = (key, values?) => string;
-```
-
-#### Parameters
-
-##### key
-
-`string`
-
-##### values?
-
-[`MessageValues`](#messagevalues)
-
-#### Returns
-
-`string`
-
-***
-
-<a id="unmountrexpage"></a>
-
-### UnmountRexPage
-
-```ts
-type UnmountRexPage = () => void;
-```
-
-#### Returns
-
-`void`
 
 ***
 
@@ -7902,6 +7415,16 @@ const CANCELLED: "CANCELLED" = "CANCELLED";
 
 ***
 
+<a id="coarse_pointer_query"></a>
+
+### COARSE\_POINTER\_QUERY
+
+```ts
+const COARSE_POINTER_QUERY: "(pointer: coarse)" = "(pointer: coarse)";
+```
+
+***
+
 <a id="columns-2"></a>
 
 ### COLUMNS
@@ -7938,19 +7461,6 @@ const CONFIRM_HEADER: "x-rex-confirm" = REX_CONFIRM_HEADER;
 
 ```ts
 const ConfirmContext: Context<ConfirmFn | null>;
-```
-
-***
-
-<a id="confirmgrantschema"></a>
-
-### confirmGrantSchema
-
-```ts
-const confirmGrantSchema: ZodMiniObject<{
-  expiresAt: ZodMiniISODateTime;
-  token: ZodMiniString<string>;
-}, $strip>;
 ```
 
 ***
@@ -8005,12 +7515,32 @@ const DEFAULT_LIST_SIZE: 20 = 20;
 
 ***
 
-<a id="default_script_strategy"></a>
+<a id="default_pointer"></a>
 
-### DEFAULT\_SCRIPT\_STRATEGY
+### DEFAULT\_POINTER
 
 ```ts
-const DEFAULT_SCRIPT_STRATEGY: ScriptStrategy = "afterHydration";
+const DEFAULT_POINTER: RexPointer = "fine";
+```
+
+***
+
+<a id="default_screen"></a>
+
+### DEFAULT\_SCREEN
+
+```ts
+const DEFAULT_SCREEN: RexScreen = "desktop";
+```
+
+***
+
+<a id="default_screen_density"></a>
+
+### DEFAULT\_SCREEN\_DENSITY
+
+```ts
+const DEFAULT_SCREEN_DENSITY: RexScreenDensity = "comfortable";
 ```
 
 ***
@@ -8090,7 +7620,7 @@ const defaultStoreRegistry: StoreRegistry;
 ### DENSITY\_ATTRIBUTE
 
 ```ts
-const DENSITY_ATTRIBUTE: "data-rex-density" = "data-rex-density";
+const DENSITY_ATTRIBUTE: "data-rex-density" = SCREEN_ATTRIBUTES.density;
 ```
 
 ***
@@ -8101,6 +7631,16 @@ const DENSITY_ATTRIBUTE: "data-rex-density" = "data-rex-density";
 
 ```ts
 const DENSITY_HEADER: "x-rex-density" = REX_DENSITY_HEADER;
+```
+
+***
+
+<a id="density_preferences"></a>
+
+### DENSITY\_PREFERENCES
+
+```ts
+const DENSITY_PREFERENCES: readonly DensityPreference[];
 ```
 
 ***
@@ -8152,71 +7692,9 @@ const DRAFT_QUERY_KEY: "draft" = "draft";
 ```ts
 const FlowClientContext: Context<
   | {
-  decide: ProcedureClient<Record<never, never>, ZodMiniObject<{
-     decision: ZodMiniEnum<{
-        approve: "approve";
-        reject: "reject";
-     }>;
-     flow: ZodMiniString<string>;
-     instance: ZodMiniString<string>;
-   }, $strict>, ZodMiniObject<{
-     completed: ZodMiniInt;
-     flow: ZodMiniString<string>;
-     gate: ZodMiniNullable<ZodMiniObject<{
-        id: ZodMiniString<string>;
-        label: ZodMiniString<string>;
-     }, $strict>>;
-     instance: ZodMiniString<string>;
-     status: ZodMiniEnum<{
-        completed: "completed";
-        failed: "failed";
-        idle: "idle";
-        paused: "paused";
-        rejected: "rejected";
-        running: "running";
-     }>;
-  }, $strict>, Record<never, never>>;
-  start: ProcedureClient<Record<never, never>, ZodMiniObject<{
-     flow: ZodMiniString<string>;
-     input: ZodMiniOptional<ZodMiniUnknown>;
-     instance: ZodMiniString<string>;
-   }, $strict>, ZodMiniObject<{
-     completed: ZodMiniInt;
-     flow: ZodMiniString<string>;
-     gate: ZodMiniNullable<ZodMiniObject<{
-        id: ZodMiniString<string>;
-        label: ZodMiniString<string>;
-     }, $strict>>;
-     instance: ZodMiniString<string>;
-     status: ZodMiniEnum<{
-        completed: "completed";
-        failed: "failed";
-        idle: "idle";
-        paused: "paused";
-        rejected: "rejected";
-        running: "running";
-     }>;
-  }, $strict>, Record<never, never>>;
-  status: ProcedureClient<Record<never, never>, ZodMiniObject<{
-     flow: ZodMiniString<string>;
-     instance: ZodMiniString<string>;
-   }, $strict>, ZodMiniObject<{
-     completed: ZodMiniInt;
-     flow: ZodMiniString<string>;
-     gate: ZodMiniNullable<ZodMiniObject<{
-        id: ZodMiniString<string>;
-        label: ZodMiniString<string>;
-     }, $strict>>;
-     instance: ZodMiniString<string>;
-     status: ZodMiniEnum<{
-        completed: "completed";
-        failed: "failed";
-        idle: "idle";
-        paused: "paused";
-        rejected: "rejected";
-        running: "running";
-     }>;
-  }, $strict>, Record<never, never>>;
+  decide: ProcedureClient<Record<never, never>, ProtocolSchema<FlowDecideInput>, ProtocolSchema<FlowState>, Record<never, never>>;
+  start: ProcedureClient<Record<never, never>, ProtocolSchema<FlowStartInput>, ProtocolSchema<FlowState>, Record<never, never>>;
+  status: ProcedureClient<Record<never, never>, ProtocolSchema<FlowInstanceInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 }
 | null>;
 ```
@@ -8229,26 +7707,6 @@ const FlowClientContext: Context<
 
 ```ts
 const FORM_ERRORS_KEY: "_form" = "_form";
-```
-
-***
-
-<a id="i18ncontext"></a>
-
-### I18nContext
-
-```ts
-const I18nContext: Context<I18nState>;
-```
-
-***
-
-<a id="idle_fallback_ms"></a>
-
-### IDLE\_FALLBACK\_MS
-
-```ts
-const IDLE_FALLBACK_MS: 1 = 1;
 ```
 
 ***
@@ -8313,46 +7771,6 @@ const LOADER_QUERY_SCOPE: "loader" = "loader";
 
 ***
 
-<a id="locale_cookie"></a>
-
-### LOCALE\_COOKIE
-
-```ts
-const LOCALE_COOKIE: "rex-locale" = "rex-locale";
-```
-
-***
-
-<a id="locale_cookie_max_age"></a>
-
-### LOCALE\_COOKIE\_MAX\_AGE
-
-```ts
-const LOCALE_COOKIE_MAX_AGE: 31536000 = 31_536_000;
-```
-
-***
-
-<a id="locale_sources"></a>
-
-### LOCALE\_SOURCES
-
-```ts
-const LOCALE_SOURCES: readonly ["prefix", "cookie", "accept-language", "default"];
-```
-
-***
-
-<a id="localeseedcontext"></a>
-
-### LocaleSeedContext
-
-```ts
-const LocaleSeedContext: Context<string | null>;
-```
-
-***
-
 <a id="max_list_size"></a>
 
 ### MAX\_LIST\_SIZE
@@ -8363,22 +7781,12 @@ const MAX_LIST_SIZE: 100 = 100;
 
 ***
 
-<a id="msg_prefix"></a>
+<a id="nav_address_attribute"></a>
 
-### MSG\_PREFIX
-
-```ts
-const MSG_PREFIX: "msg:" = "msg:";
-```
-
-***
-
-<a id="native"></a>
-
-### Native
+### NAV\_ADDRESS\_ATTRIBUTE
 
 ```ts
-const Native: ForwardRefExoticComponent<NativeProps & RefAttributes<HTMLElement>>;
+const NAV_ADDRESS_ATTRIBUTE: "data-rex-nav" = "data-rex-nav";
 ```
 
 ***
@@ -8433,6 +7841,16 @@ const OVERLAY_DISMISS_LABEL: "Close" = "Close";
 
 ***
 
+<a id="overlay_form_attribute"></a>
+
+### OVERLAY\_FORM\_ATTRIBUTE
+
+```ts
+const OVERLAY_FORM_ATTRIBUTE: "data-rex-overlay-form" = "data-rex-overlay-form";
+```
+
+***
+
 <a id="overlay_query_key"></a>
 
 ### OVERLAY\_QUERY\_KEY
@@ -8453,14 +7871,14 @@ const OverlayRegistryContext: Context<OverlayRegistry>;
 
 ***
 
-<a id="page-25"></a>
+<a id="page-26"></a>
 
 ### Page
 
 ```ts
 const Page: Readonly<{
   Grid: (__namedParameters) => Element;
-  List: <T>(__namedParameters) => Element;
+  List: <T>(__namedParameters) => Element | null;
   Outcome: (__namedParameters) => Element;
   Section: (__namedParameters) => Element;
   Stack: (__namedParameters) => Element;
@@ -8525,6 +7943,36 @@ const PALETTE_LABEL: "Command palette" = "Command palette";
 
 ```ts
 const PALETTE_SHORTCUT: "mod+k" = "mod+k";
+```
+
+***
+
+<a id="palette_trigger_address"></a>
+
+### PALETTE\_TRIGGER\_ADDRESS
+
+```ts
+const PALETTE_TRIGGER_ADDRESS: "palette" = "palette";
+```
+
+***
+
+<a id="palette_trigger_attribute"></a>
+
+### PALETTE\_TRIGGER\_ATTRIBUTE
+
+```ts
+const PALETTE_TRIGGER_ATTRIBUTE: "data-rex-palette-trigger" = "data-rex-palette-trigger";
+```
+
+***
+
+<a id="pointer_attribute"></a>
+
+### POINTER\_ATTRIBUTE
+
+```ts
+const POINTER_ATTRIBUTE: "data-rex-pointer" = SCREEN_ATTRIBUTES.pointer;
 ```
 
 ***
@@ -8619,22 +8067,80 @@ const RouteChangesContext: Context<number>;
 
 ***
 
-<a id="script_attribute"></a>
+<a id="screen_attribute"></a>
 
-### SCRIPT\_ATTRIBUTE
+### SCREEN\_ATTRIBUTE
 
 ```ts
-const SCRIPT_ATTRIBUTE: "data-rex-script" = "data-rex-script";
+const SCREEN_ATTRIBUTE: "data-rex-screen" = SCREEN_ATTRIBUTES.screen;
 ```
 
 ***
 
-<a id="script_strategies"></a>
+<a id="screen_attributes"></a>
 
-### SCRIPT\_STRATEGIES
+### SCREEN\_ATTRIBUTES
 
 ```ts
-const SCRIPT_STRATEGIES: readonly ["beforeHydration", "afterHydration", "idle"];
+const SCREEN_ATTRIBUTES: Readonly<{
+  density: "data-rex-density";
+  pointer: "data-rex-pointer";
+  screen: "data-rex-screen";
+}>;
+```
+
+***
+
+<a id="screen_breakpoints"></a>
+
+### SCREEN\_BREAKPOINTS
+
+```ts
+const SCREEN_BREAKPOINTS: Readonly<{
+  desktop: 1600;
+  phone: 600;
+  tablet: 1024;
+}>;
+```
+
+***
+
+<a id="screen_queries"></a>
+
+### SCREEN\_QUERIES
+
+```ts
+const SCREEN_QUERIES: Readonly<Record<RexScreen, string>>;
+```
+
+***
+
+<a id="screencontext"></a>
+
+### ScreenContext
+
+```ts
+const ScreenContext: Context<ScreenState | null>;
+```
+
+***
+
+<a id="screenseedcontext"></a>
+
+### ScreenSeedContext
+
+```ts
+const ScreenSeedContext: Context<ScreenState | null>;
+```
+
+***
+
+<a id="sheet_form_attribute"></a>
+
+### SHEET\_FORM\_ATTRIBUTE
+
+```ts
+const SHEET_FORM_ATTRIBUTE: "data-rex-sheet-form" = "data-rex-sheet-form";
 ```
 
 ***
@@ -8644,7 +8150,27 @@ const SCRIPT_STRATEGIES: readonly ["beforeHydration", "afterHydration", "idle"];
 ### SHELL\_COMPONENT\_NAMES
 
 ```ts
-const SHELL_COMPONENT_NAMES: readonly ["Button", "Sheet", "PaletteItem", "Outcome"];
+const SHELL_COMPONENT_NAMES: readonly ["Button", "Sheet", "PaletteItem", "Outcome", "Frame", "Nav"];
+```
+
+***
+
+<a id="shell_nav_forms"></a>
+
+### SHELL\_NAV\_FORMS
+
+```ts
+const SHELL_NAV_FORMS: readonly ["bar", "sidebar", "dock"];
+```
+
+***
+
+<a id="shell_sheet_forms"></a>
+
+### SHELL\_SHEET\_FORMS
+
+```ts
+const SHELL_SHEET_FORMS: readonly ["dialog", "bottom-sheet"];
 ```
 
 ***
@@ -8685,26 +8211,6 @@ const SHORTCUT_INPUT: Readonly<Record<string, never>>;
 
 ```ts
 const SPACES: readonly [1, 2, 3, 4, 5, 6, 7, 8];
-```
-
-***
-
-<a id="unconfigured_i18n"></a>
-
-### UNCONFIGURED\_I18N
-
-```ts
-const UNCONFIGURED_I18N: I18nState;
-```
-
-***
-
-<a id="unconfigured_locale"></a>
-
-### UNCONFIGURED\_LOCALE
-
-```ts
-const UNCONFIGURED_LOCALE: "en" = "en";
 ```
 
 ***
@@ -8774,7 +8280,7 @@ readonly data-rex: string;
 ### ActionForm()
 
 ```ts
-function ActionForm<A>(__namedParameters): Element;
+function ActionForm<A>(__namedParameters): Element | null;
 ```
 
 #### Type Parameters
@@ -8791,7 +8297,7 @@ function ActionForm<A>(__namedParameters): Element;
 
 #### Returns
 
-`Element`
+`Element` \| `null`
 
 ***
 
@@ -8939,17 +8445,17 @@ function AgentShell(__namedParameters): Element;
 
 ***
 
-<a id="attributename"></a>
+<a id="ariakeyshortcuts"></a>
 
-### attributeName()
+### ariaKeyShortcuts()
 
 ```ts
-function attributeName(prop): string;
+function ariaKeyShortcuts(shortcut): string;
 ```
 
 #### Parameters
 
-##### prop
+##### shortcut
 
 `string`
 
@@ -8981,6 +8487,12 @@ function buildSidecarPayload(source): object;
 
 ```ts
 actions: object[];
+```
+
+##### density?
+
+```ts
+optional density?: "comfortable" | "compact" | "agent";
 ```
 
 ##### loaders?
@@ -9020,10 +8532,22 @@ page: string;
 params: Record<string, unknown>;
 ```
 
+##### pointer?
+
+```ts
+optional pointer?: "coarse" | "fine";
+```
+
 ##### regions?
 
 ```ts
 optional regions?: object[];
+```
+
+##### screen?
+
+```ts
+optional screen?: "phone" | "tablet" | "desktop" | "wide";
 ```
 
 ##### state
@@ -9079,40 +8603,43 @@ function checkManifest(manifest, registry): Manifest;
 
 ***
 
-<a id="coerceattribute"></a>
+<a id="classifypointer"></a>
 
-### coerceAttribute()
+### classifyPointer()
 
 ```ts
-function coerceAttribute(
-   tagName, 
-   attribute, 
-   kind, 
-   value
-): unknown;
+function classifyPointer(coarse): "coarse" | "fine";
 ```
 
 #### Parameters
 
-##### tagName
+##### coarse
 
-`string`
-
-##### attribute
-
-`string`
-
-##### kind
-
-[`ElementPropKind`](#elementpropkind)
-
-##### value
-
-`string` \| `null`
+`boolean`
 
 #### Returns
 
-`unknown`
+`"coarse"` \| `"fine"`
+
+***
+
+<a id="classifyscreen"></a>
+
+### classifyScreen()
+
+```ts
+function classifyScreen(width): "phone" | "tablet" | "desktop" | "wide";
+```
+
+#### Parameters
+
+##### width
+
+`number`
+
+#### Returns
+
+`"phone"` \| `"tablet"` \| `"desktop"` \| `"wide"`
 
 ***
 
@@ -9239,102 +8766,20 @@ function createFlowClient(options?): object;
 ##### decide
 
 ```ts
-decide: ProcedureClient<Record<never, never>, ZodMiniObject<{
-  decision: ZodMiniEnum<{
-     approve: "approve";
-     reject: "reject";
-  }>;
-  flow: ZodMiniString<string>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>>;
+decide: ProcedureClient<Record<never, never>, ProtocolSchema<FlowDecideInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
 
 ##### start
 
 ```ts
-start: ProcedureClient<Record<never, never>, ZodMiniObject<{
-  flow: ZodMiniString<string>;
-  input: ZodMiniOptional<ZodMiniUnknown>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>>;
+start: ProcedureClient<Record<never, never>, ProtocolSchema<FlowStartInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
 
 ##### status
 
 ```ts
-status: ProcedureClient<Record<never, never>, ZodMiniObject<{
-  flow: ZodMiniString<string>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>>;
+status: ProcedureClient<Record<never, never>, ProtocolSchema<FlowInstanceInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
-
-***
-
-<a id="createmediacollector"></a>
-
-### createMediaCollector()
-
-```ts
-function createMediaCollector(nonce?): RexMediaRequest;
-```
-
-#### Parameters
-
-##### nonce?
-
-`string` \| `null`
-
-#### Returns
-
-[`RexMediaRequest`](#rexmediarequest)
 
 ***
 
@@ -9448,6 +8893,26 @@ function createRexLink(base, fetchImpl?): ClientLink<RexClientContext>;
 
 ***
 
+<a id="createscreensource"></a>
+
+### createScreenSource()
+
+```ts
+function createScreenSource(options?): ScreenSource;
+```
+
+#### Parameters
+
+##### options?
+
+[`ScreenSourceOptions`](#screensourceoptions) = `{}`
+
+#### Returns
+
+[`ScreenSource`](#screensource)
+
+***
+
 <a id="createstoreregistry"></a>
 
 ### createStoreRegistry()
@@ -9540,6 +9005,20 @@ function decodeActorHeader(value): Actor;
 
 ***
 
+<a id="defaultscreensource"></a>
+
+### defaultScreenSource()
+
+```ts
+function defaultScreenSource(): ScreenSource;
+```
+
+#### Returns
+
+[`ScreenSource`](#screensource)
+
+***
+
 <a id="defaultstate"></a>
 
 ### DefaultState()
@@ -9557,64 +9036,6 @@ function DefaultState(__namedParameters): Element;
 #### Returns
 
 `Element`
-
-***
-
-<a id="defineelement"></a>
-
-### defineElement()
-
-```ts
-function defineElement<P>(
-   tagName, 
-   Part, 
-   options
-): RexElementConstructor;
-```
-
-#### Type Parameters
-
-##### P
-
-`P` *extends* `object`
-
-#### Parameters
-
-##### tagName
-
-`string`
-
-##### Part
-
-`ComponentType`\<`P`\>
-
-##### options
-
-[`DefineElementOptions`](#defineelementoptions)\<`P`\>
-
-#### Returns
-
-[`RexElementConstructor`](#rexelementconstructor)
-
-***
-
-<a id="definei18n"></a>
-
-### defineI18n()
-
-```ts
-function defineI18n(input): I18nSource;
-```
-
-#### Parameters
-
-##### input
-
-[`I18nInput`](#i18ninput)
-
-#### Returns
-
-[`I18nSource`](#i18nsource)
 
 ***
 
@@ -9713,26 +9134,6 @@ code: string;
 ```ts
 message: string;
 ```
-
-***
-
-<a id="detectclientlocale"></a>
-
-### detectClientLocale()
-
-```ts
-function detectClientLocale(settings): string;
-```
-
-#### Parameters
-
-##### settings
-
-[`LocaleSettings`](#localesettings)
-
-#### Returns
-
-`string`
 
 ***
 
@@ -9974,7 +9375,7 @@ function findAddressed(
 
 ##### kind
 
-`"page"` \| `"action"` \| `"overlay"` \| `"region"`
+`"page"` \| `"action"` \| `"region"` \| `"overlay"`
 
 ##### address
 
@@ -10017,71 +9418,9 @@ function findRootElement(id, document?): Element;
 ```ts
 function FlowClientProvider(__namedParameters): FunctionComponentElement<ProviderProps<
   | {
-  decide: ProcedureClient<Record<never, never>, ZodMiniObject<{
-     decision: ZodMiniEnum<{
-        approve: "approve";
-        reject: "reject";
-     }>;
-     flow: ZodMiniString<string>;
-     instance: ZodMiniString<string>;
-   }, $strict>, ZodMiniObject<{
-     completed: ZodMiniInt;
-     flow: ZodMiniString<string>;
-     gate: ZodMiniNullable<ZodMiniObject<{
-        id: ZodMiniString<...>;
-        label: ZodMiniString<...>;
-     }, $strict>>;
-     instance: ZodMiniString<string>;
-     status: ZodMiniEnum<{
-        completed: "completed";
-        failed: "failed";
-        idle: "idle";
-        paused: "paused";
-        rejected: "rejected";
-        running: "running";
-     }>;
-  }, $strict>, Record<never, never>>;
-  start: ProcedureClient<Record<never, never>, ZodMiniObject<{
-     flow: ZodMiniString<string>;
-     input: ZodMiniOptional<ZodMiniUnknown>;
-     instance: ZodMiniString<string>;
-   }, $strict>, ZodMiniObject<{
-     completed: ZodMiniInt;
-     flow: ZodMiniString<string>;
-     gate: ZodMiniNullable<ZodMiniObject<{
-        id: ZodMiniString<...>;
-        label: ZodMiniString<...>;
-     }, $strict>>;
-     instance: ZodMiniString<string>;
-     status: ZodMiniEnum<{
-        completed: "completed";
-        failed: "failed";
-        idle: "idle";
-        paused: "paused";
-        rejected: "rejected";
-        running: "running";
-     }>;
-  }, $strict>, Record<never, never>>;
-  status: ProcedureClient<Record<never, never>, ZodMiniObject<{
-     flow: ZodMiniString<string>;
-     instance: ZodMiniString<string>;
-   }, $strict>, ZodMiniObject<{
-     completed: ZodMiniInt;
-     flow: ZodMiniString<string>;
-     gate: ZodMiniNullable<ZodMiniObject<{
-        id: ZodMiniString<...>;
-        label: ZodMiniString<...>;
-     }, $strict>>;
-     instance: ZodMiniString<string>;
-     status: ZodMiniEnum<{
-        completed: "completed";
-        failed: "failed";
-        idle: "idle";
-        paused: "paused";
-        rejected: "rejected";
-        running: "running";
-     }>;
-  }, $strict>, Record<never, never>>;
+  decide: ProcedureClient<Record<never, never>, ProtocolSchema<FlowDecideInput>, ProtocolSchema<FlowState>, Record<never, never>>;
+  start: ProcedureClient<Record<never, never>, ProtocolSchema<FlowStartInput>, ProtocolSchema<FlowState>, Record<never, never>>;
+  status: ProcedureClient<Record<never, never>, ProtocolSchema<FlowInstanceInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 }
 | null>>;
 ```
@@ -10096,71 +9435,9 @@ function FlowClientProvider(__namedParameters): FunctionComponentElement<Provide
 
 `FunctionComponentElement`\<`ProviderProps`\<
   \| \{
-  `decide`: `ProcedureClient`\<`Record`\<`never`, `never`\>, `ZodMiniObject`\<\{
-     `decision`: `ZodMiniEnum`\<\{
-        `approve`: `"approve"`;
-        `reject`: `"reject"`;
-     \}\>;
-     `flow`: `ZodMiniString`\<`string`\>;
-     `instance`: `ZodMiniString`\<`string`\>;
-   \}, `$strict`\>, `ZodMiniObject`\<\{
-     `completed`: `ZodMiniInt`;
-     `flow`: `ZodMiniString`\<`string`\>;
-     `gate`: `ZodMiniNullable`\<`ZodMiniObject`\<\{
-        `id`: `ZodMiniString`\<...\>;
-        `label`: `ZodMiniString`\<...\>;
-     \}, `$strict`\>\>;
-     `instance`: `ZodMiniString`\<`string`\>;
-     `status`: `ZodMiniEnum`\<\{
-        `completed`: `"completed"`;
-        `failed`: `"failed"`;
-        `idle`: `"idle"`;
-        `paused`: `"paused"`;
-        `rejected`: `"rejected"`;
-        `running`: `"running"`;
-     \}\>;
-  \}, `$strict`\>, `Record`\<`never`, `never`\>\>;
-  `start`: `ProcedureClient`\<`Record`\<`never`, `never`\>, `ZodMiniObject`\<\{
-     `flow`: `ZodMiniString`\<`string`\>;
-     `input`: `ZodMiniOptional`\<`ZodMiniUnknown`\>;
-     `instance`: `ZodMiniString`\<`string`\>;
-   \}, `$strict`\>, `ZodMiniObject`\<\{
-     `completed`: `ZodMiniInt`;
-     `flow`: `ZodMiniString`\<`string`\>;
-     `gate`: `ZodMiniNullable`\<`ZodMiniObject`\<\{
-        `id`: `ZodMiniString`\<...\>;
-        `label`: `ZodMiniString`\<...\>;
-     \}, `$strict`\>\>;
-     `instance`: `ZodMiniString`\<`string`\>;
-     `status`: `ZodMiniEnum`\<\{
-        `completed`: `"completed"`;
-        `failed`: `"failed"`;
-        `idle`: `"idle"`;
-        `paused`: `"paused"`;
-        `rejected`: `"rejected"`;
-        `running`: `"running"`;
-     \}\>;
-  \}, `$strict`\>, `Record`\<`never`, `never`\>\>;
-  `status`: `ProcedureClient`\<`Record`\<`never`, `never`\>, `ZodMiniObject`\<\{
-     `flow`: `ZodMiniString`\<`string`\>;
-     `instance`: `ZodMiniString`\<`string`\>;
-   \}, `$strict`\>, `ZodMiniObject`\<\{
-     `completed`: `ZodMiniInt`;
-     `flow`: `ZodMiniString`\<`string`\>;
-     `gate`: `ZodMiniNullable`\<`ZodMiniObject`\<\{
-        `id`: `ZodMiniString`\<...\>;
-        `label`: `ZodMiniString`\<...\>;
-     \}, `$strict`\>\>;
-     `instance`: `ZodMiniString`\<`string`\>;
-     `status`: `ZodMiniEnum`\<\{
-        `completed`: `"completed"`;
-        `failed`: `"failed"`;
-        `idle`: `"idle"`;
-        `paused`: `"paused"`;
-        `rejected`: `"rejected"`;
-        `running`: `"running"`;
-     \}\>;
-  \}, `$strict`\>, `Record`\<`never`, `never`\>\>;
+  `decide`: `ProcedureClient`\<`Record`\<`never`, `never`\>, [`ProtocolSchema`](../rex.md#protocolschema)\<[`FlowDecideInput`](../rex.md#flowdecideinput)\>, [`ProtocolSchema`](../rex.md#protocolschema)\<[`FlowState`](../rex.md#flowstate)\>, `Record`\<`never`, `never`\>\>;
+  `start`: `ProcedureClient`\<`Record`\<`never`, `never`\>, [`ProtocolSchema`](../rex.md#protocolschema)\<[`FlowStartInput`](../rex.md#flowstartinput)\>, [`ProtocolSchema`](../rex.md#protocolschema)\<[`FlowState`](../rex.md#flowstate)\>, `Record`\<`never`, `never`\>\>;
+  `status`: `ProcedureClient`\<`Record`\<`never`, `never`\>, [`ProtocolSchema`](../rex.md#protocolschema)\<[`FlowInstanceInput`](../rex.md#flowinstanceinput-1)\>, [`ProtocolSchema`](../rex.md#protocolschema)\<[`FlowState`](../rex.md#flowstate)\>, `Record`\<`never`, `never`\>\>;
 \}
   \| `null`\>\>
 
@@ -10199,38 +9476,6 @@ function formActionPath(actionId): string;
 ##### actionId
 
 `string`
-
-#### Returns
-
-`string`
-
-***
-
-<a id="formatmessage"></a>
-
-### formatMessage()
-
-```ts
-function formatMessage(
-   pattern, 
-   values?, 
-   locale?
-): string;
-```
-
-#### Parameters
-
-##### pattern
-
-`string`
-
-##### values?
-
-[`MessageValues`](#messagevalues) = `{}`
-
-##### locale?
-
-`string` = `"en"`
 
 #### Returns
 
@@ -10362,66 +9607,6 @@ function hasContent(data): boolean;
 
 ***
 
-<a id="i18nfor"></a>
-
-### i18nFor()
-
-```ts
-function i18nFor(registry): I18nSource | null;
-```
-
-#### Parameters
-
-##### registry
-
-`object`
-
-#### Returns
-
-[`I18nSource`](#i18nsource) \| `null`
-
-***
-
-<a id="i18nprovider"></a>
-
-### I18nProvider()
-
-```ts
-function I18nProvider(__namedParameters): Element;
-```
-
-#### Parameters
-
-##### \_\_namedParameters
-
-[`RexProviderProps`](#rexproviderprops)
-
-#### Returns
-
-`Element`
-
-***
-
-<a id="img"></a>
-
-### Img()
-
-```ts
-function Img(__namedParameters): Element;
-```
-
-#### Parameters
-
-##### \_\_namedParameters
-
-[`ImgProps`](#imgprops)
-
-#### Returns
-
-`Element`
-
-***
-
 <a id="inputproblem"></a>
 
 ### inputProblem()
@@ -10478,6 +9663,20 @@ readonly `unknown`[]
 
 ***
 
+<a id="isappleplatform"></a>
+
+### isApplePlatform()
+
+```ts
+function isApplePlatform(): boolean;
+```
+
+#### Returns
+
+`boolean`
+
+***
+
 <a id="isdefaultshellcomponent"></a>
 
 ### isDefaultShellComponent()
@@ -10490,7 +9689,7 @@ function isDefaultShellComponent<Name>(name, component): boolean;
 
 ##### Name
 
-`Name` *extends* `"Outcome"` \| `"Button"` \| `"Sheet"` \| `"PaletteItem"`
+`Name` *extends* `"Outcome"` \| `"Nav"` \| `"Button"` \| `"Sheet"` \| `"PaletteItem"` \| `"Frame"`
 
 #### Parameters
 
@@ -10505,6 +9704,26 @@ function isDefaultShellComponent<Name>(name, component): boolean;
 #### Returns
 
 `boolean`
+
+***
+
+<a id="isdensitypreference"></a>
+
+### isDensityPreference()
+
+```ts
+function isDensityPreference(value): value is DensityPreference;
+```
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+`value is DensityPreference`
 
 ***
 
@@ -10545,46 +9764,6 @@ readonly `unknown`[]
 #### Returns
 
 `key is LoaderQueryKey`
-
-***
-
-<a id="ismessagekey"></a>
-
-### isMessageKey()
-
-```ts
-function isMessageKey(key): key is string;
-```
-
-#### Parameters
-
-##### key
-
-`unknown`
-
-#### Returns
-
-`key is string`
-
-***
-
-<a id="ismessageref"></a>
-
-### isMessageRef()
-
-```ts
-function isMessageRef(text): text is string;
-```
-
-#### Parameters
-
-##### text
-
-`unknown`
-
-#### Returns
-
-`text is string`
 
 ***
 
@@ -10629,6 +9808,66 @@ function isNavigable(declared): boolean;
 #### Returns
 
 `boolean`
+
+***
+
+<a id="isrexpointer"></a>
+
+### isRexPointer()
+
+```ts
+function isRexPointer(value): value is "coarse" | "fine";
+```
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+value is "coarse" \| "fine"
+
+***
+
+<a id="isrexscreen"></a>
+
+### isRexScreen()
+
+```ts
+function isRexScreen(value): value is "phone" | "tablet" | "desktop" | "wide";
+```
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+value is "phone" \| "tablet" \| "desktop" \| "wide"
+
+***
+
+<a id="isrexscreendensity"></a>
+
+### isRexScreenDensity()
+
+```ts
+function isRexScreenDensity(value): value is "comfortable" | "compact" | "agent";
+```
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+value is "comfortable" \| "compact" \| "agent"
 
 ***
 
@@ -10908,142 +10147,6 @@ function loaderQueryOptions(source): LoaderQueryOptions;
 
 ***
 
-<a id="loadscript"></a>
-
-### loadScript()
-
-```ts
-function loadScript(src, options?): Promise<void>;
-```
-
-#### Parameters
-
-##### src
-
-`string`
-
-##### options?
-
-[`LoadScriptOptions`](#loadscriptoptions) = `{}`
-
-#### Returns
-
-`Promise`\<`void`\>
-
-***
-
-<a id="localechain"></a>
-
-### localeChain()
-
-```ts
-function localeChain(lookup, locale): readonly string[];
-```
-
-#### Parameters
-
-##### lookup
-
-[`MessageLookup`](#messagelookup)
-
-##### locale
-
-`string`
-
-#### Returns
-
-readonly `string`[]
-
-***
-
-<a id="localecookie"></a>
-
-### localeCookie()
-
-```ts
-function localeCookie(locale): string;
-```
-
-#### Parameters
-
-##### locale
-
-`string`
-
-#### Returns
-
-`string`
-
-***
-
-<a id="localeprefix"></a>
-
-### localePrefix()
-
-```ts
-function localePrefix(pathname, locales): string | null;
-```
-
-#### Parameters
-
-##### pathname
-
-`string`
-
-##### locales
-
-readonly `string`[]
-
-#### Returns
-
-`string` \| `null`
-
-***
-
-<a id="localesettings-1"></a>
-
-### localeSettings()
-
-```ts
-function localeSettings(config): LocaleSettings;
-```
-
-#### Parameters
-
-##### config
-
-[`I18nConfig`](config.md#i18nconfig)
-
-#### Returns
-
-[`LocaleSettings`](#localesettings)
-
-***
-
-<a id="localizehref"></a>
-
-### localizeHref()
-
-```ts
-function localizeHref(href, locale): string;
-```
-
-#### Parameters
-
-##### href
-
-`string`
-
-##### locale
-
-`string`
-
-#### Returns
-
-`string`
-
-***
-
 <a id="manifestinputschema"></a>
 
 ### manifestInputSchema()
@@ -11116,121 +10219,23 @@ function matchesShortcut(event, shortcut): boolean;
 
 ***
 
-<a id="matchlocale"></a>
+<a id="navformfor"></a>
 
-### matchLocale()
+### navFormFor()
 
 ```ts
-function matchLocale(candidate, locales): string | null;
+function navFormFor(screen): "sidebar" | "bar" | "dock";
 ```
 
 #### Parameters
 
-##### candidate
+##### screen
 
-`string`
-
-##### locales
-
-readonly `string`[]
+`"phone"` \| `"tablet"` \| `"desktop"` \| `"wide"`
 
 #### Returns
 
-`string` \| `null`
-
-***
-
-<a id="mediaprovider"></a>
-
-### MediaProvider()
-
-```ts
-function MediaProvider(__namedParameters): Element;
-```
-
-#### Parameters
-
-##### \_\_namedParameters
-
-[`MediaProviderProps`](#mediaproviderprops)
-
-#### Returns
-
-`Element`
-
-***
-
-<a id="message-7"></a>
-
-### message()
-
-```ts
-function message(
-   lookup, 
-   locale, 
-   key, 
-   values?
-): string;
-```
-
-#### Parameters
-
-##### lookup
-
-[`MessageLookup`](#messagelookup) \| `null`
-
-##### locale
-
-`string`
-
-##### key
-
-`string`
-
-##### values?
-
-[`MessageValues`](#messagevalues) = `{}`
-
-#### Returns
-
-`string`
-
-***
-
-<a id="mountrexpage"></a>
-
-### mountRexPage()
-
-```ts
-function mountRexPage(
-   element, 
-   app, 
-   pageId, 
-   options?
-): UnmountRexPage;
-```
-
-#### Parameters
-
-##### element
-
-`Element`
-
-##### app
-
-[`RexEntryBundle`](#rexentrybundle)
-
-##### pageId
-
-`string`
-
-##### options?
-
-[`MountRexPageOptions`](#mountrexpageoptions) = `{}`
-
-#### Returns
-
-[`UnmountRexPage`](#unmountrexpage)
+`"sidebar"` \| `"bar"` \| `"dock"`
 
 ***
 
@@ -11248,36 +10253,12 @@ function navigationHost(): EventTarget | undefined;
 
 ***
 
-<a id="negotiatelocale"></a>
-
-### negotiateLocale()
-
-```ts
-function negotiateLocale(candidates, locales): string | null;
-```
-
-#### Parameters
-
-##### candidates
-
-readonly `string`[]
-
-##### locales
-
-readonly `string`[]
-
-#### Returns
-
-`string` \| `null`
-
-***
-
 <a id="notfound"></a>
 
 ### NotFound()
 
 ```ts
-function NotFound(__namedParameters): Element;
+function NotFound(__namedParameters): Element | null;
 ```
 
 #### Parameters
@@ -11290,7 +10271,7 @@ function NotFound(__namedParameters): Element;
 
 #### Returns
 
-`Element`
+`Element` \| `null`
 
 ***
 
@@ -11335,6 +10316,20 @@ function openOverlaysFromSearch(search): readonly string[];
 #### Returns
 
 readonly `string`[]
+
+***
+
+<a id="openpalette"></a>
+
+### openPalette()
+
+```ts
+function openPalette(): void;
+```
+
+#### Returns
+
+`void`
 
 ***
 
@@ -11779,6 +10774,20 @@ function pageQueryScope(resolution): string;
 
 ***
 
+<a id="palettetrigger"></a>
+
+### paletteTrigger()
+
+```ts
+function paletteTrigger(): ShellPaletteTriggerProps;
+```
+
+#### Returns
+
+[`ShellPaletteTriggerProps`](#shellpalettetriggerprops)
+
+***
+
 <a id="palettevalue"></a>
 
 ### paletteValue()
@@ -11844,46 +10853,6 @@ function parseManifest(value): Manifest;
 #### Returns
 
 [`Manifest`](../rex.md#manifest)
-
-***
-
-<a id="parsemessage"></a>
-
-### parseMessage()
-
-```ts
-function parseMessage(pattern): readonly MessageNode[];
-```
-
-#### Parameters
-
-##### pattern
-
-`string`
-
-#### Returns
-
-readonly [`MessageNode`](#messagenode)[]
-
-***
-
-<a id="parsemessageref"></a>
-
-### parseMessageRef()
-
-```ts
-function parseMessageRef(text): MessageRef | null;
-```
-
-#### Parameters
-
-##### text
-
-`string`
-
-#### Returns
-
-[`MessageRef`](#messageref) \| `null`
 
 ***
 
@@ -12087,6 +11056,26 @@ function readOnline(source?): boolean;
 
 ***
 
+<a id="readrootscreen"></a>
+
+### readRootScreen()
+
+```ts
+function readRootScreen(root): ScreenState | null;
+```
+
+#### Parameters
+
+##### root
+
+`Element` \| `null` \| `undefined`
+
+#### Returns
+
+[`ScreenState`](#screenstate) \| `null`
+
+***
+
 <a id="readsidecar"></a>
 
 ### readSidecar()
@@ -12245,30 +11234,6 @@ function regionFailureMessage(address, error): string;
 
 ***
 
-<a id="registeri18n"></a>
-
-### registerI18n()
-
-```ts
-function registerI18n(registry, input): () => void;
-```
-
-#### Parameters
-
-##### registry
-
-`object`
-
-##### input
-
-[`I18nInput`](#i18ninput) \| [`I18nSource`](#i18nsource)
-
-#### Returns
-
-() => `void`
-
-***
-
 <a id="registerreset"></a>
 
 ### registerReset()
@@ -12377,30 +11342,6 @@ function resolveDensity(inputs): ResolvedDensity;
 #### Returns
 
 [`ResolvedDensity`](#resolveddensity)
-
-***
-
-<a id="resolvelocale"></a>
-
-### resolveLocale()
-
-```ts
-function resolveLocale(settings, inputs): LocaleResolution;
-```
-
-#### Parameters
-
-##### settings
-
-[`LocaleSettings`](#localesettings)
-
-##### inputs
-
-[`LocaleInputs`](#localeinputs)
-
-#### Returns
-
-[`LocaleResolution`](#localeresolution)
 
 ***
 
@@ -12657,23 +11598,63 @@ function runRouteChange(
 
 ***
 
-<a id="script"></a>
+<a id="screenattributes"></a>
 
-### Script()
+### screenAttributes()
 
 ```ts
-function Script(__namedParameters): Element | null;
+function screenAttributes(state): Readonly<Record<string, string>>;
+```
+
+#### Parameters
+
+##### state
+
+[`ScreenState`](#screenstate)
+
+#### Returns
+
+`Readonly`\<`Record`\<`string`, `string`\>\>
+
+***
+
+<a id="screendensity-1"></a>
+
+### screenDensity()
+
+```ts
+function screenDensity(preference): "comfortable" | "compact" | "agent";
+```
+
+#### Parameters
+
+##### preference
+
+`string` \| `null` \| `undefined`
+
+#### Returns
+
+`"comfortable"` \| `"compact"` \| `"agent"`
+
+***
+
+<a id="screenprovider"></a>
+
+### ScreenProvider()
+
+```ts
+function ScreenProvider(__namedParameters): FunctionComponentElement<ProviderProps<ScreenState | null>>;
 ```
 
 #### Parameters
 
 ##### \_\_namedParameters
 
-[`ScriptProps`](#scriptprops)
+[`ScreenProviderProps`](#screenproviderprops)
 
 #### Returns
 
-`Element` \| `null`
+`FunctionComponentElement`\<`ProviderProps`\<[`ScreenState`](#screenstate) \| `null`\>\>
 
 ***
 
@@ -12725,6 +11706,10 @@ function serializeSidecar(payload): string;
 
 `object`[] = `...`
 
+###### density?
+
+`"comfortable"` \| `"compact"` \| `"agent"` = `...`
+
 ###### loaders?
 
 `object`[] = `...`
@@ -12751,9 +11736,17 @@ function serializeSidecar(payload): string;
 
 `Record`\<`string`, `unknown`\> = `...`
 
+###### pointer?
+
+`"coarse"` \| `"fine"` = `...`
+
 ###### regions?
 
 `object`[] = `...`
+
+###### screen?
+
+`"phone"` \| `"tablet"` \| `"desktop"` \| `"wide"` = `...`
 
 ###### state
 
@@ -12778,6 +11771,26 @@ function serializeSidecar(payload): string;
 #### Returns
 
 `string`
+
+***
+
+<a id="sheetformfor"></a>
+
+### sheetFormFor()
+
+```ts
+function sheetFormFor(screen): "dialog" | "bottom-sheet";
+```
+
+#### Parameters
+
+##### screen
+
+`"phone"` \| `"tablet"` \| `"desktop"` \| `"wide"`
+
+#### Returns
+
+`"dialog"` \| `"bottom-sheet"`
 
 ***
 
@@ -12865,6 +11878,30 @@ readonly [`AnyAction`](../rex.md#anyaction)[]
 
 ***
 
+<a id="shortcuttext"></a>
+
+### shortcutText()
+
+```ts
+function shortcutText(shortcut, apple): string;
+```
+
+#### Parameters
+
+##### shortcut
+
+`string`
+
+##### apple
+
+`boolean`
+
+#### Returns
+
+`string`
+
+***
+
 <a id="shoulddehydraterexquery"></a>
 
 ### shouldDehydrateRexQuery()
@@ -12914,7 +11951,7 @@ function sidecarAction(
 
 ##### text?
 
-[`TextResolver`](#textresolver) = `literalText`
+[`TextResolver`](client/i18n.md#textresolver) = `literalText`
 
 #### Returns
 
@@ -12987,7 +12024,7 @@ function sidecarOutcome(outcome, text?):
 
 ##### text?
 
-[`TextResolver`](#textresolver) = `literalText`
+[`TextResolver`](client/i18n.md#textresolver) = `literalText`
 
 #### Returns
 
@@ -13141,54 +12178,6 @@ function storesToJSON(): Readonly<Record<string, unknown>>;
 
 ***
 
-<a id="striplocaleprefix"></a>
-
-### stripLocalePrefix()
-
-```ts
-function stripLocalePrefix(pathname, locales): string;
-```
-
-#### Parameters
-
-##### pathname
-
-`string`
-
-##### locales
-
-readonly `string`[]
-
-#### Returns
-
-`string`
-
-***
-
-<a id="t-4"></a>
-
-### t()
-
-```ts
-function t(key, values?): string;
-```
-
-#### Parameters
-
-##### key
-
-`string`
-
-##### values?
-
-[`MessageValues`](#messagevalues) = `{}`
-
-#### Returns
-
-`string`
-
-***
-
 <a id="takeoutcomecookie"></a>
 
 ### takeOutcomeCookie()
@@ -13247,6 +12236,65 @@ function TokenButton(props): DetailedReactHTMLElement<{
 
 ***
 
+<a id="tokenframe"></a>
+
+### TokenFrame()
+
+```ts
+function TokenFrame(__namedParameters): DetailedReactHTMLElement<{
+  className: string;
+  data-rex-frame: string;
+  data-rex-nav-form: "sidebar" | "bar" | "dock" | undefined;
+}, HTMLElement>;
+```
+
+#### Parameters
+
+##### \_\_namedParameters
+
+[`ShellFrameProps`](#shellframeprops)
+
+#### Returns
+
+`DetailedReactHTMLElement`\<\{
+  `className`: `string`;
+  `data-rex-frame`: `string`;
+  `data-rex-nav-form`: `"sidebar"` \| `"bar"` \| `"dock"` \| `undefined`;
+\}, `HTMLElement`\>
+
+***
+
+<a id="tokennav"></a>
+
+### TokenNav()
+
+```ts
+function TokenNav(__namedParameters): 
+  | DetailedReactHTMLElement<{
+  aria-label: string;
+  className: string;
+  data-rex-nav-form: "sidebar" | "bar" | "dock";
+}, HTMLElement>
+  | null;
+```
+
+#### Parameters
+
+##### \_\_namedParameters
+
+[`ShellNavProps`](#shellnavprops)
+
+#### Returns
+
+  \| `DetailedReactHTMLElement`\<\{
+  `aria-label`: `string`;
+  `className`: `string`;
+  `data-rex-nav-form`: `"sidebar"` \| `"bar"` \| `"dock"`;
+\}, `HTMLElement`\>
+  \| `null`
+
+***
+
 <a id="tokenoutcome"></a>
 
 ### TokenOutcome()
@@ -13287,12 +12335,47 @@ function TokenPaletteItem(__namedParameters): FunctionComponentElement<FragmentP
 
 ***
 
+<a id="tokenpalettetrigger"></a>
+
+### TokenPaletteTrigger()
+
+```ts
+function TokenPaletteTrigger(__namedParameters): DetailedReactHTMLElement<{
+  aria-keyshortcuts: string;
+  className: string;
+  data-rex-palette-trigger: string;
+  onClick: () => void;
+  type: string;
+}, HTMLElement>;
+```
+
+#### Parameters
+
+##### \_\_namedParameters
+
+[`ShellPaletteTriggerProps`](#shellpalettetriggerprops)
+
+#### Returns
+
+`DetailedReactHTMLElement`\<\{
+  `aria-keyshortcuts`: `string`;
+  `className`: `string`;
+  `data-rex-palette-trigger`: `string`;
+  `onClick`: () => `void`;
+  `type`: `string`;
+\}, `HTMLElement`\>
+
+***
+
 <a id="tokensheet"></a>
 
 ### TokenSheet()
 
 ```ts
-function TokenSheet(__namedParameters): FunctionComponentElement<FragmentProps>;
+function TokenSheet(__namedParameters): DetailedReactHTMLElement<{
+  className: string;
+  data-rex-sheet-form: "dialog" | "bottom-sheet";
+}, HTMLElement>;
 ```
 
 #### Parameters
@@ -13303,44 +12386,10 @@ function TokenSheet(__namedParameters): FunctionComponentElement<FragmentProps>;
 
 #### Returns
 
-`FunctionComponentElement`\<`FragmentProps`\>
-
-***
-
-<a id="translate-1"></a>
-
-### translate()
-
-```ts
-function translate(
-   lookup, 
-   locale, 
-   text, 
-   values?
-): string;
-```
-
-#### Parameters
-
-##### lookup
-
-[`MessageLookup`](#messagelookup) \| `null`
-
-##### locale
-
-`string`
-
-##### text
-
-`string`
-
-##### values?
-
-[`MessageValues`](#messagevalues) = `{}`
-
-#### Returns
-
-`string`
+`DetailedReactHTMLElement`\<\{
+  `className`: `string`;
+  `data-rex-sheet-form`: `"dialog"` \| `"bottom-sheet"`;
+\}, `HTMLElement`\>
 
 ***
 
@@ -13646,96 +12695,20 @@ function useFlowClient(): object;
 ##### decide
 
 ```ts
-decide: ProcedureClient<Record<never, never>, ZodMiniObject<{
-  decision: ZodMiniEnum<{
-     approve: "approve";
-     reject: "reject";
-  }>;
-  flow: ZodMiniString<string>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>>;
+decide: ProcedureClient<Record<never, never>, ProtocolSchema<FlowDecideInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
 
 ##### start
 
 ```ts
-start: ProcedureClient<Record<never, never>, ZodMiniObject<{
-  flow: ZodMiniString<string>;
-  input: ZodMiniOptional<ZodMiniUnknown>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>>;
+start: ProcedureClient<Record<never, never>, ProtocolSchema<FlowStartInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
 
 ##### status
 
 ```ts
-status: ProcedureClient<Record<never, never>, ZodMiniObject<{
-  flow: ZodMiniString<string>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>>;
+status: ProcedureClient<Record<never, never>, ProtocolSchema<FlowInstanceInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
-
-***
-
-<a id="usei18n"></a>
-
-### useI18n()
-
-```ts
-function useI18n(): I18nState;
-```
-
-#### Returns
-
-[`I18nState`](#i18nstate)
 
 ***
 
@@ -13825,20 +12798,6 @@ function useLoaders<Pg>(declared): LoaderResults<Pg>;
 
 ***
 
-<a id="uselocale"></a>
-
-### useLocale()
-
-```ts
-function useLocale(): LocaleInfo;
-```
-
-#### Returns
-
-[`LocaleInfo`](#localeinfo)
-
-***
-
 <a id="uselocalehref"></a>
 
 ### useLocaleHref()
@@ -13878,6 +12837,30 @@ function useNav(): Nav;
 #### Returns
 
 [`Nav`](#nav)
+
+***
+
+<a id="usenavlinks"></a>
+
+### useNavLinks()
+
+```ts
+function useNavLinks(active, navPages): readonly ShellNavLink[];
+```
+
+#### Parameters
+
+##### active
+
+[`AnyPage`](../rex.md#anypage) \| `null`
+
+##### navPages
+
+readonly [`AnyPage`](../rex.md#anypage)[]
+
+#### Returns
+
+readonly [`ShellNavLink`](#shellnavlink)[]
 
 ***
 
@@ -14254,6 +13237,20 @@ function useRouteChanges(): number;
 
 ***
 
+<a id="usescreen"></a>
+
+### useScreen()
+
+```ts
+function useScreen(): ScreenState;
+```
+
+#### Returns
+
+[`ScreenState`](#screenstate)
+
+***
+
 <a id="useshellcomponent"></a>
 
 ### useShellComponent()
@@ -14266,7 +13263,7 @@ function useShellComponent<Name>(name): ShellComponents[Name];
 
 ##### Name
 
-`Name` *extends* `"Outcome"` \| `"Button"` \| `"Sheet"` \| `"PaletteItem"`
+`Name` *extends* `"Outcome"` \| `"Nav"` \| `"Button"` \| `"Sheet"` \| `"PaletteItem"` \| `"Frame"`
 
 #### Parameters
 
@@ -14308,6 +13305,26 @@ function useShortcuts(): void;
 
 ***
 
+<a id="useshortcuttext"></a>
+
+### useShortcutText()
+
+```ts
+function useShortcutText(shortcut): string;
+```
+
+#### Parameters
+
+##### shortcut
+
+`string`
+
+#### Returns
+
+`string`
+
+***
+
 <a id="usesidecarpayload"></a>
 
 ### useSidecarPayload()
@@ -14330,6 +13347,12 @@ function useSidecarPayload(resolution): object;
 
 ```ts
 actions: object[];
+```
+
+##### density?
+
+```ts
+optional density?: "comfortable" | "compact" | "agent";
 ```
 
 ##### loaders?
@@ -14369,10 +13392,22 @@ page: string;
 params: Record<string, unknown>;
 ```
 
+##### pointer?
+
+```ts
+optional pointer?: "coarse" | "fine";
+```
+
 ##### regions?
 
 ```ts
 optional regions?: object[];
+```
+
+##### screen?
+
+```ts
+optional screen?: "phone" | "tablet" | "desktop" | "wide";
 ```
 
 ##### state
@@ -14404,34 +13439,6 @@ version: 1;
 
 ***
 
-<a id="uset"></a>
-
-### useT()
-
-```ts
-function useT(): Translate;
-```
-
-#### Returns
-
-[`Translate`](#translate)
-
-***
-
-<a id="usetext"></a>
-
-### useText()
-
-```ts
-function useText(): TextResolver;
-```
-
-#### Returns
-
-[`TextResolver`](#textresolver)
-
-***
-
 <a id="useurlinvoke"></a>
 
 ### useUrlInvoke()
@@ -14443,30 +13450,6 @@ function useUrlInvoke(): void;
 #### Returns
 
 `void`
-
-***
-
-<a id="validatemessages"></a>
-
-### validateMessages()
-
-```ts
-function validateMessages(locale, value): Messages;
-```
-
-#### Parameters
-
-##### locale
-
-`string`
-
-##### value
-
-`unknown`
-
-#### Returns
-
-[`Messages`](#messages-3)
 
 ***
 
@@ -14548,7 +13531,7 @@ function writeStoredDensity(density): void;
 
 ##### density
 
-`"default"` \| `"agent"`
+[`DensityPreference`](#densitypreference)
 
 #### Returns
 
@@ -14561,6 +13544,30 @@ function writeStoredDensity(density): void;
 ### CONFIRM\_PROCEDURE
 
 Re-exports [CONFIRM_PROCEDURE](../rex.md#confirm_procedure)
+
+***
+
+<a id="confirmgrant"></a>
+
+### ConfirmGrant
+
+Re-exports [ConfirmGrant](../rex.md#confirmgrant)
+
+***
+
+<a id="confirmgrantschema"></a>
+
+### confirmGrantSchema
+
+Re-exports [confirmGrantSchema](../rex.md#confirmgrantschema)
+
+***
+
+<a id="registeri18n"></a>
+
+### registerI18n
+
+Re-exports [registerI18n](client/i18n.md#registeri18n)
 
 ***
 
@@ -14580,8 +13587,56 @@ Re-exports [REX_MANIFEST_PATH](../rex.md#rex_manifest_path)
 
 ***
 
+<a id="rex_pointers"></a>
+
+### REX\_POINTERS
+
+Re-exports [REX_POINTERS](../rex.md#rex_pointers)
+
+***
+
+<a id="rex_screen_densities"></a>
+
+### REX\_SCREEN\_DENSITIES
+
+Re-exports [REX_SCREEN_DENSITIES](../rex.md#rex_screen_densities)
+
+***
+
+<a id="rex_screens"></a>
+
+### REX\_SCREENS
+
+Re-exports [REX_SCREENS](../rex.md#rex_screens)
+
+***
+
 <a id="rexdensity"></a>
 
 ### RexDensity
 
-Re-exports [RexDensity](server.md#rexdensity)
+Re-exports [RexDensity](../rex.md#rexdensity)
+
+***
+
+<a id="rexpointer"></a>
+
+### RexPointer
+
+Re-exports [RexPointer](../rex.md#rexpointer)
+
+***
+
+<a id="rexscreen"></a>
+
+### RexScreen
+
+Re-exports [RexScreen](../rex.md#rexscreen)
+
+***
+
+<a id="rexscreendensity"></a>
+
+### RexScreenDensity
+
+Re-exports [RexScreenDensity](../rex.md#rexscreendensity)

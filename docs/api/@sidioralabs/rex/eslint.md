@@ -49,7 +49,7 @@ const LINT_IGNORES: string[];
 ### LINT\_RULE\_IDS
 
 ```ts
-const LINT_RULE_IDS: readonly ["boundaries", "naming", "traps", "tokens", "a11y", "media"];
+const LINT_RULE_IDS: readonly ["boundaries", "naming", "traps", "tokens", "a11y", "media", "ui", "layout"];
 ```
 
 ***

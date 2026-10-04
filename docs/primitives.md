@@ -8,7 +8,7 @@ Sources: `packages/rex/src/core/*.ts`, `packages/rex/src/manifest/*.ts`, `packag
 
 ## Client entries
 
-Components, hooks and the runtime come from `@sidioralabs/rex/client`. Optional capabilities have their own entries so the client entry stays within its 30 KB budget: `@sidioralabs/rex/client/interop` (`defineElement`, `mountRexPage`, `Native`), `@sidioralabs/rex/client/media` (`Img`, `Script`, `loadScript`) and `@sidioralabs/rex/client/i18n` (`useT`, `useLocale`, `t`, `formatMessage`). The checker's import table admits each of them wherever it admits `@sidioralabs/rex/client`, with the same rule for hooks. A budget is measured on the fully minified production entry chunk alone; each lazily loaded chunk is measured on its own against 10 KB.
+Components, hooks and the runtime come from `@sidioralabs/rex/client`. Optional capabilities have their own entries so the client entry stays within its 30 KB budget: `@sidioralabs/rex/client/interop` (`defineElement`, `mountRexPage`, `Native`), `@sidioralabs/rex/client/media` (`Img`, `Script`, `loadScript`) and `@sidioralabs/rex/client/i18n` (`useT`, `useLocale`, `t`, `formatMessage`). The checker's import table admits each of them wherever it admits `@sidioralabs/rex/client`, with the same rule for hooks. A budget is measured on the first paint of the fully minified production entry, the entry chunk plus every chunk it imports statically; each lazily loaded chunk is measured on its own against 10 KB.
 
 ## Names and ids
 

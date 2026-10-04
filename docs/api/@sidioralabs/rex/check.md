@@ -61,13 +61,13 @@ readonly role:
   | "entity"
   | "policy"
   | "flow"
-  | "overlay"
+  | "states"
   | "region"
+  | "hook"
+  | "overlay"
   | "view"
   | "data"
   | "part"
-  | "states"
-  | "hook"
   | "component"
   | "test";
 ```
@@ -601,13 +601,13 @@ byRole(role): readonly AppFile[];
   \| `"entity"`
   \| `"policy"`
   \| `"flow"`
-  \| `"overlay"`
+  \| `"states"`
   \| `"region"`
+  \| `"hook"`
+  \| `"overlay"`
   \| `"view"`
   \| `"data"`
   \| `"part"`
-  \| `"states"`
-  \| `"hook"`
   \| `"component"`
   \| `"test"`
 

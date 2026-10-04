@@ -182,6 +182,12 @@ sidecar(): object;
 actions: object[];
 ```
 
+###### density?
+
+```ts
+optional density?: "comfortable" | "compact" | "agent";
+```
+
 ###### loaders?
 
 ```ts
@@ -219,10 +225,22 @@ page: string;
 params: Record<string, unknown>;
 ```
 
+###### pointer?
+
+```ts
+optional pointer?: "coarse" | "fine";
+```
+
 ###### regions?
 
 ```ts
 optional regions?: object[];
+```
+
+###### screen?
+
+```ts
+optional screen?: "phone" | "tablet" | "desktop" | "wide";
 ```
 
 ###### state
@@ -616,6 +634,12 @@ function readSidecar(container?): object;
 actions: object[];
 ```
 
+##### density?
+
+```ts
+optional density?: "comfortable" | "compact" | "agent";
+```
+
 ##### loaders?
 
 ```ts
@@ -653,10 +677,22 @@ page: string;
 params: Record<string, unknown>;
 ```
 
+##### pointer?
+
+```ts
+optional pointer?: "coarse" | "fine";
+```
+
 ##### regions?
 
 ```ts
 optional regions?: object[];
+```
+
+##### screen?
+
+```ts
+optional screen?: "phone" | "tablet" | "desktop" | "wide";
 ```
 
 ##### state

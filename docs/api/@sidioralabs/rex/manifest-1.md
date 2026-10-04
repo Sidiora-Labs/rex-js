@@ -100,16 +100,6 @@ readonly path: string;
 
 ## Type Aliases
 
-<a id="invocationroute"></a>
-
-### InvocationRoute
-
-```ts
-type InvocationRoute = typeof INVOCATION_ROUTES[number];
-```
-
-***
-
 <a id="sidecaraction"></a>
 
 ### SidecarAction
@@ -218,26 +208,6 @@ const DEFAULT_PAGE_RENDER: PageRender = "ssr";
 
 ***
 
-<a id="invocation_routes"></a>
-
-### INVOCATION\_ROUTES
-
-```ts
-const INVOCATION_ROUTES: readonly ["click", "key", "palette", "url"];
-```
-
-***
-
-<a id="sidecar_element_id"></a>
-
-### SIDECAR\_ELEMENT\_ID
-
-```ts
-const SIDECAR_ELEMENT_ID: "rex-page" = "rex-page";
-```
-
-***
-
 <a id="sidecar_error_code_pattern"></a>
 
 ### SIDECAR\_ERROR\_CODE\_PATTERN
@@ -248,22 +218,12 @@ const SIDECAR_ERROR_CODE_PATTERN: RegExp;
 
 ***
 
-<a id="sidecar_mime_type"></a>
+<a id="sidecar_screen_fields"></a>
 
-### SIDECAR\_MIME\_TYPE
-
-```ts
-const SIDECAR_MIME_TYPE: "application/rex+json" = "application/rex+json";
-```
-
-***
-
-<a id="sidecar_version"></a>
-
-### SIDECAR\_VERSION
+### SIDECAR\_SCREEN\_FIELDS
 
 ```ts
-const SIDECAR_VERSION: 1 = 1;
+const SIDECAR_SCREEN_FIELDS: readonly ["screen", "pointer", "density"];
 ```
 
 ***
@@ -401,6 +361,11 @@ const sidecarSchema: ZodMiniObject<{
         url: "url";
      }>>;
   }, $strict>>;
+  density: ZodMiniOptional<ZodMiniEnum<{
+     agent: "agent";
+     comfortable: "comfortable";
+     compact: "compact";
+  }>>;
   loaders: ZodMiniOptional<ZodMiniArray<ZodMiniObject<{
      action: ZodMiniString<string>;
      invalidatedBy: ZodMiniArray<ZodMiniString<string>>;
@@ -423,6 +388,10 @@ const sidecarSchema: ZodMiniObject<{
   }, $strict>>;
   page: ZodMiniString<string>;
   params: ZodMiniRecord<ZodMiniString<string>, ZodMiniUnknown>;
+  pointer: ZodMiniOptional<ZodMiniEnum<{
+     coarse: "coarse";
+     fine: "fine";
+  }>>;
   regions: ZodMiniOptional<ZodMiniArray<ZodMiniObject<{
      address: ZodMiniString<string>;
      code: ZodMiniString<string>;
@@ -439,6 +408,12 @@ const sidecarSchema: ZodMiniObject<{
         terminal-error: "terminal-error";
      }>;
   }, $strict>>>;
+  screen: ZodMiniOptional<ZodMiniEnum<{
+     desktop: "desktop";
+     phone: "phone";
+     tablet: "tablet";
+     wide: "wide";
+  }>>;
   state: ZodMiniEnum<{
      empty: "empty";
      loading: "loading";
@@ -703,6 +678,22 @@ Re-exports [FlowStepSource](../rex.md#flowstepsource)
 
 ***
 
+<a id="invocation_routes"></a>
+
+### INVOCATION\_ROUTES
+
+Re-exports [INVOCATION_ROUTES](../rex.md#invocation_routes)
+
+***
+
+<a id="invocationroute"></a>
+
+### InvocationRoute
+
+Re-exports [InvocationRoute](../rex.md#invocationroute)
+
+***
+
 <a id="manifest"></a>
 
 ### Manifest
@@ -804,3 +795,75 @@ Re-exports [ManifestPage](../rex.md#manifestpage)
 ### ManifestPolicy
 
 Re-exports [ManifestPolicy](../rex.md#manifestpolicy)
+
+***
+
+<a id="rex_pointers"></a>
+
+### REX\_POINTERS
+
+Re-exports [REX_POINTERS](../rex.md#rex_pointers)
+
+***
+
+<a id="rex_screen_densities"></a>
+
+### REX\_SCREEN\_DENSITIES
+
+Re-exports [REX_SCREEN_DENSITIES](../rex.md#rex_screen_densities)
+
+***
+
+<a id="rex_screens"></a>
+
+### REX\_SCREENS
+
+Re-exports [REX_SCREENS](../rex.md#rex_screens)
+
+***
+
+<a id="rexpointer"></a>
+
+### RexPointer
+
+Re-exports [RexPointer](../rex.md#rexpointer)
+
+***
+
+<a id="rexscreen"></a>
+
+### RexScreen
+
+Re-exports [RexScreen](../rex.md#rexscreen)
+
+***
+
+<a id="rexscreendensity"></a>
+
+### RexScreenDensity
+
+Re-exports [RexScreenDensity](../rex.md#rexscreendensity)
+
+***
+
+<a id="sidecar_element_id"></a>
+
+### SIDECAR\_ELEMENT\_ID
+
+Re-exports [SIDECAR_ELEMENT_ID](../rex.md#sidecar_element_id)
+
+***
+
+<a id="sidecar_mime_type"></a>
+
+### SIDECAR\_MIME\_TYPE
+
+Re-exports [SIDECAR_MIME_TYPE](../rex.md#sidecar_mime_type)
+
+***
+
+<a id="sidecar_version"></a>
+
+### SIDECAR\_VERSION
+
+Re-exports [SIDECAR_VERSION](../rex.md#sidecar_version)
