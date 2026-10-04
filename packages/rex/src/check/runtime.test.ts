@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -83,7 +91,8 @@ function writeApp(name: string, files: Readonly<Record<string, string>>): string
   return root;
 }
 
-const GREET_ACTION = `import { action, always, text } from "@sidioralabs/rex";
+const GREET_ACTION = `import { action, always } from "@sidioralabs/rex";
+import { text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 
 export const greet = action("greet", {
@@ -104,7 +113,8 @@ export const vault = policy("vault", {
 });
 `;
 
-const OPEN_VAULT_ACTION = `import { action, text } from "@sidioralabs/rex";
+const OPEN_VAULT_ACTION = `import { action } from "@sidioralabs/rex";
+import { text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { vault } from "../policies/vault.ts";
 
@@ -199,7 +209,8 @@ export default region("controls", ({ act }) => {
 };
 
 const failApp = {
-  "app/actions/archive.ts": `import { action, always, text } from "@sidioralabs/rex";
+  "app/actions/archive.ts": `import { action, always } from "@sidioralabs/rex";
+import { text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 
 export const archive = action("archive", {
@@ -211,7 +222,8 @@ export const archive = action("archive", {
   handler: () => ({ done: "archived" }),
 });
 `,
-  "app/actions/publish.ts": `import { action, always, text } from "@sidioralabs/rex";
+  "app/actions/publish.ts": `import { action, always } from "@sidioralabs/rex";
+import { text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 
 export const publish = action("publish", {

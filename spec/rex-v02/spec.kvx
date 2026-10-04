@@ -1476,7 +1476,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.8]
 title = "The core entry is the declaration surface, imports no zod and meets its 15 KB budget"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 7
 requires = ["5.7", "7.2", "7.5", "7.6"]

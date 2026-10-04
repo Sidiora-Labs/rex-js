@@ -1,4 +1,5 @@
-import { page, text } from "@sidioralabs/rex";
+import { page } from "@sidioralabs/rex";
+import { text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { pickToken } from "../../actions/pick-token.ts";
 import { send } from "../../actions/send.ts";

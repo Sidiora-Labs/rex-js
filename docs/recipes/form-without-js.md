@@ -7,7 +7,8 @@ Every action is also reachable as an HTML form post at `/rex/form/<action>`. `Ac
 `action()` accepts `form: { redirect?, confirmTitle? }`:
 
 ```ts
-import { action, money, text } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { money, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { wallet } from "../policies/wallet.ts";
 

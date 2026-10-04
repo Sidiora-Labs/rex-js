@@ -1,18 +1,16 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { RexDeclarationError, entity, type InferEntity } from "./entity.ts";
-import {
-  FIELD_KIND_KEY,
-  boolean,
-  enumOf,
-  id,
-  integer,
-  money,
-  ref,
-  text,
-  timestamp,
-} from "./schema.ts";
+import { FIELD_KIND_KEY } from "./schema.ts";
+import { boolean, enumOf, id, integer, money, ref, text, timestamp } from "../schema/index.ts";
 import { z } from "zod/mini";
-import { standardSource, type StandardSchemaV1 } from "./standard.ts";
+import { RexError } from "./errors.ts";
+import { validateStandardSync, type StandardSchemaV1 } from "./standard.ts";
+import { buildManifest } from "../manifest/build.ts";
+
+function entityJsonSchema(declared: Parameters<typeof buildManifest>[0]["entities"][number]) {
+  const built = buildManifest({ entities: [declared], actions: [], pages: [], policies: [] });
+  return (built.entities[0] as (typeof built.entities)[number]).schema;
+}
 
 const account = entity("account", {
   fields: {
@@ -70,17 +68,20 @@ describe("entity", () => {
     expect(token.keyOf({ symbol: "PAX", decimals: 18, account: "acc-1" })).toBe("PAX");
   });
 
-  it("builds a zod object schema from the fields", () => {
-    expect(account.schema).toBeInstanceOf(z.ZodMiniObject);
+  it("builds a Standard Schema object from the declared fields", () => {
+    expect(account.schema["~standard"].vendor).toBe("rex");
+    expect(account.schema.shape).toBe(account.fields);
     expect(account.parse(sample)).toEqual(sample);
-    expect(account.schema.safeParse({ ...sample, balance: 12 }).success).toBe(false);
+    expect(validateStandardSync(account.schema, { ...sample, balance: 12 }).issues).toBeDefined();
     expect(() => account.parse({ ...sample, name: "" })).toThrow("name");
   });
 
-  it("derives the JSON schema from the same field definition", () => {
-    expect(account.jsonSchema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
-    expect(account.jsonSchema.type).toBe("object");
-    expect(account.jsonSchema.required).toEqual([
+  it("derives the JSON schema from the same field definition when the manifest is built", () => {
+    expect(Object.hasOwn(account, "jsonSchema")).toBe(false);
+    const jsonSchema = entityJsonSchema(account);
+    expect(jsonSchema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
+    expect(jsonSchema.type).toBe("object");
+    expect(jsonSchema.required).toEqual([
       "id",
       "name",
       "balance",
@@ -88,7 +89,7 @@ describe("entity", () => {
       "custodial",
       "openedAt",
     ]);
-    const properties = account.jsonSchema.properties as Record<string, Record<string, unknown>>;
+    const properties = jsonSchema.properties as Record<string, Record<string, unknown>>;
     expect(properties.balance?.[FIELD_KIND_KEY]).toBe("money");
     expect(properties.network?.enum).toEqual(["paxeer", "ethereum"]);
     expect(token.fieldKinds).toEqual({ symbol: "text", decimals: "integer", account: "ref" });
@@ -116,7 +117,7 @@ describe("entity", () => {
   it("is frozen", () => {
     expect(Object.isFrozen(account)).toBe(true);
     expect(Object.isFrozen(account.fields)).toBe(true);
-    expect(Object.isFrozen(account.jsonSchema)).toBe(true);
+    expect(Object.isFrozen(account.schema)).toBe(true);
   });
 
   it("contains no React dependency", async () => {
@@ -195,11 +196,17 @@ describe("entity declaration errors name the field", () => {
     ).toContain("required string field");
   });
 
-  it("unrepresentable field", () => {
-    const error = declarationError(() =>
-      entity("account", { fields: { id: id(), at: z.date() }, label } as never),
-    );
-    expect(error.field).toBe("fields");
+  it("unrepresentable field fails when the manifest is built, naming the entity", () => {
+    const dated = entity("account", { fields: { id: id(), at: z.date() }, label } as never);
+    let error: unknown;
+    try {
+      entityJsonSchema(dated);
+    } catch (thrown) {
+      error = thrown;
+    }
+    expect(error).toBeInstanceOf(RexError);
+    expect((error as RexError).code).toBe("REX210");
+    expect((error as RexError).message).toContain('entity "account"');
   });
 });
 
@@ -221,7 +228,7 @@ describe("Standard Schema fields", () => {
   });
 
   it("accepts a hand-written Standard Schema field and validates through it", () => {
-    expect(standardSource(office.fields.country)).toBe(isoCountry);
+    expect(office.fields.country).toBe(isoCountry);
     expect(office.parse({ id: "o-1", country: "PT", name: "Lisbon" })).toEqual({
       id: "o-1",
       country: "PT",
@@ -240,9 +247,10 @@ describe("Standard Schema fields", () => {
   });
 
   it("describes the Standard Schema field in the JSON schema by its vendor", () => {
-    const properties = office.jsonSchema.properties as Record<string, Record<string, unknown>>;
+    const jsonSchema = entityJsonSchema(office);
+    const properties = jsonSchema.properties as Record<string, Record<string, unknown>>;
     expect(properties.country).toEqual({ "x-rex-standard": "hand" });
-    expect(office.jsonSchema.required).toEqual(["id", "country", "name"]);
+    expect(jsonSchema.required).toEqual(["id", "country", "name"]);
   });
 
   it("refuses a Standard Schema key it cannot prove is a string", () => {

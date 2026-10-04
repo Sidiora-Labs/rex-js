@@ -5,7 +5,11 @@
     "types": ["node"],
     "rootDir": "src",
     "outDir": "dist",
-    "declaration": true
+    "declaration": true,
+    "paths": {
+      "@sidioralabs/rex/schema": ["./src/schema/index.ts"],
+      "@sidioralabs/rex/manifest": ["./src/manifest/index.ts"]
+    }
   },
   "include": ["src"],
   "exclude": ["src/**/fixtures/**/app"]

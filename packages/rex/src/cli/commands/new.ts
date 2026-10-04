@@ -175,10 +175,7 @@ export function dataTemplate(): string {
     `import { bind, memoryStore } from "${CORE_IMPORT}";`,
     `import { ${APP_ENTITY} } from "../entities/${APP_ENTITY}.ts";`,
     "",
-    `export const ${APP_DATA} = bind(`,
-    `  ${APP_ENTITY},`,
-    `  memoryStore(${APP_ENTITY}, [{ id: "welcome", name: "Welcome to Rex" }]),`,
-    ");",
+    `export const ${APP_DATA} = bind(${APP_ENTITY}, memoryStore(${APP_ENTITY}, [{ id: "welcome", name: "Welcome to Rex" }]));`,
   );
 }
 

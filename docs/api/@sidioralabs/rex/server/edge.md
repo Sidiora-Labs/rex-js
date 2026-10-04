@@ -84,6 +84,22 @@ type EdgeFetchHandler = (request, env?, executionCtx?) => Promise<Response>;
 
 `Promise`\<`Response`\>
 
+***
+
+<a id="edgeserveroptions"></a>
+
+### EdgeServerOptions
+
+```ts
+type EdgeServerOptions<A> = PrebuiltRexServerOptions<A>;
+```
+
+#### Type Parameters
+
+##### A
+
+`A` *extends* [`AnyAction`](../../rex.md#anyaction)
+
 ## Functions
 
 <a id="createedgehandler"></a>
@@ -99,6 +115,32 @@ function createEdgeHandler(app): EdgeHandler;
 ##### app
 
 [`EdgeFetchApp`](#edgefetchapp)
+
+#### Returns
+
+[`EdgeHandler`](#edgehandler)
+
+***
+
+<a id="createedgeserver"></a>
+
+### createEdgeServer()
+
+```ts
+function createEdgeServer<A>(options): EdgeHandler;
+```
+
+#### Type Parameters
+
+##### A
+
+`A` *extends* [`AnyAction`](../../rex.md#anyaction)
+
+#### Parameters
+
+##### options
+
+[`EdgeServerOptions`](#edgeserveroptions)\<`A`\>
 
 #### Returns
 

@@ -437,16 +437,6 @@ const DevtoolsStoreContext: Context<DevtoolsStore | null>;
 
 ***
 
-<a id="loader_query_scope"></a>
-
-### LOADER\_QUERY\_SCOPE
-
-```ts
-const LOADER_QUERY_SCOPE: "loader" = "loader";
-```
-
-***
-
 <a id="outcome_log_limit"></a>
 
 ### OUTCOME\_LOG\_LIMIT

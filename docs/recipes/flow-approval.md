@@ -79,8 +79,4 @@ The part spreads `approve` and `reject` on its buttons (`<button {...approve}>Ap
 
 While the instance is paused at `review`, the page's sidecar and palette list two more actions, `large-send.review.approve` and `large-send.review.reject`, labelled "Approve Review the transfer" and "Reject Review the transfer", with effect `irreversible`, an empty input schema, the routes `click` and `palette`, and `allowed` and `reason` from the gate's `approvers`. A decision goes through the confirmation dialog like any irreversible action, and the result is written to the outcome region.
 
-## Checks
-
-The import table of 0.2.0 does not list `app/flows` among the files a region may import, so `rex check` reports the `largeSend` import above as a `boundaries/import-table` error until the table admits it. Flows run and are audited on the server regardless; the gap is only in the checker's table.
-
 Related: [primitives.md](../primitives.md#flow), [agent-contract.md](../agent-contract.md#flow-approval-gates).

@@ -8,11 +8,17 @@ import type { AnyPage } from "../core/page.ts";
 import type { AnyPolicy } from "../core/policy.ts";
 import { REX_DATA_STATES, STATE_EXPORT_NAMES, type RexDataState } from "../core/states.ts";
 import { appName } from "../manifest/scan.ts";
-import { validateSidecar, type SidecarPayload } from "../manifest/sidecar.schema.ts";
+import { validateSidecar, type SidecarPayload } from "../manifest/index.ts";
 import type { RexAppBundle, RexLoadedPageModules, RexPageModule } from "../vite/app-module.ts";
 import { CLIENT_SPECIFIER } from "../vite/virtual.ts";
 import { discoverApp, summarize, type AppPage, type CheckResult, type RexApp } from "./engine.ts";
-import { createSourceLoader, finding, type Finding, type Location, type SourceLoader } from "./rule.ts";
+import {
+  createSourceLoader,
+  finding,
+  type Finding,
+  type Location,
+  type SourceLoader,
+} from "./rule.ts";
 
 export const RUNTIME_RULE = "parity/runtime";
 export const RUNTIME_ORIGIN = "http://rex.check";
@@ -341,6 +347,7 @@ async function mountPage(
     target.search,
     subject,
     bundle.registry,
+    client.manifestParamsSchema(bundle.manifest, declared),
   );
   const pageModules = new Map(bundle.pages.map((page) => [page.id, page]));
   const navPages = bundle.registry.pages.filter(client.isNavigable);
@@ -550,7 +557,12 @@ async function pageTarget(
     if (listed.length === 0) return { problem: "its paths() returned no params" };
     params = listed[0];
   }
-  const href = runtime.client.pageHref(declared, params);
+  const href = runtime.client.pageHref(
+    declared,
+    params,
+    {},
+    runtime.client.manifestParamsSchema(runtime.bundle.manifest, declared),
+  );
   if (!href.ok) {
     return {
       problem: `it needs params (${href.issues.map((issue) => `${issue.path} ${issue.message}`).join("; ")}) and paths() does not supply them`,
@@ -613,8 +625,14 @@ async function inspect(
     }
     const locations = actionLocations(app, sources, appPage);
     for (const [actorIndex, subject] of actors.entries()) {
-      const allowed = client.resolvePage(declared, resolved.target.routeParams, "", subject, bundle.registry)
-        .policy.allowed;
+      const allowed = client.resolvePage(
+        declared,
+        resolved.target.routeParams,
+        "",
+        subject,
+        bundle.registry,
+        client.manifestParamsSchema(bundle.manifest, declared),
+      ).policy.allowed;
       for (const state of runtimeStates(declared, allowed)) {
         const read = await mountPage(runtime, dom, resolved.target, subject, state);
         mounts.push(read.mount);

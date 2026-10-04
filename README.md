@@ -80,7 +80,9 @@ The full import table, naming rules and checker rules are in [docs/convention.md
 This is the demo's `send` action (`examples/demo/app/actions/send.ts`, handler body shortened):
 
 ```ts
-import { action, money, text, z } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { money, text } from "@sidioralabs/rex/schema";
+import { z } from "zod/mini";
 import { wallet } from "../policies/wallet.ts";
 
 export const send = action("send", {

@@ -32,7 +32,7 @@ import {
   isReservedQueryKey,
 } from "./protocol.ts";
 import { createRegistry } from "./registry.ts";
-import { money, text } from "./schema.ts";
+import { money, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 
 const wallet = policy("wallet", {
@@ -212,7 +212,9 @@ describe("client confirm path against the server confirm procedure", () => {
       headers.set("authorization", "Bearer alice");
       headers.set(REX_DENSITY_HEADER, "agent");
       const body = request.method === "GET" ? null : await request.text();
-      return server.fetch(new Request(request.url, { method: request.method, headers, body }));
+      const forwarded = new Request(request.url, { method: request.method, headers, body });
+      if (request.method !== "GET") forwarded.headers.set("origin", new URL(request.url).origin);
+      return server.fetch(forwarded);
     };
     const mounted = mount(fetch, null);
     await waitFor(() => expect(screen.getByTestId("actor").textContent).toBe("alice"));

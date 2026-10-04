@@ -106,7 +106,7 @@ function addStaticPageAndImage(root: string): void {
       ]),
     ].join("\n"),
     "rex.config.ts": [
-      'import { defineConfig } from "@sidioralabs/rex";',
+      'import { defineConfig } from "@sidioralabs/rex/config";',
       'import app from "rex:app";',
       "",
       'export default defineConfig({ app, i18n: { locales: ["en"], default: "en" } });',

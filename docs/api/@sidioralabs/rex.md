@@ -70,261 +70,6 @@ readonly reason: ReasonCode | null;
 
 ***
 
-<a id="rexconfigerror"></a>
-
-### RexConfigError
-
-#### Extends
-
-- [`RexError`](#rexerror)
-
-#### Constructors
-
-<a id="constructor-1"></a>
-
-##### Constructor
-
-```ts
-new RexConfigError(
-   code, 
-   field, 
-   problem
-): RexConfigError;
-```
-
-###### Parameters
-
-###### code
-
-  \| `"REX100"`
-  \| `"REX101"`
-  \| `"REX102"`
-  \| `"REX110"`
-  \| `"REX111"`
-  \| `"REX112"`
-  \| `"REX113"`
-  \| `"REX114"`
-  \| `"REX115"`
-  \| `"REX116"`
-  \| `"REX117"`
-  \| `"REX118"`
-  \| `"REX119"`
-  \| `"REX120"`
-  \| `"REX121"`
-  \| `"REX122"`
-  \| `"REX123"`
-  \| `"REX200"`
-  \| `"REX201"`
-  \| `"REX202"`
-  \| `"REX203"`
-  \| `"REX204"`
-  \| `"REX205"`
-  \| `"REX206"`
-  \| `"REX207"`
-  \| `"REX208"`
-  \| `"REX209"`
-  \| `"REX210"`
-  \| `"REX211"`
-  \| `"REX212"`
-  \| `"REX213"`
-  \| `"REX214"`
-  \| `"REX215"`
-  \| `"REX216"`
-  \| `"REX217"`
-  \| `"REX218"`
-  \| `"REX219"`
-  \| `"REX220"`
-  \| `"REX221"`
-  \| `"REX222"`
-  \| `"REX223"`
-  \| `"REX224"`
-  \| `"REX300"`
-  \| `"REX301"`
-  \| `"REX302"`
-  \| `"REX303"`
-  \| `"REX304"`
-  \| `"REX305"`
-  \| `"REX310"`
-  \| `"REX320"`
-  \| `"REX330"`
-  \| `"REX440"`
-  \| `"REX450"`
-  \| `"REX500"`
-  \| `"REX501"`
-  \| `"REX502"`
-  \| `"REX600"`
-  \| `"REX610"`
-
-###### field
-
-`string`
-
-###### problem
-
-`string`
-
-###### Returns
-
-[`RexConfigError`](#rexconfigerror)
-
-###### Overrides
-
-[`RexError`](#rexerror).[`constructor`](#constructor-4)
-
-#### Properties
-
-<a id="code-1"></a>
-
-##### code
-
-```ts
-readonly code: 
-  | "REX100"
-  | "REX101"
-  | "REX102"
-  | "REX110"
-  | "REX111"
-  | "REX112"
-  | "REX113"
-  | "REX114"
-  | "REX115"
-  | "REX116"
-  | "REX117"
-  | "REX118"
-  | "REX119"
-  | "REX120"
-  | "REX121"
-  | "REX122"
-  | "REX123"
-  | "REX200"
-  | "REX201"
-  | "REX202"
-  | "REX203"
-  | "REX204"
-  | "REX205"
-  | "REX206"
-  | "REX207"
-  | "REX208"
-  | "REX209"
-  | "REX210"
-  | "REX211"
-  | "REX212"
-  | "REX213"
-  | "REX214"
-  | "REX215"
-  | "REX216"
-  | "REX217"
-  | "REX218"
-  | "REX219"
-  | "REX220"
-  | "REX221"
-  | "REX222"
-  | "REX223"
-  | "REX224"
-  | "REX300"
-  | "REX301"
-  | "REX302"
-  | "REX303"
-  | "REX304"
-  | "REX305"
-  | "REX310"
-  | "REX320"
-  | "REX330"
-  | "REX440"
-  | "REX450"
-  | "REX500"
-  | "REX501"
-  | "REX502"
-  | "REX600"
-  | "REX610";
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`code`](#code-4)
-
-<a id="column"></a>
-
-##### column
-
-```ts
-readonly column: number | null;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`column`](#column-3)
-
-<a id="detail"></a>
-
-##### detail
-
-```ts
-readonly detail: string;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`detail`](#detail-3)
-
-<a id="docs"></a>
-
-##### docs
-
-```ts
-readonly docs: string;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`docs`](#docs-3)
-
-<a id="field"></a>
-
-##### field
-
-```ts
-readonly field: string;
-```
-
-<a id="file"></a>
-
-##### file
-
-```ts
-readonly file: string | null;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`file`](#file-3)
-
-<a id="hint"></a>
-
-##### hint
-
-```ts
-readonly hint: string;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`hint`](#hint-3)
-
-<a id="line"></a>
-
-##### line
-
-```ts
-readonly line: number | null;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`line`](#line-3)
-
-***
-
 <a id="rexdeclarationerror"></a>
 
 ### RexDeclarationError
@@ -335,7 +80,7 @@ readonly line: number | null;
 
 #### Constructors
 
-<a id="constructor-2"></a>
+<a id="constructor-1"></a>
 
 ##### Constructor
 
@@ -417,16 +162,65 @@ new RexDeclarationError(
   \| `"REX303"`
   \| `"REX304"`
   \| `"REX305"`
+  \| `"REX306"`
+  \| `"REX307"`
+  \| `"REX308"`
+  \| `"REX309"`
   \| `"REX310"`
+  \| `"REX311"`
+  \| `"REX312"`
+  \| `"REX313"`
+  \| `"REX314"`
+  \| `"REX315"`
+  \| `"REX316"`
+  \| `"REX317"`
+  \| `"REX318"`
+  \| `"REX319"`
   \| `"REX320"`
+  \| `"REX321"`
+  \| `"REX322"`
+  \| `"REX323"`
+  \| `"REX324"`
+  \| `"REX325"`
+  \| `"REX326"`
+  \| `"REX327"`
+  \| `"REX328"`
+  \| `"REX329"`
   \| `"REX330"`
+  \| `"REX331"`
+  \| `"REX400"`
+  \| `"REX401"`
+  \| `"REX402"`
+  \| `"REX403"`
+  \| `"REX404"`
+  \| `"REX405"`
+  \| `"REX406"`
+  \| `"REX407"`
+  \| `"REX408"`
   \| `"REX440"`
+  \| `"REX441"`
+  \| `"REX442"`
   \| `"REX450"`
+  \| `"REX460"`
+  \| `"REX461"`
+  \| `"REX462"`
+  \| `"REX463"`
   \| `"REX500"`
   \| `"REX501"`
   \| `"REX502"`
+  \| `"REX503"`
+  \| `"REX504"`
+  \| `"REX505"`
+  \| `"REX506"`
+  \| `"REX507"`
+  \| `"REX508"`
   \| `"REX600"`
+  \| `"REX601"`
+  \| `"REX602"`
+  \| `"REX603"`
   \| `"REX610"`
+  \| `"REX611"`
+  \| `"REX612"`
 
 ###### Returns
 
@@ -434,11 +228,11 @@ new RexDeclarationError(
 
 ###### Overrides
 
-[`RexError`](#rexerror).[`constructor`](#constructor-4)
+[`RexError`](#rexerror).[`constructor`](#constructor-3)
 
 #### Properties
 
-<a id="code-2"></a>
+<a id="code-1"></a>
 
 ##### code
 
@@ -492,23 +286,72 @@ readonly code:
   | "REX303"
   | "REX304"
   | "REX305"
+  | "REX306"
+  | "REX307"
+  | "REX308"
+  | "REX309"
   | "REX310"
+  | "REX311"
+  | "REX312"
+  | "REX313"
+  | "REX314"
+  | "REX315"
+  | "REX316"
+  | "REX317"
+  | "REX318"
+  | "REX319"
   | "REX320"
+  | "REX321"
+  | "REX322"
+  | "REX323"
+  | "REX324"
+  | "REX325"
+  | "REX326"
+  | "REX327"
+  | "REX328"
+  | "REX329"
   | "REX330"
+  | "REX331"
+  | "REX400"
+  | "REX401"
+  | "REX402"
+  | "REX403"
+  | "REX404"
+  | "REX405"
+  | "REX406"
+  | "REX407"
+  | "REX408"
   | "REX440"
+  | "REX441"
+  | "REX442"
   | "REX450"
+  | "REX460"
+  | "REX461"
+  | "REX462"
+  | "REX463"
   | "REX500"
   | "REX501"
   | "REX502"
+  | "REX503"
+  | "REX504"
+  | "REX505"
+  | "REX506"
+  | "REX507"
+  | "REX508"
   | "REX600"
-  | "REX610";
+  | "REX601"
+  | "REX602"
+  | "REX603"
+  | "REX610"
+  | "REX611"
+  | "REX612";
 ```
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`code`](#code-4)
+[`RexError`](#rexerror).[`code`](#code-3)
 
-<a id="column-1"></a>
+<a id="column"></a>
 
 ##### column
 
@@ -518,7 +361,7 @@ readonly column: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`column`](#column-3)
+[`RexError`](#rexerror).[`column`](#column-2)
 
 <a id="declaration"></a>
 
@@ -528,7 +371,7 @@ readonly column: number | null;
 readonly declaration: DeclarationName;
 ```
 
-<a id="detail-1"></a>
+<a id="detail"></a>
 
 ##### detail
 
@@ -538,9 +381,9 @@ readonly detail: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`detail`](#detail-3)
+[`RexError`](#rexerror).[`detail`](#detail-2)
 
-<a id="docs-1"></a>
+<a id="docs"></a>
 
 ##### docs
 
@@ -550,9 +393,9 @@ readonly docs: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`docs`](#docs-3)
+[`RexError`](#rexerror).[`docs`](#docs-2)
 
-<a id="field-1"></a>
+<a id="field"></a>
 
 ##### field
 
@@ -560,7 +403,7 @@ readonly docs: string;
 readonly field: string;
 ```
 
-<a id="file-1"></a>
+<a id="file"></a>
 
 ##### file
 
@@ -570,19 +413,19 @@ readonly file: string | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`file`](#file-3)
+[`RexError`](#rexerror).[`file`](#file-2)
 
-<a id="hint-1"></a>
+<a id="hint"></a>
 
 ##### hint
 
 ```ts
-readonly hint: string;
+readonly hint: string | null;
 ```
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`hint`](#hint-3)
+[`RexError`](#rexerror).[`hint`](#hint-2)
 
 <a id="id"></a>
 
@@ -592,7 +435,7 @@ readonly hint: string;
 readonly id: string;
 ```
 
-<a id="line-1"></a>
+<a id="line"></a>
 
 ##### line
 
@@ -602,7 +445,7 @@ readonly line: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`line`](#line-3)
+[`RexError`](#rexerror).[`line`](#line-2)
 
 ***
 
@@ -616,7 +459,7 @@ readonly line: number | null;
 
 #### Constructors
 
-<a id="constructor-3"></a>
+<a id="constructor-2"></a>
 
 ##### Constructor
 
@@ -676,16 +519,65 @@ new RexDeclarationOptionError(code, details): RexDeclarationOptionError;
   \| `"REX303"`
   \| `"REX304"`
   \| `"REX305"`
+  \| `"REX306"`
+  \| `"REX307"`
+  \| `"REX308"`
+  \| `"REX309"`
   \| `"REX310"`
+  \| `"REX311"`
+  \| `"REX312"`
+  \| `"REX313"`
+  \| `"REX314"`
+  \| `"REX315"`
+  \| `"REX316"`
+  \| `"REX317"`
+  \| `"REX318"`
+  \| `"REX319"`
   \| `"REX320"`
+  \| `"REX321"`
+  \| `"REX322"`
+  \| `"REX323"`
+  \| `"REX324"`
+  \| `"REX325"`
+  \| `"REX326"`
+  \| `"REX327"`
+  \| `"REX328"`
+  \| `"REX329"`
   \| `"REX330"`
+  \| `"REX331"`
+  \| `"REX400"`
+  \| `"REX401"`
+  \| `"REX402"`
+  \| `"REX403"`
+  \| `"REX404"`
+  \| `"REX405"`
+  \| `"REX406"`
+  \| `"REX407"`
+  \| `"REX408"`
   \| `"REX440"`
+  \| `"REX441"`
+  \| `"REX442"`
   \| `"REX450"`
+  \| `"REX460"`
+  \| `"REX461"`
+  \| `"REX462"`
+  \| `"REX463"`
   \| `"REX500"`
   \| `"REX501"`
   \| `"REX502"`
+  \| `"REX503"`
+  \| `"REX504"`
+  \| `"REX505"`
+  \| `"REX506"`
+  \| `"REX507"`
+  \| `"REX508"`
   \| `"REX600"`
+  \| `"REX601"`
+  \| `"REX602"`
+  \| `"REX603"`
   \| `"REX610"`
+  \| `"REX611"`
+  \| `"REX612"`
 
 ###### details
 
@@ -697,11 +589,11 @@ new RexDeclarationOptionError(code, details): RexDeclarationOptionError;
 
 ###### Overrides
 
-[`RexError`](#rexerror).[`constructor`](#constructor-4)
+[`RexError`](#rexerror).[`constructor`](#constructor-3)
 
 #### Properties
 
-<a id="code-3"></a>
+<a id="code-2"></a>
 
 ##### code
 
@@ -755,23 +647,72 @@ readonly code:
   | "REX303"
   | "REX304"
   | "REX305"
+  | "REX306"
+  | "REX307"
+  | "REX308"
+  | "REX309"
   | "REX310"
+  | "REX311"
+  | "REX312"
+  | "REX313"
+  | "REX314"
+  | "REX315"
+  | "REX316"
+  | "REX317"
+  | "REX318"
+  | "REX319"
   | "REX320"
+  | "REX321"
+  | "REX322"
+  | "REX323"
+  | "REX324"
+  | "REX325"
+  | "REX326"
+  | "REX327"
+  | "REX328"
+  | "REX329"
   | "REX330"
+  | "REX331"
+  | "REX400"
+  | "REX401"
+  | "REX402"
+  | "REX403"
+  | "REX404"
+  | "REX405"
+  | "REX406"
+  | "REX407"
+  | "REX408"
   | "REX440"
+  | "REX441"
+  | "REX442"
   | "REX450"
+  | "REX460"
+  | "REX461"
+  | "REX462"
+  | "REX463"
   | "REX500"
   | "REX501"
   | "REX502"
+  | "REX503"
+  | "REX504"
+  | "REX505"
+  | "REX506"
+  | "REX507"
+  | "REX508"
   | "REX600"
-  | "REX610";
+  | "REX601"
+  | "REX602"
+  | "REX603"
+  | "REX610"
+  | "REX611"
+  | "REX612";
 ```
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`code`](#code-4)
+[`RexError`](#rexerror).[`code`](#code-3)
 
-<a id="column-2"></a>
+<a id="column-1"></a>
 
 ##### column
 
@@ -781,7 +722,7 @@ readonly column: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`column`](#column-3)
+[`RexError`](#rexerror).[`column`](#column-2)
 
 <a id="declaration-1"></a>
 
@@ -791,7 +732,7 @@ readonly column: number | null;
 readonly declaration: string;
 ```
 
-<a id="detail-2"></a>
+<a id="detail-1"></a>
 
 ##### detail
 
@@ -801,9 +742,9 @@ readonly detail: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`detail`](#detail-3)
+[`RexError`](#rexerror).[`detail`](#detail-2)
 
-<a id="docs-2"></a>
+<a id="docs-1"></a>
 
 ##### docs
 
@@ -813,9 +754,9 @@ readonly docs: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`docs`](#docs-3)
+[`RexError`](#rexerror).[`docs`](#docs-2)
 
-<a id="field-2"></a>
+<a id="field-1"></a>
 
 ##### field
 
@@ -823,7 +764,7 @@ readonly docs: string;
 readonly field: string;
 ```
 
-<a id="file-2"></a>
+<a id="file-1"></a>
 
 ##### file
 
@@ -833,19 +774,19 @@ readonly file: string | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`file`](#file-3)
+[`RexError`](#rexerror).[`file`](#file-2)
 
-<a id="hint-2"></a>
+<a id="hint-1"></a>
 
 ##### hint
 
 ```ts
-readonly hint: string;
+readonly hint: string | null;
 ```
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`hint`](#hint-3)
+[`RexError`](#rexerror).[`hint`](#hint-2)
 
 <a id="id-1"></a>
 
@@ -855,7 +796,7 @@ readonly hint: string;
 readonly id: string;
 ```
 
-<a id="line-2"></a>
+<a id="line-1"></a>
 
 ##### line
 
@@ -865,7 +806,7 @@ readonly line: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`line`](#line-3)
+[`RexError`](#rexerror).[`line`](#line-2)
 
 ***
 
@@ -880,13 +821,20 @@ readonly line: number | null;
 #### Extended by
 
 - [`RexDeclarationOptionError`](#rexdeclarationoptionerror)
-- [`RexConfigError`](#rexconfigerror)
 - [`RexNameError`](#rexnameerror)
 - [`RexDeclarationError`](#rexdeclarationerror)
+- [`RexConfigError`](rex/config.md#rexconfigerror)
+- [`RexStartupError`](rex/client.md#rexstartuperror)
+- [`RexPageModuleError`](rex/client.md#rexpagemoduleerror)
+- [`MessageFormatError`](rex/client.md#messageformaterror)
+- [`RexDensityError`](rex/server.md#rexdensityerror)
+- [`RexStaticPageError`](rex/server.md#rexstaticpageerror)
+- [`RuntimeMissingError`](rex/server/bun.md#runtimemissingerror)
+- [`RexAppScanError`](rex/vite.md#rexappscanerror)
 
 #### Constructors
 
-<a id="constructor-4"></a>
+<a id="constructor-3"></a>
 
 ##### Constructor
 
@@ -950,16 +898,65 @@ new RexError(
   \| `"REX303"`
   \| `"REX304"`
   \| `"REX305"`
+  \| `"REX306"`
+  \| `"REX307"`
+  \| `"REX308"`
+  \| `"REX309"`
   \| `"REX310"`
+  \| `"REX311"`
+  \| `"REX312"`
+  \| `"REX313"`
+  \| `"REX314"`
+  \| `"REX315"`
+  \| `"REX316"`
+  \| `"REX317"`
+  \| `"REX318"`
+  \| `"REX319"`
   \| `"REX320"`
+  \| `"REX321"`
+  \| `"REX322"`
+  \| `"REX323"`
+  \| `"REX324"`
+  \| `"REX325"`
+  \| `"REX326"`
+  \| `"REX327"`
+  \| `"REX328"`
+  \| `"REX329"`
   \| `"REX330"`
+  \| `"REX331"`
+  \| `"REX400"`
+  \| `"REX401"`
+  \| `"REX402"`
+  \| `"REX403"`
+  \| `"REX404"`
+  \| `"REX405"`
+  \| `"REX406"`
+  \| `"REX407"`
+  \| `"REX408"`
   \| `"REX440"`
+  \| `"REX441"`
+  \| `"REX442"`
   \| `"REX450"`
+  \| `"REX460"`
+  \| `"REX461"`
+  \| `"REX462"`
+  \| `"REX463"`
   \| `"REX500"`
   \| `"REX501"`
   \| `"REX502"`
+  \| `"REX503"`
+  \| `"REX504"`
+  \| `"REX505"`
+  \| `"REX506"`
+  \| `"REX507"`
+  \| `"REX508"`
   \| `"REX600"`
+  \| `"REX601"`
+  \| `"REX602"`
+  \| `"REX603"`
   \| `"REX610"`
+  \| `"REX611"`
+  \| `"REX612"`
 
 ###### message
 
@@ -978,6 +975,217 @@ new RexError(
 ```ts
 Error.constructor
 ```
+
+#### Properties
+
+<a id="code-3"></a>
+
+##### code
+
+```ts
+readonly code: 
+  | "REX100"
+  | "REX101"
+  | "REX102"
+  | "REX110"
+  | "REX111"
+  | "REX112"
+  | "REX113"
+  | "REX114"
+  | "REX115"
+  | "REX116"
+  | "REX117"
+  | "REX118"
+  | "REX119"
+  | "REX120"
+  | "REX121"
+  | "REX122"
+  | "REX123"
+  | "REX200"
+  | "REX201"
+  | "REX202"
+  | "REX203"
+  | "REX204"
+  | "REX205"
+  | "REX206"
+  | "REX207"
+  | "REX208"
+  | "REX209"
+  | "REX210"
+  | "REX211"
+  | "REX212"
+  | "REX213"
+  | "REX214"
+  | "REX215"
+  | "REX216"
+  | "REX217"
+  | "REX218"
+  | "REX219"
+  | "REX220"
+  | "REX221"
+  | "REX222"
+  | "REX223"
+  | "REX224"
+  | "REX300"
+  | "REX301"
+  | "REX302"
+  | "REX303"
+  | "REX304"
+  | "REX305"
+  | "REX306"
+  | "REX307"
+  | "REX308"
+  | "REX309"
+  | "REX310"
+  | "REX311"
+  | "REX312"
+  | "REX313"
+  | "REX314"
+  | "REX315"
+  | "REX316"
+  | "REX317"
+  | "REX318"
+  | "REX319"
+  | "REX320"
+  | "REX321"
+  | "REX322"
+  | "REX323"
+  | "REX324"
+  | "REX325"
+  | "REX326"
+  | "REX327"
+  | "REX328"
+  | "REX329"
+  | "REX330"
+  | "REX331"
+  | "REX400"
+  | "REX401"
+  | "REX402"
+  | "REX403"
+  | "REX404"
+  | "REX405"
+  | "REX406"
+  | "REX407"
+  | "REX408"
+  | "REX440"
+  | "REX441"
+  | "REX442"
+  | "REX450"
+  | "REX460"
+  | "REX461"
+  | "REX462"
+  | "REX463"
+  | "REX500"
+  | "REX501"
+  | "REX502"
+  | "REX503"
+  | "REX504"
+  | "REX505"
+  | "REX506"
+  | "REX507"
+  | "REX508"
+  | "REX600"
+  | "REX601"
+  | "REX602"
+  | "REX603"
+  | "REX610"
+  | "REX611"
+  | "REX612";
+```
+
+<a id="column-2"></a>
+
+##### column
+
+```ts
+readonly column: number | null;
+```
+
+<a id="detail-2"></a>
+
+##### detail
+
+```ts
+readonly detail: string;
+```
+
+<a id="docs-2"></a>
+
+##### docs
+
+```ts
+readonly docs: string;
+```
+
+<a id="file-2"></a>
+
+##### file
+
+```ts
+readonly file: string | null;
+```
+
+<a id="hint-2"></a>
+
+##### hint
+
+```ts
+readonly hint: string | null;
+```
+
+<a id="line-2"></a>
+
+##### line
+
+```ts
+readonly line: number | null;
+```
+
+***
+
+<a id="rexnameerror"></a>
+
+### RexNameError
+
+#### Extends
+
+- [`RexError`](#rexerror)
+
+#### Constructors
+
+<a id="constructor-4"></a>
+
+##### Constructor
+
+```ts
+new RexNameError(
+   kind, 
+   value, 
+   rule
+): RexNameError;
+```
+
+###### Parameters
+
+###### kind
+
+`string`
+
+###### value
+
+`unknown`
+
+###### rule
+
+`string`
+
+###### Returns
+
+[`RexNameError`](#rexnameerror)
+
+###### Overrides
+
+[`RexError`](#rexerror).[`constructor`](#constructor-3)
 
 #### Properties
 
@@ -1035,17 +1243,70 @@ readonly code:
   | "REX303"
   | "REX304"
   | "REX305"
+  | "REX306"
+  | "REX307"
+  | "REX308"
+  | "REX309"
   | "REX310"
+  | "REX311"
+  | "REX312"
+  | "REX313"
+  | "REX314"
+  | "REX315"
+  | "REX316"
+  | "REX317"
+  | "REX318"
+  | "REX319"
   | "REX320"
+  | "REX321"
+  | "REX322"
+  | "REX323"
+  | "REX324"
+  | "REX325"
+  | "REX326"
+  | "REX327"
+  | "REX328"
+  | "REX329"
   | "REX330"
+  | "REX331"
+  | "REX400"
+  | "REX401"
+  | "REX402"
+  | "REX403"
+  | "REX404"
+  | "REX405"
+  | "REX406"
+  | "REX407"
+  | "REX408"
   | "REX440"
+  | "REX441"
+  | "REX442"
   | "REX450"
+  | "REX460"
+  | "REX461"
+  | "REX462"
+  | "REX463"
   | "REX500"
   | "REX501"
   | "REX502"
+  | "REX503"
+  | "REX504"
+  | "REX505"
+  | "REX506"
+  | "REX507"
+  | "REX508"
   | "REX600"
-  | "REX610";
+  | "REX601"
+  | "REX602"
+  | "REX603"
+  | "REX610"
+  | "REX611"
+  | "REX612";
 ```
+
+###### Inherited from
+
+[`RexError`](#rexerror).[`code`](#code-3)
 
 <a id="column-3"></a>
 
@@ -1055,6 +1316,10 @@ readonly code:
 readonly column: number | null;
 ```
 
+###### Inherited from
+
+[`RexError`](#rexerror).[`column`](#column-2)
+
 <a id="detail-3"></a>
 
 ##### detail
@@ -1062,6 +1327,10 @@ readonly column: number | null;
 ```ts
 readonly detail: string;
 ```
+
+###### Inherited from
+
+[`RexError`](#rexerror).[`detail`](#detail-2)
 
 <a id="docs-3"></a>
 
@@ -1071,6 +1340,10 @@ readonly detail: string;
 readonly docs: string;
 ```
 
+###### Inherited from
+
+[`RexError`](#rexerror).[`docs`](#docs-2)
+
 <a id="file-3"></a>
 
 ##### file
@@ -1079,12 +1352,28 @@ readonly docs: string;
 readonly file: string | null;
 ```
 
+###### Inherited from
+
+[`RexError`](#rexerror).[`file`](#file-2)
+
 <a id="hint-3"></a>
 
 ##### hint
 
 ```ts
-readonly hint: string;
+readonly hint: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](#rexerror).[`hint`](#hint-2)
+
+<a id="kind"></a>
+
+##### kind
+
+```ts
+readonly kind: string;
 ```
 
 <a id="line-3"></a>
@@ -1095,203 +1384,9 @@ readonly hint: string;
 readonly line: number | null;
 ```
 
-***
-
-<a id="rexnameerror"></a>
-
-### RexNameError
-
-#### Extends
-
-- [`RexError`](#rexerror)
-
-#### Constructors
-
-<a id="constructor-5"></a>
-
-##### Constructor
-
-```ts
-new RexNameError(
-   kind, 
-   value, 
-   rule
-): RexNameError;
-```
-
-###### Parameters
-
-###### kind
-
-`string`
-
-###### value
-
-`unknown`
-
-###### rule
-
-`string`
-
-###### Returns
-
-[`RexNameError`](#rexnameerror)
-
-###### Overrides
-
-[`RexError`](#rexerror).[`constructor`](#constructor-4)
-
-#### Properties
-
-<a id="code-5"></a>
-
-##### code
-
-```ts
-readonly code: 
-  | "REX100"
-  | "REX101"
-  | "REX102"
-  | "REX110"
-  | "REX111"
-  | "REX112"
-  | "REX113"
-  | "REX114"
-  | "REX115"
-  | "REX116"
-  | "REX117"
-  | "REX118"
-  | "REX119"
-  | "REX120"
-  | "REX121"
-  | "REX122"
-  | "REX123"
-  | "REX200"
-  | "REX201"
-  | "REX202"
-  | "REX203"
-  | "REX204"
-  | "REX205"
-  | "REX206"
-  | "REX207"
-  | "REX208"
-  | "REX209"
-  | "REX210"
-  | "REX211"
-  | "REX212"
-  | "REX213"
-  | "REX214"
-  | "REX215"
-  | "REX216"
-  | "REX217"
-  | "REX218"
-  | "REX219"
-  | "REX220"
-  | "REX221"
-  | "REX222"
-  | "REX223"
-  | "REX224"
-  | "REX300"
-  | "REX301"
-  | "REX302"
-  | "REX303"
-  | "REX304"
-  | "REX305"
-  | "REX310"
-  | "REX320"
-  | "REX330"
-  | "REX440"
-  | "REX450"
-  | "REX500"
-  | "REX501"
-  | "REX502"
-  | "REX600"
-  | "REX610";
-```
-
 ###### Inherited from
 
-[`RexError`](#rexerror).[`code`](#code-4)
-
-<a id="column-4"></a>
-
-##### column
-
-```ts
-readonly column: number | null;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`column`](#column-3)
-
-<a id="detail-4"></a>
-
-##### detail
-
-```ts
-readonly detail: string;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`detail`](#detail-3)
-
-<a id="docs-4"></a>
-
-##### docs
-
-```ts
-readonly docs: string;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`docs`](#docs-3)
-
-<a id="file-4"></a>
-
-##### file
-
-```ts
-readonly file: string | null;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`file`](#file-3)
-
-<a id="hint-4"></a>
-
-##### hint
-
-```ts
-readonly hint: string;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`hint`](#hint-3)
-
-<a id="kind"></a>
-
-##### kind
-
-```ts
-readonly kind: string;
-```
-
-<a id="line-4"></a>
-
-##### line
-
-```ts
-readonly line: number | null;
-```
-
-###### Inherited from
-
-[`RexError`](#rexerror).[`line`](#line-3)
+[`RexError`](#rexerror).[`line`](#line-2)
 
 <a id="value"></a>
 
@@ -1311,11 +1406,11 @@ readonly value: unknown;
 
 ##### I
 
-`I` *extends* `StandardSchemaV1`
+`I` *extends* [`StandardSchemaV1`](#standardschemav1)
 
 ##### O
 
-`O` *extends* `StandardSchemaV1`
+`O` *extends* [`StandardSchemaV1`](#standardschemav1)
 
 #### Properties
 
@@ -1340,14 +1435,16 @@ readonly optional form?: ActionFormConfig;
 ##### handler
 
 ```ts
-readonly handler: (input, ctx) => StandardInferInput<O> | Promise<StandardInferInput<O>>;
+readonly handler: (input, ctx) => 
+  | StandardInferInput<O>
+| Promise<StandardInferInput<O>>;
 ```
 
 ###### Parameters
 
 ###### input
 
-`StandardInferOutput`\<`I`\>
+[`StandardInferOutput`](#standardinferoutput)\<`I`\>
 
 ###### ctx
 
@@ -1355,7 +1452,8 @@ readonly handler: (input, ctx) => StandardInferInput<O> | Promise<StandardInferI
 
 ###### Returns
 
-`StandardInferInput`\<`O`\> \| `Promise`\<`StandardInferInput`\<`O`\>\>
+  \| [`StandardInferInput`](#standardinferinput)\<`O`\>
+  \| `Promise`\<[`StandardInferInput`](#standardinferinput)\<`O`\>\>
 
 <a id="input"></a>
 
@@ -1443,11 +1541,11 @@ readonly actor: Actor;
 
 ##### I
 
-`I` *extends* `ZodSchemaLike` = `ZodSchemaLike`
+`I` *extends* [`StandardSchemaV1`](#standardschemav1) = [`StandardSchemaV1`](#standardschemav1)
 
 ##### O
 
-`O` *extends* `ZodSchemaLike` = `ZodSchemaLike`
+`O` *extends* [`StandardSchemaV1`](#standardschemav1) = [`StandardSchemaV1`](#standardschemav1)
 
 #### Properties
 
@@ -1481,14 +1579,6 @@ readonly id: N;
 
 ```ts
 readonly input: I;
-```
-
-<a id="inputjsonschema"></a>
-
-##### inputJsonSchema
-
-```ts
-readonly inputJsonSchema: JsonSchema;
 ```
 
 <a id="invalidates-1"></a>
@@ -1539,14 +1629,6 @@ readonly name: N;
 readonly output: O;
 ```
 
-<a id="outputjsonschema"></a>
-
-##### outputJsonSchema
-
-```ts
-readonly outputJsonSchema: JsonSchema;
-```
-
 <a id="policy-1"></a>
 
 ##### policy
@@ -1570,14 +1652,16 @@ readonly shortcut: string | null;
 ##### handler()
 
 ```ts
-handler(input, ctx): input<O> | Promise<input<O>>;
+handler(input, ctx): 
+  | StandardInferInput<O>
+| Promise<StandardInferInput<O>>;
 ```
 
 ###### Parameters
 
 ###### input
 
-`output`\<`I`\>
+[`StandardInferOutput`](#standardinferoutput)\<`I`\>
 
 ###### ctx
 
@@ -1585,7 +1669,8 @@ handler(input, ctx): input<O> | Promise<input<O>>;
 
 ###### Returns
 
-`input`\<`O`\> \| `Promise`\<`input`\<`O`\>\>
+  \| [`StandardInferInput`](#standardinferinput)\<`O`\>
+  \| `Promise`\<[`StandardInferInput`](#standardinferinput)\<`O`\>\>
 
 ***
 
@@ -1959,94 +2044,6 @@ readonly label: string;
 
 ***
 
-<a id="budgetsconfig"></a>
-
-### BudgetsConfig
-
-#### Properties
-
-<a id="client"></a>
-
-##### client?
-
-```ts
-readonly optional client?: number;
-```
-
-<a id="core"></a>
-
-##### core?
-
-```ts
-readonly optional core?: number;
-```
-
-<a id="page"></a>
-
-##### page?
-
-```ts
-readonly optional page?: number;
-```
-
-***
-
-<a id="buildmanifestoptions"></a>
-
-### BuildManifestOptions
-
-#### Properties
-
-<a id="app"></a>
-
-##### app?
-
-```ts
-readonly optional app?: string;
-```
-
-<a id="render"></a>
-
-##### render?
-
-```ts
-readonly optional render?: "ssr" | "csr" | "ssg" | "static";
-```
-
-***
-
-<a id="checkconfig"></a>
-
-### CheckConfig
-
-#### Properties
-
-<a id="tokens"></a>
-
-##### tokens?
-
-```ts
-readonly optional tokens?: TokenAllowLists;
-```
-
-***
-
-<a id="clientconfig"></a>
-
-### ClientConfig
-
-#### Properties
-
-<a id="apiorigin"></a>
-
-##### apiOrigin?
-
-```ts
-readonly optional apiOrigin?: string;
-```
-
-***
-
 <a id="entityconfig"></a>
 
 ### EntityConfig
@@ -2091,7 +2088,7 @@ readonly label: (record) => string;
 
 ###### record
 
-`$InferObjectOutput`\<[`EntityShape`](#entityshape)\<`F`\>\>
+[`EntityRecord`](#entityrecord)\<`F`\>
 
 ###### Returns
 
@@ -2132,7 +2129,7 @@ readonly fieldKinds: Readonly<Record<keyof F & string, FieldKind | undefined>>;
 ##### fields
 
 ```ts
-readonly fields: Readonly<EntityShape<F>>;
+readonly fields: Readonly<F>;
 ```
 
 <a id="id-6"></a>
@@ -2141,14 +2138,6 @@ readonly fields: Readonly<EntityShape<F>>;
 
 ```ts
 readonly id: N;
-```
-
-<a id="jsonschema-2"></a>
-
-##### jsonSchema
-
-```ts
-readonly jsonSchema: JsonSchema;
 ```
 
 <a id="key-1"></a>
@@ -2180,7 +2169,7 @@ readonly name: N;
 ##### schema
 
 ```ts
-readonly schema: ZodMiniObject<EntityShape<F>>;
+readonly schema: EntitySchema<F>;
 ```
 
 #### Methods
@@ -2197,7 +2186,7 @@ keyOf(record): string;
 
 ###### record
 
-`$InferObjectOutput`\<[`EntityShape`](#entityshape)\<`F`\>\>
+[`EntityRecord`](#entityrecord)\<`F`\>
 
 ###### Returns
 
@@ -2215,7 +2204,7 @@ label(record): string;
 
 ###### record
 
-`$InferObjectOutput`\<[`EntityShape`](#entityshape)\<`F`\>\>
+[`EntityRecord`](#entityrecord)\<`F`\>
 
 ###### Returns
 
@@ -2226,7 +2215,7 @@ label(record): string;
 ##### parse()
 
 ```ts
-parse(value): $InferObjectOutput<EntityShape<F>>;
+parse(value): EntityRecord<F>;
 ```
 
 ###### Parameters
@@ -2237,7 +2226,7 @@ parse(value): $InferObjectOutput<EntityShape<F>>;
 
 ###### Returns
 
-`$InferObjectOutput`\<[`EntityShape`](#entityshape)\<`F`\>\>
+[`EntityRecord`](#entityrecord)\<`F`\>
 
 ***
 
@@ -2595,134 +2584,6 @@ readonly outputs: readonly unknown[];
 
 ***
 
-<a id="fontspec"></a>
-
-### FontSpec
-
-#### Properties
-
-<a id="family"></a>
-
-##### family
-
-```ts
-readonly family: string;
-```
-
-<a id="preload"></a>
-
-##### preload?
-
-```ts
-readonly optional preload?: boolean;
-```
-
-<a id="src"></a>
-
-##### src
-
-```ts
-readonly src: string;
-```
-
-<a id="style"></a>
-
-##### style?
-
-```ts
-readonly optional style?: "normal" | "italic";
-```
-
-<a id="weight"></a>
-
-##### weight?
-
-```ts
-readonly optional weight?: string | number;
-```
-
-***
-
-<a id="i18nconfig"></a>
-
-### I18nConfig
-
-#### Properties
-
-<a id="default"></a>
-
-##### default
-
-```ts
-readonly default: string;
-```
-
-<a id="locales"></a>
-
-##### locales
-
-```ts
-readonly locales: readonly string[];
-```
-
-<a id="routing"></a>
-
-##### routing?
-
-```ts
-readonly optional routing?: "none" | "prefix";
-```
-
-***
-
-<a id="imagesconfig"></a>
-
-### ImagesConfig
-
-#### Properties
-
-<a id="formats"></a>
-
-##### formats?
-
-```ts
-readonly optional formats?: readonly ("avif" | "webp" | "jpeg" | "png")[];
-```
-
-<a id="sizes"></a>
-
-##### sizes?
-
-```ts
-readonly optional sizes?: readonly number[];
-```
-
-***
-
-<a id="integeroptions"></a>
-
-### IntegerOptions
-
-#### Properties
-
-<a id="max"></a>
-
-##### max?
-
-```ts
-readonly optional max?: number;
-```
-
-<a id="min"></a>
-
-##### min?
-
-```ts
-readonly optional min?: number;
-```
-
-***
-
 <a id="journal-2"></a>
 
 ### Journal
@@ -2863,7 +2724,7 @@ readonly optional status?: FlowStatus;
 readonly optional filter?: StoreFilter<T>;
 ```
 
-<a id="page-1"></a>
+<a id="page"></a>
 
 ##### page?
 
@@ -2901,7 +2762,7 @@ readonly optional size?: number;
 readonly items: T[];
 ```
 
-<a id="page-2"></a>
+<a id="page-1"></a>
 
 ##### page
 
@@ -2941,7 +2802,7 @@ readonly total: number;
 readonly actions: readonly ManifestAction[];
 ```
 
-<a id="app-1"></a>
+<a id="app"></a>
 
 ##### app
 
@@ -3253,6 +3114,14 @@ readonly action: string;
 readonly input: "params" | "mapped";
 ```
 
+<a id="invalidatedby"></a>
+
+##### invalidatedBy
+
+```ts
+readonly invalidatedBy: readonly string[];
+```
+
 <a id="name-5"></a>
 
 ##### name
@@ -3397,7 +3266,7 @@ readonly recovery: string | null;
 readonly regions: readonly string[];
 ```
 
-<a id="render-1"></a>
+<a id="render"></a>
 
 ##### render
 
@@ -3480,54 +3349,6 @@ readonly permissions: readonly string[];
 
 ***
 
-<a id="manifestsource"></a>
-
-### ManifestSource
-
-#### Properties
-
-<a id="actions-2"></a>
-
-##### actions
-
-```ts
-readonly actions: readonly AnyAction[];
-```
-
-<a id="entities-1"></a>
-
-##### entities
-
-```ts
-readonly entities: readonly AnyEntity[];
-```
-
-<a id="flows-1"></a>
-
-##### flows?
-
-```ts
-readonly optional flows?: readonly FlowSource[];
-```
-
-<a id="pages-1"></a>
-
-##### pages
-
-```ts
-readonly pages: readonly AnyPage[];
-```
-
-<a id="policies-1"></a>
-
-##### policies
-
-```ts
-readonly policies: readonly AnyPolicy[];
-```
-
-***
-
 <a id="normalizedlistquery"></a>
 
 ### NormalizedListQuery
@@ -3556,7 +3377,7 @@ readonly filter: StoreFilter<T>;
 readonly offset: number;
 ```
 
-<a id="page-3"></a>
+<a id="page-2"></a>
 
 ##### page
 
@@ -3716,7 +3537,7 @@ readonly optional title?: string;
 
 ##### P
 
-`P` *extends* `StandardSchemaV1`
+`P` *extends* [`StandardSchemaV1`](#standardschemav1)
 
 ##### S
 
@@ -3740,7 +3561,7 @@ readonly optional title?: string;
 
 #### Properties
 
-<a id="actions-3"></a>
+<a id="actions-2"></a>
 
 ##### actions?
 
@@ -3828,7 +3649,7 @@ readonly optional recovery?: string;
 readonly optional regions?: readonly R[];
 ```
 
-<a id="render-2"></a>
+<a id="render-1"></a>
 
 ##### render?
 
@@ -3906,7 +3727,7 @@ readonly optional transition?: "none" | "view";
 
 #### Properties
 
-<a id="actions-4"></a>
+<a id="actions-3"></a>
 
 ##### actions
 
@@ -3994,20 +3815,14 @@ readonly overlays: readonly OverlayDeclaration<O>[];
 readonly params: P;
 ```
 
-<a id="paramsjsonschema"></a>
-
-##### paramsJsonSchema
-
-```ts
-readonly paramsJsonSchema: JsonSchema;
-```
-
 <a id="paths-2"></a>
 
 ##### paths
 
 ```ts
-readonly paths: PagePaths<input<P>> | null;
+readonly paths: 
+  | PagePaths<StandardInferInput<P>>
+  | null;
 ```
 
 <a id="policy-5"></a>
@@ -4034,7 +3849,7 @@ readonly recovery: string | null;
 readonly regions: readonly R[];
 ```
 
-<a id="render-3"></a>
+<a id="render-2"></a>
 
 ##### render
 
@@ -4106,6 +3921,14 @@ readonly action: AnyAction;
 readonly input: ((params) => unknown) | null;
 ```
 
+<a id="invalidatedby-1"></a>
+
+##### invalidatedBy
+
+```ts
+readonly invalidatedBy: readonly string[];
+```
+
 <a id="name-7"></a>
 
 ##### name
@@ -4136,14 +3959,22 @@ readonly name: string;
 readonly action: Act;
 ```
 
+<a id="invalidatedby-2"></a>
+
+##### invalidatedBy?
+
+```ts
+readonly optional invalidatedBy?: readonly string[];
+```
+
 #### Methods
 
 <a id="input-12"></a>
 
-##### input()
+##### input()?
 
 ```ts
-input(params): unknown;
+optional input(params): unknown;
 ```
 
 ###### Parameters
@@ -4376,30 +4207,6 @@ requires(clause): Predicate;
 
 ***
 
-<a id="realoptions"></a>
-
-### RealOptions
-
-#### Properties
-
-<a id="max-1"></a>
-
-##### max?
-
-```ts
-readonly optional max?: number;
-```
-
-<a id="min-1"></a>
-
-##### min?
-
-```ts
-readonly optional min?: number;
-```
-
-***
-
 <a id="registry"></a>
 
 ### Registry
@@ -4496,7 +4303,7 @@ entity: AnyEntity;
 flow: AnyFlow;
 ```
 
-<a id="page-4"></a>
+<a id="page-3"></a>
 
 ##### page
 
@@ -4510,22 +4317,6 @@ page: AnyPage;
 
 ```ts
 policy: AnyPolicy;
-```
-
-***
-
-<a id="renderconfig"></a>
-
-### RenderConfig
-
-#### Properties
-
-<a id="default-1"></a>
-
-##### default?
-
-```ts
-readonly optional default?: "ssr" | "csr" | "ssg" | "static";
 ```
 
 ***
@@ -4576,828 +4367,6 @@ readonly optional unlocked?: boolean;
 
 ***
 
-<a id="resolvedbudgets"></a>
-
-### ResolvedBudgets
-
-#### Properties
-
-<a id="client-1"></a>
-
-##### client
-
-```ts
-readonly client: number;
-```
-
-<a id="core-1"></a>
-
-##### core
-
-```ts
-readonly core: number;
-```
-
-<a id="page-5"></a>
-
-##### page
-
-```ts
-readonly page: number;
-```
-
-***
-
-<a id="resolvedfont"></a>
-
-### ResolvedFont
-
-#### Properties
-
-<a id="family-1"></a>
-
-##### family
-
-```ts
-readonly family: string;
-```
-
-<a id="preload-1"></a>
-
-##### preload
-
-```ts
-readonly preload: boolean;
-```
-
-<a id="src-1"></a>
-
-##### src
-
-```ts
-readonly src: string;
-```
-
-<a id="style-1"></a>
-
-##### style
-
-```ts
-readonly style: "normal" | "italic";
-```
-
-<a id="weight-1"></a>
-
-##### weight
-
-```ts
-readonly weight: string | null;
-```
-
-***
-
-<a id="resolvedi18n"></a>
-
-### ResolvedI18n
-
-#### Properties
-
-<a id="default-2"></a>
-
-##### default
-
-```ts
-readonly default: string;
-```
-
-<a id="locales-1"></a>
-
-##### locales
-
-```ts
-readonly locales: readonly string[];
-```
-
-<a id="routing-1"></a>
-
-##### routing
-
-```ts
-readonly routing: "none" | "prefix";
-```
-
-***
-
-<a id="resolvedrexconfig"></a>
-
-### ResolvedRexConfig
-
-#### Extends
-
-- [`ResolvedRexOptions`](#resolvedrexoptions)
-
-#### Type Parameters
-
-##### A
-
-`A` *extends* [`RexConfigApp`](#rexconfigapp-1) = [`RexConfigApp`](#rexconfigapp-1)
-
-#### Properties
-
-<a id="app-2"></a>
-
-##### app
-
-```ts
-readonly app: A;
-```
-
-<a id="budgets"></a>
-
-##### budgets
-
-```ts
-readonly budgets: ResolvedBudgets;
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`budgets`](#budgets-1)
-
-<a id="check"></a>
-
-##### check
-
-```ts
-readonly check: object;
-```
-
-###### tokens
-
-```ts
-readonly tokens: object;
-```
-
-###### tokens.classes
-
-```ts
-readonly classes: readonly string[];
-```
-
-###### tokens.colors
-
-```ts
-readonly colors: readonly string[];
-```
-
-###### tokens.spacing
-
-```ts
-readonly spacing: readonly string[];
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`check`](#check-1)
-
-<a id="client-2"></a>
-
-##### client
-
-```ts
-readonly client: object;
-```
-
-###### apiOrigin
-
-```ts
-readonly apiOrigin: string | null;
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`client`](#client-3)
-
-<a id="compiler"></a>
-
-##### compiler
-
-```ts
-readonly compiler: boolean;
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`compiler`](#compiler-1)
-
-<a id="devtools"></a>
-
-##### devtools
-
-```ts
-readonly devtools: boolean;
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`devtools`](#devtools-1)
-
-<a id="fonts"></a>
-
-##### fonts
-
-```ts
-readonly fonts: readonly ResolvedFont[];
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`fonts`](#fonts-1)
-
-<a id="i18n"></a>
-
-##### i18n
-
-```ts
-readonly i18n: ResolvedI18n | null;
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`i18n`](#i18n-1)
-
-<a id="images"></a>
-
-##### images
-
-```ts
-readonly images: object;
-```
-
-###### formats
-
-```ts
-readonly formats: readonly ("avif" | "webp" | "jpeg" | "png")[];
-```
-
-###### sizes
-
-```ts
-readonly sizes: readonly number[];
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`images`](#images-1)
-
-<a id="render-4"></a>
-
-##### render
-
-```ts
-readonly render: object;
-```
-
-###### default
-
-```ts
-readonly default: "ssr" | "csr" | "ssg" | "static";
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`render`](#render-5)
-
-<a id="security"></a>
-
-##### security
-
-```ts
-readonly security: ResolvedSecurity;
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`security`](#security-1)
-
-<a id="server"></a>
-
-##### server
-
-```ts
-readonly server: ((app) => RexFetchHandler) | null;
-```
-
-<a id="shellcomponents"></a>
-
-##### shellComponents
-
-```ts
-readonly shellComponents: string | null;
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`shellComponents`](#shellcomponents-1)
-
-<a id="tailwind"></a>
-
-##### tailwind
-
-```ts
-readonly tailwind: boolean;
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`tailwind`](#tailwind-1)
-
-<a id="telemetry"></a>
-
-##### telemetry
-
-```ts
-readonly telemetry: object;
-```
-
-###### logger
-
-```ts
-readonly logger: RexLogger | null;
-```
-
-###### tracer
-
-```ts
-readonly tracer: RexTracer | null;
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`telemetry`](#telemetry-1)
-
-<a id="ui"></a>
-
-##### ui
-
-```ts
-readonly ui: "none" | "designx";
-```
-
-###### Inherited from
-
-[`ResolvedRexOptions`](#resolvedrexoptions).[`ui`](#ui-1)
-
-***
-
-<a id="resolvedrexoptions"></a>
-
-### ResolvedRexOptions
-
-#### Extended by
-
-- [`ResolvedRexConfig`](#resolvedrexconfig)
-
-#### Properties
-
-<a id="budgets-1"></a>
-
-##### budgets
-
-```ts
-readonly budgets: ResolvedBudgets;
-```
-
-<a id="check-1"></a>
-
-##### check
-
-```ts
-readonly check: object;
-```
-
-###### tokens
-
-```ts
-readonly tokens: object;
-```
-
-###### tokens.classes
-
-```ts
-readonly classes: readonly string[];
-```
-
-###### tokens.colors
-
-```ts
-readonly colors: readonly string[];
-```
-
-###### tokens.spacing
-
-```ts
-readonly spacing: readonly string[];
-```
-
-<a id="client-3"></a>
-
-##### client
-
-```ts
-readonly client: object;
-```
-
-###### apiOrigin
-
-```ts
-readonly apiOrigin: string | null;
-```
-
-<a id="compiler-1"></a>
-
-##### compiler
-
-```ts
-readonly compiler: boolean;
-```
-
-<a id="devtools-1"></a>
-
-##### devtools
-
-```ts
-readonly devtools: boolean;
-```
-
-<a id="fonts-1"></a>
-
-##### fonts
-
-```ts
-readonly fonts: readonly ResolvedFont[];
-```
-
-<a id="i18n-1"></a>
-
-##### i18n
-
-```ts
-readonly i18n: ResolvedI18n | null;
-```
-
-<a id="images-1"></a>
-
-##### images
-
-```ts
-readonly images: object;
-```
-
-###### formats
-
-```ts
-readonly formats: readonly ("avif" | "webp" | "jpeg" | "png")[];
-```
-
-###### sizes
-
-```ts
-readonly sizes: readonly number[];
-```
-
-<a id="render-5"></a>
-
-##### render
-
-```ts
-readonly render: object;
-```
-
-###### default
-
-```ts
-readonly default: "ssr" | "csr" | "ssg" | "static";
-```
-
-<a id="security-1"></a>
-
-##### security
-
-```ts
-readonly security: ResolvedSecurity;
-```
-
-<a id="shellcomponents-1"></a>
-
-##### shellComponents
-
-```ts
-readonly shellComponents: string | null;
-```
-
-<a id="tailwind-1"></a>
-
-##### tailwind
-
-```ts
-readonly tailwind: boolean;
-```
-
-<a id="telemetry-1"></a>
-
-##### telemetry
-
-```ts
-readonly telemetry: object;
-```
-
-###### logger
-
-```ts
-readonly logger: RexLogger | null;
-```
-
-###### tracer
-
-```ts
-readonly tracer: RexTracer | null;
-```
-
-<a id="ui-1"></a>
-
-##### ui
-
-```ts
-readonly ui: "none" | "designx";
-```
-
-***
-
-<a id="resolvedsecurity"></a>
-
-### ResolvedSecurity
-
-#### Properties
-
-<a id="csp"></a>
-
-##### csp
-
-```ts
-readonly csp: "off" | "strict" | "report";
-```
-
-<a id="headers"></a>
-
-##### headers
-
-```ts
-readonly headers: Readonly<Record<string, string>>;
-```
-
-<a id="origins"></a>
-
-##### origins
-
-```ts
-readonly origins: readonly string[];
-```
-
-<a id="secretnames"></a>
-
-##### secretNames
-
-```ts
-readonly secretNames: readonly string[];
-```
-
-***
-
-<a id="rexconfig"></a>
-
-### RexConfig
-
-#### Extends
-
-- [`RexOptionsConfig`](#rexoptionsconfig)
-
-#### Type Parameters
-
-##### A
-
-`A` *extends* [`RexConfigApp`](#rexconfigapp-1) = [`RexConfigApp`](#rexconfigapp-1)
-
-#### Properties
-
-<a id="app-3"></a>
-
-##### app
-
-```ts
-readonly app: A;
-```
-
-<a id="budgets-2"></a>
-
-##### budgets?
-
-```ts
-readonly optional budgets?: BudgetsConfig;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`budgets`](#budgets-3)
-
-<a id="check-2"></a>
-
-##### check?
-
-```ts
-readonly optional check?: CheckConfig;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`check`](#check-3)
-
-<a id="client-4"></a>
-
-##### client?
-
-```ts
-readonly optional client?: ClientConfig;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`client`](#client-5)
-
-<a id="compiler-2"></a>
-
-##### compiler?
-
-```ts
-readonly optional compiler?: boolean;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`compiler`](#compiler-3)
-
-<a id="devtools-2"></a>
-
-##### devtools?
-
-```ts
-readonly optional devtools?: boolean;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`devtools`](#devtools-3)
-
-<a id="fonts-2"></a>
-
-##### fonts?
-
-```ts
-readonly optional fonts?: readonly FontSpec[];
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`fonts`](#fonts-3)
-
-<a id="i18n-2"></a>
-
-##### i18n?
-
-```ts
-readonly optional i18n?: I18nConfig;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`i18n`](#i18n-3)
-
-<a id="images-2"></a>
-
-##### images?
-
-```ts
-readonly optional images?: ImagesConfig;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`images`](#images-3)
-
-<a id="render-6"></a>
-
-##### render?
-
-```ts
-readonly optional render?: RenderConfig;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`render`](#render-7)
-
-<a id="security-2"></a>
-
-##### security?
-
-```ts
-readonly optional security?: SecurityConfig;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`security`](#security-3)
-
-<a id="server-1"></a>
-
-##### server?
-
-```ts
-readonly optional server?: (app) => RexFetchHandler;
-```
-
-###### Parameters
-
-###### app
-
-`A`
-
-###### Returns
-
-[`RexFetchHandler`](#rexfetchhandler)
-
-<a id="tailwind-2"></a>
-
-##### tailwind?
-
-```ts
-readonly optional tailwind?: boolean;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`tailwind`](#tailwind-3)
-
-<a id="telemetry-2"></a>
-
-##### telemetry?
-
-```ts
-readonly optional telemetry?: TelemetryConfig;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`telemetry`](#telemetry-3)
-
-<a id="ui-2"></a>
-
-##### ui?
-
-```ts
-readonly optional ui?: "none" | "designx" | UiConfig;
-```
-
-###### Inherited from
-
-[`RexOptionsConfig`](#rexoptionsconfig).[`ui`](#ui-3)
-
-***
-
-<a id="rexconfigapp-1"></a>
-
-### RexConfigApp
-
-#### Properties
-
-<a id="name-9"></a>
-
-##### name
-
-```ts
-readonly name: string;
-```
-
-<a id="registry-1"></a>
-
-##### registry
-
-```ts
-readonly registry: RegistrySnapshot;
-```
-
-***
-
 <a id="rexdeclarationerrordetails"></a>
 
 ### RexDeclarationErrorDetails
@@ -5412,7 +4381,7 @@ readonly registry: RegistrySnapshot;
 readonly declaration: string;
 ```
 
-<a id="field-3"></a>
+<a id="field-2"></a>
 
 ##### field
 
@@ -5438,62 +4407,6 @@ readonly problem: string;
 
 ***
 
-<a id="rexerrorareainfo"></a>
-
-### RexErrorAreaInfo
-
-#### Properties
-
-<a id="prefix"></a>
-
-##### prefix
-
-```ts
-readonly prefix: string;
-```
-
-<a id="title-3"></a>
-
-##### title
-
-```ts
-readonly title: string;
-```
-
-***
-
-<a id="rexerrorentry"></a>
-
-### RexErrorEntry
-
-#### Properties
-
-<a id="area"></a>
-
-##### area
-
-```ts
-readonly area: RexErrorArea;
-```
-
-<a id="hint-5"></a>
-
-##### hint
-
-```ts
-readonly hint: string;
-```
-
-<a id="title-4"></a>
-
-##### title
-
-```ts
-readonly title: string;
-```
-
-***
-
 <a id="rexerrorlocation"></a>
 
 ### RexErrorLocation
@@ -5504,7 +4417,7 @@ readonly title: string;
 
 #### Properties
 
-<a id="column-5"></a>
+<a id="column-4"></a>
 
 ##### column?
 
@@ -5512,7 +4425,7 @@ readonly title: string;
 readonly optional column?: number;
 ```
 
-<a id="file-5"></a>
+<a id="file-4"></a>
 
 ##### file?
 
@@ -5520,7 +4433,7 @@ readonly optional column?: number;
 readonly optional file?: string;
 ```
 
-<a id="line-5"></a>
+<a id="line-4"></a>
 
 ##### line?
 
@@ -5548,7 +4461,7 @@ readonly optional line?: number;
 readonly optional cause?: unknown;
 ```
 
-<a id="column-6"></a>
+<a id="column-5"></a>
 
 ##### column?
 
@@ -5558,9 +4471,9 @@ readonly optional column?: number;
 
 ###### Inherited from
 
-[`RexErrorLocation`](#rexerrorlocation).[`column`](#column-5)
+[`RexErrorLocation`](#rexerrorlocation).[`column`](#column-4)
 
-<a id="file-6"></a>
+<a id="file-5"></a>
 
 ##### file?
 
@@ -5570,9 +4483,9 @@ readonly optional file?: string;
 
 ###### Inherited from
 
-[`RexErrorLocation`](#rexerrorlocation).[`file`](#file-5)
+[`RexErrorLocation`](#rexerrorlocation).[`file`](#file-4)
 
-<a id="hint-6"></a>
+<a id="hint-4"></a>
 
 ##### hint?
 
@@ -5580,7 +4493,7 @@ readonly optional file?: string;
 readonly optional hint?: string;
 ```
 
-<a id="line-6"></a>
+<a id="line-5"></a>
 
 ##### line?
 
@@ -5590,319 +4503,7 @@ readonly optional line?: number;
 
 ###### Inherited from
 
-[`RexErrorLocation`](#rexerrorlocation).[`line`](#line-5)
-
-***
-
-<a id="rexfetchhandler"></a>
-
-### RexFetchHandler
-
-#### Methods
-
-<a id="fetch"></a>
-
-##### fetch()
-
-```ts
-fetch(request): Response | Promise<Response>;
-```
-
-###### Parameters
-
-###### request
-
-`Request`
-
-###### Returns
-
-`Response` \| `Promise`\<`Response`\>
-
-***
-
-<a id="rexfieldmethods"></a>
-
-### RexFieldMethods
-
-#### Type Parameters
-
-##### T
-
-`T` *extends* `zm.ZodMiniType`
-
-#### Methods
-
-<a id="default-3"></a>
-
-##### default()
-
-```ts
-default(value): RexField<ZodMiniDefault<T>>;
-```
-
-###### Parameters
-
-###### value
-
-`NoUndefined`\<`output`\<`T`\>\>
-
-###### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniDefault`\<`T`\>\>
-
-<a id="meta"></a>
-
-##### meta()
-
-```ts
-meta(meta): RexField<T>;
-```
-
-###### Parameters
-
-###### meta
-
-`FieldMeta`
-
-###### Returns
-
-[`RexField`](#rexfield)\<`T`\>
-
-<a id="nullable"></a>
-
-##### nullable()
-
-```ts
-nullable(): RexField<ZodMiniNullable<T>>;
-```
-
-###### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniNullable`\<`T`\>\>
-
-<a id="optional"></a>
-
-##### optional()
-
-```ts
-optional(): RexField<ZodMiniOptional<T>>;
-```
-
-###### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniOptional`\<`T`\>\>
-
-***
-
-<a id="rexlogger"></a>
-
-### RexLogger
-
-#### Methods
-
-<a id="debug"></a>
-
-##### debug()
-
-```ts
-debug(message, attributes?): void;
-```
-
-###### Parameters
-
-###### message
-
-`string`
-
-###### attributes?
-
-`Readonly`\<`Record`\<`string`, `unknown`\>\>
-
-###### Returns
-
-`void`
-
-<a id="error"></a>
-
-##### error()
-
-```ts
-error(message, attributes?): void;
-```
-
-###### Parameters
-
-###### message
-
-`string`
-
-###### attributes?
-
-`Readonly`\<`Record`\<`string`, `unknown`\>\>
-
-###### Returns
-
-`void`
-
-<a id="info"></a>
-
-##### info()
-
-```ts
-info(message, attributes?): void;
-```
-
-###### Parameters
-
-###### message
-
-`string`
-
-###### attributes?
-
-`Readonly`\<`Record`\<`string`, `unknown`\>\>
-
-###### Returns
-
-`void`
-
-<a id="warn"></a>
-
-##### warn()
-
-```ts
-warn(message, attributes?): void;
-```
-
-###### Parameters
-
-###### message
-
-`string`
-
-###### attributes?
-
-`Readonly`\<`Record`\<`string`, `unknown`\>\>
-
-###### Returns
-
-`void`
-
-***
-
-<a id="rexoptionsconfig"></a>
-
-### RexOptionsConfig
-
-#### Extended by
-
-- [`RexConfig`](#rexconfig)
-
-#### Properties
-
-<a id="budgets-3"></a>
-
-##### budgets?
-
-```ts
-readonly optional budgets?: BudgetsConfig;
-```
-
-<a id="check-3"></a>
-
-##### check?
-
-```ts
-readonly optional check?: CheckConfig;
-```
-
-<a id="client-5"></a>
-
-##### client?
-
-```ts
-readonly optional client?: ClientConfig;
-```
-
-<a id="compiler-3"></a>
-
-##### compiler?
-
-```ts
-readonly optional compiler?: boolean;
-```
-
-<a id="devtools-3"></a>
-
-##### devtools?
-
-```ts
-readonly optional devtools?: boolean;
-```
-
-<a id="fonts-3"></a>
-
-##### fonts?
-
-```ts
-readonly optional fonts?: readonly FontSpec[];
-```
-
-<a id="i18n-3"></a>
-
-##### i18n?
-
-```ts
-readonly optional i18n?: I18nConfig;
-```
-
-<a id="images-3"></a>
-
-##### images?
-
-```ts
-readonly optional images?: ImagesConfig;
-```
-
-<a id="render-7"></a>
-
-##### render?
-
-```ts
-readonly optional render?: RenderConfig;
-```
-
-<a id="security-3"></a>
-
-##### security?
-
-```ts
-readonly optional security?: SecurityConfig;
-```
-
-<a id="tailwind-3"></a>
-
-##### tailwind?
-
-```ts
-readonly optional tailwind?: boolean;
-```
-
-<a id="telemetry-3"></a>
-
-##### telemetry?
-
-```ts
-readonly optional telemetry?: TelemetryConfig;
-```
-
-<a id="ui-3"></a>
-
-##### ui?
-
-```ts
-readonly optional ui?: "none" | "designx" | UiConfig;
-```
+[`RexErrorLocation`](#rexerrorlocation).[`line`](#line-4)
 
 ***
 
@@ -5912,7 +4513,7 @@ readonly optional ui?: "none" | "designx" | UiConfig;
 
 #### Properties
 
-<a id="column-7"></a>
+<a id="column-6"></a>
 
 ##### column
 
@@ -5920,7 +4521,7 @@ readonly optional ui?: "none" | "designx" | UiConfig;
 readonly column: number;
 ```
 
-<a id="file-7"></a>
+<a id="file-6"></a>
 
 ##### file
 
@@ -5928,7 +4529,7 @@ readonly column: number;
 readonly file: string;
 ```
 
-<a id="line-7"></a>
+<a id="line-6"></a>
 
 ##### line
 
@@ -5938,96 +4539,28 @@ readonly line: number;
 
 ***
 
-<a id="rextracer"></a>
+<a id="standardschemav1"></a>
 
-### RexTracer
+### StandardSchemaV1
 
-#### Methods
+#### Type Parameters
 
-<a id="startspan"></a>
+##### Input
 
-##### startSpan()
+`Input` = `unknown`
 
-```ts
-startSpan(name, ...rest): unknown;
-```
+##### Output
 
-###### Parameters
-
-###### name
-
-`string`
-
-###### rest
-
-...`never`[]
-
-###### Returns
-
-`unknown`
-
-***
-
-<a id="securityconfig"></a>
-
-### SecurityConfig
+`Output` = `Input`
 
 #### Properties
 
-<a id="csp-1"></a>
+<a id="standard"></a>
 
-##### csp?
-
-```ts
-readonly optional csp?: "off" | "strict" | "report";
-```
-
-<a id="headers-1"></a>
-
-##### headers?
+##### ~standard
 
 ```ts
-readonly optional headers?: Readonly<Record<string, string>>;
-```
-
-<a id="origins-1"></a>
-
-##### origins?
-
-```ts
-readonly optional origins?: readonly string[];
-```
-
-<a id="secretnames-1"></a>
-
-##### secretNames?
-
-```ts
-readonly optional secretNames?: readonly string[];
-```
-
-***
-
-<a id="sidecarissue"></a>
-
-### SidecarIssue
-
-#### Properties
-
-<a id="message"></a>
-
-##### message
-
-```ts
-readonly message: string;
-```
-
-<a id="path"></a>
-
-##### path
-
-```ts
-readonly path: string;
+readonly ~standard: StandardProps<Input, Output>;
 ```
 
 ***
@@ -6044,7 +4577,7 @@ readonly path: string;
 
 #### Properties
 
-<a id="error-1"></a>
+<a id="error"></a>
 
 ##### error
 
@@ -6162,110 +4695,6 @@ put(record): Promise<T>;
 
 `Promise`\<`T`\>
 
-***
-
-<a id="telemetryconfig"></a>
-
-### TelemetryConfig
-
-#### Properties
-
-<a id="logger"></a>
-
-##### logger?
-
-```ts
-readonly optional logger?: RexLogger;
-```
-
-<a id="tracer"></a>
-
-##### tracer?
-
-```ts
-readonly optional tracer?: RexTracer;
-```
-
-***
-
-<a id="textoptions"></a>
-
-### TextOptions
-
-#### Properties
-
-<a id="max-2"></a>
-
-##### max?
-
-```ts
-readonly optional max?: number;
-```
-
-<a id="min-2"></a>
-
-##### min?
-
-```ts
-readonly optional min?: number;
-```
-
-***
-
-<a id="tokenallowlists"></a>
-
-### TokenAllowLists
-
-#### Properties
-
-<a id="classes"></a>
-
-##### classes?
-
-```ts
-readonly optional classes?: readonly string[];
-```
-
-<a id="colors"></a>
-
-##### colors?
-
-```ts
-readonly optional colors?: readonly string[];
-```
-
-<a id="spacing"></a>
-
-##### spacing?
-
-```ts
-readonly optional spacing?: readonly string[];
-```
-
-***
-
-<a id="uiconfig"></a>
-
-### UiConfig
-
-#### Properties
-
-<a id="components"></a>
-
-##### components?
-
-```ts
-readonly optional components?: string;
-```
-
-<a id="kit"></a>
-
-##### kit?
-
-```ts
-readonly optional kit?: "none" | "designx";
-```
-
 ## Type Aliases
 
 <a id="actionaddress"></a>
@@ -6303,7 +4732,7 @@ type ActionEffect = "reversible" | "irreversible" | "read";
 ### ActionInput
 
 ```ts
-type ActionInput<A> = A extends ActionDeclaration<string, infer I, ZodSchemaLike> ? z.input<I> : never;
+type ActionInput<A> = A extends ActionDeclaration<string, infer I, StandardSchemaV1> ? StandardInferInput<I> : never;
 ```
 
 #### Type Parameters
@@ -6319,7 +4748,7 @@ type ActionInput<A> = A extends ActionDeclaration<string, infer I, ZodSchemaLike
 ### ActionOutput
 
 ```ts
-type ActionOutput<A> = A extends ActionDeclaration<string, ZodSchemaLike, infer O> ? z.output<O> : never;
+type ActionOutput<A> = A extends ActionDeclaration<string, StandardSchemaV1, infer O> ? StandardInferOutput<O> : never;
 ```
 
 #### Type Parameters
@@ -6335,7 +4764,7 @@ type ActionOutput<A> = A extends ActionDeclaration<string, ZodSchemaLike, infer 
 ### ActionParsedInput
 
 ```ts
-type ActionParsedInput<A> = A extends ActionDeclaration<string, infer I, ZodSchemaLike> ? z.output<I> : never;
+type ActionParsedInput<A> = A extends ActionDeclaration<string, infer I, StandardSchemaV1> ? StandardInferOutput<I> : never;
 ```
 
 #### Type Parameters
@@ -6351,7 +4780,7 @@ type ActionParsedInput<A> = A extends ActionDeclaration<string, infer I, ZodSche
 ### AnyAction
 
 ```ts
-type AnyAction = ActionDeclaration<string, ZodSchemaLike, ZodSchemaLike>;
+type AnyAction = ActionDeclaration<string, StandardSchemaV1, StandardSchemaV1>;
 ```
 
 ***
@@ -6406,32 +4835,6 @@ type AnyPolicy = PolicyDeclaration<string, string>;
 
 ***
 
-<a id="aspageparams"></a>
-
-### AsPageParams
-
-```ts
-type AsPageParams<S> = S extends PageParamsSchema ? S : S extends $ZodObject<infer Shape> ? zm.ZodMiniObject<Shape> : PageParamsSchema;
-```
-
-#### Type Parameters
-
-##### S
-
-`S` *extends* `StandardSchemaV1`
-
-***
-
-<a id="cspmode"></a>
-
-### CspMode
-
-```ts
-type CspMode = typeof CSP_MODES[number];
-```
-
-***
-
 <a id="declarationkind"></a>
 
 ### DeclarationKind
@@ -6449,26 +4852,6 @@ type DeclarationKind = keyof RegistryKinds;
 ```ts
 type DeclarationName = "entity" | "action" | "page" | "policy" | "predicate" | "flow";
 ```
-
-***
-
-<a id="defaultserverfactory"></a>
-
-### DefaultServerFactory
-
-```ts
-type DefaultServerFactory = (app) => RexFetchHandler;
-```
-
-#### Parameters
-
-##### app
-
-[`RexConfigApp`](#rexconfigapp-1)
-
-#### Returns
-
-[`RexFetchHandler`](#rexfetchhandler)
 
 ***
 
@@ -6492,6 +4875,18 @@ type DeprecationWarn = (message) => void;
 
 ***
 
+<a id="emptypageparams"></a>
+
+### EmptyPageParams
+
+```ts
+type EmptyPageParams = StandardSchemaV1<{
+}, {
+}>;
+```
+
+***
+
 <a id="entityfields"></a>
 
 ### EntityFields
@@ -6508,12 +4903,28 @@ type EntityFields = object;
 
 ***
 
+<a id="entityinput"></a>
+
+### EntityInput
+
+```ts
+type EntityInput<F> = Flatten<{ -readonly [P in Exclude<keyof F, OptionalInputKeys<F>>]: StandardInferInput<F[P]> } & { -readonly [P in OptionalInputKeys<F>]?: StandardInferInput<F[P]> }>;
+```
+
+#### Type Parameters
+
+##### F
+
+`F` *extends* [`EntityFields`](#entityfields)
+
+***
+
 <a id="entityrecord"></a>
 
 ### EntityRecord
 
 ```ts
-type EntityRecord<F> = zm.output<zm.ZodMiniObject<EntityShape<F>>>;
+type EntityRecord<F> = Flatten<{ -readonly [P in Exclude<keyof F, OptionalOutputKeys<F>>]: StandardInferOutput<F[P]> } & { -readonly [P in OptionalOutputKeys<F>]?: StandardInferOutput<F[P]> }>;
 ```
 
 #### Type Parameters
@@ -6524,12 +4935,12 @@ type EntityRecord<F> = zm.output<zm.ZodMiniObject<EntityShape<F>>>;
 
 ***
 
-<a id="entityshape"></a>
+<a id="entityschema"></a>
 
-### EntityShape
+### EntitySchema
 
 ```ts
-type EntityShape<F> = { -readonly [P in keyof F]: AsZodSchema<F[P]> };
+type EntitySchema<F> = ObjectSchema<F, EntityInput<F>, EntityRecord<F>>;
 ```
 
 #### Type Parameters
@@ -6537,26 +4948,6 @@ type EntityShape<F> = { -readonly [P in keyof F]: AsZodSchema<F[P]> };
 ##### F
 
 `F` *extends* [`EntityFields`](#entityfields)
-
-***
-
-<a id="fieldkind"></a>
-
-### FieldKind
-
-```ts
-type FieldKind = 
-  | "id"
-  | "text"
-  | "money"
-  | "integer"
-  | "real"
-  | "boolean"
-  | "enum"
-  | "ref"
-  | "timestamp"
-  | "json";
-```
 
 ***
 
@@ -6624,36 +5015,6 @@ type FlowStepSource =
 
 ***
 
-<a id="fontstyle"></a>
-
-### FontStyle
-
-```ts
-type FontStyle = typeof FONT_STYLES[number];
-```
-
-***
-
-<a id="i18nrouting"></a>
-
-### I18nRouting
-
-```ts
-type I18nRouting = typeof I18N_ROUTING[number];
-```
-
-***
-
-<a id="imageformat"></a>
-
-### ImageFormat
-
-```ts
-type ImageFormat = typeof IMAGE_FORMATS[number];
-```
-
-***
-
 <a id="inferentity"></a>
 
 ### InferEntity
@@ -6667,16 +5028,6 @@ type InferEntity<E> = E extends EntityDeclaration<string, infer F, infer _K> ? E
 ##### E
 
 `E`
-
-***
-
-<a id="invocationroute"></a>
-
-### InvocationRoute
-
-```ts
-type InvocationRoute = typeof INVOCATION_ROUTES[number];
-```
 
 ***
 
@@ -6717,22 +5068,6 @@ type JournalEntry =
   at: string;
   type: "completed";
 };
-```
-
-***
-
-<a id="jsonschema-3"></a>
-
-### JsonSchema
-
-```ts
-type JsonSchema = object;
-```
-
-#### Index Signature
-
-```ts
-[key: string]: unknown
 ```
 
 ***
@@ -6858,7 +5193,7 @@ type PageLoadMap = Readonly<Record<string, PageLoaderSpec>>;
 ### PageParams
 
 ```ts
-type PageParams<Pg> = Pg extends PageDeclaration<string, infer P, RexDataState, string, string, AnyAction> ? zm.output<P> : never;
+type PageParams<Pg> = Pg extends PageDeclaration<string, infer P, RexDataState, string, string, AnyAction> ? StandardInferOutput<P> : never;
 ```
 
 #### Type Parameters
@@ -6874,7 +5209,7 @@ type PageParams<Pg> = Pg extends PageDeclaration<string, infer P, RexDataState, 
 ### PageParamsInput
 
 ```ts
-type PageParamsInput<Pg> = Pg extends PageDeclaration<string, infer P, RexDataState, string, string, AnyAction> ? zm.input<P> : never;
+type PageParamsInput<Pg> = Pg extends PageDeclaration<string, infer P, RexDataState, string, string, AnyAction> ? StandardInferInput<P> : never;
 ```
 
 #### Type Parameters
@@ -6890,7 +5225,7 @@ type PageParamsInput<Pg> = Pg extends PageDeclaration<string, infer P, RexDataSt
 ### PageParamsSchema
 
 ```ts
-type PageParamsSchema = zm.ZodMiniObject;
+type PageParamsSchema = StandardSchemaV1;
 ```
 
 ***
@@ -7074,20 +5409,6 @@ type ReasonCode =
 
 ***
 
-<a id="reftarget"></a>
-
-### RefTarget
-
-```ts
-type RefTarget = 
-  | string
-  | {
-  id: string;
-};
-```
-
-***
-
 <a id="regionaddress"></a>
 
 ### RegionAddress
@@ -7192,42 +5513,12 @@ type ReservedQueryKey = typeof RESERVED_QUERY_KEYS[number];
 
 ***
 
-<a id="rexconfigexport"></a>
-
-### RexConfigExport
-
-```ts
-type RexConfigExport = 
-  | {
-  config: ResolvedRexConfig;
-  kind: "config";
-  options: ResolvedRexOptions;
-}
-  | {
-  kind: "legacy";
-  options: ResolvedRexOptions;
-  server: RexFetchHandler;
-};
-```
-
-***
-
 <a id="rexdatastate"></a>
 
 ### RexDataState
 
 ```ts
 type RexDataState = typeof REX_DATA_STATES[number];
-```
-
-***
-
-<a id="rexerrorarea"></a>
-
-### RexErrorArea
-
-```ts
-type RexErrorArea = "config" | "declaration" | "runtime" | "server" | "checker" | "cli";
 ```
 
 ***
@@ -7239,22 +5530,6 @@ type RexErrorArea = "config" | "declaration" | "runtime" | "server" | "checker" 
 ```ts
 type RexErrorCode = keyof typeof REX_ERROR_CATALOG;
 ```
-
-***
-
-<a id="rexfield"></a>
-
-### RexField
-
-```ts
-type RexField<T> = T & RexFieldMethods<T>;
-```
-
-#### Type Parameters
-
-##### T
-
-`T` *extends* `zm.ZodMiniType`
 
 ***
 
@@ -7286,81 +5561,35 @@ type ShortcutModifier = typeof SHORTCUT_MODIFIERS[number];
 
 ***
 
-<a id="sidecaraction"></a>
+<a id="standardinferinput"></a>
 
-### SidecarAction
+### StandardInferInput
 
 ```ts
-type SidecarAction = zm.output<typeof sidecarActionSchema>;
+type StandardInferInput<S> = NonNullable<S["~standard"]["types"]>["input"];
 ```
+
+#### Type Parameters
+
+##### S
+
+`S` *extends* [`StandardSchemaV1`](#standardschemav1)
 
 ***
 
-<a id="sidecaroutcome"></a>
+<a id="standardinferoutput"></a>
 
-### SidecarOutcome
-
-```ts
-type SidecarOutcome = zm.output<typeof sidecarOutcomeSchema>;
-```
-
-***
-
-<a id="sidecaroverlay"></a>
-
-### SidecarOverlay
+### StandardInferOutput
 
 ```ts
-type SidecarOverlay = zm.output<typeof sidecarOverlaySchema>;
+type StandardInferOutput<S> = NonNullable<S["~standard"]["types"]>["output"];
 ```
 
-***
+#### Type Parameters
 
-<a id="sidecarpayload"></a>
+##### S
 
-### SidecarPayload
-
-```ts
-type SidecarPayload = zm.output<typeof sidecarSchema>;
-```
-
-***
-
-<a id="sidecarregion"></a>
-
-### SidecarRegion
-
-```ts
-type SidecarRegion = zm.output<typeof sidecarRegionSchema>;
-```
-
-***
-
-<a id="sidecarstores"></a>
-
-### SidecarStores
-
-```ts
-type SidecarStores = zm.output<typeof sidecarStoresSchema>;
-```
-
-***
-
-<a id="sidecarvalidation"></a>
-
-### SidecarValidation
-
-```ts
-type SidecarValidation = 
-  | {
-  payload: SidecarPayload;
-  valid: true;
-}
-  | {
-  issues: readonly SidecarIssue[];
-  valid: false;
-};
-```
+`S` *extends* [`StandardSchemaV1`](#standardschemav1)
 
 ***
 
@@ -7472,16 +5701,6 @@ type StringFieldOf<F> = { [P in keyof F]: StandardInferOutput<F[P]> extends stri
 
 `F` *extends* [`EntityFields`](#entityfields)
 
-***
-
-<a id="uikit"></a>
-
-### UiKit
-
-```ts
-type UiKit = typeof UI_KITS[number];
-```
-
 ## Variables
 
 <a id="action_effects"></a>
@@ -7514,32 +5733,12 @@ const anonymousActor: Actor;
 
 ***
 
-<a id="config_file"></a>
-
-### CONFIG\_FILE
-
-```ts
-const CONFIG_FILE: "rex.config.ts" = "rex.config.ts";
-```
-
-***
-
 <a id="confirm_procedure"></a>
 
 ### CONFIRM\_PROCEDURE
 
 ```ts
 const CONFIRM_PROCEDURE: "_confirm" = "_confirm";
-```
-
-***
-
-<a id="csp_modes"></a>
-
-### CSP\_MODES
-
-```ts
-const CSP_MODES: readonly ["strict", "report", "off"];
 ```
 
 ***
@@ -7578,7 +5777,7 @@ readonly entity: "REX211" = "REX211";
 readonly flow: "REX216" = "REX216";
 ```
 
-<a id="page-6"></a>
+<a id="page-4"></a>
 
 ##### page
 
@@ -7614,92 +5813,12 @@ const DECLARATION_KINDS: readonly ["entity", "action", "page", "policy", "flow"]
 
 ***
 
-<a id="default_app_name"></a>
-
-### DEFAULT\_APP\_NAME
-
-```ts
-const DEFAULT_APP_NAME: "app" = "app";
-```
-
-***
-
-<a id="default_budgets"></a>
-
-### DEFAULT\_BUDGETS
-
-```ts
-const DEFAULT_BUDGETS: ResolvedBudgets;
-```
-
-***
-
-<a id="default_image_formats"></a>
-
-### DEFAULT\_IMAGE\_FORMATS
-
-```ts
-const DEFAULT_IMAGE_FORMATS: readonly ImageFormat[];
-```
-
-***
-
-<a id="default_image_sizes"></a>
-
-### DEFAULT\_IMAGE\_SIZES
-
-```ts
-const DEFAULT_IMAGE_SIZES: readonly number[];
-```
-
-***
-
-<a id="default_options"></a>
-
-### DEFAULT\_OPTIONS
-
-```ts
-const DEFAULT_OPTIONS: ResolvedRexOptions;
-```
-
-***
-
-<a id="default_page_render"></a>
-
-### DEFAULT\_PAGE\_RENDER
-
-```ts
-const DEFAULT_PAGE_RENDER: PageRender = "ssr";
-```
-
-***
-
 <a id="default_page_size"></a>
 
 ### DEFAULT\_PAGE\_SIZE
 
 ```ts
 const DEFAULT_PAGE_SIZE: 50 = 50;
-```
-
-***
-
-<a id="field_kind_key"></a>
-
-### FIELD\_KIND\_KEY
-
-```ts
-const FIELD_KIND_KEY: "x-rex-field" = "x-rex-field";
-```
-
-***
-
-<a id="field_kinds"></a>
-
-### FIELD\_KINDS
-
-```ts
-const FIELD_KINDS: readonly FieldKind[];
 ```
 
 ***
@@ -7714,82 +5833,12 @@ const FIELD_NAME_PATTERN: RegExp;
 
 ***
 
-<a id="field_ref_key"></a>
-
-### FIELD\_REF\_KEY
-
-```ts
-const FIELD_REF_KEY: "x-rex-ref" = "x-rex-ref";
-```
-
-***
-
 <a id="flow_statuses"></a>
 
 ### FLOW\_STATUSES
 
 ```ts
 const FLOW_STATUSES: readonly FlowStatus[];
-```
-
-***
-
-<a id="font_styles"></a>
-
-### FONT\_STYLES
-
-```ts
-const FONT_STYLES: readonly ["normal", "italic"];
-```
-
-***
-
-<a id="i18n_routing"></a>
-
-### I18N\_ROUTING
-
-```ts
-const I18N_ROUTING: readonly ["prefix", "none"];
-```
-
-***
-
-<a id="id_pattern"></a>
-
-### ID\_PATTERN
-
-```ts
-const ID_PATTERN: RegExp;
-```
-
-***
-
-<a id="image_formats"></a>
-
-### IMAGE\_FORMATS
-
-```ts
-const IMAGE_FORMATS: readonly ["avif", "webp", "jpeg", "png"];
-```
-
-***
-
-<a id="invocation_routes"></a>
-
-### INVOCATION\_ROUTES
-
-```ts
-const INVOCATION_ROUTES: readonly ["click", "key", "palette", "url"];
-```
-
-***
-
-<a id="legacy_config_message"></a>
-
-### LEGACY\_CONFIG\_MESSAGE
-
-```ts
-const LEGACY_CONFIG_MESSAGE: "rex.config.ts default-exports a bare Hono app; wrap it in defineConfig({ app, server }) or run rex migrate";
 ```
 
 ***
@@ -7830,16 +5879,6 @@ const MAX_PAGE_SIZE: 500 = 500;
 
 ```ts
 const MISSING_PERMISSION_PREFIX: "missing-permission:" = "missing-permission:";
-```
-
-***
-
-<a id="money_pattern"></a>
-
-### MONEY\_PATTERN
-
-```ts
-const MONEY_PATTERN: RegExp;
 ```
 
 ***
@@ -7994,138 +6033,6 @@ const REX_DENSITY_HEADER: "x-rex-density" = "x-rex-density";
 
 ***
 
-<a id="rex_error_areas"></a>
-
-### REX\_ERROR\_AREAS
-
-```ts
-const REX_ERROR_AREAS: object;
-```
-
-#### Type Declaration
-
-<a id="checker"></a>
-
-##### checker
-
-```ts
-readonly checker: object;
-```
-
-###### checker.prefix
-
-```ts
-readonly prefix: "REX5" = "REX5";
-```
-
-###### checker.title
-
-```ts
-readonly title: "Checker and manifest" = "Checker and manifest";
-```
-
-<a id="cli"></a>
-
-##### cli
-
-```ts
-readonly cli: object;
-```
-
-###### cli.prefix
-
-```ts
-readonly prefix: "REX6" = "REX6";
-```
-
-###### cli.title
-
-```ts
-readonly title: "CLI" = "CLI";
-```
-
-<a id="config"></a>
-
-##### config
-
-```ts
-readonly config: object;
-```
-
-###### config.prefix
-
-```ts
-readonly prefix: "REX1" = "REX1";
-```
-
-###### config.title
-
-```ts
-readonly title: "Configuration" = "Configuration";
-```
-
-<a id="declaration-3"></a>
-
-##### declaration
-
-```ts
-readonly declaration: object;
-```
-
-###### declaration.prefix
-
-```ts
-readonly prefix: "REX2" = "REX2";
-```
-
-###### declaration.title
-
-```ts
-readonly title: "Declarations" = "Declarations";
-```
-
-<a id="runtime"></a>
-
-##### runtime
-
-```ts
-readonly runtime: object;
-```
-
-###### runtime.prefix
-
-```ts
-readonly prefix: "REX3" = "REX3";
-```
-
-###### runtime.title
-
-```ts
-readonly title: "Runtime" = "Runtime";
-```
-
-<a id="server-2"></a>
-
-##### server
-
-```ts
-readonly server: object;
-```
-
-###### server.prefix
-
-```ts
-readonly prefix: "REX4" = "REX4";
-```
-
-###### server.title
-
-```ts
-readonly title: "Server" = "Server";
-```
-
-***
-
 <a id="rex_error_catalog"></a>
 
 ### REX\_ERROR\_CATALOG
@@ -8141,25 +6048,7 @@ const REX_ERROR_CATALOG: object;
 ##### REX100
 
 ```ts
-readonly REX100: object;
-```
-
-###### REX100.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX100.hint
-
-```ts
-readonly hint: "Create rex.config.ts at the app root that default-exports defineConfig({ app }) with app imported from rex:app." = "Create rex.config.ts at the app root that default-exports defineConfig({ app }) with app imported from rex:app.";
-```
-
-###### REX100.title
-
-```ts
-readonly title: "rex.config.ts is missing" = "rex.config.ts is missing";
+readonly REX100: "rex.config.ts is missing" = "rex.config.ts is missing";
 ```
 
 <a id="rex101"></a>
@@ -8167,25 +6056,7 @@ readonly title: "rex.config.ts is missing" = "rex.config.ts is missing";
 ##### REX101
 
 ```ts
-readonly REX101: object;
-```
-
-###### REX101.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX101.hint
-
-```ts
-readonly hint: "Wrap it: export default defineConfig({ app, server: (app) => createRexServer({ ... }) }); rex migrate applies this change." = "Wrap it: export default defineConfig({ app, server: (app) => createRexServer({ ... }) }); rex migrate applies this change.";
-```
-
-###### REX101.title
-
-```ts
-readonly title: "rex.config.ts default-exports a bare Hono app" = "rex.config.ts default-exports a bare Hono app";
+readonly REX101: "rex.config.ts default-exports a bare Hono app" = "rex.config.ts default-exports a bare Hono app";
 ```
 
 <a id="rex102"></a>
@@ -8193,25 +6064,7 @@ readonly title: "rex.config.ts default-exports a bare Hono app" = "rex.config.ts
 ##### REX102
 
 ```ts
-readonly REX102: object;
-```
-
-###### REX102.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX102.hint
-
-```ts
-readonly hint: "Default-export defineConfig({ app }) from rex.config.ts." = "Default-export defineConfig({ app }) from rex.config.ts.";
-```
-
-###### REX102.title
-
-```ts
-readonly title: "rex.config.ts default export is not a Rex config" = "rex.config.ts default export is not a Rex config";
+readonly REX102: "rex.config.ts default export is not a Rex config" = "rex.config.ts default export is not a Rex config";
 ```
 
 <a id="rex110"></a>
@@ -8219,25 +6072,7 @@ readonly title: "rex.config.ts default export is not a Rex config" = "rex.config
 ##### REX110
 
 ```ts
-readonly REX110: object;
-```
-
-###### REX110.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX110.hint
-
-```ts
-readonly hint: "Remove the field or correct its spelling; the accepted fields are listed in the config reference." = "Remove the field or correct its spelling; the accepted fields are listed in the config reference.";
-```
-
-###### REX110.title
-
-```ts
-readonly title: "Unknown config field" = "Unknown config field";
+readonly REX110: "Unknown config field" = "Unknown config field";
 ```
 
 <a id="rex111"></a>
@@ -8245,25 +6080,7 @@ readonly title: "Unknown config field" = "Unknown config field";
 ##### REX111
 
 ```ts
-readonly REX111: object;
-```
-
-###### REX111.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX111.hint
-
-```ts
-readonly hint: "Set app to the bundle imported from rex:app: import app from \"rex:app\"." = "Set app to the bundle imported from rex:app: import app from \"rex:app\".";
-```
-
-###### REX111.title
-
-```ts
-readonly title: "Invalid config app" = "Invalid config app";
+readonly REX111: "Invalid config app" = "Invalid config app";
 ```
 
 <a id="rex112"></a>
@@ -8271,25 +6088,7 @@ readonly title: "Invalid config app" = "Invalid config app";
 ##### REX112
 
 ```ts
-readonly REX112: object;
-```
-
-###### REX112.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX112.hint
-
-```ts
-readonly hint: "Set server to a function from the app bundle to a fetch app, such as (app) => createRexServer({ registry: app.registry, ledger, actor })." = "Set server to a function from the app bundle to a fetch app, such as (app) => createRexServer({ registry: app.registry, ledger, actor }).";
-```
-
-###### REX112.title
-
-```ts
-readonly title: "Invalid config server" = "Invalid config server";
+readonly REX112: "Invalid config server" = "Invalid config server";
 ```
 
 <a id="rex113"></a>
@@ -8297,25 +6096,7 @@ readonly title: "Invalid config server" = "Invalid config server";
 ##### REX113
 
 ```ts
-readonly REX113: object;
-```
-
-###### REX113.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX113.hint
-
-```ts
-readonly hint: "Set render to { default: \"ssr\" | \"csr\" | \"ssg\" | \"static\" }." = "Set render to { default: \"ssr\" | \"csr\" | \"ssg\" | \"static\" }.";
-```
-
-###### REX113.title
-
-```ts
-readonly title: "Invalid config render" = "Invalid config render";
+readonly REX113: "Invalid config render" = "Invalid config render";
 ```
 
 <a id="rex114"></a>
@@ -8323,25 +6104,7 @@ readonly title: "Invalid config render" = "Invalid config render";
 ##### REX114
 
 ```ts
-readonly REX114: object;
-```
-
-###### REX114.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX114.hint
-
-```ts
-readonly hint: "Set budgets.core, budgets.client and budgets.page to positive numbers of gzipped kilobytes." = "Set budgets.core, budgets.client and budgets.page to positive numbers of gzipped kilobytes.";
-```
-
-###### REX114.title
-
-```ts
-readonly title: "Invalid config budgets" = "Invalid config budgets";
+readonly REX114: "Invalid config budgets" = "Invalid config budgets";
 ```
 
 <a id="rex115"></a>
@@ -8349,25 +6112,7 @@ readonly title: "Invalid config budgets" = "Invalid config budgets";
 ##### REX115
 
 ```ts
-readonly REX115: object;
-```
-
-###### REX115.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX115.hint
-
-```ts
-readonly hint: "Set security to { csp: \"strict\" | \"report\" | \"off\", origins: [\"https://example.com\"], headers?: { name: value }, secretNames?: [\"NAME\"] }." = "Set security to { csp: \"strict\" | \"report\" | \"off\", origins: [\"https://example.com\"], headers?: { name: value }, secretNames?: [\"NAME\"] }.";
-```
-
-###### REX115.title
-
-```ts
-readonly title: "Invalid config security" = "Invalid config security";
+readonly REX115: "Invalid config security" = "Invalid config security";
 ```
 
 <a id="rex116"></a>
@@ -8375,25 +6120,7 @@ readonly title: "Invalid config security" = "Invalid config security";
 ##### REX116
 
 ```ts
-readonly REX116: object;
-```
-
-###### REX116.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX116.hint
-
-```ts
-readonly hint: "Set i18n to { locales: [\"en\", ...], default: one of the locales, routing: \"prefix\" | \"none\" }." = "Set i18n to { locales: [\"en\", ...], default: one of the locales, routing: \"prefix\" | \"none\" }.";
-```
-
-###### REX116.title
-
-```ts
-readonly title: "Invalid config i18n" = "Invalid config i18n";
+readonly REX116: "Invalid config i18n" = "Invalid config i18n";
 ```
 
 <a id="rex117"></a>
@@ -8401,25 +6128,7 @@ readonly title: "Invalid config i18n" = "Invalid config i18n";
 ##### REX117
 
 ```ts
-readonly REX117: object;
-```
-
-###### REX117.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX117.hint
-
-```ts
-readonly hint: "Set images to { sizes: positive integer widths, formats: a list of avif, webp, jpeg and png }." = "Set images to { sizes: positive integer widths, formats: a list of avif, webp, jpeg and png }.";
-```
-
-###### REX117.title
-
-```ts
-readonly title: "Invalid config images" = "Invalid config images";
+readonly REX117: "Invalid config images" = "Invalid config images";
 ```
 
 <a id="rex118"></a>
@@ -8427,25 +6136,7 @@ readonly title: "Invalid config images" = "Invalid config images";
 ##### REX118
 
 ```ts
-readonly REX118: object;
-```
-
-###### REX118.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX118.hint
-
-```ts
-readonly hint: "Set fonts to a list of { family, src, weight?, style?, preload? } with src a URL or a path starting with /." = "Set fonts to a list of { family, src, weight?, style?, preload? } with src a URL or a path starting with /.";
-```
-
-###### REX118.title
-
-```ts
-readonly title: "Invalid config fonts" = "Invalid config fonts";
+readonly REX118: "Invalid config fonts" = "Invalid config fonts";
 ```
 
 <a id="rex119"></a>
@@ -8453,25 +6144,7 @@ readonly title: "Invalid config fonts" = "Invalid config fonts";
 ##### REX119
 
 ```ts
-readonly REX119: object;
-```
-
-###### REX119.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX119.hint
-
-```ts
-readonly hint: "Set telemetry to { tracer?: an OpenTelemetry tracer, logger?: { debug, info, warn, error } }." = "Set telemetry to { tracer?: an OpenTelemetry tracer, logger?: { debug, info, warn, error } }.";
-```
-
-###### REX119.title
-
-```ts
-readonly title: "Invalid config telemetry" = "Invalid config telemetry";
+readonly REX119: "Invalid config telemetry" = "Invalid config telemetry";
 ```
 
 <a id="rex120"></a>
@@ -8479,25 +6152,7 @@ readonly title: "Invalid config telemetry" = "Invalid config telemetry";
 ##### REX120
 
 ```ts
-readonly REX120: object;
-```
-
-###### REX120.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX120.hint
-
-```ts
-readonly hint: "Set ui to \"designx\" or \"none\"." = "Set ui to \"designx\" or \"none\".";
-```
-
-###### REX120.title
-
-```ts
-readonly title: "Invalid config ui" = "Invalid config ui";
+readonly REX120: "Invalid config ui" = "Invalid config ui";
 ```
 
 <a id="rex121"></a>
@@ -8505,25 +6160,7 @@ readonly title: "Invalid config ui" = "Invalid config ui";
 ##### REX121
 
 ```ts
-readonly REX121: object;
-```
-
-###### REX121.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX121.hint
-
-```ts
-readonly hint: "Set client to { apiOrigin?: an http(s) origin such as https://api.example.com }." = "Set client to { apiOrigin?: an http(s) origin such as https://api.example.com }.";
-```
-
-###### REX121.title
-
-```ts
-readonly title: "Invalid config client" = "Invalid config client";
+readonly REX121: "Invalid config client" = "Invalid config client";
 ```
 
 <a id="rex122"></a>
@@ -8531,25 +6168,7 @@ readonly title: "Invalid config client" = "Invalid config client";
 ##### REX122
 
 ```ts
-readonly REX122: object;
-```
-
-###### REX122.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX122.hint
-
-```ts
-readonly hint: "Set compiler, devtools and tailwind to true or false." = "Set compiler, devtools and tailwind to true or false.";
-```
-
-###### REX122.title
-
-```ts
-readonly title: "Invalid config flag" = "Invalid config flag";
+readonly REX122: "Invalid config flag" = "Invalid config flag";
 ```
 
 <a id="rex123"></a>
@@ -8557,25 +6176,7 @@ readonly title: "Invalid config flag" = "Invalid config flag";
 ##### REX123
 
 ```ts
-readonly REX123: object;
-```
-
-###### REX123.area
-
-```ts
-readonly area: "config" = "config";
-```
-
-###### REX123.hint
-
-```ts
-readonly hint: "Set check to { tokens?: { colors?, spacing?, classes? } } with each allow list a list of strings." = "Set check to { tokens?: { colors?, spacing?, classes? } } with each allow list a list of strings.";
-```
-
-###### REX123.title
-
-```ts
-readonly title: "Invalid config check" = "Invalid config check";
+readonly REX123: "Invalid config check" = "Invalid config check";
 ```
 
 <a id="rex200"></a>
@@ -8583,25 +6184,7 @@ readonly title: "Invalid config check" = "Invalid config check";
 ##### REX200
 
 ```ts
-readonly REX200: object;
-```
-
-###### REX200.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX200.hint
-
-```ts
-readonly hint: "Set render to \"ssr\", \"csr\", \"ssg\" or \"static\", or leave it out to use the app default." = "Set render to \"ssr\", \"csr\", \"ssg\" or \"static\", or leave it out to use the app default.";
-```
-
-###### REX200.title
-
-```ts
-readonly title: "Invalid page render mode" = "Invalid page render mode";
+readonly REX200: "Invalid page render mode" = "Invalid page render mode";
 ```
 
 <a id="rex201"></a>
@@ -8609,25 +6192,7 @@ readonly title: "Invalid page render mode" = "Invalid page render mode";
 ##### REX201
 
 ```ts
-readonly REX201: object;
-```
-
-###### REX201.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX201.hint
-
-```ts
-readonly hint: "Set revalidate to a positive whole number of seconds on a page with render \"ssg\", or remove it." = "Set revalidate to a positive whole number of seconds on a page with render \"ssg\", or remove it.";
-```
-
-###### REX201.title
-
-```ts
-readonly title: "Invalid page revalidate" = "Invalid page revalidate";
+readonly REX201: "Invalid page revalidate" = "Invalid page revalidate";
 ```
 
 <a id="rex202"></a>
@@ -8635,25 +6200,7 @@ readonly title: "Invalid page revalidate" = "Invalid page revalidate";
 ##### REX202
 
 ```ts
-readonly REX202: object;
-```
-
-###### REX202.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX202.hint
-
-```ts
-readonly hint: "Set paths to a function returning the params of every page to prerender, on a page with render \"ssg\" or \"static\" and route params." = "Set paths to a function returning the params of every page to prerender, on a page with render \"ssg\" or \"static\" and route params.";
-```
-
-###### REX202.title
-
-```ts
-readonly title: "Invalid page paths" = "Invalid page paths";
+readonly REX202: "Invalid page paths" = "Invalid page paths";
 ```
 
 <a id="rex203"></a>
@@ -8661,25 +6208,7 @@ readonly title: "Invalid page paths" = "Invalid page paths";
 ##### REX203
 
 ```ts
-readonly REX203: object;
-```
-
-###### REX203.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX203.hint
-
-```ts
-readonly hint: "Map each camelCase loader name to a read action or to { action: readAction, input: (params) => input }." = "Map each camelCase loader name to a read action or to { action: readAction, input: (params) => input }.";
-```
-
-###### REX203.title
-
-```ts
-readonly title: "Invalid page loader" = "Invalid page loader";
+readonly REX203: "Invalid page loader" = "Invalid page loader";
 ```
 
 <a id="rex204"></a>
@@ -8687,25 +6216,7 @@ readonly title: "Invalid page loader" = "Invalid page loader";
 ##### REX204
 
 ```ts
-readonly REX204: object;
-```
-
-###### REX204.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX204.hint
-
-```ts
-readonly hint: "Set cache to { staleTime: milliseconds } with a whole number of zero or more." = "Set cache to { staleTime: milliseconds } with a whole number of zero or more.";
-```
-
-###### REX204.title
-
-```ts
-readonly title: "Invalid page cache" = "Invalid page cache";
+readonly REX204: "Invalid page cache" = "Invalid page cache";
 ```
 
 <a id="rex205"></a>
@@ -8713,25 +6224,7 @@ readonly title: "Invalid page cache" = "Invalid page cache";
 ##### REX205
 
 ```ts
-readonly REX205: object;
-```
-
-###### REX205.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX205.hint
-
-```ts
-readonly hint: "Set transition to \"view\" or \"none\"." = "Set transition to \"view\" or \"none\".";
-```
-
-###### REX205.title
-
-```ts
-readonly title: "Invalid page transition" = "Invalid page transition";
+readonly REX205: "Invalid page transition" = "Invalid page transition";
 ```
 
 <a id="rex206"></a>
@@ -8739,25 +6232,7 @@ readonly title: "Invalid page transition" = "Invalid page transition";
 ##### REX206
 
 ```ts
-readonly REX206: object;
-```
-
-###### REX206.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX206.hint
-
-```ts
-readonly hint: "Set chrome.components to { Button?, Sheet?, PaletteItem?, Outcome? } with each value a component." = "Set chrome.components to { Button?, Sheet?, PaletteItem?, Outcome? } with each value a component.";
-```
-
-###### REX206.title
-
-```ts
-readonly title: "Invalid page chrome components" = "Invalid page chrome components";
+readonly REX206: "Invalid page chrome components" = "Invalid page chrome components";
 ```
 
 <a id="rex207"></a>
@@ -8765,25 +6240,7 @@ readonly title: "Invalid page chrome components" = "Invalid page chrome componen
 ##### REX207
 
 ```ts
-readonly REX207: object;
-```
-
-###### REX207.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX207.hint
-
-```ts
-readonly hint: "Set form to { redirect?: a path starting with /, confirmTitle?: a non-empty string }." = "Set form to { redirect?: a path starting with /, confirmTitle?: a non-empty string }.";
-```
-
-###### REX207.title
-
-```ts
-readonly title: "Invalid action form options" = "Invalid action form options";
+readonly REX207: "Invalid action form options" = "Invalid action form options";
 ```
 
 <a id="rex208"></a>
@@ -8791,25 +6248,7 @@ readonly title: "Invalid action form options" = "Invalid action form options";
 ##### REX208
 
 ```ts
-readonly REX208: object;
-```
-
-###### REX208.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX208.hint
-
-```ts
-readonly hint: "Set jsonSchema to { input?: JSON Schema object, output?: JSON Schema object }." = "Set jsonSchema to { input?: JSON Schema object, output?: JSON Schema object }.";
-```
-
-###### REX208.title
-
-```ts
-readonly title: "Invalid action JSON Schema override" = "Invalid action JSON Schema override";
+readonly REX208: "Invalid action JSON Schema override" = "Invalid action JSON Schema override";
 ```
 
 <a id="rex209"></a>
@@ -8817,25 +6256,7 @@ readonly title: "Invalid action JSON Schema override" = "Invalid action JSON Sch
 ##### REX209
 
 ```ts
-readonly REX209: object;
-```
-
-###### REX209.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX209.hint
-
-```ts
-readonly hint: "Register the loader's read action in app/actions so the manifest and the router know it." = "Register the loader's read action in app/actions so the manifest and the router know it.";
-```
-
-###### REX209.title
-
-```ts
-readonly title: "Page loader names an unregistered action" = "Page loader names an unregistered action";
+readonly REX209: "Page loader names an unregistered action" = "Page loader names an unregistered action";
 ```
 
 <a id="rex210"></a>
@@ -8843,25 +6264,7 @@ readonly title: "Page loader names an unregistered action" = "Page loader names 
 ##### REX210
 
 ```ts
-readonly REX210: object;
-```
-
-###### REX210.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX210.hint
-
-```ts
-readonly hint: "Use a zod schema that JSON Schema can describe, or declare jsonSchema explicitly on the declaration." = "Use a zod schema that JSON Schema can describe, or declare jsonSchema explicitly on the declaration.";
-```
-
-###### REX210.title
-
-```ts
-readonly title: "Schema cannot be represented as JSON Schema" = "Schema cannot be represented as JSON Schema";
+readonly REX210: "Schema cannot be represented as JSON Schema" = "Schema cannot be represented as JSON Schema";
 ```
 
 <a id="rex211"></a>
@@ -8869,25 +6272,7 @@ readonly title: "Schema cannot be represented as JSON Schema" = "Schema cannot b
 ##### REX211
 
 ```ts
-readonly REX211: object;
-```
-
-###### REX211.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX211.hint
-
-```ts
-readonly hint: "Fix the named field of the entity(name, { fields, key?, label? }) declaration; field names are camelCase and every field is a Standard Schema such as a Rex field helper." = "Fix the named field of the entity(name, { fields, key?, label? }) declaration; field names are camelCase and every field is a Standard Schema such as a Rex field helper.";
-```
-
-###### REX211.title
-
-```ts
-readonly title: "Invalid entity declaration" = "Invalid entity declaration";
+readonly REX211: "Invalid entity declaration" = "Invalid entity declaration";
 ```
 
 <a id="rex212"></a>
@@ -8895,25 +6280,7 @@ readonly title: "Invalid entity declaration" = "Invalid entity declaration";
 ##### REX212
 
 ```ts
-readonly REX212: object;
-```
-
-###### REX212.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX212.hint
-
-```ts
-readonly hint: "Fix the named field of the action(name, { label, effect, input, output, policy, handler, ... }) declaration as described in the primitives reference." = "Fix the named field of the action(name, { label, effect, input, output, policy, handler, ... }) declaration as described in the primitives reference.";
-```
-
-###### REX212.title
-
-```ts
-readonly title: "Invalid action declaration" = "Invalid action declaration";
+readonly REX212: "Invalid action declaration" = "Invalid action declaration";
 ```
 
 <a id="rex213"></a>
@@ -8921,25 +6288,7 @@ readonly title: "Invalid action declaration" = "Invalid action declaration";
 ##### REX213
 
 ```ts
-readonly REX213: object;
-```
-
-###### REX213.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX213.hint
-
-```ts
-readonly hint: "Fix the named field of the page(name, { route, chrome, regions, overlays, actions, ... }) declaration in app/pages/<page>/page.ts." = "Fix the named field of the page(name, { route, chrome, regions, overlays, actions, ... }) declaration in app/pages/<page>/page.ts.";
-```
-
-###### REX213.title
-
-```ts
-readonly title: "Invalid page declaration" = "Invalid page declaration";
+readonly REX213: "Invalid page declaration" = "Invalid page declaration";
 ```
 
 <a id="rex214"></a>
@@ -8947,25 +6296,7 @@ readonly title: "Invalid page declaration" = "Invalid page declaration";
 ##### REX214
 
 ```ts
-readonly REX214: object;
-```
-
-###### REX214.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX214.hint
-
-```ts
-readonly hint: "Fix the named field of the policy(name, { permissions, grants }) declaration; grants may only name declared permissions." = "Fix the named field of the policy(name, { permissions, grants }) declaration; grants may only name declared permissions.";
-```
-
-###### REX214.title
-
-```ts
-readonly title: "Invalid policy declaration" = "Invalid policy declaration";
+readonly REX214: "Invalid policy declaration" = "Invalid policy declaration";
 ```
 
 <a id="rex215"></a>
@@ -8973,25 +6304,7 @@ readonly title: "Invalid policy declaration" = "Invalid policy declaration";
 ##### REX215
 
 ```ts
-readonly REX215: object;
-```
-
-###### REX215.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX215.hint
-
-```ts
-readonly hint: "Build predicates with can(permission), requires({ unlocked?, account?, custody?, permissions? }), allOf(...) and anyOf(...) with at least one condition each." = "Build predicates with can(permission), requires({ unlocked?, account?, custody?, permissions? }), allOf(...) and anyOf(...) with at least one condition each.";
-```
-
-###### REX215.title
-
-```ts
-readonly title: "Invalid policy predicate" = "Invalid policy predicate";
+readonly REX215: "Invalid policy predicate" = "Invalid policy predicate";
 ```
 
 <a id="rex216"></a>
@@ -8999,25 +6312,7 @@ readonly title: "Invalid policy predicate" = "Invalid policy predicate";
 ##### REX216
 
 ```ts
-readonly REX216: object;
-```
-
-###### REX216.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX216.hint
-
-```ts
-readonly hint: "Fix the named field of the flow(name, { journal, input, steps }) declaration; each step is { action, input? } or an approval gate." = "Fix the named field of the flow(name, { journal, input, steps }) declaration; each step is { action, input? } or an approval gate.";
-```
-
-###### REX216.title
-
-```ts
-readonly title: "Invalid flow declaration" = "Invalid flow declaration";
+readonly REX216: "Invalid flow declaration" = "Invalid flow declaration";
 ```
 
 <a id="rex217"></a>
@@ -9025,25 +6320,7 @@ readonly title: "Invalid flow declaration" = "Invalid flow declaration";
 ##### REX217
 
 ```ts
-readonly REX217: object;
-```
-
-###### REX217.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX217.hint
-
-```ts
-readonly hint: "Give each entity, action, page, policy and flow a unique id, or register the same declaration object only once." = "Give each entity, action, page, policy and flow a unique id, or register the same declaration object only once.";
-```
-
-###### REX217.title
-
-```ts
-readonly title: "Duplicate declaration id" = "Duplicate declaration id";
+readonly REX217: "Duplicate declaration id" = "Duplicate declaration id";
 ```
 
 <a id="rex218"></a>
@@ -9051,25 +6328,7 @@ readonly title: "Duplicate declaration id" = "Duplicate declaration id";
 ##### REX218
 
 ```ts
-readonly REX218: object;
-```
-
-###### REX218.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX218.hint
-
-```ts
-readonly hint: "Use a name that starts with a lowercase letter and contains only lowercase letters, digits, dot and dash; component names are PascalCase." = "Use a name that starts with a lowercase letter and contains only lowercase letters, digits, dot and dash; component names are PascalCase.";
-```
-
-###### REX218.title
-
-```ts
-readonly title: "Invalid name" = "Invalid name";
+readonly REX218: "Invalid name" = "Invalid name";
 ```
 
 <a id="rex219"></a>
@@ -9077,25 +6336,7 @@ readonly title: "Invalid name" = "Invalid name";
 ##### REX219
 
 ```ts
-readonly REX219: object;
-```
-
-###### REX219.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX219.hint
-
-```ts
-readonly hint: "Write the shortcut as ordered modifiers mod, shift, alt joined by + and one key, such as mod+shift+s; mod+k and escape are reserved by Rex." = "Write the shortcut as ordered modifiers mod, shift, alt joined by + and one key, such as mod+shift+s; mod+k and escape are reserved by Rex.";
-```
-
-###### REX219.title
-
-```ts
-readonly title: "Invalid action shortcut" = "Invalid action shortcut";
+readonly REX219: "Invalid action shortcut" = "Invalid action shortcut";
 ```
 
 <a id="rex220"></a>
@@ -9103,25 +6344,7 @@ readonly title: "Invalid action shortcut" = "Invalid action shortcut";
 ##### REX220
 
 ```ts
-readonly REX220: object;
-```
-
-###### REX220.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX220.hint
-
-```ts
-readonly hint: "Write the route as / or /segment/:param with lowercase static segments, camelCase params, no repeated param and no trailing slash." = "Write the route as / or /segment/:param with lowercase static segments, camelCase params, no repeated param and no trailing slash.";
-```
-
-###### REX220.title
-
-```ts
-readonly title: "Invalid page route" = "Invalid page route";
+readonly REX220: "Invalid page route" = "Invalid page route";
 ```
 
 <a id="rex221"></a>
@@ -9129,25 +6352,7 @@ readonly title: "Invalid page route" = "Invalid page route";
 ##### REX221
 
 ```ts
-readonly REX221: object;
-```
-
-###### REX221.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX221.hint
-
-```ts
-readonly hint: "List each value once in enumOf([...])." = "List each value once in enumOf([...]).";
-```
-
-###### REX221.title
-
-```ts
-readonly title: "Duplicate enum value" = "Duplicate enum value";
+readonly REX221: "Duplicate enum value" = "Duplicate enum value";
 ```
 
 <a id="rex222"></a>
@@ -9155,25 +6360,7 @@ readonly title: "Duplicate enum value" = "Duplicate enum value";
 ##### REX222
 
 ```ts
-readonly REX222: object;
-```
-
-###### REX222.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX222.hint
-
-```ts
-readonly hint: "Register the action in app/actions or remove it from the page actions list." = "Register the action in app/actions or remove it from the page actions list.";
-```
-
-###### REX222.title
-
-```ts
-readonly title: "Page names an unregistered action" = "Page names an unregistered action";
+readonly REX222: "Page names an unregistered action" = "Page names an unregistered action";
 ```
 
 <a id="rex223"></a>
@@ -9181,25 +6368,7 @@ readonly title: "Page names an unregistered action" = "Page names an unregistere
 ##### REX223
 
 ```ts
-readonly REX223: object;
-```
-
-###### REX223.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX223.hint
-
-```ts
-readonly hint: "Point recovery and chrome.back at the id of a registered page." = "Point recovery and chrome.back at the id of a registered page.";
-```
-
-###### REX223.title
-
-```ts
-readonly title: "Page names an unknown page" = "Page names an unknown page";
+readonly REX223: "Page names an unknown page" = "Page names an unknown page";
 ```
 
 <a id="rex224"></a>
@@ -9207,25 +6376,7 @@ readonly title: "Page names an unknown page" = "Page names an unknown page";
 ##### REX224
 
 ```ts
-readonly REX224: object;
-```
-
-###### REX224.area
-
-```ts
-readonly area: "declaration" = "declaration";
-```
-
-###### REX224.hint
-
-```ts
-readonly hint: "Register only values returned by entity(), action(), page(), policy() and flow()." = "Register only values returned by entity(), action(), page(), policy() and flow().";
-```
-
-###### REX224.title
-
-```ts
-readonly title: "Registered value is not a complete declaration" = "Registered value is not a complete declaration";
+readonly REX224: "Registered value is not a complete declaration" = "Registered value is not a complete declaration";
 ```
 
 <a id="rex300"></a>
@@ -9233,25 +6384,7 @@ readonly title: "Registered value is not a complete declaration" = "Registered v
 ##### REX300
 
 ```ts
-readonly REX300: object;
-```
-
-###### REX300.area
-
-```ts
-readonly area: "runtime" = "runtime";
-```
-
-###### REX300.hint
-
-```ts
-readonly hint: "Validate the schema with validateStandard (async) or use a schema whose ~standard.validate returns synchronously." = "Validate the schema with validateStandard (async) or use a schema whose ~standard.validate returns synchronously.";
-```
-
-###### REX300.title
-
-```ts
-readonly title: "Schema validates asynchronously" = "Schema validates asynchronously";
+readonly REX300: "Schema validates asynchronously" = "Schema validates asynchronously";
 ```
 
 <a id="rex301"></a>
@@ -9259,25 +6392,7 @@ readonly title: "Schema validates asynchronously" = "Schema validates asynchrono
 ##### REX301
 
 ```ts
-readonly REX301: object;
-```
-
-###### REX301.area
-
-```ts
-readonly area: "runtime" = "runtime";
-```
-
-###### REX301.hint
-
-```ts
-readonly hint: "Look up a declaration that is registered in the app; rex manifest lists every registered id." = "Look up a declaration that is registered in the app; rex manifest lists every registered id.";
-```
-
-###### REX301.title
-
-```ts
-readonly title: "Unknown declaration" = "Unknown declaration";
+readonly REX301: "Unknown declaration" = "Unknown declaration";
 ```
 
 <a id="rex302"></a>
@@ -9285,25 +6400,7 @@ readonly title: "Unknown declaration" = "Unknown declaration";
 ##### REX302
 
 ```ts
-readonly REX302: object;
-```
-
-###### REX302.area
-
-```ts
-readonly area: "runtime" = "runtime";
-```
-
-###### REX302.hint
-
-```ts
-readonly hint: "Pass a non-empty string for the flow id and the instance id." = "Pass a non-empty string for the flow id and the instance id.";
-```
-
-###### REX302.title
-
-```ts
-readonly title: "Invalid journal id" = "Invalid journal id";
+readonly REX302: "Invalid journal id" = "Invalid journal id";
 ```
 
 <a id="rex303"></a>
@@ -9311,25 +6408,7 @@ readonly title: "Invalid journal id" = "Invalid journal id";
 ##### REX303
 
 ```ts
-readonly REX303: object;
-```
-
-###### REX303.area
-
-```ts
-readonly area: "runtime" = "runtime";
-```
-
-###### REX303.hint
-
-```ts
-readonly hint: "Start the flow with runFlow before recording entries or deciding on its gates." = "Start the flow with runFlow before recording entries or deciding on its gates.";
-```
-
-###### REX303.title
-
-```ts
-readonly title: "Unknown flow instance" = "Unknown flow instance";
+readonly REX303: "Unknown flow instance" = "Unknown flow instance";
 ```
 
 <a id="rex304"></a>
@@ -9337,25 +6416,7 @@ readonly title: "Unknown flow instance" = "Unknown flow instance";
 ##### REX304
 
 ```ts
-readonly REX304: object;
-```
-
-###### REX304.area
-
-```ts
-readonly area: "runtime" = "runtime";
-```
-
-###### REX304.hint
-
-```ts
-readonly hint: "Use a fresh instance id for each flow; an instance id is bound to the flow that opened it." = "Use a fresh instance id for each flow; an instance id is bound to the flow that opened it.";
-```
-
-###### REX304.title
-
-```ts
-readonly title: "Flow instance belongs to another flow" = "Flow instance belongs to another flow";
+readonly REX304: "Flow instance belongs to another flow" = "Flow instance belongs to another flow";
 ```
 
 <a id="rex305"></a>
@@ -9363,25 +6424,39 @@ readonly title: "Flow instance belongs to another flow" = "Flow instance belongs
 ##### REX305
 
 ```ts
-readonly REX305: object;
+readonly REX305: "Unknown store filter field" = "Unknown store filter field";
 ```
 
-###### REX305.area
+<a id="rex306"></a>
+
+##### REX306
 
 ```ts
-readonly area: "runtime" = "runtime";
+readonly REX306: "Rendered outside its Rex provider" = "Rendered outside its Rex provider";
 ```
 
-###### REX305.hint
+<a id="rex307"></a>
+
+##### REX307
 
 ```ts
-readonly hint: "Filter a store list only by fields declared on its entity." = "Filter a store list only by fields declared on its entity.";
+readonly REX307: "Not declared by the page" = "Not declared by the page";
 ```
 
-###### REX305.title
+<a id="rex308"></a>
+
+##### REX308
 
 ```ts
-readonly title: "Unknown store filter field" = "Unknown store filter field";
+readonly REX308: "Declaration missing from the manifest or router" = "Declaration missing from the manifest or router";
+```
+
+<a id="rex309"></a>
+
+##### REX309
+
+```ts
+readonly REX309: "Unexpected server response" = "Unexpected server response";
 ```
 
 <a id="rex310"></a>
@@ -9389,25 +6464,79 @@ readonly title: "Unknown store filter field" = "Unknown store filter field";
 ##### REX310
 
 ```ts
-readonly REX310: object;
+readonly REX310: "Hydration mismatch" = "Hydration mismatch";
 ```
 
-###### REX310.area
+<a id="rex311"></a>
+
+##### REX311
 
 ```ts
-readonly area: "runtime" = "runtime";
+readonly REX311: "Invalid startup data" = "Invalid startup data";
 ```
 
-###### REX310.hint
+<a id="rex312"></a>
+
+##### REX312
 
 ```ts
-readonly hint: "Render the same markup on the server and the client: read time, randomness and browser-only values in effects, not during render." = "Render the same markup on the server and the client: read time, randomness and browser-only values in effects, not during render.";
+readonly REX312: "Invalid rex data script" = "Invalid rex data script";
 ```
 
-###### REX310.title
+<a id="rex313"></a>
+
+##### REX313
 
 ```ts
-readonly title: "Hydration mismatch" = "Hydration mismatch";
+readonly REX313: "Invalid page modules" = "Invalid page modules";
+```
+
+<a id="rex314"></a>
+
+##### REX314
+
+```ts
+readonly REX314: "Invalid component props" = "Invalid component props";
+```
+
+<a id="rex315"></a>
+
+##### REX315
+
+```ts
+readonly REX315: "Invalid store" = "Invalid store";
+```
+
+<a id="rex316"></a>
+
+##### REX316
+
+```ts
+readonly REX316: "Invalid i18n setup" = "Invalid i18n setup";
+```
+
+<a id="rex317"></a>
+
+##### REX317
+
+```ts
+readonly REX317: "Invalid message pattern" = "Invalid message pattern";
+```
+
+<a id="rex318"></a>
+
+##### REX318
+
+```ts
+readonly REX318: "Sidecar conflict" = "Sidecar conflict";
+```
+
+<a id="rex319"></a>
+
+##### REX319
+
+```ts
+readonly REX319: "Invalid custom element" = "Invalid custom element";
 ```
 
 <a id="rex320"></a>
@@ -9415,25 +6544,79 @@ readonly title: "Hydration mismatch" = "Hydration mismatch";
 ##### REX320
 
 ```ts
-readonly REX320: object;
+readonly REX320: "Page declaration changed" = "Page declaration changed";
 ```
 
-###### REX320.area
+<a id="rex321"></a>
+
+##### REX321
 
 ```ts
-readonly area: "runtime" = "runtime";
+readonly REX321: "Invalid density" = "Invalid density";
 ```
 
-###### REX320.hint
+<a id="rex322"></a>
+
+##### REX322
 
 ```ts
-readonly hint: "No action needed: a page.ts edit invalidates rex:app and the page chunk and reloads the page; component edits keep state through HMR." = "No action needed: a page.ts edit invalidates rex:app and the page chunk and reloads the page; component edits keep state through HMR.";
+readonly REX322: "Invalid outcome" = "Invalid outcome";
 ```
 
-###### REX320.title
+<a id="rex323"></a>
+
+##### REX323
 
 ```ts
-readonly title: "Page declaration changed" = "Page declaration changed";
+readonly REX323: "No http(s) base URL" = "No http(s) base URL";
+```
+
+<a id="rex324"></a>
+
+##### REX324
+
+```ts
+readonly REX324: "Loader produced no result" = "Loader produced no result";
+```
+
+<a id="rex325"></a>
+
+##### REX325
+
+```ts
+readonly REX325: "Invalid page draft" = "Invalid page draft";
+```
+
+<a id="rex326"></a>
+
+##### REX326
+
+```ts
+readonly REX326: "Script failed to load" = "Script failed to load";
+```
+
+<a id="rex327"></a>
+
+##### REX327
+
+```ts
+readonly REX327: "Browser API unavailable" = "Browser API unavailable";
+```
+
+<a id="rex328"></a>
+
+##### REX328
+
+```ts
+readonly REX328: "Invalid devtools input" = "Invalid devtools input";
+```
+
+<a id="rex329"></a>
+
+##### REX329
+
+```ts
+readonly REX329: "Invalid Rex API argument" = "Invalid Rex API argument";
 ```
 
 <a id="rex330"></a>
@@ -9441,25 +6624,87 @@ readonly title: "Page declaration changed" = "Page declaration changed";
 ##### REX330
 
 ```ts
-readonly REX330: object;
+readonly REX330: "Region failed to render" = "Region failed to render";
 ```
 
-###### REX330.area
+<a id="rex331"></a>
+
+##### REX331
 
 ```ts
-readonly area: "runtime" = "runtime";
+readonly REX331: "Invalid page params" = "Invalid page params";
 ```
 
-###### REX330.hint
+<a id="rex400"></a>
+
+##### REX400
 
 ```ts
-readonly hint: "Fix the error thrown by the region; the page shows its recoverable-error state and Retry remounts the region." = "Fix the error thrown by the region; the page shows its recoverable-error state and Retry remounts the region.";
+readonly REX400: "Invalid server option" = "Invalid server option";
 ```
 
-###### REX330.title
+<a id="rex401"></a>
+
+##### REX401
 
 ```ts
-readonly title: "Region failed to render" = "Region failed to render";
+readonly REX401: "Duplicate or reserved procedure id" = "Duplicate or reserved procedure id";
+```
+
+<a id="rex402"></a>
+
+##### REX402
+
+```ts
+readonly REX402: "Invalid audit entry" = "Invalid audit entry";
+```
+
+<a id="rex403"></a>
+
+##### REX403
+
+```ts
+readonly REX403: "Invalid audit filter" = "Invalid audit filter";
+```
+
+<a id="rex404"></a>
+
+##### REX404
+
+```ts
+readonly REX404: "Invalid prerender list or page path" = "Invalid prerender list or page path";
+```
+
+<a id="rex405"></a>
+
+##### REX405
+
+```ts
+readonly REX405: "Static page cannot be generated" = "Static page cannot be generated";
+```
+
+<a id="rex406"></a>
+
+##### REX406
+
+```ts
+readonly REX406: "Client directory missing" = "Client directory missing";
+```
+
+<a id="rex407"></a>
+
+##### REX407
+
+```ts
+readonly REX407: "Invalid port" = "Invalid port";
+```
+
+<a id="rex408"></a>
+
+##### REX408
+
+```ts
+readonly REX408: "Page loaders need createRexServer" = "Page loaders need createRexServer";
 ```
 
 <a id="rex440"></a>
@@ -9467,25 +6712,23 @@ readonly title: "Region failed to render" = "Region failed to render";
 ##### REX440
 
 ```ts
-readonly REX440: object;
+readonly REX440: "Server-only module imported by client code" = "Server-only module imported by client code";
 ```
 
-###### REX440.area
+<a id="rex441"></a>
+
+##### REX441
 
 ```ts
-readonly area: "server" = "server";
+readonly REX441: "Secret referenced by client code" = "Secret referenced by client code";
 ```
 
-###### REX440.hint
+<a id="rex442"></a>
+
+##### REX442
 
 ```ts
-readonly hint: "Import rex/server, app/server and modules marked import \"rex/server-only\" only from actions, rex.config.ts and other server code." = "Import rex/server, app/server and modules marked import \"rex/server-only\" only from actions, rex.config.ts and other server code.";
-```
-
-###### REX440.title
-
-```ts
-readonly title: "Server-only module imported by client code" = "Server-only module imported by client code";
+readonly REX442: "Action handler called in the browser" = "Action handler called in the browser";
 ```
 
 <a id="rex450"></a>
@@ -9493,25 +6736,39 @@ readonly title: "Server-only module imported by client code" = "Server-only modu
 ##### REX450
 
 ```ts
-readonly REX450: object;
+readonly REX450: "Runtime not available for the adapter" = "Runtime not available for the adapter";
 ```
 
-###### REX450.area
+<a id="rex460"></a>
+
+##### REX460
 
 ```ts
-readonly area: "server" = "server";
+readonly REX460: "App folder layout is invalid" = "App folder layout is invalid";
 ```
 
-###### REX450.hint
+<a id="rex461"></a>
+
+##### REX461
 
 ```ts
-readonly hint: "Run the bun adapter under Bun and the deno adapter under Deno, or pick the matching rex build --target." = "Run the bun adapter under Bun and the deno adapter under Deno, or pick the matching rex build --target.";
+readonly REX461: "Invalid Vite client manifest" = "Invalid Vite client manifest";
 ```
 
-###### REX450.title
+<a id="rex462"></a>
+
+##### REX462
 
 ```ts
-readonly title: "Runtime not available for the adapter" = "Runtime not available for the adapter";
+readonly REX462: "Invalid rex:app module" = "Invalid rex:app module";
+```
+
+<a id="rex463"></a>
+
+##### REX463
+
+```ts
+readonly REX463: "Root element missing" = "Root element missing";
 ```
 
 <a id="rex500"></a>
@@ -9519,25 +6776,7 @@ readonly title: "Runtime not available for the adapter" = "Runtime not available
 ##### REX500
 
 ```ts
-readonly REX500: object;
-```
-
-###### REX500.area
-
-```ts
-readonly area: "checker" = "checker";
-```
-
-###### REX500.hint
-
-```ts
-readonly hint: "Fix the declaration error reported with the scan so the app declarations load, then run rex manifest again." = "Fix the declaration error reported with the scan so the app declarations load, then run rex manifest again.";
-```
-
-###### REX500.title
-
-```ts
-readonly title: "Manifest scan failed" = "Manifest scan failed";
+readonly REX500: "Manifest scan failed" = "Manifest scan failed";
 ```
 
 <a id="rex501"></a>
@@ -9545,25 +6784,7 @@ readonly title: "Manifest scan failed" = "Manifest scan failed";
 ##### REX501
 
 ```ts
-readonly REX501: object;
-```
-
-###### REX501.area
-
-```ts
-readonly area: "checker" = "checker";
-```
-
-###### REX501.hint
-
-```ts
-readonly hint: "Pass buildManifest an app name that is a non-empty string." = "Pass buildManifest an app name that is a non-empty string.";
-```
-
-###### REX501.title
-
-```ts
-readonly title: "Invalid manifest build option" = "Invalid manifest build option";
+readonly REX501: "Invalid manifest build option" = "Invalid manifest build option";
 ```
 
 <a id="rex502"></a>
@@ -9571,25 +6792,55 @@ readonly title: "Invalid manifest build option" = "Invalid manifest build option
 ##### REX502
 
 ```ts
-readonly REX502: object;
+readonly REX502: "Manifest value cannot be serialised" = "Manifest value cannot be serialised";
 ```
 
-###### REX502.area
+<a id="rex503"></a>
+
+##### REX503
 
 ```ts
-readonly area: "checker" = "checker";
+readonly REX503: "Invalid checker rule" = "Invalid checker rule";
 ```
 
-###### REX502.hint
+<a id="rex504"></a>
+
+##### REX504
 
 ```ts
-readonly hint: "Keep declaration metadata to JSON values: finite numbers, strings, booleans, null, arrays and plain objects." = "Keep declaration metadata to JSON values: finite numbers, strings, booleans, null, arrays and plain objects.";
+readonly REX504: "Invalid finding" = "Invalid finding";
 ```
 
-###### REX502.title
+<a id="rex505"></a>
+
+##### REX505
 
 ```ts
-readonly title: "Manifest value cannot be serialised" = "Manifest value cannot be serialised";
+readonly REX505: "Checker rule failed" = "Checker rule failed";
+```
+
+<a id="rex506"></a>
+
+##### REX506
+
+```ts
+readonly REX506: "Unknown report format" = "Unknown report format";
+```
+
+<a id="rex507"></a>
+
+##### REX507
+
+```ts
+readonly REX507: "Runtime check failed" = "Runtime check failed";
+```
+
+<a id="rex508"></a>
+
+##### REX508
+
+```ts
+readonly REX508: "Config value is not static" = "Config value is not static";
 ```
 
 <a id="rex600"></a>
@@ -9597,25 +6848,31 @@ readonly title: "Manifest value cannot be serialised" = "Manifest value cannot b
 ##### REX600
 
 ```ts
-readonly REX600: object;
+readonly REX600: "Invalid CLI command definition" = "Invalid CLI command definition";
 ```
 
-###### REX600.area
+<a id="rex601"></a>
+
+##### REX601
 
 ```ts
-readonly area: "cli" = "cli";
+readonly REX601: "Invalid generator argument" = "Invalid generator argument";
 ```
 
-###### REX600.hint
+<a id="rex602"></a>
+
+##### REX602
 
 ```ts
-readonly hint: "Declare each command, argument and option once with a --long option name, <required> or [optional] arguments in that order, and no value on a --no- flag." = "Declare each command, argument and option once with a --long option name, <required> or [optional] arguments in that order, and no value on a --no- flag.";
+readonly REX602: "Generator refused to write" = "Generator refused to write";
 ```
 
-###### REX600.title
+<a id="rex603"></a>
+
+##### REX603
 
 ```ts
-readonly title: "Invalid CLI command definition" = "Invalid CLI command definition";
+readonly REX603: "Template dependency not pinned" = "Template dependency not pinned";
 ```
 
 <a id="rex610"></a>
@@ -9623,25 +6880,23 @@ readonly title: "Invalid CLI command definition" = "Invalid CLI command definiti
 ##### REX610
 
 ```ts
-readonly REX610: object;
+readonly REX610: "Codemod left a placeholder" = "Codemod left a placeholder";
 ```
 
-###### REX610.area
+<a id="rex611"></a>
+
+##### REX611
 
 ```ts
-readonly area: "cli" = "cli";
+readonly REX611: "Unknown migration source" = "Unknown migration source";
 ```
 
-###### REX610.hint
+<a id="rex612"></a>
+
+##### REX612
 
 ```ts
-readonly hint: "Replace the placeholder the codemod wrote, such as Img width and height, with the real values and run rex check." = "Replace the placeholder the codemod wrote, such as Img width and height, with the real values and run rex check.";
-```
-
-###### REX610.title
-
-```ts
-readonly title: "Codemod left a placeholder" = "Codemod left a placeholder";
+readonly REX612: "Invalid codemod module" = "Invalid codemod module";
 ```
 
 ***
@@ -9706,252 +6961,12 @@ const SHORTCUT_MODIFIERS: readonly ["mod", "shift", "alt"];
 
 ***
 
-<a id="sidecar_element_id"></a>
-
-### SIDECAR\_ELEMENT\_ID
-
-```ts
-const SIDECAR_ELEMENT_ID: "rex-page" = "rex-page";
-```
-
-***
-
-<a id="sidecar_error_code_pattern"></a>
-
-### SIDECAR\_ERROR\_CODE\_PATTERN
-
-```ts
-const SIDECAR_ERROR_CODE_PATTERN: RegExp;
-```
-
-***
-
-<a id="sidecar_mime_type"></a>
-
-### SIDECAR\_MIME\_TYPE
-
-```ts
-const SIDECAR_MIME_TYPE: "application/rex+json" = "application/rex+json";
-```
-
-***
-
-<a id="sidecar_version"></a>
-
-### SIDECAR\_VERSION
-
-```ts
-const SIDECAR_VERSION: 1 = 1;
-```
-
-***
-
-<a id="sidecaractionschema"></a>
-
-### sidecarActionSchema
-
-```ts
-const sidecarActionSchema: ZodMiniObject<{
-  allowed: ZodMiniBoolean<boolean>;
-  effect: ZodMiniEnum<{
-     irreversible: "irreversible";
-     read: "read";
-     reversible: "reversible";
-  }>;
-  id: ZodMiniString<string>;
-  input: ZodMiniRecord<ZodMiniString<string>, ZodMiniUnknown>;
-  label: ZodMiniString<string>;
-  reason: ZodMiniNullable<ZodMiniString<string>>;
-  via: ZodMiniArray<ZodMiniEnum<{
-     click: "click";
-     key: "key";
-     palette: "palette";
-     url: "url";
-  }>>;
-}, $strict>;
-```
-
-***
-
-<a id="sidecarjsonschema"></a>
-
-### sidecarJsonSchema
-
-```ts
-const sidecarJsonSchema: JsonSchema;
-```
-
-***
-
-<a id="sidecaroutcomeschema"></a>
-
-### sidecarOutcomeSchema
-
-```ts
-const sidecarOutcomeSchema: ZodMiniObject<{
-  action: ZodMiniString<string>;
-  at: ZodMiniISODateTime;
-  message: ZodMiniString<string>;
-  ok: ZodMiniBoolean<boolean>;
-}, $strict>;
-```
-
-***
-
-<a id="sidecaroverlayschema"></a>
-
-### sidecarOverlaySchema
-
-```ts
-const sidecarOverlaySchema: ZodMiniObject<{
-  dismiss: ZodMiniEnum<{
-     both: "both";
-     button: "button";
-     escape: "escape";
-  }>;
-  id: ZodMiniString<string>;
-  open: ZodMiniBoolean<boolean>;
-}, $strict>;
-```
-
-***
-
-<a id="sidecarregionschema"></a>
-
-### sidecarRegionSchema
-
-```ts
-const sidecarRegionSchema: ZodMiniObject<{
-  address: ZodMiniString<string>;
-  code: ZodMiniString<string>;
-  id: ZodMiniString<string>;
-  state: ZodMiniEnum<{
-     empty: "empty";
-     loading: "loading";
-     offline: "offline";
-     partial: "partial";
-     permission-denied: "permission-denied";
-     ready: "ready";
-     recoverable-error: "recoverable-error";
-     stale: "stale";
-     terminal-error: "terminal-error";
-  }>;
-}, $strict>;
-```
-
-***
-
-<a id="sidecarschema"></a>
-
-### sidecarSchema
-
-```ts
-const sidecarSchema: ZodMiniObject<{
-  actions: ZodMiniArray<ZodMiniObject<{
-     allowed: ZodMiniBoolean<boolean>;
-     effect: ZodMiniEnum<{
-        irreversible: "irreversible";
-        read: "read";
-        reversible: "reversible";
-     }>;
-     id: ZodMiniString<string>;
-     input: ZodMiniRecord<ZodMiniString<string>, ZodMiniUnknown>;
-     label: ZodMiniString<string>;
-     reason: ZodMiniNullable<ZodMiniString<string>>;
-     via: ZodMiniArray<ZodMiniEnum<{
-        click: "click";
-        key: "key";
-        palette: "palette";
-        url: "url";
-     }>>;
-  }, $strict>>;
-  outcome: ZodMiniNullable<ZodMiniObject<{
-     action: ZodMiniString<string>;
-     at: ZodMiniISODateTime;
-     message: ZodMiniString<string>;
-     ok: ZodMiniBoolean<boolean>;
-  }, $strict>>;
-  overlays: ZodMiniArray<ZodMiniObject<{
-     dismiss: ZodMiniEnum<{
-        both: "both";
-        button: "button";
-        escape: "escape";
-     }>;
-     id: ZodMiniString<string>;
-     open: ZodMiniBoolean<boolean>;
-  }, $strict>>;
-  page: ZodMiniString<string>;
-  params: ZodMiniRecord<ZodMiniString<string>, ZodMiniUnknown>;
-  regions: ZodMiniOptional<ZodMiniArray<ZodMiniObject<{
-     address: ZodMiniString<string>;
-     code: ZodMiniString<string>;
-     id: ZodMiniString<string>;
-     state: ZodMiniEnum<{
-        empty: "empty";
-        loading: "loading";
-        offline: "offline";
-        partial: "partial";
-        permission-denied: "permission-denied";
-        ready: "ready";
-        recoverable-error: "recoverable-error";
-        stale: "stale";
-        terminal-error: "terminal-error";
-     }>;
-  }, $strict>>>;
-  state: ZodMiniEnum<{
-     empty: "empty";
-     loading: "loading";
-     offline: "offline";
-     partial: "partial";
-     permission-denied: "permission-denied";
-     ready: "ready";
-     recoverable-error: "recoverable-error";
-     stale: "stale";
-     terminal-error: "terminal-error";
-  }>;
-  stores: ZodMiniOptional<ZodMiniRecord<ZodMiniString<string>, ZodMiniUnknown>>;
-  version: ZodMiniLiteral<1>;
-}, $strict>;
-```
-
-***
-
-<a id="sidecarstoresschema"></a>
-
-### sidecarStoresSchema
-
-```ts
-const sidecarStoresSchema: ZodMiniRecord<ZodMiniString<string>, ZodMiniUnknown>;
-```
-
-***
-
-<a id="standard_vendor_key"></a>
-
-### STANDARD\_VENDOR\_KEY
-
-```ts
-const STANDARD_VENDOR_KEY: "x-rex-standard" = "x-rex-standard";
-```
-
-***
-
 <a id="state_export_names"></a>
 
 ### STATE\_EXPORT\_NAMES
 
 ```ts
 const STATE_EXPORT_NAMES: { readonly [S in RexDataState]: StateExportName<S> };
-```
-
-***
-
-<a id="ui_kits"></a>
-
-### UI\_KITS
-
-```ts
-const UI_KITS: readonly ["designx", "none"];
 ```
 
 ## Functions
@@ -9961,7 +6976,7 @@ const UI_KITS: readonly ["designx", "none"];
 ### action()
 
 ```ts
-function action<N, I, O>(name, config): ActionDeclaration<N, AsZodSchema<I>, AsZodSchema<O>>;
+function action<N, I, O>(name, config): ActionDeclaration<N, I, O>;
 ```
 
 #### Type Parameters
@@ -9972,11 +6987,11 @@ function action<N, I, O>(name, config): ActionDeclaration<N, AsZodSchema<I>, AsZ
 
 ##### I
 
-`I` *extends* `StandardSchemaV1`\<`unknown`, `unknown`\>
+`I` *extends* [`StandardSchemaV1`](#standardschemav1)\<`unknown`, `unknown`\>
 
 ##### O
 
-`O` *extends* `StandardSchemaV1`\<`unknown`, `unknown`\>
+`O` *extends* [`StandardSchemaV1`](#standardschemav1)\<`unknown`, `unknown`\>
 
 #### Parameters
 
@@ -9990,7 +7005,7 @@ function action<N, I, O>(name, config): ActionDeclaration<N, AsZodSchema<I>, AsZ
 
 #### Returns
 
-[`ActionDeclaration`](#actiondeclaration)\<`N`, `AsZodSchema`\<`I`\>, `AsZodSchema`\<`O`\>\>
+[`ActionDeclaration`](#actiondeclaration)\<`N`, `I`, `O`\>
 
 ***
 
@@ -10158,44 +7173,6 @@ function bind<E>(entity, store): EntityStore<E>;
 
 ***
 
-<a id="boolean"></a>
-
-### boolean()
-
-```ts
-function boolean(): RexField<ZodMiniBoolean<boolean>>;
-```
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniBoolean`\<`boolean`\>\>
-
-***
-
-<a id="buildmanifest"></a>
-
-### buildManifest()
-
-```ts
-function buildManifest(source, options?): Manifest;
-```
-
-#### Parameters
-
-##### source
-
-[`ManifestSource`](#manifestsource)
-
-##### options?
-
-[`BuildManifestOptions`](#buildmanifestoptions) = `{}`
-
-#### Returns
-
-[`Manifest`](#manifest)
-
-***
-
 <a id="can-1"></a>
 
 ### can()
@@ -10261,30 +7238,6 @@ readonly [`JournalEntry`](#journalentry)[]
 #### Returns
 
 `ReadonlySet`\<`number`\>
-
-***
-
-<a id="configserver"></a>
-
-### configServer()
-
-```ts
-function configServer(read, fallback): RexFetchHandler;
-```
-
-#### Parameters
-
-##### read
-
-[`RexConfigExport`](#rexconfigexport)
-
-##### fallback
-
-[`DefaultServerFactory`](#defaultserverfactory)
-
-#### Returns
-
-[`RexFetchHandler`](#rexfetchhandler)
 
 ***
 
@@ -10369,69 +7322,6 @@ function declarationName<N>(declaration, name): N;
 
 ***
 
-<a id="declaredjsonschema"></a>
-
-### declaredJsonSchema()
-
-```ts
-function declaredJsonSchema(
-   schema, 
-   override, 
-   io, 
-   subject
-): JsonSchema;
-```
-
-#### Parameters
-
-##### schema
-
-`ZodSchemaLike`
-
-##### override
-
-[`JsonSchema`](#jsonschema-3) \| `null`
-
-##### io
-
-`"input"` \| `"output"`
-
-##### subject
-
-`string`
-
-#### Returns
-
-[`JsonSchema`](#jsonschema-3)
-
-***
-
-<a id="defineconfig"></a>
-
-### defineConfig()
-
-```ts
-function defineConfig<A>(config): RexConfig<A>;
-```
-
-#### Type Parameters
-
-##### A
-
-`A` *extends* [`RexConfigApp`](#rexconfigapp-1)
-
-#### Parameters
-
-##### config
-
-[`RexConfig`](#rexconfig)\<`A`\>
-
-#### Returns
-
-[`RexConfig`](#rexconfig)\<`A`\>
-
-***
-
 <a id="deprecated"></a>
 
 ### deprecated()
@@ -10496,16 +7386,65 @@ function deprecated(
   \| `"REX303"`
   \| `"REX304"`
   \| `"REX305"`
+  \| `"REX306"`
+  \| `"REX307"`
+  \| `"REX308"`
+  \| `"REX309"`
   \| `"REX310"`
+  \| `"REX311"`
+  \| `"REX312"`
+  \| `"REX313"`
+  \| `"REX314"`
+  \| `"REX315"`
+  \| `"REX316"`
+  \| `"REX317"`
+  \| `"REX318"`
+  \| `"REX319"`
   \| `"REX320"`
+  \| `"REX321"`
+  \| `"REX322"`
+  \| `"REX323"`
+  \| `"REX324"`
+  \| `"REX325"`
+  \| `"REX326"`
+  \| `"REX327"`
+  \| `"REX328"`
+  \| `"REX329"`
   \| `"REX330"`
+  \| `"REX331"`
+  \| `"REX400"`
+  \| `"REX401"`
+  \| `"REX402"`
+  \| `"REX403"`
+  \| `"REX404"`
+  \| `"REX405"`
+  \| `"REX406"`
+  \| `"REX407"`
+  \| `"REX408"`
   \| `"REX440"`
+  \| `"REX441"`
+  \| `"REX442"`
   \| `"REX450"`
+  \| `"REX460"`
+  \| `"REX461"`
+  \| `"REX462"`
+  \| `"REX463"`
   \| `"REX500"`
   \| `"REX501"`
   \| `"REX502"`
+  \| `"REX503"`
+  \| `"REX504"`
+  \| `"REX505"`
+  \| `"REX506"`
+  \| `"REX507"`
+  \| `"REX508"`
   \| `"REX600"`
+  \| `"REX601"`
+  \| `"REX602"`
+  \| `"REX603"`
   \| `"REX610"`
+  \| `"REX611"`
+  \| `"REX612"`
 
 ##### message
 
@@ -10581,16 +7520,65 @@ function deprecationMessage(code, message): string;
   \| `"REX303"`
   \| `"REX304"`
   \| `"REX305"`
+  \| `"REX306"`
+  \| `"REX307"`
+  \| `"REX308"`
+  \| `"REX309"`
   \| `"REX310"`
+  \| `"REX311"`
+  \| `"REX312"`
+  \| `"REX313"`
+  \| `"REX314"`
+  \| `"REX315"`
+  \| `"REX316"`
+  \| `"REX317"`
+  \| `"REX318"`
+  \| `"REX319"`
   \| `"REX320"`
+  \| `"REX321"`
+  \| `"REX322"`
+  \| `"REX323"`
+  \| `"REX324"`
+  \| `"REX325"`
+  \| `"REX326"`
+  \| `"REX327"`
+  \| `"REX328"`
+  \| `"REX329"`
   \| `"REX330"`
+  \| `"REX331"`
+  \| `"REX400"`
+  \| `"REX401"`
+  \| `"REX402"`
+  \| `"REX403"`
+  \| `"REX404"`
+  \| `"REX405"`
+  \| `"REX406"`
+  \| `"REX407"`
+  \| `"REX408"`
   \| `"REX440"`
+  \| `"REX441"`
+  \| `"REX442"`
   \| `"REX450"`
+  \| `"REX460"`
+  \| `"REX461"`
+  \| `"REX462"`
+  \| `"REX463"`
   \| `"REX500"`
   \| `"REX501"`
   \| `"REX502"`
+  \| `"REX503"`
+  \| `"REX504"`
+  \| `"REX505"`
+  \| `"REX506"`
+  \| `"REX507"`
+  \| `"REX508"`
   \| `"REX600"`
+  \| `"REX601"`
+  \| `"REX602"`
+  \| `"REX603"`
   \| `"REX610"`
+  \| `"REX611"`
+  \| `"REX612"`
 
 ##### message
 
@@ -10637,32 +7625,6 @@ function entity<N, F, K>(name, config): EntityDeclaration<N, F, K>;
 #### Returns
 
 [`EntityDeclaration`](#entitydeclaration)\<`N`, `F`, `K`\>
-
-***
-
-<a id="enumof"></a>
-
-### enumOf()
-
-```ts
-function enumOf<T>(values): RexField<ZodMiniEnum<{ [k in string]: { [k in string]: k }[k] }>>;
-```
-
-#### Type Parameters
-
-##### T
-
-`T` *extends* readonly \[`string`, `string`\]
-
-#### Parameters
-
-##### values
-
-`T`
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniEnum`\<`{ [k in string]: { [k in string]: k }[k] }`\>\>
 
 ***
 
@@ -10746,16 +7708,65 @@ function errorDocs(code): string;
   \| `"REX303"`
   \| `"REX304"`
   \| `"REX305"`
+  \| `"REX306"`
+  \| `"REX307"`
+  \| `"REX308"`
+  \| `"REX309"`
   \| `"REX310"`
+  \| `"REX311"`
+  \| `"REX312"`
+  \| `"REX313"`
+  \| `"REX314"`
+  \| `"REX315"`
+  \| `"REX316"`
+  \| `"REX317"`
+  \| `"REX318"`
+  \| `"REX319"`
   \| `"REX320"`
+  \| `"REX321"`
+  \| `"REX322"`
+  \| `"REX323"`
+  \| `"REX324"`
+  \| `"REX325"`
+  \| `"REX326"`
+  \| `"REX327"`
+  \| `"REX328"`
+  \| `"REX329"`
   \| `"REX330"`
+  \| `"REX331"`
+  \| `"REX400"`
+  \| `"REX401"`
+  \| `"REX402"`
+  \| `"REX403"`
+  \| `"REX404"`
+  \| `"REX405"`
+  \| `"REX406"`
+  \| `"REX407"`
+  \| `"REX408"`
   \| `"REX440"`
+  \| `"REX441"`
+  \| `"REX442"`
   \| `"REX450"`
+  \| `"REX460"`
+  \| `"REX461"`
+  \| `"REX462"`
+  \| `"REX463"`
   \| `"REX500"`
   \| `"REX501"`
   \| `"REX502"`
+  \| `"REX503"`
+  \| `"REX504"`
+  \| `"REX505"`
+  \| `"REX506"`
+  \| `"REX507"`
+  \| `"REX508"`
   \| `"REX600"`
+  \| `"REX601"`
+  \| `"REX602"`
+  \| `"REX603"`
   \| `"REX610"`
+  \| `"REX611"`
+  \| `"REX612"`
 
 #### Returns
 
@@ -10807,56 +7818,6 @@ function evaluate(predicate, actor): PolicyResult;
 
 ***
 
-<a id="field-4"></a>
-
-### field()
-
-```ts
-function field<T>(schema, meta?): RexField<T>;
-```
-
-#### Type Parameters
-
-##### T
-
-`T` *extends* `ZodMiniType`\<`unknown`, `unknown`, `$ZodTypeInternals`\<`unknown`, `unknown`\>\>
-
-#### Parameters
-
-##### schema
-
-`T`
-
-##### meta?
-
-`Readonly`\<`Record`\<`string`, `unknown`\>\>
-
-#### Returns
-
-[`RexField`](#rexfield)\<`T`\>
-
-***
-
-<a id="fieldkind-1"></a>
-
-### fieldKind()
-
-```ts
-function fieldKind(schema): FieldKind | undefined;
-```
-
-#### Parameters
-
-##### schema
-
-`$ZodType`
-
-#### Returns
-
-[`FieldKind`](#fieldkind) \| `undefined`
-
-***
-
 <a id="flow-2"></a>
 
 ### flow()
@@ -10892,7 +7853,7 @@ function flow<N>(name, config): FlowDeclaration<N>;
 ### formatRexError()
 
 ```ts
-function formatRexError(error): string;
+function formatRexError(error, hint?): string;
 ```
 
 #### Parameters
@@ -10900,6 +7861,10 @@ function formatRexError(error): string;
 ##### error
 
 [`RexError`](#rexerror)
+
+##### hint?
+
+`string` \| `null`
 
 #### Returns
 
@@ -10967,54 +7932,69 @@ function hasWarned(code): boolean;
   \| `"REX303"`
   \| `"REX304"`
   \| `"REX305"`
+  \| `"REX306"`
+  \| `"REX307"`
+  \| `"REX308"`
+  \| `"REX309"`
   \| `"REX310"`
+  \| `"REX311"`
+  \| `"REX312"`
+  \| `"REX313"`
+  \| `"REX314"`
+  \| `"REX315"`
+  \| `"REX316"`
+  \| `"REX317"`
+  \| `"REX318"`
+  \| `"REX319"`
   \| `"REX320"`
+  \| `"REX321"`
+  \| `"REX322"`
+  \| `"REX323"`
+  \| `"REX324"`
+  \| `"REX325"`
+  \| `"REX326"`
+  \| `"REX327"`
+  \| `"REX328"`
+  \| `"REX329"`
   \| `"REX330"`
+  \| `"REX331"`
+  \| `"REX400"`
+  \| `"REX401"`
+  \| `"REX402"`
+  \| `"REX403"`
+  \| `"REX404"`
+  \| `"REX405"`
+  \| `"REX406"`
+  \| `"REX407"`
+  \| `"REX408"`
   \| `"REX440"`
+  \| `"REX441"`
+  \| `"REX442"`
   \| `"REX450"`
+  \| `"REX460"`
+  \| `"REX461"`
+  \| `"REX462"`
+  \| `"REX463"`
   \| `"REX500"`
   \| `"REX501"`
   \| `"REX502"`
+  \| `"REX503"`
+  \| `"REX504"`
+  \| `"REX505"`
+  \| `"REX506"`
+  \| `"REX507"`
+  \| `"REX508"`
   \| `"REX600"`
+  \| `"REX601"`
+  \| `"REX602"`
+  \| `"REX603"`
   \| `"REX610"`
+  \| `"REX611"`
+  \| `"REX612"`
 
 #### Returns
 
 `boolean`
-
-***
-
-<a id="id-19"></a>
-
-### id()
-
-```ts
-function id(): RexField<ZodMiniString<string>>;
-```
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniString`\<`string`\>\>
-
-***
-
-<a id="integer"></a>
-
-### integer()
-
-```ts
-function integer(options?): RexField<ZodMiniInt>;
-```
-
-#### Parameters
-
-##### options?
-
-[`IntegerOptions`](#integeroptions) = `{}`
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniInt`\>
 
 ***
 
@@ -11035,46 +8015,6 @@ function isAnonymous(subject): boolean;
 #### Returns
 
 `boolean`
-
-***
-
-<a id="isdefinedconfig"></a>
-
-### isDefinedConfig()
-
-```ts
-function isDefinedConfig(value): value is RexConfig<RexConfigApp>;
-```
-
-#### Parameters
-
-##### value
-
-`unknown`
-
-#### Returns
-
-`value is RexConfig<RexConfigApp>`
-
-***
-
-<a id="isfetchhandler"></a>
-
-### isFetchHandler()
-
-```ts
-function isFetchHandler(value): value is RexFetchHandler;
-```
-
-#### Parameters
-
-##### value
-
-`unknown`
-
-#### Returns
-
-`value is RexFetchHandler`
 
 ***
 
@@ -11203,7 +8143,7 @@ function isRexError(value): value is RexError;
 ### isRexErrorCode()
 
 ```ts
-function isRexErrorCode(value): value is "REX100" | "REX101" | "REX102" | "REX110" | "REX111" | "REX112" | "REX113" | "REX114" | "REX115" | "REX116" | "REX117" | "REX118" | "REX119" | "REX120" | "REX121" | "REX122" | "REX123" | "REX200" | "REX201" | "REX202" | "REX203" | "REX204" | "REX205" | "REX206" | "REX207" | "REX208" | "REX209" | "REX210" | "REX211" | "REX212" | "REX213" | "REX214" | "REX215" | "REX216" | "REX217" | "REX218" | "REX219" | "REX220" | "REX221" | "REX222" | "REX223" | "REX224" | "REX300" | "REX301" | "REX302" | "REX303" | "REX304" | "REX305" | "REX310" | "REX320" | "REX330" | "REX440" | "REX450" | "REX500" | "REX501" | "REX502" | "REX600" | "REX610";
+function isRexErrorCode(value): value is "REX100" | "REX101" | "REX102" | "REX110" | "REX111" | "REX112" | "REX113" | "REX114" | "REX115" | "REX116" | "REX117" | "REX118" | "REX119" | "REX120" | "REX121" | "REX122" | "REX123" | "REX200" | "REX201" | "REX202" | "REX203" | "REX204" | "REX205" | "REX206" | "REX207" | "REX208" | "REX209" | "REX210" | "REX211" | "REX212" | "REX213" | "REX214" | "REX215" | "REX216" | "REX217" | "REX218" | "REX219" | "REX220" | "REX221" | "REX222" | "REX223" | "REX224" | "REX300" | "REX301" | "REX302" | "REX303" | "REX304" | "REX305" | "REX306" | "REX307" | "REX308" | "REX309" | "REX310" | "REX311" | "REX312" | "REX313" | "REX314" | "REX315" | "REX316" | "REX317" | "REX318" | "REX319" | "REX320" | "REX321" | "REX322" | "REX323" | "REX324" | "REX325" | "REX326" | "REX327" | "REX328" | "REX329" | "REX330" | "REX331" | "REX400" | "REX401" | "REX402" | "REX403" | "REX404" | "REX405" | "REX406" | "REX407" | "REX408" | "REX440" | "REX441" | "REX442" | "REX450" | "REX460" | "REX461" | "REX462" | "REX463" | "REX500" | "REX501" | "REX502" | "REX503" | "REX504" | "REX505" | "REX506" | "REX507" | "REX508" | "REX600" | "REX601" | "REX602" | "REX603" | "REX610" | "REX611" | "REX612";
 ```
 
 #### Parameters
@@ -11214,7 +8154,27 @@ function isRexErrorCode(value): value is "REX100" | "REX101" | "REX102" | "REX11
 
 #### Returns
 
-value is "REX100" \| "REX101" \| "REX102" \| "REX110" \| "REX111" \| "REX112" \| "REX113" \| "REX114" \| "REX115" \| "REX116" \| "REX117" \| "REX118" \| "REX119" \| "REX120" \| "REX121" \| "REX122" \| "REX123" \| "REX200" \| "REX201" \| "REX202" \| "REX203" \| "REX204" \| "REX205" \| "REX206" \| "REX207" \| "REX208" \| "REX209" \| "REX210" \| "REX211" \| "REX212" \| "REX213" \| "REX214" \| "REX215" \| "REX216" \| "REX217" \| "REX218" \| "REX219" \| "REX220" \| "REX221" \| "REX222" \| "REX223" \| "REX224" \| "REX300" \| "REX301" \| "REX302" \| "REX303" \| "REX304" \| "REX305" \| "REX310" \| "REX320" \| "REX330" \| "REX440" \| "REX450" \| "REX500" \| "REX501" \| "REX502" \| "REX600" \| "REX610"
+value is "REX100" \| "REX101" \| "REX102" \| "REX110" \| "REX111" \| "REX112" \| "REX113" \| "REX114" \| "REX115" \| "REX116" \| "REX117" \| "REX118" \| "REX119" \| "REX120" \| "REX121" \| "REX122" \| "REX123" \| "REX200" \| "REX201" \| "REX202" \| "REX203" \| "REX204" \| "REX205" \| "REX206" \| "REX207" \| "REX208" \| "REX209" \| "REX210" \| "REX211" \| "REX212" \| "REX213" \| "REX214" \| "REX215" \| "REX216" \| "REX217" \| "REX218" \| "REX219" \| "REX220" \| "REX221" \| "REX222" \| "REX223" \| "REX224" \| "REX300" \| "REX301" \| "REX302" \| "REX303" \| "REX304" \| "REX305" \| "REX306" \| "REX307" \| "REX308" \| "REX309" \| "REX310" \| "REX311" \| "REX312" \| "REX313" \| "REX314" \| "REX315" \| "REX316" \| "REX317" \| "REX318" \| "REX319" \| "REX320" \| "REX321" \| "REX322" \| "REX323" \| "REX324" \| "REX325" \| "REX326" \| "REX327" \| "REX328" \| "REX329" \| "REX330" \| "REX331" \| "REX400" \| "REX401" \| "REX402" \| "REX403" \| "REX404" \| "REX405" \| "REX406" \| "REX407" \| "REX408" \| "REX440" \| "REX441" \| "REX442" \| "REX450" \| "REX460" \| "REX461" \| "REX462" \| "REX463" \| "REX500" \| "REX501" \| "REX502" \| "REX503" \| "REX504" \| "REX505" \| "REX506" \| "REX507" \| "REX508" \| "REX600" \| "REX601" \| "REX602" \| "REX603" \| "REX610" \| "REX611" \| "REX612"
+
+***
+
+<a id="isstandardschema"></a>
+
+### isStandardSchema()
+
+```ts
+function isStandardSchema(value): value is StandardSchemaV1<unknown, unknown>;
+```
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+`value is StandardSchemaV1<unknown, unknown>`
 
 ***
 
@@ -11235,20 +8195,6 @@ function isValidName(name): name is string;
 #### Returns
 
 `name is string`
-
-***
-
-<a id="json"></a>
-
-### json()
-
-```ts
-function json(): RexField<ZodMiniJSONSchema>;
-```
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniJSONSchema`\>
 
 ***
 
@@ -11350,20 +8296,6 @@ readonly [`InferEntity`](#inferentity)\<`E`\>[] = `[]`
 
 ***
 
-<a id="money"></a>
-
-### money()
-
-```ts
-function money(): RexField<ZodMiniString<string>>;
-```
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniString`\<`string`\>\>
-
-***
-
 <a id="never"></a>
 
 ### never()
@@ -11401,30 +8333,6 @@ function normalizeListQuery<T>(query?): NormalizedListQuery<T>;
 #### Returns
 
 [`NormalizedListQuery`](#normalizedlistquery)\<`T`\>
-
-***
-
-<a id="objectjsonschema"></a>
-
-### objectJsonSchema()
-
-```ts
-function objectJsonSchema(shape, io?): JsonSchema;
-```
-
-#### Parameters
-
-##### shape
-
-`Readonly`\<`Record`\<`string`, `$ZodType`\>\>
-
-##### io?
-
-`"input"` \| `"output"`
-
-#### Returns
-
-[`JsonSchema`](#jsonschema-3)
 
 ***
 
@@ -11518,12 +8426,12 @@ function overlayName<N>(name): N;
 
 ***
 
-<a id="page-7"></a>
+<a id="page-5"></a>
 
 ### page()
 
 ```ts
-function page<N, P, S, R, O, A, L>(name, config): PageDeclaration<N, AsPageParams<P>, S[number], R, O, A, L>;
+function page<N, P, S, R, O, A, L>(name, config): PageDeclaration<N, P, S[number], R, O, A, L>;
 ```
 
 #### Type Parameters
@@ -11534,8 +8442,7 @@ function page<N, P, S, R, O, A, L>(name, config): PageDeclaration<N, AsPageParam
 
 ##### P
 
-`P` *extends* `StandardSchemaV1`\<`unknown`, `unknown`\> = `ZodMiniObject`\<\{
-\}, `$strip`\>
+`P` *extends* [`StandardSchemaV1`](#standardschemav1)\<`unknown`, `unknown`\> = [`EmptyPageParams`](#emptypageparams)
 
 ##### S
 
@@ -11579,7 +8486,7 @@ function page<N, P, S, R, O, A, L>(name, config): PageDeclaration<N, AsPageParam
 
 #### Returns
 
-[`PageDeclaration`](#pagedeclaration)\<`N`, [`AsPageParams`](#aspageparams)\<`P`\>, `S`\[`number`\], `R`, `O`, `A`, `L`\>
+[`PageDeclaration`](#pagedeclaration)\<`N`, `P`, `S`\[`number`\], `R`, `O`, `A`, `L`\>
 
 ***
 
@@ -11632,32 +8539,6 @@ function pageId<N>(name): N;
 #### Returns
 
 `N`
-
-***
-
-<a id="parseconfig"></a>
-
-### parseConfig()
-
-```ts
-function parseConfig<A>(value): ResolvedRexConfig<A>;
-```
-
-#### Type Parameters
-
-##### A
-
-`A` *extends* [`RexConfigApp`](#rexconfigapp-1) = [`RexConfigApp`](#rexconfigapp-1)
-
-#### Parameters
-
-##### value
-
-`unknown`
-
-#### Returns
-
-[`ResolvedRexConfig`](#resolvedrexconfig)\<`A`\>
 
 ***
 
@@ -11752,90 +8633,6 @@ function predicateToJson(predicate): PredicateJson;
 #### Returns
 
 [`PredicateJson`](#predicatejson)
-
-***
-
-<a id="readconfigexport"></a>
-
-### readConfigExport()
-
-```ts
-function readConfigExport(exported, warn?): RexConfigExport;
-```
-
-#### Parameters
-
-##### exported
-
-`unknown`
-
-##### warn?
-
-[`DeprecationWarn`](#deprecationwarn)
-
-#### Returns
-
-[`RexConfigExport`](#rexconfigexport)
-
-***
-
-<a id="real"></a>
-
-### real()
-
-```ts
-function real(options?): RexField<ZodMiniNumber<number>>;
-```
-
-#### Parameters
-
-##### options?
-
-[`RealOptions`](#realoptions) = `{}`
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniNumber`\<`number`\>\>
-
-***
-
-<a id="ref-1"></a>
-
-### ref()
-
-```ts
-function ref(target): RexField<ZodMiniString<string>>;
-```
-
-#### Parameters
-
-##### target
-
-[`RefTarget`](#reftarget)
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniString`\<`string`\>\>
-
-***
-
-<a id="reftarget-1"></a>
-
-### refTarget()
-
-```ts
-function refTarget(schema): string | undefined;
-```
-
-#### Parameters
-
-##### schema
-
-`$ZodType`
-
-#### Returns
-
-`string` \| `undefined`
 
 ***
 
@@ -11962,26 +8759,6 @@ function resetDeprecations(): void;
 
 ***
 
-<a id="resolveoptions"></a>
-
-### resolveOptions()
-
-```ts
-function resolveOptions(value?): ResolvedRexOptions;
-```
-
-#### Parameters
-
-##### value?
-
-[`RexOptionsConfig`](#rexoptionsconfig) = `{}`
-
-#### Returns
-
-[`ResolvedRexOptions`](#resolvedrexoptions)
-
-***
-
 <a id="runflow"></a>
 
 ### runFlow()
@@ -12011,50 +8788,6 @@ function runFlow(
 #### Returns
 
 `Promise`\<[`FlowRunResult`](#flowrunresult)\>
-
-***
-
-<a id="schematype"></a>
-
-### schemaType()
-
-```ts
-function schemaType(schema): string;
-```
-
-#### Parameters
-
-##### schema
-
-`$ZodType`
-
-#### Returns
-
-`string`
-
-***
-
-<a id="stablestringify"></a>
-
-### stableStringify()
-
-```ts
-function stableStringify(value, indent?): string;
-```
-
-#### Parameters
-
-##### value
-
-`unknown`
-
-##### indent?
-
-`number` = `2`
-
-#### Returns
-
-`string`
 
 ***
 
@@ -12133,40 +8866,6 @@ readonly [`JournalEntry`](#journalentry)[]
 
 ***
 
-<a id="text"></a>
-
-### text()
-
-```ts
-function text(options?): RexField<ZodMiniString<string>>;
-```
-
-#### Parameters
-
-##### options?
-
-[`TextOptions`](#textoptions) = `{}`
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniString`\<`string`\>\>
-
-***
-
-<a id="timestamp"></a>
-
-### timestamp()
-
-```ts
-function timestamp(): RexField<ZodMiniISODateTime>;
-```
-
-#### Returns
-
-[`RexField`](#rexfield)\<`ZodMiniISODateTime`\>
-
-***
-
 <a id="titlefromid"></a>
 
 ### titleFromId()
@@ -12184,50 +8883,6 @@ function titleFromId(id): string;
 #### Returns
 
 `string`
-
-***
-
-<a id="tojsonschema"></a>
-
-### toJsonSchema()
-
-```ts
-function toJsonSchema(schema, io?): JsonSchema;
-```
-
-#### Parameters
-
-##### schema
-
-`$ZodType`
-
-##### io?
-
-`"input"` \| `"output"`
-
-#### Returns
-
-[`JsonSchema`](#jsonschema-3)
-
-***
-
-<a id="unwrapschema"></a>
-
-### unwrapSchema()
-
-```ts
-function unwrapSchema(schema): $ZodType;
-```
-
-#### Parameters
-
-##### schema
-
-`$ZodType`
-
-#### Returns
-
-`$ZodType`
 
 ***
 
@@ -12311,23 +8966,63 @@ function validateShortcut(shortcut): string;
 
 ***
 
-<a id="validatesidecar"></a>
+<a id="validatestandard"></a>
 
-### validateSidecar()
+### validateStandard()
 
 ```ts
-function validateSidecar(payload): SidecarValidation;
+function validateStandard<S>(schema, value): Promise<StandardResult<StandardInferOutput<S>>>;
 ```
+
+#### Type Parameters
+
+##### S
+
+`S` *extends* [`StandardSchemaV1`](#standardschemav1)\<`unknown`, `unknown`\>
 
 #### Parameters
 
-##### payload
+##### schema
+
+`S`
+
+##### value
 
 `unknown`
 
 #### Returns
 
-[`SidecarValidation`](#sidecarvalidation)
+`Promise`\<`StandardResult`\<[`StandardInferOutput`](#standardinferoutput)\<`S`\>\>\>
+
+***
+
+<a id="validatestandardsync"></a>
+
+### validateStandardSync()
+
+```ts
+function validateStandardSync<S>(schema, value): StandardResult<StandardInferOutput<S>>;
+```
+
+#### Type Parameters
+
+##### S
+
+`S` *extends* [`StandardSchemaV1`](#standardschemav1)\<`unknown`, `unknown`\>
+
+#### Parameters
+
+##### schema
+
+`S`
+
+##### value
+
+`unknown`
+
+#### Returns
+
+`StandardResult`\<[`StandardInferOutput`](#standardinferoutput)\<`S`\>\>
 
 ***
 

@@ -7,9 +7,10 @@ import { actor, type Actor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { integer, text } from "../core/schema.ts";
+import { integer, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
+import { standardJsonSchema } from "../manifest/json-schema.ts";
 import { createRexApp } from "./app.tsx";
 import { draftStorageKey, useDraft, useNav, type Nav, type NavOutcome } from "./nav.ts";
 import {
@@ -291,32 +292,40 @@ describe("route changes", () => {
   });
 });
 
+const paramsOf = (declared: { readonly params: Parameters<typeof standardJsonSchema>[0] }) =>
+  standardJsonSchema(declared.params, "input");
+
 describe("hrefs and params", () => {
   it("builds hrefs from declarations and rejects invalid or reserved params", () => {
-    expect(pageHref(sendPage, { account: "a/b", step: 2 })).toEqual({
+    expect(pageHref(sendPage, { account: "a/b", step: 2 }, {}, paramsOf(sendPage))).toEqual({
       ok: true,
       href: "/send/a%2Fb?step=2",
     });
-    expect(pageHref(portfolio)).toEqual({ ok: true, href: "/" });
-    const invalid = pageHref(sendPage, { account: "a", step: "two" });
+    expect(pageHref(portfolio, {}, {}, paramsOf(portfolio))).toEqual({ ok: true, href: "/" });
+    const invalid = pageHref(sendPage, { account: "a", step: "two" }, {}, paramsOf(sendPage));
     expect(invalid.ok).toBe(false);
     const reserved = page("reserved", {
       route: "/reserved",
       params: z.object({ act: text().optional() }),
     });
-    expect(pageHref(reserved, { act: "x" })).toEqual({
+    expect(pageHref(reserved, { act: "x" }, {}, paramsOf(reserved))).toEqual({
       ok: false,
       issues: [{ path: "act", message: '"act" is reserved by Rex URL invocation' }],
     });
   });
 
   it("round-trips params through the URL", () => {
-    const href = pageHref(sendPage, { account: "acc 9", token: "true", step: 4 });
+    const href = pageHref(
+      sendPage,
+      { account: "acc 9", token: "true", step: 4 },
+      {},
+      paramsOf(sendPage),
+    );
     expect(href.ok).toBe(true);
     if (!href.ok) return;
     const [path, search = ""] = href.href.split("?");
     const account = (path as string).split("/")[2] as string;
-    expect(parsePageParams(sendPage, { account }, search)).toEqual({
+    expect(parsePageParams(sendPage, { account }, search, paramsOf(sendPage))).toEqual({
       ok: true,
       params: { account: "acc 9", token: "true", step: 4 },
     });

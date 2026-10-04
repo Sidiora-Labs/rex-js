@@ -13,7 +13,7 @@ afterAll(() => {
 });
 
 const I18N_CONFIG = [
-  'import { defineConfig } from "@sidioralabs/rex";',
+  'import { defineConfig } from "@sidioralabs/rex/config";',
   'import app from "rex:app";',
   "",
   "export default defineConfig({",
@@ -25,7 +25,7 @@ const I18N_CONFIG = [
 ].join("\n");
 
 const PLAIN_CONFIG = [
-  'import { defineConfig } from "@sidioralabs/rex";',
+  'import { defineConfig } from "@sidioralabs/rex/config";',
   'import app from "rex:app";',
   "",
   "export default defineConfig({ app });",

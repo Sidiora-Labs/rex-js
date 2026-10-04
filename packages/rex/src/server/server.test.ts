@@ -9,7 +9,7 @@ import { memoryJournal } from "../core/journal.ts";
 import { page } from "../core/page.ts";
 import { always, never, policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { boolean, id, money, ref, text } from "../core/schema.ts";
+import { boolean, id, money, ref, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest, stableStringify } from "../manifest/build.ts";
 import { REX_ACTOR_HEADER, REX_DENSITY_HEADER } from "../core/protocol.ts";

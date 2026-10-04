@@ -1,4 +1,5 @@
-import { action, can, id, text } from "../../index.ts";
+import { action, can } from "../../index.ts";
+import { id, text } from "../../schema/index.ts";
 import { z } from "zod/mini";
 import { addRecord, listRecords } from "./data.ts";
 

@@ -4,6 +4,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  realpathSync,
   symlinkSync,
   unlinkSync,
   writeFileSync,
@@ -47,6 +48,11 @@ function copyApp(): string {
   );
   mkdirSync(path.join(root, "node_modules/@sidioralabs"), { recursive: true });
   symlinkSync(packageRoot, path.join(root, "node_modules/@sidioralabs/rex"), "dir");
+  symlinkSync(
+    realpathSync(path.join(packageRoot, "node_modules/zod")),
+    path.join(root, "node_modules/zod"),
+    "dir",
+  );
   return root;
 }
 

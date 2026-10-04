@@ -22,6 +22,7 @@ import { errorDocs } from "../core/errors.ts";
 import { addPageRender, renderTimeBrowserReads } from "./codemods/0.1-page-render.ts";
 import { convertRawImg } from "./codemods/0.1-raw-img.ts";
 import { wrapConfig } from "./codemods/0.1-config.ts";
+import { codemod as schemaEntryCodemod, moveEntryImports } from "./codemods/0.1-schema-entry.ts";
 import { parseSource } from "./codemods/codemod.ts";
 import { loadCodemods } from "./commands/migrate.ts";
 import { loadRexConfig } from "./config.ts";
@@ -48,12 +49,13 @@ const DEPENDENCIES = [
   "zod",
 ];
 
-const CODEMOD_IDS = ["0.1-config", "0.1-page-render", "0.1-raw-img"];
+const CODEMOD_IDS = ["0.1-config", "0.1-page-render", "0.1-raw-img", "0.1-schema-entry"];
 
 const MIGRATED_CONFIG = [
-  'import { anonymousActor, defineConfig } from "@sidioralabs/rex";',
+  'import { anonymousActor } from "@sidioralabs/rex";',
   'import { createRexServer, memoryLedger } from "@sidioralabs/rex/server";',
   'import app from "rex:app";',
+  'import { defineConfig } from "@sidioralabs/rex/config";',
   "",
   "export default defineConfig({",
   "  app,",
@@ -108,6 +110,34 @@ const MIGRATED_THUMB = [
   "",
 ].join("\n");
 
+const MIGRATED_PING = [
+  'import { action, always } from "@sidioralabs/rex";',
+  'import { z } from "zod/mini";',
+  "",
+  'export const ping = action("ping", {',
+  "  input: z.object({}),",
+  "  output: z.object({ ok: z.boolean() }),",
+  "  policy: always(),",
+  '  effect: "reversible",',
+  '  label: "Ping",',
+  "  handler: () => ({ ok: true }),",
+  "});",
+  "",
+].join("\n");
+
+const MIGRATED_NOTE = [
+  'import { entity } from "@sidioralabs/rex";',
+  'import { id, text } from "@sidioralabs/rex/schema";',
+  "",
+  'export const note = entity("note", {',
+  "  fields: { id: id(), name: text({ min: 1 }) },",
+  "  label: (record) => record.name,",
+  "});",
+  "",
+].join("\n");
+
+const PING = "app/actions/ping.ts";
+const NOTE = "app/entities/note.ts";
 const COVER = "app/pages/gallery/regions/cover/region.tsx";
 const THUMB = "app/pages/gallery/regions/cover/parts/Thumb.tsx";
 const SETTINGS_PAGE = "app/pages/settings/page.ts";
@@ -208,13 +238,42 @@ describe("rex migrate codemods", () => {
       [
         'import { createServer } from "./server.ts";',
         'import app from "rex:app";',
-        'import { defineConfig } from "@sidioralabs/rex";',
+        'import { defineConfig } from "@sidioralabs/rex/config";',
         "",
         "export default defineConfig({",
         "  app,",
         "  server: (app) =>",
         "    createServer(),",
         "});",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("moves z, the field helpers, config and manifest names out of the core import, once", () => {
+    expect(moveEntryImports(PING, fixtureText(PING))).toBe(MIGRATED_PING);
+    expect(moveEntryImports(NOTE, fixtureText(NOTE))).toBe(MIGRATED_NOTE);
+    expect(moveEntryImports(PING, MIGRATED_PING)).toBeNull();
+    expect(moveEntryImports(NOTE, MIGRATED_NOTE)).toBeNull();
+    expect(
+      moveEntryImports(
+        "tool.ts",
+        [
+          'import { buildManifest, defineConfig, money, page, type RexConfig } from "@sidioralabs/rex";',
+          'import type { SidecarPayload, StateProps } from "@sidioralabs/rex";',
+          'import { anonymousActor } from "@sidioralabs/rex";',
+          "",
+        ].join("\n"),
+      ),
+    ).toBe(
+      [
+        'import { page } from "@sidioralabs/rex";',
+        'import { money } from "@sidioralabs/rex/schema";',
+        'import { defineConfig, type RexConfig } from "@sidioralabs/rex/config";',
+        'import { buildManifest } from "@sidioralabs/rex/manifest";',
+        'import type { StateProps } from "@sidioralabs/rex";',
+        'import type { SidecarPayload } from "@sidioralabs/rex/manifest";',
+        'import { anonymousActor } from "@sidioralabs/rex";',
         "",
       ].join("\n"),
     );
@@ -287,8 +346,14 @@ describe("rex migrate on a 0.1 app", { timeout: MIGRATE_TEST_TIMEOUT_MS }, () =>
         `a11y/img-alt ${COVER}`,
       ]),
     );
-    expect((await loadRexConfig(root, { warn })).read.kind).toBe("legacy");
-    expect((await loadRexConfig(root, { warn })).read.kind).toBe("legacy");
+    await expect(loadRexConfig(root, { warn })).rejects.toThrow();
+    expect(warnings).toEqual([]);
+    const staged = copyFixture();
+    for (const change of schemaEntryCodemod.run(staged).changes) {
+      writeFileSync(join(staged, change.file), change.text);
+    }
+    expect((await loadRexConfig(staged, { warn })).read.kind).toBe("legacy");
+    expect((await loadRexConfig(staged, { warn })).read.kind).toBe("legacy");
     expect(warnings).toEqual([deprecationMessage("REX101", LEGACY_CONFIG_MESSAGE)]);
     expect(warnings[0]).toContain(errorDocs("REX101"));
 
@@ -304,8 +369,11 @@ describe("rex migrate on a 0.1 app", { timeout: MIGRATE_TEST_TIMEOUT_MS }, () =>
         "0.1-raw-img: 2 changed",
         `  changed ${THUMB}`,
         `  changed ${COVER}`,
+        "0.1-schema-entry: 2 changed",
+        `  changed ${PING}`,
+        `  changed ${NOTE}`,
         ...FLAG_LINES,
-        "migrated from 0.1: 4 files changed, 2 flagged for the author",
+        "migrated from 0.1: 6 files changed, 2 flagged for the author",
         "",
       ].join("\n"),
     );
@@ -313,6 +381,8 @@ describe("rex migrate on a 0.1 app", { timeout: MIGRATE_TEST_TIMEOUT_MS }, () =>
     expect(readFileSync(join(root, SETTINGS_PAGE), "utf8")).toBe(MIGRATED_SETTINGS_PAGE);
     expect(readFileSync(join(root, COVER), "utf8")).toBe(MIGRATED_COVER_REGION);
     expect(readFileSync(join(root, THUMB), "utf8")).toBe(MIGRATED_THUMB);
+    expect(readFileSync(join(root, PING), "utf8")).toBe(MIGRATED_PING);
+    expect(readFileSync(join(root, NOTE), "utf8")).toBe(MIGRATED_NOTE);
     for (const unchanged of ["app/pages/home/page.ts", "app/pages/gallery/page.ts"]) {
       expect(readFileSync(join(root, unchanged), "utf8")).toBe(fixtureText(unchanged));
     }
@@ -325,6 +395,7 @@ describe("rex migrate on a 0.1 app", { timeout: MIGRATE_TEST_TIMEOUT_MS }, () =>
         "0.1-config: no changes",
         "0.1-page-render: no changes",
         "0.1-raw-img: no changes",
+        "0.1-schema-entry: no changes",
         ...FLAG_LINES,
         "migrated from 0.1: 0 files changed, 2 flagged for the author",
         "",

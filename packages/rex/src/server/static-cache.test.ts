@@ -11,7 +11,7 @@ import { anonymousActor } from "../core/actor.ts";
 import { page, type AnyPage } from "../core/page.ts";
 import { always } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { SIDECAR_MIME_TYPE } from "../manifest/sidecar.schema.ts";
@@ -34,7 +34,11 @@ import {
 import { createRexServer } from "./app.ts";
 import { memoryLedger } from "./audit.ts";
 import { CSRF_COOKIE } from "./form.ts";
-import { installNodeStaticPages, startPrerenderedNodeServer, type RunningNodeServer } from "./node.ts";
+import {
+  installNodeStaticPages,
+  startPrerenderedNodeServer,
+  type RunningNodeServer,
+} from "./node.ts";
 import { RENDER_KIND_HEADER, RENDER_PAGE_HEADER } from "./routes/render.ts";
 import {
   createRexRenderer,

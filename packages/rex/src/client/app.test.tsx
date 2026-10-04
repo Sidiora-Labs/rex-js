@@ -9,7 +9,7 @@ import { actor, anonymousActor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { always, policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import type { Manifest } from "../manifest/types.ts";

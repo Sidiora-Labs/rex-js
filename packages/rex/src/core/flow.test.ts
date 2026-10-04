@@ -7,7 +7,7 @@ import { FlowDecisionError, decide, flow, runFlow } from "./flow.ts";
 import { memoryJournal, statusOf, type Journal } from "./journal.ts";
 import { always, policy } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { integer, text } from "./schema.ts";
+import { integer, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 
 const treasury = policy("treasury", {

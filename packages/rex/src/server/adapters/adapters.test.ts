@@ -15,7 +15,7 @@ import { actor } from "../../core/actor.ts";
 import { REX_ERRORS_DOCS_BASE } from "../../core/errors.ts";
 import { page } from "../../core/page.ts";
 import { always } from "../../core/policy.ts";
-import { boolean } from "../../core/schema.ts";
+import { boolean } from "../../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest, stableStringify } from "../../manifest/build.ts";
 import { createRexServer, memoryLedger, type RegistryRouterClient } from "../index.ts";

@@ -1,4 +1,12 @@
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,7 +21,7 @@ import { isRexError } from "../core/errors.ts";
 import { page, type AnyPage } from "../core/page.ts";
 import { always, can } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { SIDECAR_MIME_TYPE } from "../manifest/sidecar.schema.ts";
@@ -80,7 +88,8 @@ const STATES = [
 
 const FIXTURE_FILES: Readonly<Record<string, string>> = {
   "app/actions/subscribe.ts": [
-    'import { action, always, text } from "@sidioralabs/rex";',
+    'import { action, always } from "@sidioralabs/rex";',
+    'import { text } from "@sidioralabs/rex/schema";',
     'import { z } from "zod/mini";',
     "",
     'export const subscribe = action("subscribe", {',
@@ -130,7 +139,8 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     "",
   ].join("\n"),
   "app/pages/guide/page.ts": [
-    'import { page, text } from "@sidioralabs/rex";',
+    'import { page } from "@sidioralabs/rex";',
+    'import { text } from "@sidioralabs/rex/schema";',
     'import { z } from "zod/mini";',
     "",
     'export default page("guide", {',

@@ -14,7 +14,13 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createServer, normalizePath, type ErrorPayload, type HotPayload, type ViteDevServer } from "vite";
+import {
+  createServer,
+  normalizePath,
+  type ErrorPayload,
+  type HotPayload,
+  type ViteDevServer,
+} from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { formatFindings } from "../check/report.ts";
 import { defineRule } from "../check/rule.ts";
@@ -63,7 +69,7 @@ import { memoryJournal } from "./journal.ts";
 import { page, parseRoute } from "./page.ts";
 import { always } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { enumOf, id, text } from "./schema.ts";
+import { enumOf, id, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { bind } from "./store.ts";
 import { memoryStore } from "./store.memory.ts";
@@ -492,7 +498,10 @@ describe("docs/errors.md", () => {
 describe("the Vite error overlay", () => {
   const fixtureRoot = join(here, "..", "vite", "fixtures", "app");
   const packageModules = join(here, "..", "..", "node_modules");
-  const alias = [{ find: /^@sidioralabs\/rex$/, replacement: join(here, "..", "index.ts") }];
+  const alias = [
+    { find: /^@sidioralabs\/rex$/, replacement: join(here, "..", "index.ts") },
+    { find: /^@sidioralabs\/rex\/schema$/, replacement: join(here, "..", "schema", "index.ts") },
+  ];
   const messages: HotPayload[] = [];
   let root: string;
   let vite: ViteDevServer;
@@ -549,13 +558,13 @@ describe("the Vite error overlay", () => {
     expect(payload.err.plugin).toBe("rex");
     expect(payload.err.id).toBe(file);
     expect(payload.err.loc?.file).toBe(file);
-    expect(payload.err.loc?.line).toBe(4);
+    expect(payload.err.loc?.line).toBe(5);
     expect(payload.err.loc?.column).toBeGreaterThan(0);
-    expect(payload.err.frame).toContain('> 4 | export default page("note", {');
+    expect(payload.err.frame).toContain('> 5 | export default page("note", {');
     expect(payload.err.frame).toContain("^");
 
     const located = await checkAppModules(vite, join(root, "app"));
     expect(located?.code).toBe("REX213");
-    expect([located?.file, located?.line]).toEqual([file, 4]);
+    expect([located?.file, located?.line]).toEqual([file, 5]);
   }, 60_000);
 });

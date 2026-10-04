@@ -10,7 +10,7 @@
 
 #### Extends
 
-- `Error`
+- [`RexError`](../rex.md#rexerror)
 
 #### Constructors
 
@@ -34,11 +34,200 @@ new RexDensityError(value): RexDensityError;
 
 ###### Overrides
 
-```ts
-Error.constructor
-```
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
+
+<a id="code"></a>
+
+##### code
+
+```ts
+readonly code: 
+  | "REX100"
+  | "REX101"
+  | "REX102"
+  | "REX110"
+  | "REX111"
+  | "REX112"
+  | "REX113"
+  | "REX114"
+  | "REX115"
+  | "REX116"
+  | "REX117"
+  | "REX118"
+  | "REX119"
+  | "REX120"
+  | "REX121"
+  | "REX122"
+  | "REX123"
+  | "REX200"
+  | "REX201"
+  | "REX202"
+  | "REX203"
+  | "REX204"
+  | "REX205"
+  | "REX206"
+  | "REX207"
+  | "REX208"
+  | "REX209"
+  | "REX210"
+  | "REX211"
+  | "REX212"
+  | "REX213"
+  | "REX214"
+  | "REX215"
+  | "REX216"
+  | "REX217"
+  | "REX218"
+  | "REX219"
+  | "REX220"
+  | "REX221"
+  | "REX222"
+  | "REX223"
+  | "REX224"
+  | "REX300"
+  | "REX301"
+  | "REX302"
+  | "REX303"
+  | "REX304"
+  | "REX305"
+  | "REX306"
+  | "REX307"
+  | "REX308"
+  | "REX309"
+  | "REX310"
+  | "REX311"
+  | "REX312"
+  | "REX313"
+  | "REX314"
+  | "REX315"
+  | "REX316"
+  | "REX317"
+  | "REX318"
+  | "REX319"
+  | "REX320"
+  | "REX321"
+  | "REX322"
+  | "REX323"
+  | "REX324"
+  | "REX325"
+  | "REX326"
+  | "REX327"
+  | "REX328"
+  | "REX329"
+  | "REX330"
+  | "REX331"
+  | "REX400"
+  | "REX401"
+  | "REX402"
+  | "REX403"
+  | "REX404"
+  | "REX405"
+  | "REX406"
+  | "REX407"
+  | "REX408"
+  | "REX440"
+  | "REX441"
+  | "REX442"
+  | "REX450"
+  | "REX460"
+  | "REX461"
+  | "REX462"
+  | "REX463"
+  | "REX500"
+  | "REX501"
+  | "REX502"
+  | "REX503"
+  | "REX504"
+  | "REX505"
+  | "REX506"
+  | "REX507"
+  | "REX508"
+  | "REX600"
+  | "REX601"
+  | "REX602"
+  | "REX603"
+  | "REX610"
+  | "REX611"
+  | "REX612";
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
+
+<a id="column"></a>
+
+##### column
+
+```ts
+readonly column: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-2)
+
+<a id="detail"></a>
+
+##### detail
+
+```ts
+readonly detail: string;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-2)
+
+<a id="docs"></a>
+
+##### docs
+
+```ts
+readonly docs: string;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-2)
+
+<a id="file"></a>
+
+##### file
+
+```ts
+readonly file: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-2)
+
+<a id="hint"></a>
+
+##### hint
+
+```ts
+readonly hint: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-2)
+
+<a id="line"></a>
+
+##### line
+
+```ts
+readonly line: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-2)
 
 <a id="value"></a>
 
@@ -56,7 +245,7 @@ readonly value: string;
 
 #### Extends
 
-- `Error`
+- [`RexError`](../rex.md#rexerror)
 
 #### Constructors
 
@@ -92,11 +281,200 @@ new RexStaticPageError(
 
 ###### Overrides
 
-```ts
-Error.constructor
-```
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
+
+<a id="code-1"></a>
+
+##### code
+
+```ts
+readonly code: 
+  | "REX100"
+  | "REX101"
+  | "REX102"
+  | "REX110"
+  | "REX111"
+  | "REX112"
+  | "REX113"
+  | "REX114"
+  | "REX115"
+  | "REX116"
+  | "REX117"
+  | "REX118"
+  | "REX119"
+  | "REX120"
+  | "REX121"
+  | "REX122"
+  | "REX123"
+  | "REX200"
+  | "REX201"
+  | "REX202"
+  | "REX203"
+  | "REX204"
+  | "REX205"
+  | "REX206"
+  | "REX207"
+  | "REX208"
+  | "REX209"
+  | "REX210"
+  | "REX211"
+  | "REX212"
+  | "REX213"
+  | "REX214"
+  | "REX215"
+  | "REX216"
+  | "REX217"
+  | "REX218"
+  | "REX219"
+  | "REX220"
+  | "REX221"
+  | "REX222"
+  | "REX223"
+  | "REX224"
+  | "REX300"
+  | "REX301"
+  | "REX302"
+  | "REX303"
+  | "REX304"
+  | "REX305"
+  | "REX306"
+  | "REX307"
+  | "REX308"
+  | "REX309"
+  | "REX310"
+  | "REX311"
+  | "REX312"
+  | "REX313"
+  | "REX314"
+  | "REX315"
+  | "REX316"
+  | "REX317"
+  | "REX318"
+  | "REX319"
+  | "REX320"
+  | "REX321"
+  | "REX322"
+  | "REX323"
+  | "REX324"
+  | "REX325"
+  | "REX326"
+  | "REX327"
+  | "REX328"
+  | "REX329"
+  | "REX330"
+  | "REX331"
+  | "REX400"
+  | "REX401"
+  | "REX402"
+  | "REX403"
+  | "REX404"
+  | "REX405"
+  | "REX406"
+  | "REX407"
+  | "REX408"
+  | "REX440"
+  | "REX441"
+  | "REX442"
+  | "REX450"
+  | "REX460"
+  | "REX461"
+  | "REX462"
+  | "REX463"
+  | "REX500"
+  | "REX501"
+  | "REX502"
+  | "REX503"
+  | "REX504"
+  | "REX505"
+  | "REX506"
+  | "REX507"
+  | "REX508"
+  | "REX600"
+  | "REX601"
+  | "REX602"
+  | "REX603"
+  | "REX610"
+  | "REX611"
+  | "REX612";
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
+
+<a id="column-1"></a>
+
+##### column
+
+```ts
+readonly column: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-2)
+
+<a id="detail-1"></a>
+
+##### detail
+
+```ts
+readonly detail: string;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-2)
+
+<a id="docs-1"></a>
+
+##### docs
+
+```ts
+readonly docs: string;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-2)
+
+<a id="file-1"></a>
+
+##### file
+
+```ts
+readonly file: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-2)
+
+<a id="hint-1"></a>
+
+##### hint
+
+```ts
+readonly hint: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-2)
+
+<a id="line-1"></a>
+
+##### line
+
+```ts
+readonly line: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-2)
 
 <a id="page"></a>
 
@@ -736,7 +1114,7 @@ readonly actionId: string;
 readonly at: string;
 ```
 
-<a id="code"></a>
+<a id="code-2"></a>
 
 ##### code
 
@@ -817,6 +1195,16 @@ list(filter?): Promise<AuditRecord[]>;
 <a id="loaderrunner"></a>
 
 ### LoaderRunner
+
+#### Properties
+
+<a id="telemetry-1"></a>
+
+##### telemetry
+
+```ts
+readonly telemetry: RexTelemetry;
+```
 
 #### Methods
 
@@ -924,6 +1312,195 @@ readonly ok: boolean;
 
 ***
 
+<a id="pagetext"></a>
+
+### PageText
+
+#### Properties
+
+<a id="markdown"></a>
+
+##### markdown
+
+```ts
+readonly markdown: string;
+```
+
+<a id="sidecar"></a>
+
+##### sidecar
+
+```ts
+readonly sidecar: object;
+```
+
+###### actions
+
+```ts
+actions: object[];
+```
+
+###### loaders?
+
+```ts
+optional loaders?: object[];
+```
+
+###### outcome
+
+```ts
+outcome: 
+  | {
+  action: string;
+  at: string;
+  message: string;
+  ok: boolean;
+}
+  | null;
+```
+
+###### overlays
+
+```ts
+overlays: object[];
+```
+
+###### page
+
+```ts
+page: string;
+```
+
+###### params
+
+```ts
+params: Record<string, unknown>;
+```
+
+###### regions?
+
+```ts
+optional regions?: object[];
+```
+
+###### state
+
+```ts
+state: 
+  | "loading"
+  | "empty"
+  | "stale"
+  | "partial"
+  | "offline"
+  | "permission-denied"
+  | "recoverable-error"
+  | "terminal-error"
+  | "ready";
+```
+
+###### stores?
+
+```ts
+optional stores?: Record<string, unknown>;
+```
+
+###### version
+
+```ts
+version: 1;
+```
+
+***
+
+<a id="pagetextsource"></a>
+
+### PageTextSource
+
+#### Properties
+
+<a id="actor-4"></a>
+
+##### actor
+
+```ts
+readonly actor: Actor;
+```
+
+<a id="href"></a>
+
+##### href
+
+```ts
+readonly href: string | null;
+```
+
+<a id="issues"></a>
+
+##### issues
+
+```ts
+readonly issues: readonly ParamIssue[];
+```
+
+<a id="manifest"></a>
+
+##### manifest
+
+```ts
+readonly manifest: Manifest;
+```
+
+<a id="page-1"></a>
+
+##### page
+
+```ts
+readonly page: AnyPage;
+```
+
+<a id="params"></a>
+
+##### params
+
+```ts
+readonly params: Readonly<Record<string, unknown>>;
+```
+
+<a id="policy"></a>
+
+##### policy
+
+```ts
+readonly policy: PolicyResult;
+```
+
+<a id="state"></a>
+
+##### state
+
+```ts
+readonly state: 
+  | "loading"
+  | "empty"
+  | "stale"
+  | "partial"
+  | "offline"
+  | "permission-denied"
+  | "recoverable-error"
+  | "terminal-error"
+  | "ready";
+```
+
+<a id="text"></a>
+
+##### text?
+
+```ts
+readonly optional text?: TextResolver;
+```
+
+***
+
 <a id="prerenderlist"></a>
 
 ### PrerenderList
@@ -962,7 +1539,7 @@ readonly version: 1;
 readonly html: string;
 ```
 
-<a id="page-1"></a>
+<a id="page-2"></a>
 
 ##### page
 
@@ -982,7 +1559,7 @@ readonly page: string;
 
 #### Properties
 
-<a id="actor-4"></a>
+<a id="actor-5"></a>
 
 ##### actor
 
@@ -1076,7 +1653,7 @@ readonly body: ReadableStream<Uint8Array<ArrayBufferLike>>;
 readonly kind: "page" | "denied" | "failed" | "not-found";
 ```
 
-<a id="page-2"></a>
+<a id="page-3"></a>
 
 ##### page
 
@@ -1096,7 +1673,7 @@ readonly page: string | null;
 
 #### Properties
 
-<a id="actor-5"></a>
+<a id="actor-6"></a>
 
 ##### actor
 
@@ -1106,7 +1683,7 @@ readonly actor: Actor;
 
 ###### Inherited from
 
-[`RexContext`](#rexcontext).[`actor`](#actor-4)
+[`RexContext`](#rexcontext).[`actor`](#actor-5)
 
 <a id="confirm-1"></a>
 
@@ -1194,7 +1771,7 @@ readonly routes: readonly RexServerInstaller[];
 
 #### Properties
 
-<a id="actor-6"></a>
+<a id="actor-7"></a>
 
 ##### actor
 
@@ -1242,6 +1819,14 @@ readonly optional dev?: boolean;
 readonly ledger: Ledger;
 ```
 
+<a id="manifest-1"></a>
+
+##### manifest?
+
+```ts
+readonly optional manifest?: Manifest;
+```
+
 <a id="registry"></a>
 
 ##### registry
@@ -1258,7 +1843,7 @@ readonly registry: RexServerRegistry<A>;
 readonly optional security?: SecurityConfig;
 ```
 
-<a id="telemetry-1"></a>
+<a id="telemetry-2"></a>
 
 ##### telemetry?
 
@@ -1446,7 +2031,7 @@ span<T>(
 readonly context: RexContext;
 ```
 
-<a id="page-3"></a>
+<a id="page-4"></a>
 
 ##### page
 
@@ -1454,7 +2039,7 @@ readonly context: RexContext;
 readonly page: AnyPage;
 ```
 
-<a id="params"></a>
+<a id="params-1"></a>
 
 ##### params
 
@@ -1672,7 +2257,7 @@ settled(): Promise<void>;
 
 #### Properties
 
-<a id="actor-7"></a>
+<a id="actor-8"></a>
 
 ##### actor?
 
@@ -1720,7 +2305,7 @@ readonly store: StaticPageStore;
 readonly html: string;
 ```
 
-<a id="page-4"></a>
+<a id="page-5"></a>
 
 ##### page
 
@@ -1760,7 +2345,7 @@ readonly status: StaticServeStatus;
 
 #### Properties
 
-<a id="file"></a>
+<a id="file-2"></a>
 
 ##### file
 
@@ -1776,7 +2361,7 @@ readonly file: string;
 readonly generatedAt: number;
 ```
 
-<a id="page-5"></a>
+<a id="page-6"></a>
 
 ##### page
 
@@ -2166,6 +2751,30 @@ type FormValue = string | File;
 
 ***
 
+<a id="prebuiltrexserveroptions"></a>
+
+### PrebuiltRexServerOptions
+
+```ts
+type PrebuiltRexServerOptions<A> = RexServerOptions<A> & object;
+```
+
+#### Type Declaration
+
+##### manifest
+
+```ts
+readonly manifest: Manifest;
+```
+
+#### Type Parameters
+
+##### A
+
+`A` *extends* [`AnyAction`](../rex.md#anyaction)
+
+***
+
 <a id="prerendermode"></a>
 
 ### PrerenderMode
@@ -2502,6 +3111,46 @@ const consoleLogger: RexLogger;
 
 ***
 
+<a id="cors_allow_headers"></a>
+
+### CORS\_ALLOW\_HEADERS
+
+```ts
+const CORS_ALLOW_HEADERS: readonly string[];
+```
+
+***
+
+<a id="cors_allow_methods"></a>
+
+### CORS\_ALLOW\_METHODS
+
+```ts
+const CORS_ALLOW_METHODS: readonly string[];
+```
+
+***
+
+<a id="cors_expose_headers"></a>
+
+### CORS\_EXPOSE\_HEADERS
+
+```ts
+const CORS_EXPOSE_HEADERS: readonly string[];
+```
+
+***
+
+<a id="cors_max_age_seconds"></a>
+
+### CORS\_MAX\_AGE\_SECONDS
+
+```ts
+const CORS_MAX_AGE_SECONDS: 600 = 600;
+```
+
+***
+
 <a id="csp_header"></a>
 
 ### CSP\_HEADER
@@ -2738,6 +3387,16 @@ const MANIFEST_PATH: "/rex/manifest" = REX_MANIFEST_PATH;
 
 ***
 
+<a id="markdown_content_type"></a>
+
+### MARKDOWN\_CONTENT\_TYPE
+
+```ts
+const MARKDOWN_CONTENT_TYPE: "text/markdown; charset=utf-8" = "text/markdown; charset=utf-8";
+```
+
+***
+
 <a id="origin_header"></a>
 
 ### ORIGIN\_HEADER
@@ -2784,6 +3443,50 @@ const OUTCOME_ERROR: "ERROR" = "ERROR";
 
 ```ts
 const OUTCOME_OK: "ok" = "ok";
+```
+
+***
+
+<a id="pages_text_extension"></a>
+
+### PAGES\_TEXT\_EXTENSION
+
+```ts
+const PAGES_TEXT_EXTENSION: ".md" = ".md";
+```
+
+***
+
+<a id="pages_text_prefix"></a>
+
+### PAGES\_TEXT\_PREFIX
+
+```ts
+const PAGES_TEXT_PREFIX: "/rex/pages" = "/rex/pages";
+```
+
+***
+
+<a id="pages_text_route"></a>
+
+### PAGES\_TEXT\_ROUTE
+
+```ts
+const PAGES_TEXT_ROUTE: "/rex/pages/:file";
+```
+
+***
+
+<a id="pages_text_status"></a>
+
+### PAGES\_TEXT\_STATUS
+
+```ts
+const PAGES_TEXT_STATUS: Readonly<{
+  denied: 403;
+  not-found: 404;
+  page: 200;
+}>;
 ```
 
 ***
@@ -3271,7 +3974,7 @@ function coerceFormData(form, schema): Record<string, unknown>;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -3300,6 +4003,26 @@ function contentSecurityPolicy(nonce, apiOrigin): string;
 #### Returns
 
 `string`
+
+***
+
+<a id="corsmiddleware"></a>
+
+### corsMiddleware()
+
+```ts
+function corsMiddleware(origins): MiddlewareHandler;
+```
+
+#### Parameters
+
+##### origins
+
+readonly `string`[]
+
+#### Returns
+
+`MiddlewareHandler`
 
 ***
 
@@ -3339,7 +4062,7 @@ function createConsoleLogger(target?): RexLogger;
 
 #### Returns
 
-[`RexLogger`](../rex.md#rexlogger)
+[`RexLogger`](config.md#rexlogger)
 
 ***
 
@@ -3415,7 +4138,7 @@ function createRexContext(
 
 ##### i18n?
 
-[`I18nConfig`](../rex.md#i18nconfig) \| `null`
+[`I18nConfig`](config.md#i18nconfig) \| `null`
 
 #### Returns
 
@@ -3481,7 +4204,7 @@ function createTelemetry(config?): RexTelemetry;
 
 ##### config?
 
-[`TelemetryConfig`](../rex.md#telemetryconfig) = `{}`
+[`TelemetryConfig`](config.md#telemetryconfig) = `{}`
 
 #### Returns
 
@@ -3793,7 +4516,7 @@ function formEntries(form, schema): [string, FormValue][];
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -3894,6 +4617,30 @@ function hasCsrfField(html): boolean;
 #### Returns
 
 `boolean`
+
+***
+
+<a id="installcorsmiddleware"></a>
+
+### installCorsMiddleware()
+
+```ts
+function installCorsMiddleware(app, setup): void;
+```
+
+#### Parameters
+
+##### app
+
+`Hono`
+
+##### setup
+
+[`RexServerSetup`](#rexserversetup)
+
+#### Returns
+
+`void`
 
 ***
 
@@ -4019,6 +4766,30 @@ function installLoaderRunner(app, setup): void;
 
 ```ts
 function installManifestRoute(app, setup): void;
+```
+
+#### Parameters
+
+##### app
+
+`Hono`
+
+##### setup
+
+[`RexServerSetup`](#rexserversetup)
+
+#### Returns
+
+`void`
+
+***
+
+<a id="installpagestextroute"></a>
+
+### installPagesTextRoute()
+
+```ts
+function installPagesTextRoute(app, setup): void;
 ```
 
 #### Parameters
@@ -4182,6 +4953,30 @@ function isAuditOutcome(value): value is AuditOutcome;
 #### Returns
 
 `value is AuditOutcome`
+
+***
+
+<a id="iscorsorigin"></a>
+
+### isCorsOrigin()
+
+```ts
+function isCorsOrigin(origin, origins): boolean;
+```
+
+#### Parameters
+
+##### origin
+
+`string` \| `null` \| `undefined`
+
+##### origins
+
+readonly `string`[]
+
+#### Returns
+
+`boolean`
 
 ***
 
@@ -4495,6 +5290,32 @@ function mountFlows(app, options): Hono;
 
 ***
 
+<a id="mountrexserver"></a>
+
+### mountRexServer()
+
+```ts
+function mountRexServer<A>(options): Hono;
+```
+
+#### Type Parameters
+
+##### A
+
+`A` *extends* [`AnyAction`](../rex.md#anyaction)
+
+#### Parameters
+
+##### options
+
+[`PrebuiltRexServerOptions`](#prebuiltrexserveroptions)\<`A`\>
+
+#### Returns
+
+`Hono`
+
+***
+
 <a id="normalizepagepath"></a>
 
 ### normalizePagePath()
@@ -4556,6 +5377,26 @@ function pageRendererFor(registry): RexPageRenderer | undefined;
 #### Returns
 
 [`RexPageRenderer`](#rexpagerenderer) \| `undefined`
+
+***
+
+<a id="pagetextpath"></a>
+
+### pageTextPath()
+
+```ts
+function pageTextPath(pageId): string;
+```
+
+#### Parameters
+
+##### pageId
+
+`string`
+
+#### Returns
+
+`string`
 
 ***
 
@@ -4791,6 +5632,26 @@ function renderFormErrorPage(options): string;
 
 ***
 
+<a id="renderpagetext"></a>
+
+### renderPageText()
+
+```ts
+function renderPageText(source): PageText;
+```
+
+#### Parameters
+
+##### source
+
+[`PageTextSource`](#pagetextsource)
+
+#### Returns
+
+[`PageText`](#pagetext)
+
+***
+
 <a id="renderprerenderedhtml"></a>
 
 ### renderPrerenderedHtml()
@@ -4915,7 +5776,7 @@ function schemaDeclaresField(schema, name): boolean;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 ##### name
 
@@ -5007,7 +5868,7 @@ function submittedActionId(form, schema): string | null;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 

@@ -9,7 +9,7 @@ import { page, type AnyPage, type PageStatesModule } from "../core/page.ts";
 import { always } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
 import type { StateProps } from "../core/states.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { createRexServer } from "../server/app.ts";
@@ -469,7 +469,7 @@ describe("page loaders", () => {
       z.output<typeof noteSchema>
     >();
     expect(manifest.pages.find((entry) => entry.id === "note")?.loaders).toEqual([
-      { name: "note", action: "read-note", input: "mapped" },
+      { name: "note", action: "read-note", input: "mapped", invalidatedBy: [] },
     ]);
 
     const queryClient = quietClient();

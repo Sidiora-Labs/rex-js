@@ -1,4 +1,5 @@
-import { action, id, text } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { id, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { accountIdOf, accounts, nextId, requireAccount, tokens } from "../data/wallet.ts";
 import { wallet } from "../policies/wallet.ts";
