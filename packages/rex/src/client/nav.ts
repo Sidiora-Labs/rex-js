@@ -13,6 +13,7 @@ import {
   pageHref,
   paramKeyAccepted,
   useActivePage,
+  useRouteChange,
   type ParamIssue,
 } from "./router.tsx";
 
@@ -50,7 +51,7 @@ export function useNav(): Nav {
   const registry = useRegistry();
   const manifest = useManifest();
   const active = useActivePage();
-  const [, navigate] = useLocation();
+  const change = useRouteChange();
 
   const hrefFor = useCallback(
     (target: AnyPage, params: unknown): NavOutcome => {
@@ -69,7 +70,7 @@ export function useNav(): Nav {
   return useMemo<Nav>(() => {
     const go = (target: AnyPage, params: unknown, replace: boolean): NavOutcome => {
       const outcome = hrefFor(target, params);
-      if (outcome.ok) navigate(outcome.href, { replace });
+      if (outcome.ok) change(target, outcome.href, { replace });
       return outcome;
     };
     return {
@@ -94,7 +95,7 @@ export function useNav(): Nav {
         return go(target, carried, false);
       },
     };
-  }, [active, hrefFor, manifest, navigate, registry]);
+  }, [active, change, hrefFor, manifest, registry]);
 }
 
 export interface Draft<T> {

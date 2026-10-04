@@ -17,7 +17,9 @@ import {
   orderPages,
   pageHref,
   parsePageParams,
+  runRouteChange,
   type RouteResolution,
+  type ViewTransitionHost,
 } from "./router.tsx";
 
 const wallet = policy("wallet", {
@@ -38,6 +40,7 @@ const sendPage = page("send", {
   recovery: "portfolio",
   draft: "route",
   chrome: { back: "portfolio", nav: false },
+  transition: "view",
 });
 
 const sendNew = page("send.new", { route: "/send/new", chrome: { back: "portfolio" } });
@@ -251,6 +254,39 @@ describe("useNav", () => {
     cleanup();
     mount("/settings");
     expect(text_("draft")).toBe('session:{"amount":"12.5"}');
+  });
+});
+
+describe("route changes", () => {
+  it("runs the update directly when the page transition is none or the View Transitions API is absent", () => {
+    const started: string[] = [];
+    const host: ViewTransitionHost = {
+      startViewTransition: (update?: ViewTransitionUpdateCallback | StartViewTransitionOptions) => {
+        started.push(typeof update === "function" ? "callback" : "options");
+        const done = Promise.resolve();
+        return {
+          updateCallbackDone: done,
+          ready: done,
+          finished: done,
+          skipTransition: () => undefined,
+          types: new Set<string>() as ViewTransitionTypeSet,
+        };
+      },
+    };
+    const updates: string[] = [];
+    runRouteChange("none", () => updates.push("none"), host);
+    runRouteChange("view", () => updates.push("absent"), {});
+    runRouteChange("view", () => updates.push("no document"), undefined);
+    expect(updates).toEqual(["none", "absent", "no document"]);
+    expect(started).toEqual([]);
+  });
+
+  it("keeps useNav navigating to a view-transition page when the API is absent", async () => {
+    expect("startViewTransition" in document).toBe(false);
+    const memory = mount("/");
+    await click("to send");
+    expect(memory.history.at(-1)).toBe("/send/acc-1?step=2&token=PAX");
+    expect(text_("page")).toBe("send");
   });
 });
 
