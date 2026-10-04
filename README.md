@@ -13,7 +13,7 @@ Rex is built around four rules:
 - **One checker.** `rex check` runs the typecheck and the convention rules and exits 1 on any error finding. `rex dev` and `rex build` run it first unless you pass `--no-check`.
 - **One DOM that humans and agents operate.** There is no separate agent view. Every action control carries a `data-rex` address, every page embeds a machine-readable sidecar, and every action is reachable by click, keyboard shortcut, URL and command palette.
 
-Version: 0.1.0 (`REX_VERSION` in `packages/rex/src/index.ts`).
+Version: 0.2.0 (`REX_VERSION` in `packages/rex/src/index.ts`).
 
 ## Stack
 
@@ -40,7 +40,7 @@ Rex does not use Next.js, React Server Components or server actions. Server code
 
 ## Quick start
 
-Rex requires Node 22.12 or later (the React Compiler, on by default through the optional peers `@babel/core` 8 and `babel-plugin-react-compiler`, needs Node ^22.18.0 || >=24.11.0) and pnpm (the workspace pins `pnpm@10.27.0` and, through its own tooling, Node ^22.19.0 || ^24.11.0 || >=26.0.0). The `rex` bin is `dist/cli/index.js` of the package, so inside this repository build it first:
+Rex requires Node 22.19 or later (the React Compiler, on by default through the optional peers `@babel/core` 8 and `babel-plugin-react-compiler`, needs Node ^22.18.0 || >=24.11.0) and pnpm (the workspace pins `pnpm@10.27.0` and, through its own tooling, Node ^22.19.0 || ^24.11.0 || >=26.0.0). The `rex` bin is `dist/cli/index.js` of the package, so inside this repository build it first:
 
 ```sh
 pnpm install                    # install the workspace
@@ -52,7 +52,7 @@ Then, with `rex` on your path:
 ```sh
 rex new my-app                  # write a complete app into ./my-app; by default (--ui designx) it fetches the DesignX set from https://dxuireact.com/r and runs the package manager install itself (--no-install skips the install; --ui none writes a plain Button and runs no install)
 cd my-app
-pnpm install                    # only after --ui none or --no-install; the generated package.json depends on @sidioralabs/rex ^0.1.0
+pnpm install                    # only after --ui none or --no-install; the generated package.json depends on @sidioralabs/rex ^0.2.0
 rex make page orders --regions list,detail --overlays FilterSheet
 rex dev                         # Vite client and the app's Hono server on one port (default 5173)
 rex check                       # typecheck and convention rules; exit 1 on any error
@@ -63,6 +63,32 @@ node dist/server.js             # serve the built app (PORT defaults to 3000)
 The demo in `examples/demo` calls the same bin through its package scripts (`pnpm -C examples/demo check`, `dev`, `build`). See [docs/cli.md](docs/cli.md) for every command and flag.
 
 `rex new` writes `package.json`, `tsconfig.json`, `index.html`, `rex.config.ts`, `eslint.config.js`, `.prettierrc`, `.prettierignore`, `app/locales/en.json` and an `app/` with one entity (`note`), one policy (`viewer`), one action (`ping`), a data module, a `Button` component and a `home` page at `/` with one region (`welcome`). With the default `--ui designx` it also writes `dx.json`, the DesignX standard set into `app/components/ui/`, `app/theme.css` (Tailwind 4, linked from `index.html`), `app/components/Shell.tsx` (the `ShellComponents` override named by `ui.components` in `rex.config.ts`) and DesignX-based `states.tsx` and home part, and `Button.tsx` wraps `app/components/ui/button.tsx`; with `--ui none`, `Button.tsx` is a plain `<button>` wrapper.
+
+## Command line
+
+One line per command with every flag it accepts, as `rex --help --json` reports them; `tools/freshness.mjs --check` fails this section when it drifts.
+
+```sh
+rex version                                          # print the rex version
+rex build --target <target> --no-check               # build the client into dist/client and, unless the target is static, the server into dist/server.js
+rex check --json --runtime                           # run typecheck, boundaries, states, parity, naming, traps, tokens and manifest freshness
+rex dev --port <port> --host <host> --no-check       # serve the Vite client and the app's Hono server on one port with hot reload
+rex make page <id> --regions <names> --overlays <names> # write a page folder: page.ts, view.tsx, states.tsx, hooks/, regions, overlays and test/
+rex make region <page> <name>                        # write regions/<name>/region.tsx in a page
+rex make part <page> <name> --region <region>        # write regions/<region>/parts/<Name>.tsx in a page
+rex make overlay <page> <name>                       # write overlays/<Name>.tsx in a page
+rex make hook <page> <name>                          # write hooks/<useName>.ts in a page
+rex make action <name>                               # write app/actions/name.ts
+rex make entity <name>                               # write app/entities/name.ts
+rex make policy <name>                               # write app/policies/name.ts
+rex make flow <name>                                 # write app/flows/name.ts
+rex manifest                                         # write .rex/manifest.json and AGENTS.md from the app declarations
+rex migrate --from <version> --list                  # list and apply the codemods that move an app from an earlier Rex version
+rex new <name> --ui <kit> --no-install               # write a complete Rex app into a new folder
+rex promote <part>                                   # move a page part to app/components and rewrite the imports that use it
+```
+
+`rex -v` (`--version`) prints the version like `rex version`.
 
 ## The page folder convention
 

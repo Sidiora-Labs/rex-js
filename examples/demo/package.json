@@ -9,7 +9,7 @@
     "check": "rex check",
     "manifest": "rex manifest",
     "start": "node dist/server.js",
-    "test": "rex check && playwright test e2e/operability.spec.ts e2e/nojs.spec.ts e2e/axe.spec.ts e2e/vitals.spec.ts e2e/lighthouse.ts e2e/screenshots.spec.ts",
+    "test": "node ../../tools/freshness.mjs --check --skip pointers && rex check && playwright test e2e/operability.spec.ts e2e/nojs.spec.ts e2e/axe.spec.ts e2e/vitals.spec.ts e2e/lighthouse.ts e2e/screenshots.spec.ts",
     "test:unit": "vitest run",
     "test:vitals": "playwright test e2e/vitals.spec.ts e2e/lighthouse.ts",
     "lint": "eslint .",
