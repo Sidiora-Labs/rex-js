@@ -1,11 +1,6 @@
 import type { ActionEffect, ActionForm } from "../core/action.ts";
 import type { OverlayBinding, OverlayDismiss } from "../core/overlay.ts";
-import type {
-  PageCacheConfig,
-  PageDraft,
-  PageRender,
-  PageTransition,
-} from "../core/page.ts";
+import type { PageCacheConfig, PageDraft, PageRender, PageTransition } from "../core/page.ts";
 import type { Predicate, PredicateJson } from "../core/policy.ts";
 import type { FieldKind, JsonSchema } from "../core/schema.ts";
 import type { RexDataState } from "../core/states.ts";

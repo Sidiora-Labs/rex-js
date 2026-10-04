@@ -121,14 +121,16 @@ function readEntry(value: unknown, index: number): StaticPageEntry {
 }
 
 export function parsePrerenderList(value: unknown): PrerenderList {
-  if (!isPlainObject(value)) throw new RexError("REX404", `${PRERENDER_LIST_FILE} must be a JSON object`);
+  if (!isPlainObject(value))
+    throw new RexError("REX404", `${PRERENDER_LIST_FILE} must be a JSON object`);
   if (value.version !== PRERENDER_LIST_VERSION) {
     throw new RexError(
       "REX404",
       `${PRERENDER_LIST_FILE} version ${JSON.stringify(value.version)} is not ${PRERENDER_LIST_VERSION}`,
     );
   }
-  if (!Array.isArray(value.pages)) throw new RexError("REX404", `${PRERENDER_LIST_FILE} pages must be a list`);
+  if (!Array.isArray(value.pages))
+    throw new RexError("REX404", `${PRERENDER_LIST_FILE} pages must be a list`);
   const pages = value.pages.map(readEntry);
   const seen = new Set<string>();
   for (const entry of pages) {
@@ -185,7 +187,8 @@ export function hasCsrfField(html: string): boolean {
 }
 
 export function fillCsrfToken(html: string, token: string): string {
-  if (!/^[0-9a-f]+$/.test(token)) throw new RexError("REX400", "fillCsrfToken: token must be hexadecimal");
+  if (!/^[0-9a-f]+$/.test(token))
+    throw new RexError("REX400", "fillCsrfToken: token must be hexadecimal");
   return html.replace(CSRF_INPUT, (input) =>
     VALUE_ATTRIBUTE.test(input)
       ? input.replace(VALUE_ATTRIBUTE, ` value="${token}"`)
@@ -217,7 +220,9 @@ function withRootAttributes(tag: string, state: ScreenState): string {
   for (const [name, value] of Object.entries(screenAttributes(state))) {
     const written = ` ${name}="${value}"`;
     const present = new RegExp(`\\s${name}="[^"]*"`);
-    next = present.test(next) ? next.replace(present, written) : next.replace(/\s*>$/, `${written}>`);
+    next = present.test(next)
+      ? next.replace(present, written)
+      : next.replace(/\s*>$/, `${written}>`);
   }
   return next;
 }
@@ -229,9 +234,15 @@ function withSidecarScreen(json: string, state: ScreenState): string {
   } catch {
     return json;
   }
-  if (!isPlainObject(payload) || !SIDECAR_SCREEN_FIELDS.every((field) => field in payload)) return json;
+  if (!isPlainObject(payload) || !SIDECAR_SCREEN_FIELDS.every((field) => field in payload))
+    return json;
   if (SIDECAR_SCREEN_FIELDS.every((field) => payload[field] === state[field])) return json;
-  return escapeInlineJson({ ...payload, screen: state.screen, pointer: state.pointer, density: state.density });
+  return escapeInlineJson({
+    ...payload,
+    screen: state.screen,
+    pointer: state.pointer,
+    density: state.density,
+  });
 }
 
 export function applyScreenAttributes(html: string, state: ScreenState): string {
@@ -298,12 +309,19 @@ export interface StaticCache {
     renderer: RexPageRenderer | undefined,
     context: RexRequestContext,
   ): Promise<StaticHit | null>;
-  regenerate(pathname: string, origin: string, renderer: RexPageRenderer | undefined): Promise<StaticPageEntry>;
+  regenerate(
+    pathname: string,
+    origin: string,
+    renderer: RexPageRenderer | undefined,
+  ): Promise<StaticPageEntry>;
   settled(): Promise<void>;
 }
 
 function reportRegenerationFailure(error: unknown, entry: StaticPageEntry): void {
-  console.error(`rex: regenerating ${entry.path} (page "${entry.page}") failed; serving the cached page`, error);
+  console.error(
+    `rex: regenerating ${entry.path} (page "${entry.page}") failed; serving the cached page`,
+    error,
+  );
 }
 
 export function isStale(entry: StaticPageEntry, now: number): boolean {
@@ -322,7 +340,8 @@ export function createStaticCache(options: StaticCacheOptions): StaticCache {
   const actor = options.actor ?? anonymousActor;
   const onError = options.onError ?? reportRegenerationFailure;
   const entries = new Map<string, StaticPageEntry>();
-  for (const entry of parsePrerenderList({ version: PRERENDER_LIST_VERSION, pages: options.pages }).pages) {
+  for (const entry of parsePrerenderList({ version: PRERENDER_LIST_VERSION, pages: options.pages })
+    .pages) {
     entries.set(entry.path, entry);
   }
   const inFlight = new Map<string, Promise<StaticPageEntry>>();
@@ -345,7 +364,11 @@ export function createStaticCache(options: StaticCacheOptions): StaticCache {
       );
     }
     if (renderer === undefined) {
-      throw new RexStaticPageError(entry.page, entry.path, "cannot be regenerated: no page renderer is registered");
+      throw new RexStaticPageError(
+        entry.page,
+        entry.path,
+        "cannot be regenerated: no page renderer is registered",
+      );
     }
     const rendered = await renderPrerenderedHtml(renderer, new URL(entry.path, origin), actor);
     if (rendered.page !== entry.page) {
@@ -393,7 +416,11 @@ export function createStaticCache(options: StaticCacheOptions): StaticCache {
       await regenerate(entry.path, url.origin, renderer);
       html = await store.read(entry.path);
       if (html === null) {
-        throw new RexStaticPageError(entry.page, entry.path, "was regenerated but the store returned nothing");
+        throw new RexStaticPageError(
+          entry.page,
+          entry.path,
+          "was regenerated but the store returned nothing",
+        );
       }
       status = "generated";
     } else if (isStale(entry, Date.now())) {

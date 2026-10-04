@@ -159,6 +159,10 @@ jobs:
         run: pnpm -C packages/rex build
       - name: Pack
         run: pnpm -C packages/rex pack --pack-destination "$RUNNER_TEMP/package"
+      - name: publint on the tarball
+        run: pnpm dlx publint "$RUNNER_TEMP"/package/*.tgz
+      - name: Are the types wrong on the tarball
+        run: pnpm dlx @arethetypeswrong/cli --profile esm-only "$RUNNER_TEMP"/package/*.tgz
       - name: Smoke test the tarball in a fresh app
         run: |
           set -- "$RUNNER_TEMP"/package/*.tgz

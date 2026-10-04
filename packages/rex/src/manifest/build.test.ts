@@ -411,9 +411,7 @@ describe("0.2 manifest options", () => {
     }
     expect(failure).toBeInstanceOf(RexError);
     expect((failure as RexError).code).toBe("REX209");
-    expect((failure as RexError).message).toContain(
-      'loader "quote" names action "list-holdings"',
-    );
+    expect((failure as RexError).message).toContain('loader "quote" names action "list-holdings"');
   });
 
   it("rejects a loader whose action is not registered with REX209", () => {
@@ -704,7 +702,9 @@ describe("Standard Schema declarations in the manifest", () => {
     const manifest = buildManifest(source([redeemDeclared]));
     const properties = manifest.entities[0]?.schema.properties as Record<string, unknown>;
     expect(properties.slug).toEqual({ "x-rex-standard": "hand" });
-    expect(manifest.entities[0]?.fields.map((field) => [field.name, field.kind, field.required])).toEqual([
+    expect(
+      manifest.entities[0]?.fields.map((field) => [field.name, field.kind, field.required]),
+    ).toEqual([
       ["id", "id", true],
       ["slug", null, true],
       ["title", "text", true],

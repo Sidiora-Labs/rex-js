@@ -419,7 +419,12 @@ describe("outcome store", () => {
     store.set("home", { actionId: "rename", ok: true, message: "Rename succeeded", at });
     store.set("send", { actionId: "send", ok: false, message: "Send failed", at });
     store.set("home", { actionId: "purge", ok: false, message: "Purge failed", at });
-    expect(store.get("home")).toEqual({ actionId: "purge", ok: false, message: "Purge failed", at });
+    expect(store.get("home")).toEqual({
+      actionId: "purge",
+      ok: false,
+      message: "Purge failed",
+      at,
+    });
     expect(store.get("send")?.actionId).toBe("send");
     expect(store.get(APP_OUTCOME_KEY)).toBeNull();
     store.clear("home");

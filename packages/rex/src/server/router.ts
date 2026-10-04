@@ -319,12 +319,7 @@ export function buildActionRouter<A extends AnyAction>(
   }
   const router: Record<string, ActionProcedure<AnyAction> | ConfirmProcedure> = {};
   for (const id of [...byId.keys()].sort()) {
-    router[id] = actionProcedure(
-      byId.get(id) as AnyAction,
-      ledger,
-      confirmations,
-      telemetry,
-    );
+    router[id] = actionProcedure(byId.get(id) as AnyAction, ledger, confirmations, telemetry);
   }
   router[CONFIRM_PROCEDURE] = confirmProcedure(byId, confirmations);
   return Object.freeze(router) as unknown as ActionRouter<A>;

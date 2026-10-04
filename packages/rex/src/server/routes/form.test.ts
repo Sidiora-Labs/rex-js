@@ -155,7 +155,9 @@ describe("installFormRoute", () => {
 
   it("refuses to install when the manifest body omits a registered action", () => {
     const ledger = memoryLedger();
-    expect(() => installFormRoute(new Hono(), setupFor(ledger, { listed: [rename, queue] }))).toThrow(
+    expect(() =>
+      installFormRoute(new Hono(), setupFor(ledger, { listed: [rename, queue] })),
+    ).toThrow(
       expect.objectContaining({
         name: "RexError",
         code: "REX308",
@@ -220,7 +222,7 @@ describe("installFormRoute", () => {
     expect(unknown.status).toBe(404);
     const unknownHtml = await unknown.text();
     expect(unknownHtml).toContain("<h1>Unknown action</h1>");
-    expect(unknownHtml).toContain('No action &quot;missing&quot; exists.');
+    expect(unknownHtml).toContain("No action &quot;missing&quot; exists.");
     expect(unknownHtml).toContain('<a href="/settings?tab=jobs" data-rex-form-back="">Go back</a>');
     const unsupported = await post(app, "rename", JSON.stringify({ name: "x" }), {
       cookie,

@@ -177,15 +177,12 @@ describe("page", () => {
       pages: [sendPage, portfolio],
       policies: [],
     });
-    const params = (built.pages.find((entry) => entry.id === "send") as (typeof built.pages)[number])
-      .params;
+    const params = (
+      built.pages.find((entry) => entry.id === "send") as (typeof built.pages)[number]
+    ).params;
     expect(params.type).toBe("object");
     expect(params.required).toEqual(["account"]);
-    expect(Object.keys(params.properties as object)).toEqual([
-      "account",
-      "token",
-      "step",
-    ]);
+    expect(Object.keys(params.properties as object)).toEqual(["account", "token", "step"]);
   });
 
   it("registers in the registry under pages", () => {
@@ -481,7 +478,12 @@ describe("0.2 page options", () => {
     expect(Object.isFrozen(declared.loaders)).toBe(true);
     expect(Object.isFrozen(declared.chrome)).toBe(true);
     expectTypeOf(declared.load.holdings).toEqualTypeOf<typeof holdings>();
-    const staticPage = page("about", { route: "/about/:section", params: z.object({ section: text() }), render: "static", paths: () => [{ section: "team" }] });
+    const staticPage = page("about", {
+      route: "/about/:section",
+      params: z.object({ section: text() }),
+      render: "static",
+      paths: () => [{ section: "team" }],
+    });
     expect(staticPage.render).toBe("static");
   });
 
@@ -494,7 +496,9 @@ describe("0.2 page options", () => {
         prices: { action: prices, invalidatedBy: ["send", "pick-token"] },
         mapped: {
           action: holdings,
-          input: (params: Readonly<Record<string, unknown>>) => ({ account: String(params.account) }),
+          input: (params: Readonly<Record<string, unknown>>) => ({
+            account: String(params.account),
+          }),
           invalidatedBy: ["send"],
         },
       },
@@ -538,12 +542,32 @@ describe("0.2 page options", () => {
     [{ route: "/", load: { sent: send } }, "REX203", "load.sent"],
     [{ route: "/", load: { list: { action: holdings } } }, "REX203", "load.list.input"],
     [{ route: "/", load: { list: { action: send, input: () => ({}) } } }, "REX203", "load.list"],
-    [{ route: "/", load: { list: { action: "holdings", input: () => ({}) } } }, "REX203", "load.list"],
-    [{ route: "/", load: { list: { action: holdings, input: () => ({}), key: 1 } } }, "REX203", "load.list.key"],
+    [
+      { route: "/", load: { list: { action: "holdings", input: () => ({}) } } },
+      "REX203",
+      "load.list",
+    ],
+    [
+      { route: "/", load: { list: { action: holdings, input: () => ({}), key: 1 } } },
+      "REX203",
+      "load.list.key",
+    ],
     [{ route: "/", load: { list: "holdings" } }, "REX203", "load.list"],
-    [{ route: "/", load: { list: { action: holdings, invalidatedBy: "send" } } }, "REX203", "load.list.invalidatedBy"],
-    [{ route: "/", load: { list: { action: holdings, invalidatedBy: ["Send"] } } }, "REX203", "load.list.invalidatedBy.0"],
-    [{ route: "/", load: { list: { action: holdings, invalidatedBy: [send] } } }, "REX203", "load.list.invalidatedBy.0"],
+    [
+      { route: "/", load: { list: { action: holdings, invalidatedBy: "send" } } },
+      "REX203",
+      "load.list.invalidatedBy",
+    ],
+    [
+      { route: "/", load: { list: { action: holdings, invalidatedBy: ["Send"] } } },
+      "REX203",
+      "load.list.invalidatedBy.0",
+    ],
+    [
+      { route: "/", load: { list: { action: holdings, invalidatedBy: [send] } } },
+      "REX203",
+      "load.list.invalidatedBy.0",
+    ],
     [
       { route: "/", load: { list: { action: holdings, invalidatedBy: ["send", "send"] } } },
       "REX203",
@@ -554,7 +578,11 @@ describe("0.2 page options", () => {
       "REX203",
       "load.list.input",
     ],
-    [{ route: "/", load: { list: { action: send, invalidatedBy: ["send"] } } }, "REX203", "load.list"],
+    [
+      { route: "/", load: { list: { action: send, invalidatedBy: ["send"] } } },
+      "REX203",
+      "load.list",
+    ],
     [{ route: "/", cache: { staleTime: -1 } }, "REX204", "cache.staleTime"],
     [{ route: "/", cache: { gcTime: 1, staleTime: 1 } }, "REX204", "cache.gcTime"],
     [{ route: "/", cache: 10 }, "REX204", "cache"],
@@ -565,7 +593,9 @@ describe("0.2 page options", () => {
 
   it("rejects chrome.components because shell overrides are app-wide in rex.config ui.components", () => {
     expect(
-      fieldOf(() => page("home", { route: "/", chrome: { components: { Button: ShellButton } } } as never)),
+      fieldOf(() =>
+        page("home", { route: "/", chrome: { components: { Button: ShellButton } } } as never),
+      ),
     ).toBe("chrome.components");
   });
 });

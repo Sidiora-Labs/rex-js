@@ -40,15 +40,15 @@ Nothing to wire: `createRexServer` serves every registered flow at `/rex/flow` w
 
 `useFlow(flow, instanceId)` from `@sidioralabs/rex/client` loads the instance status and returns a handle:
 
-| Field | Meaning |
-| --- | --- |
-| `state` | `{ status, gate, ... }` from the server, `null` before the first load |
-| `gate` | the approval step the instance is paused at, or `null` |
-| `allowed`, `reason` | whether the current actor may decide the gate, and why not |
-| `start(input?)` | start or resume the instance |
-| `approve()`, `reject()` | decide the gate (with confirmation) |
-| `approveProps`, `rejectProps` | props for the two controls, `null` when no gate is pending |
-| `pending`, `error`, `refresh()` | request state |
+| Field                           | Meaning                                                               |
+| ------------------------------- | --------------------------------------------------------------------- |
+| `state`                         | `{ status, gate, ... }` from the server, `null` before the first load |
+| `gate`                          | the approval step the instance is paused at, or `null`                |
+| `allowed`, `reason`             | whether the current actor may decide the gate, and why not            |
+| `start(input?)`                 | start or resume the instance                                          |
+| `approve()`, `reject()`         | decide the gate (with confirmation)                                   |
+| `approveProps`, `rejectProps`   | props for the two controls, `null` when no gate is pending            |
+| `pending`, `error`, `refresh()` | request state                                                         |
 
 A region binds it to a part:
 

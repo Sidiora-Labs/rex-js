@@ -2,24 +2,24 @@
 
 `rex build --target <target>` builds one app for a runtime. The target picks the server adapter and the layout of `dist/`; the client bundle in `dist/client/` is the same Vite build for every target. `--target` defaults to `node`; any other value exits 2 with the list of targets.
 
-| Target | Command | Writes | Start or deploy |
-| --- | --- | --- | --- |
-| `node` | `rex build` | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list) | `node dist/server.js` |
-| `bun` | `rex build --target bun` | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list) | `bun dist/server.js` |
-| `deno` | `rex build --target deno` | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list) | `deno run --allow-net --allow-read --allow-env dist/server.js` |
-| `edge` | `rex build --target edge` | `dist/client/`, `dist/server.js` (a webworker bundle) | deploy `dist/server.js` as the worker module and `dist/client/` as its static assets |
-| `static` | `rex build --target static` | `dist/client/` only | serve `dist/client/` from any static host; the client calls `client.apiOrigin` |
+| Target   | Command                     | Writes                                                                              | Start or deploy                                                                      |
+| -------- | --------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `node`   | `rex build`                 | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list) | `node dist/server.js`                                                                |
+| `bun`    | `rex build --target bun`    | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list) | `bun dist/server.js`                                                                 |
+| `deno`   | `rex build --target deno`   | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list) | `deno run --allow-net --allow-read --allow-env dist/server.js`                       |
+| `edge`   | `rex build --target edge`   | `dist/client/`, `dist/server.js` (a webworker bundle)                               | deploy `dist/server.js` as the worker module and `dist/client/` as its static assets |
+| `static` | `rex build --target static` | `dist/client/` only                                                                 | serve `dist/client/` from any static host; the client calls `client.apiOrigin`       |
 
 After a build, `rex build` prints the layout it wrote and the start hint for the target.
 
 `rex/server` itself is fetch-only: `createRexServer` returns a Hono app whose `fetch(request)` answers a `Request` with a `Response` and imports nothing from `node:`. The adapters live in their own entry points:
 
-| Entry point | Exports | Used by |
-| --- | --- | --- |
+| Entry point                    | Exports                                                                                                                | Used by                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `@sidioralabs/rex/server/node` | `startNodeServer`, `createNodeApp`, `startPrerenderedNodeServer`, `createPrerenderedNodeApp`, `installNodeStaticPages` | `node`, and the static file serving of `bun` and `deno` |
-| `@sidioralabs/rex/server/bun` | `startBunServer` | `bun` |
-| `@sidioralabs/rex/server/deno` | `startDenoServer` | `deno` |
-| `@sidioralabs/rex/server/edge` | `createEdgeHandler` | `edge` |
+| `@sidioralabs/rex/server/bun`  | `startBunServer`                                                                                                       | `bun`                                                   |
+| `@sidioralabs/rex/server/deno` | `startDenoServer`                                                                                                      | `deno`                                                  |
+| `@sidioralabs/rex/server/edge` | `createEdgeHandler`                                                                                                    | `edge`                                                  |
 
 Every server entry builds the app server from `rex.config.ts`: the `server(app)` factory when the config declares one, otherwise `createRexServer` with an in-memory ledger, the anonymous actor and the config's `security` and `client` options, so `security.origins`, the CSP mode and `client.apiOrigin` apply without a factory.
 
@@ -88,7 +88,12 @@ import app from "rex:app";
 import { sessionActor } from "./app/server/session.ts";
 
 const security = {
-  origins: ["https://app.example.com", "http://tauri.localhost", "tauri://localhost", "capacitor://localhost"],
+  origins: [
+    "https://app.example.com",
+    "http://tauri.localhost",
+    "tauri://localhost",
+    "capacitor://localhost",
+  ],
 };
 
 export default defineConfig({

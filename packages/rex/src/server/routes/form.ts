@@ -6,11 +6,7 @@ import type { JsonSchema } from "../../core/schema.ts";
 import type { StandardIssue } from "../../core/standard.ts";
 import type { ManifestAction } from "../../manifest/types.ts";
 import type { RexServerSetup } from "../app.ts";
-import {
-  RexDensityError,
-  createRexContext,
-  type RexContext,
-} from "../context.ts";
+import { RexDensityError, createRexContext, type RexContext } from "../context.ts";
 import {
   CONFIRM_FIELD,
   CSRF_FIELD,
@@ -29,11 +25,7 @@ import {
   verifyCsrf,
   type FormOutcome,
 } from "../form.ts";
-import {
-  ORIGIN_HEADER,
-  isAllowedOrigin,
-  resolveSecurityPolicy,
-} from "../middleware/security.ts";
+import { ORIGIN_HEADER, isAllowedOrigin, resolveSecurityPolicy } from "../middleware/security.ts";
 import {
   CONFIRM_PROCEDURE,
   buildActionRouter,
@@ -43,10 +35,7 @@ import {
 
 export const FORM_ROUTE = `${FORM_PREFIX}/:action`;
 
-const FORM_CONTENT_TYPES = [
-  "application/x-www-form-urlencoded",
-  "multipart/form-data",
-];
+const FORM_CONTENT_TYPES = ["application/x-www-form-urlencoded", "multipart/form-data"];
 
 interface FormTarget {
   readonly declared: AnyAction;
@@ -58,9 +47,7 @@ function manifestActions(body: string): ReadonlyMap<string, ManifestAction> {
   const parsed = JSON.parse(body) as {
     readonly actions?: readonly ManifestAction[];
   };
-  return new Map(
-    (parsed.actions ?? []).map((declared) => [declared.id, declared]),
-  );
+  return new Map((parsed.actions ?? []).map((declared) => [declared.id, declared]));
 }
 
 function actionLabel(declared: AnyAction): string {
@@ -75,10 +62,7 @@ function errorPage(
   setCookie: string | null = null,
 ): Response {
   const back = refererPath(c.req.raw) ?? "/";
-  const response = c.html(
-    renderFormErrorPage({ title, message, back }),
-    status,
-  );
+  const response = c.html(renderFormErrorPage({ title, message, back }), status);
   if (setCookie !== null) response.headers.append("set-cookie", setCookie);
   return response;
 }
@@ -147,20 +131,13 @@ function failureOutcome(declared: AnyAction, error: unknown): FormOutcome {
   };
 }
 
-function redirectWithOutcome(
-  c: Context,
-  location: string,
-  outcome: FormOutcome,
-): Response {
+function redirectWithOutcome(c: Context, location: string, outcome: FormOutcome): Response {
   const response = c.redirect(location, 303);
   response.headers.append("set-cookie", outcomeCookie(outcome, c.req.raw));
   return response;
 }
 
-function formContext(
-  base: RexContext,
-  confirm: string | undefined,
-): RexContext {
+function formContext(base: RexContext, confirm: string | undefined): RexContext {
   return {
     actor: base.actor,
     density: base.density,
@@ -209,17 +186,10 @@ export function installFormRoute(app: Hono, setup: RexServerSetup): void {
     }
     const target = targets.get(c.req.param("action"));
     if (target === undefined) {
-      return errorPage(
-        c,
-        404,
-        "Unknown action",
-        `No action "${c.req.param("action")}" exists.`,
-      );
+      return errorPage(c, 404, "Unknown action", `No action "${c.req.param("action")}" exists.`);
     }
     const { declared, schema, procedure } = target;
-    const contentType = (
-      request.headers.get("content-type") ?? ""
-    ).toLowerCase();
+    const contentType = (request.headers.get("content-type") ?? "").toLowerCase();
     if (!FORM_CONTENT_TYPES.some((type) => contentType.startsWith(type))) {
       return errorPage(
         c,
@@ -232,12 +202,7 @@ export function installFormRoute(app: Hono, setup: RexServerSetup): void {
     try {
       form = await request.formData();
     } catch {
-      return errorPage(
-        c,
-        400,
-        "Unreadable form",
-        "The form body could not be read.",
-      );
+      return errorPage(c, 400, "Unreadable form", "The form body could not be read.");
     }
     const cookieToken = readCsrfToken(request);
     if (!verifyCsrf(cookieToken, form.get(CSRF_FIELD))) {
@@ -271,9 +236,7 @@ export function installFormRoute(app: Hono, setup: RexServerSetup): void {
     const back = refererPath(request) ?? "/";
     const confirmField = form.get(CONFIRM_FIELD);
     const confirm =
-      typeof confirmField === "string" && confirmField !== ""
-        ? confirmField
-        : undefined;
+      typeof confirmField === "string" && confirmField !== "" ? confirmField : undefined;
 
     if (declared.effect === "irreversible" && confirm === undefined) {
       try {
@@ -286,8 +249,7 @@ export function installFormRoute(app: Hono, setup: RexServerSetup): void {
           renderConfirmPage({
             actionId: declared.id,
             label: actionLabel(declared),
-            title:
-              declared.form?.confirmTitle ?? `Confirm ${actionLabel(declared)}`,
+            title: declared.form?.confirmTitle ?? `Confirm ${actionLabel(declared)}`,
             input,
             entries: formEntries(form, schema),
             csrf: cookieToken as string,
@@ -307,17 +269,13 @@ export function installFormRoute(app: Hono, setup: RexServerSetup): void {
     } catch (error) {
       return redirectWithOutcome(c, back, failureOutcome(declared, error));
     }
-    return redirectWithOutcome(
-      c,
-      formRedirectTarget(request, declared.form?.redirect ?? null),
-      {
-        actionId: declared.id,
-        ok: true,
-        message: `${actionLabel(declared)} succeeded`,
-        at: new Date().toISOString(),
-        code: null,
-        fields: {},
-      },
-    );
+    return redirectWithOutcome(c, formRedirectTarget(request, declared.form?.redirect ?? null), {
+      actionId: declared.id,
+      ok: true,
+      message: `${actionLabel(declared)} succeeded`,
+      at: new Date().toISOString(),
+      code: null,
+      fields: {},
+    });
   });
 }

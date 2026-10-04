@@ -135,7 +135,12 @@ describe("installManifestRoute", () => {
     expect(REX_ROUTES[0]).toBe(installManifestRoute);
     expect(exportedInstallManifestRoute).toBe(installManifestRoute);
     expect(EXPORTED_MANIFEST_PATH).toBe(MANIFEST_PATH);
-    const app = createRexServer({ registry, ledger: memoryLedger(), actor: resolveActor, app: APP });
+    const app = createRexServer({
+      registry,
+      ledger: memoryLedger(),
+      actor: resolveActor,
+      app: APP,
+    });
     const response = await app.request(MANIFEST_PATH, {
       headers: { authorization: "Bearer alice", [DENSITY_HEADER]: "agent" },
     });

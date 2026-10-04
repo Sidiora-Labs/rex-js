@@ -388,7 +388,15 @@ const EDGE_WEB_GLOBALS = [
   "console",
 ] as const;
 
-const NODE_GLOBALS = ["process", "Buffer", "require", "module", "global", "setImmediate", "__dirname"];
+const NODE_GLOBALS = [
+  "process",
+  "Buffer",
+  "require",
+  "module",
+  "global",
+  "setImmediate",
+  "__dirname",
+];
 
 async function bundleEdgeWorker(): Promise<string> {
   const result = await build({
@@ -423,13 +431,16 @@ describe("edge adapter", { timeout: BUNDLE_TIMEOUT_MS }, () => {
     expect(await health.json()).toEqual({ status: "ok" });
     const missing = await handler.fetch(new Request("https://edge.test/rex/unknown"));
     expect(missing.status).toBe(404);
-    expect(() => createEdgeHandler({} as never)).toThrow(expect.objectContaining({ name: "RexError", code: "REX400" }));
+    expect(() => createEdgeHandler({} as never)).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX400" }),
+    );
   });
 
   it("runs the bundled worker against Request objects in a realm with no node globals", async () => {
     const code = await bundleEdgeWorker();
     const sandbox: Record<string, unknown> = {};
-    for (const name of EDGE_WEB_GLOBALS) sandbox[name] = (globalThis as Record<string, unknown>)[name];
+    for (const name of EDGE_WEB_GLOBALS)
+      sandbox[name] = (globalThis as Record<string, unknown>)[name];
     const realm = createContext(sandbox);
     for (const name of NODE_GLOBALS) {
       expect(runInContext(`typeof ${name}`, realm), name).toBe("undefined");
@@ -506,7 +517,11 @@ describe("client hints", () => {
     expect(headers.get(ACCEPT_CH_HEADER)).toBe("Sec-CH-UA-Mobile, Sec-CH-Viewport-Width");
     expect(headers.get("vary")).toBe("Origin, sec-ch-ua-mobile, Sec-CH-Viewport-Width");
     expect(CLIENT_HINT_VARY).toEqual(["Sec-CH-UA-Mobile", "Sec-CH-Viewport-Width"]);
-    expect(isDocumentResponse(new Response("", { headers: { "content-type": "text/html; charset=utf-8" } }))).toBe(true);
+    expect(
+      isDocumentResponse(
+        new Response("", { headers: { "content-type": "text/html; charset=utf-8" } }),
+      ),
+    ).toBe(true);
     expect(isDocumentResponse(Response.json({ ok: true }))).toBe(false);
     const hinted = withClientHints(new Response("<p>x</p>", { status: 201 }));
     expect(hinted.status).toBe(201);

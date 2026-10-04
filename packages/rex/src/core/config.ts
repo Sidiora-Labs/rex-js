@@ -177,8 +177,9 @@ export interface ResolvedRexOptions {
   };
 }
 
-export interface ResolvedRexConfig<A extends RexConfigApp = RexConfigApp>
-  extends ResolvedRexOptions {
+export interface ResolvedRexConfig<
+  A extends RexConfigApp = RexConfigApp,
+> extends ResolvedRexOptions {
   readonly app: A;
   readonly server: ((app: A) => RexFetchHandler) | null;
 }
@@ -441,12 +442,7 @@ function parseFonts(value: unknown): readonly ResolvedFont[] {
   return Object.freeze(
     (value as unknown[]).map((entry, index): ResolvedFont => {
       const field = `fonts.${index}`;
-      const record = objectAt(
-        entry,
-        field,
-        ["family", "src", "weight", "style", "preload"],
-        fail,
-      );
+      const record = objectAt(entry, field, ["family", "src", "weight", "style", "preload"], fail);
       if (typeof record.family !== "string" || record.family.trim() === "") {
         fail(`${field}.family`, "must be a non-empty string");
       }
@@ -463,7 +459,7 @@ function parseFonts(value: unknown): readonly ResolvedFont[] {
           !(typeof record.weight === "number" && Number.isInteger(record.weight)) &&
           !(typeof record.weight === "string" && /^\d{3}( \d{3})?$/.test(record.weight))
         ) {
-          fail(`${field}.weight`, "must be a weight such as 400 or a range such as \"100 900\"");
+          fail(`${field}.weight`, 'must be a weight such as 400 or a range such as "100 900"');
         }
         weight = String(record.weight);
       }
@@ -537,7 +533,10 @@ function parseUi(value: unknown): Pick<ResolvedRexOptions, "ui" | "shellComponen
   const ui = record.kit === undefined ? "none" : oneOf(record.kit, UI_KITS, "ui.kit", fail);
   if (record.components === undefined) return { ui, shellComponents: null };
   if (typeof record.components !== "string" || !SHELL_COMPONENTS_PATTERN.test(record.components)) {
-    fail("ui.components", "must name a module under app/components such as app/components/shell.tsx");
+    fail(
+      "ui.components",
+      "must name a module under app/components such as app/components/shell.tsx",
+    );
   }
   return { ui, shellComponents: record.components as string };
 }
@@ -555,7 +554,11 @@ function parseCheck(value: unknown): ResolvedRexOptions["check"] {
     const lists = objectAt(record.tokens, "check.tokens", ["colors", "spacing", "classes"], fail);
     const list = (key: "colors" | "spacing" | "classes") =>
       lists[key] === undefined ? empty : stringList(lists[key], `check.tokens.${key}`, fail);
-    tokens = Object.freeze({ colors: list("colors"), spacing: list("spacing"), classes: list("classes") });
+    tokens = Object.freeze({
+      colors: list("colors"),
+      spacing: list("spacing"),
+      classes: list("classes"),
+    });
   }
   let i18n: ResolvedRexOptions["check"]["i18n"] = Object.freeze({ allow: empty });
   if (record.i18n !== undefined) {
@@ -618,7 +621,10 @@ export function parseConfig<A extends RexConfigApp = RexConfigApp>(
   value: unknown,
 ): ResolvedRexConfig<A> {
   if (!isRecord(value)) {
-    throw new RexError("REX102", `${CONFIG_FILE}: the default export must be defineConfig({ app })`);
+    throw new RexError(
+      "REX102",
+      `${CONFIG_FILE}: the default export must be defineConfig({ app })`,
+    );
   }
   checkKeys(value, Object.keys(CONFIG_KEYS));
   if (!isConfigApp(value.app)) {
@@ -659,8 +665,16 @@ export function isFetchHandler(value: unknown): value is RexFetchHandler {
 }
 
 export type RexConfigExport =
-  | { readonly kind: "config"; readonly config: ResolvedRexConfig; readonly options: ResolvedRexOptions }
-  | { readonly kind: "legacy"; readonly server: RexFetchHandler; readonly options: ResolvedRexOptions };
+  | {
+      readonly kind: "config";
+      readonly config: ResolvedRexConfig;
+      readonly options: ResolvedRexOptions;
+    }
+  | {
+      readonly kind: "legacy";
+      readonly server: RexFetchHandler;
+      readonly options: ResolvedRexOptions;
+    };
 
 export const LEGACY_CONFIG_MESSAGE = `${CONFIG_FILE} default-exports a bare Hono app; wrap it in defineConfig({ app, server }) or run rex migrate`;
 
@@ -690,7 +704,10 @@ export function configServerOptions(read: RexConfigExport): ConfigServerOptions 
     : { security, client: { apiOrigin: client.apiOrigin } };
 }
 
-export function configServer(read: RexConfigExport, fallback: DefaultServerFactory): RexFetchHandler {
+export function configServer(
+  read: RexConfigExport,
+  fallback: DefaultServerFactory,
+): RexFetchHandler {
   if (read.kind === "legacy") return read.server;
   const { config } = read;
   const server = config.server === null ? fallback(config.app) : config.server(config.app);

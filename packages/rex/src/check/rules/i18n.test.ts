@@ -205,7 +205,10 @@ describe("i18n/literal", () => {
 
   it("honours the allow list and reports an unreadable one", async () => {
     const allowing = fixture({
-      "rex.config.ts": I18N_CONFIG.replace('allow: ["Rex"]', 'allow: ["Rex", "Send funds", "Home", "Close", "Amount"]'),
+      "rex.config.ts": I18N_CONFIG.replace(
+        'allow: ["Rex"]',
+        'allow: ["Rex", "Send funds", "Home", "Close", "Amount"]',
+      ),
       "app/actions/send.ts": ACTION,
       "app/pages/home/page.ts": PAGE,
       "app/pages/home/regions/main/region.tsx": REGION,

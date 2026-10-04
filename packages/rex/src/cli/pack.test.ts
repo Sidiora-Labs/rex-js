@@ -75,7 +75,11 @@ describe("the packed @sidioralabs/rex tarball", { timeout: PACK_TEST_TIMEOUT_MS 
     for (const bin of Object.values(manifest.bin)) {
       expect(files.has(relativePath(bin))).toBe(true);
     }
-    for (const asset of ["dist/client/tokens.css", "dist/client/agent/density.css", "dist/vite/rex-app.d.ts"]) {
+    for (const asset of [
+      "dist/client/tokens.css",
+      "dist/client/agent/density.css",
+      "dist/vite/rex-app.d.ts",
+    ]) {
       expect(files.has(asset), asset).toBe(true);
     }
   });
@@ -83,7 +87,10 @@ describe("the packed @sidioralabs/rex tarball", { timeout: PACK_TEST_TIMEOUT_MS 
   it("ships the build only: no sources, tests, fixtures or test helpers", () => {
     expect(files.size).toBeGreaterThan(0);
     for (const file of files) {
-      expect(file === "package.json" || file.startsWith("dist/") || /^(README|LICENSE)/.test(file), file).toBe(true);
+      expect(
+        file === "package.json" || file.startsWith("dist/") || /^(README|LICENSE)/.test(file),
+        file,
+      ).toBe(true);
       expect(file, file).not.toMatch(/\.test\.|\/fixtures\/|\.conformance\./);
       expect(file.startsWith("src/"), file).toBe(false);
     }
@@ -102,7 +109,14 @@ describe("the packed @sidioralabs/rex tarball", { timeout: PACK_TEST_TIMEOUT_MS 
       "@orpc/tanstack-query",
       "hono",
     ]);
-    for (const peer of ["react", "react-dom", "@tanstack/react-query", "vite", "zod", "typescript"]) {
+    for (const peer of [
+      "react",
+      "react-dom",
+      "@tanstack/react-query",
+      "vite",
+      "zod",
+      "typescript",
+    ]) {
       expect(manifest.peerDependencies[peer], peer).toBeDefined();
       expect(manifest.peerDependenciesMeta[peer]?.optional ?? false, peer).toBe(false);
     }

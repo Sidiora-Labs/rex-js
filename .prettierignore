@@ -12,3 +12,7 @@ CLAUDE.md
 .cursor/rules
 pnpm-lock.yaml
 docs/api
+spec
+CHANGELOG.md
+.github/copilot-instructions.md
+.claude

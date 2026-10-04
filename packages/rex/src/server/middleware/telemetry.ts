@@ -24,10 +24,7 @@ export const SPAN_LOADER = "rex.loader";
 export const SPAN_RENDER = "rex.render";
 
 export type RexSpanName =
-  | typeof SPAN_ACTION
-  | typeof SPAN_FORM
-  | typeof SPAN_LOADER
-  | typeof SPAN_RENDER;
+  typeof SPAN_ACTION | typeof SPAN_FORM | typeof SPAN_LOADER | typeof SPAN_RENDER;
 
 export const ATTR_ACTION_ID = "rex.action.id";
 export const ATTR_ACTOR_ID = "rex.actor.id";
@@ -140,7 +137,10 @@ function errorText(error: unknown): string {
 export function createTelemetry(config: TelemetryConfig = {}): RexTelemetry {
   const tracerOption: unknown = config.tracer;
   if (tracerOption !== undefined && !isTelemetryTracer(tracerOption)) {
-    throw new RexError("REX400", "telemetry: tracer must be an OpenTelemetry tracer with startSpan");
+    throw new RexError(
+      "REX400",
+      "telemetry: tracer must be an OpenTelemetry tracer with startSpan",
+    );
   }
   const tracer: TelemetryTracer | null = tracerOption === undefined ? null : tracerOption;
   const logger = config.logger ?? consoleLogger;
@@ -150,7 +150,8 @@ export function createTelemetry(config: TelemetryConfig = {}): RexTelemetry {
     attributes: RexSpanAttributes,
     run: (span: RexSpan) => Promise<T> | T,
   ): Promise<T> {
-    const native = tracer === null ? null : tracer.startSpan(name, { attributes: { ...attributes } });
+    const native =
+      tracer === null ? null : tracer.startSpan(name, { attributes: { ...attributes } });
     const ids = native === null ? null : validIds(native);
     const recorded: Record<string, string | number | boolean> = { ...attributes };
     let outcome: string | null = null;
@@ -227,7 +228,8 @@ function compileMatchers(pages: readonly AnyPage[]): readonly RouteMatcher[] {
     })
     .sort(
       (a, b) =>
-        b.weight - a.weight || (a.page.route < b.page.route ? -1 : a.page.route > b.page.route ? 1 : 0),
+        b.weight - a.weight ||
+        (a.page.route < b.page.route ? -1 : a.page.route > b.page.route ? 1 : 0),
     );
 }
 

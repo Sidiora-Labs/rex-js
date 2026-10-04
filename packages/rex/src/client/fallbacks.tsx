@@ -9,7 +9,9 @@ export interface RegionErrorFallbackProps {
   readonly retry: () => void;
   readonly params: PageParamsValue;
   readonly Export: ComponentType<StateProps<PageParamsValue>> | undefined;
-  readonly Default: ComponentType<{ readonly state: "recoverable-error" } & StateProps<PageParamsValue>>;
+  readonly Default: ComponentType<
+    { readonly state: "recoverable-error" } & StateProps<PageParamsValue>
+  >;
 }
 
 export function RegionErrorFallback({

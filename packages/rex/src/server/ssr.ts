@@ -34,7 +34,12 @@ import {
   type PriorityImage,
   type RexMediaCollector,
 } from "../client/media.tsx";
-import { manifestParamsSchema, orderPages, resolvePage, type PageResolution } from "../client/router.tsx";
+import {
+  manifestParamsSchema,
+  orderPages,
+  resolvePage,
+  type PageResolution,
+} from "../client/router.tsx";
 import {
   DEFAULT_SCREEN,
   ScreenSeedContext,
@@ -116,7 +121,10 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-const routePatterns = new Map<string, { readonly pattern: RegExp; readonly params: readonly string[] }>();
+const routePatterns = new Map<
+  string,
+  { readonly pattern: RegExp; readonly params: readonly string[] }
+>();
 
 function routePattern(route: string) {
   let compiled = routePatterns.get(route);
@@ -301,7 +309,9 @@ function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): s
     `<title>${escapeHtml(parts.title)}</title>`,
     ...fontPreloadLinks(options.fonts),
     ...imagePreloadLinks(parts.images),
-    options.fonts.length === 0 ? "" : `<style data-rex-fonts="">${fontFaceCss(options.fonts)}</style>`,
+    options.fonts.length === 0
+      ? ""
+      : `<style data-rex-fonts="">${fontFaceCss(options.fonts)}</style>`,
     ...stylesheets,
     ...preloads,
     options.assets.head === undefined ? "" : nonceInlineScripts(options.assets.head, parts.nonce),
@@ -314,7 +324,8 @@ function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): s
 
 function documentTail(options: ResolvedRendererOptions, nonce: string): string {
   const scripts = options.assets.scripts.map(
-    (src) => `<script type="module" src="${escapeHtml(src)}" nonce="${escapeHtml(nonce)}"></script>`,
+    (src) =>
+      `<script type="module" src="${escapeHtml(src)}" nonce="${escapeHtml(nonce)}"></script>`,
   );
   return ["</div>", ...scripts, "</body>", "</html>"].join("");
 }
@@ -404,7 +415,10 @@ export function routedPathname(source: I18nSource | null, pathname: string): str
 export function createRexRenderer(options: RexRendererOptions): RexPageRenderer {
   const bundle = options.bundle;
   if (typeof bundle !== "object" || bundle === null || !Array.isArray(bundle.pages)) {
-    throw new RexError("REX313", "createRexRenderer: the rex:app bundle with registry and pages is required");
+    throw new RexError(
+      "REX313",
+      "createRexRenderer: the rex:app bundle with registry and pages is required",
+    );
   }
   if (bundle.manifest === undefined) {
     throw new RexError("REX400", "createRexRenderer: the bundle must carry its manifest");
@@ -616,15 +630,18 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     const errors: unknown[] = [];
     let stream: Awaited<ReturnType<typeof renderToReadableStream>>;
     try {
-      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient, locale, media.collector, csrf, screen), {
-        nonce: context.nonce,
-        progressiveChunkSize: INLINE_BOUNDARY_BYTES,
-        onError(error) {
-          if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
-          errors.push(error);
-          return undefined;
+      stream = await renderToReadableStream(
+        entryTree(url, context, serverPages, queryClient, locale, media.collector, csrf, screen),
+        {
+          nonce: context.nonce,
+          progressiveChunkSize: INLINE_BOUNDARY_BYTES,
+          onError(error) {
+            if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
+            errors.push(error);
+            return undefined;
+          },
         },
-      });
+      );
     } catch {
       return failure(url, match, context, locale, csrf, screen);
     }
@@ -637,7 +654,10 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
       kind,
       page: match === null ? null : match.page.id,
       body: documentStream(
-        documentHead(resolved, parts(match, context, queryClient, true, locale, screen, media.images())),
+        documentHead(
+          resolved,
+          parts(match, context, queryClient, true, locale, screen, media.images()),
+        ),
         stream,
         documentTail(resolved, context.nonce),
       ),

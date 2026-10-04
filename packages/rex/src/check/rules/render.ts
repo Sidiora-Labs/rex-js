@@ -92,7 +92,7 @@ function checkPage(app: RexApp, sources: SourceLoader, entry: AppPage): Finding[
 export const renderRule = defineRule({
   id: "render",
   description:
-    "Reports static pages (render: \"static\", zero JavaScript) that declare an action with a keyboard shortcut or an overlay bound to region state, both of which need JavaScript.",
+    'Reports static pages (render: "static", zero JavaScript) that declare an action with a keyboard shortcut or an overlay bound to region state, both of which need JavaScript.',
   check({ app, sources }) {
     return app.pages.flatMap((entry) => checkPage(app, sources, entry));
   },

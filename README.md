@@ -2,6 +2,12 @@
   <img src="assets/mark_rex_js.png" alt="Rex" width="480" height="200">
 </p>
 
+<p align="center">
+  <a href="https://github.com/Sidiora-Labs/rex-js/actions/workflows/ci.yml"><img src="https://github.com/Sidiora-Labs/rex-js/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/@sidioralabs/rex"><img src="https://img.shields.io/npm/v/@sidioralabs/rex" alt="npm version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
+</p>
+
 # Rex
 
 Rex is Sidiora Labs' framework for building web application interfaces that AI agents can write and that AI agents can operate. It ships as one package, `@sidioralabs/rex`, with a CLI named `rex`.
@@ -19,24 +25,36 @@ Version: 0.2.0 (`REX_VERSION` in `packages/rex/src/index.ts`).
 
 Rex uses these libraries as they are and does not wrap them in its own router, bundler or renderer:
 
-| Concern | Library |
-| --- | --- |
-| Language | TypeScript (strict settings in `tsconfig.base.json`) |
-| UI | React 19 (peer dependency) |
-| Build and dev server | Vite, with `@vitejs/plugin-react` |
-| HTTP server | Hono, served on Node by `@hono/node-server` |
-| RPC | oRPC (`@orpc/server`, `@orpc/client`) |
-| Client data | TanStack Query |
-| Schemas | zod |
-| Storage adapter | Drizzle ORM on libsql via `@sidioralabs/rex/store/drizzle` (in-memory store by default) |
-| Routing | wouter |
-| Command palette | cmdk |
-| UI kit | DesignX registry components (`https://dxuireact.com/r`) on Tailwind 4 (`tailwindcss`, `@tailwindcss/vite`), installed into `app/components/ui/` by `rex new --ui designx` (the default); `--ui none` writes a plain `<button>` wrapper and no Tailwind |
-| CLI | a built-in argument parser (`RexCommand` in `packages/rex/src/cli/args.ts`); no commander dependency |
+| Concern              | Library                                                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Language             | TypeScript (strict settings in `tsconfig.base.json`)                                                                                                                                                                                                   |
+| UI                   | React 19 (peer dependency)                                                                                                                                                                                                                             |
+| Build and dev server | Vite, with `@vitejs/plugin-react`                                                                                                                                                                                                                      |
+| HTTP server          | Hono, served on Node by `@hono/node-server`                                                                                                                                                                                                            |
+| RPC                  | oRPC (`@orpc/server`, `@orpc/client`)                                                                                                                                                                                                                  |
+| Client data          | TanStack Query                                                                                                                                                                                                                                         |
+| Schemas              | zod                                                                                                                                                                                                                                                    |
+| Storage adapter      | Drizzle ORM on libsql via `@sidioralabs/rex/store/drizzle` (in-memory store by default)                                                                                                                                                                |
+| Routing              | wouter                                                                                                                                                                                                                                                 |
+| Command palette      | cmdk                                                                                                                                                                                                                                                   |
+| UI kit               | DesignX registry components (`https://dxuireact.com/r`) on Tailwind 4 (`tailwindcss`, `@tailwindcss/vite`), installed into `app/components/ui/` by `rex new --ui designx` (the default); `--ui none` writes a plain `<button>` wrapper and no Tailwind |
+| CLI                  | a built-in argument parser (`RexCommand` in `packages/rex/src/cli/args.ts`); no commander dependency                                                                                                                                                   |
 
 DesignX is the standard UI vocabulary: `@sidioralabs/rex/designx` maps every Rex surface to one registry item, `rex new --ui designx` (the default) installs the standard set into `app/components/ui/`, and the demo uses it everywhere (`ui: { kit: "designx", components: "app/components/Shell.tsx" }` in `examples/demo/rex.config.ts`).
 
 Rex does not use Next.js, React Server Components or server actions. Server code is Hono plus oRPC procedures; client code is React components; the boundary between them is the Action declaration.
+
+## Install from npm
+
+A tagged version is published to npm as `@sidioralabs/rex` with provenance by the release workflow (see [docs/releasing.md](docs/releasing.md)). Outside this repository, the package's own bin creates an app and runs it:
+
+```sh
+pnpm dlx @sidioralabs/rex new my-app   # or: npx @sidioralabs/rex new my-app
+cd my-app
+pnpm rex dev
+```
+
+`rex new` writes the app's `package.json` with `@sidioralabs/rex` and its peers at the versions this package declares, including `@babel/core` and `babel-plugin-react-compiler` for the React Compiler, and runs the install. `pnpm smoke` (`tools/smoke-package.sh`) is the test of that path: it packs the package, creates an app from the tarball, builds it, starts it and fetches a page, the manifest and one RPC call.
 
 ## Quick start
 
@@ -92,19 +110,19 @@ rex promote <part>                                   # move a page part to app/c
 
 ## The page folder convention
 
-| Path | Role |
-| --- | --- |
-| `app/pages/<page>/page.ts` | The page declaration: route, params, render, revalidate, paths, load, cache, transition, policy, recovery, draft, actions, chrome, regions, overlays, states. Never imports React. |
-| `app/pages/<page>/view.tsx` | Layout of regions only. The ready state. |
-| `app/pages/<page>/states.tsx` | One export per declared non-ready state (`Loading`, `Empty`, `Stale`, `Partial`, `Offline`, `PermissionDenied`, `RecoverableError`, `TerminalError`). |
-| `app/pages/<page>/hooks/use<Name>.ts` | Page-private state and queries. |
-| `app/pages/<page>/regions/<region>/region.tsx` | Binds hooks to parts. The only place that calls hooks and actions. |
-| `app/pages/<page>/regions/<region>/parts/<Part>.tsx` | Pure components: props in, events out, one default export. |
-| `app/pages/<page>/overlays/<Overlay>.tsx` | Sheets and dialogs with declared dismissal. |
-| `app/pages/<page>/test/` | Page tests. |
-| `app/actions`, `app/entities`, `app/policies`, `app/flows` | One declaration per file. |
-| `app/components` | Shared components (parts moved here by `rex promote`), the DesignX copies under `app/components/ui/`, and the app-wide shell override module (`Shell.tsx`, named by `ui.components` in `rex.config.ts` and exporting `ShellComponents`). |
-| `app/data` | Stores and queries. |
+| Path                                                       | Role                                                                                                                                                                                                                                     |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/pages/<page>/page.ts`                                 | The page declaration: route, params, render, revalidate, paths, load, cache, transition, policy, recovery, draft, actions, chrome, regions, overlays, states. Never imports React.                                                       |
+| `app/pages/<page>/view.tsx`                                | Layout of regions only. The ready state.                                                                                                                                                                                                 |
+| `app/pages/<page>/states.tsx`                              | One export per declared non-ready state (`Loading`, `Empty`, `Stale`, `Partial`, `Offline`, `PermissionDenied`, `RecoverableError`, `TerminalError`).                                                                                    |
+| `app/pages/<page>/hooks/use<Name>.ts`                      | Page-private state and queries.                                                                                                                                                                                                          |
+| `app/pages/<page>/regions/<region>/region.tsx`             | Binds hooks to parts. The only place that calls hooks and actions.                                                                                                                                                                       |
+| `app/pages/<page>/regions/<region>/parts/<Part>.tsx`       | Pure components: props in, events out, one default export.                                                                                                                                                                               |
+| `app/pages/<page>/overlays/<Overlay>.tsx`                  | Sheets and dialogs with declared dismissal.                                                                                                                                                                                              |
+| `app/pages/<page>/test/`                                   | Page tests.                                                                                                                                                                                                                              |
+| `app/actions`, `app/entities`, `app/policies`, `app/flows` | One declaration per file.                                                                                                                                                                                                                |
+| `app/components`                                           | Shared components (parts moved here by `rex promote`), the DesignX copies under `app/components/ui/`, and the app-wide shell override module (`Shell.tsx`, named by `ui.components` in `rex.config.ts` and exporting `ShellComponents`). |
+| `app/data`                                                 | Stores and queries.                                                                                                                                                                                                                      |
 
 The full import table, naming rules and checker rules are in [docs/convention.md](docs/convention.md).
 
@@ -166,13 +184,13 @@ An agent drives a Rex app through the same browser UI a human uses. The full con
 
 `examples/demo` is a wallet app modelled on the Paxeer wallet widgets. It was generated with `rex new` and `rex make` and then filled in.
 
-| Page | Route | Regions | Overlays | Actions |
-| --- | --- | --- | --- | --- |
-| `portfolio` | `/` | hero, actions, holdings | HoldingsFilterSheet (URL bound) | toggle-hide-dust |
-| `send` | `/send` | form, confirm, success | TokenSelectorSheet, ContactPickerSheet | send, pick-token, pick-contact |
-| `about` | `/about` (static) | intro, feedback | - | send-feedback |
-| `embed` | `/embed` | widget, locale | - | - (loads `list-tokens`) |
-| `tokens` | `/tokens` (ssg, revalidate 60) | prices | - | - |
+| Page        | Route                          | Regions                 | Overlays                               | Actions                        |
+| ----------- | ------------------------------ | ----------------------- | -------------------------------------- | ------------------------------ |
+| `portfolio` | `/`                            | hero, actions, holdings | HoldingsFilterSheet (URL bound)        | toggle-hide-dust               |
+| `send`      | `/send`                        | form, confirm, success  | TokenSelectorSheet, ContactPickerSheet | send, pick-token, pick-contact |
+| `about`     | `/about` (static)              | intro, feedback         | -                                      | send-feedback                  |
+| `embed`     | `/embed`                       | widget, locale          | -                                      | - (loads `list-tokens`)        |
+| `tokens`    | `/tokens` (ssg, revalidate 60) | prices                  | -                                      | -                              |
 
 It declares the entities `account`, `token` and `contact`, the policies `wallet` and `viewer`, the read actions `load-wallet` and `list-tokens` used as page loaders (`load` in `page.ts`), and `send-feedback` on the about page. Data lives in seeded in-memory stores (`app/data/wallet.ts`, `app/data/watchlist.ts`, `app/data/feedback.ts`); messages live in `app/locales/en.json` and `de.json`. The server (`examples/demo/server.ts`) resolves the actor from a `demo-actor` cookie: `guest` gets the read-only guest actor, anything else gets the owner.
 
@@ -188,6 +206,7 @@ Run it with `pnpm -C packages/rex build` and then `pnpm -C examples/demo test`, 
 - [docs/cli.md](docs/cli.md): every `rex` command, flag and exit code.
 - [docs/architecture.md](docs/architecture.md): Vite plugin, client runtime, server, the life of an action, the package exports.
 - [docs/development.md](docs/development.md): working on Rex itself: workspace, tests, gates, the spec-driven workflow.
+- [docs/releasing.md](docs/releasing.md): the release path: version, changelog, tag, the release workflow and npm trusted publishing.
 - [docs/reference.md](docs/reference.md): index of the source types and test helpers.
 - [docs/tutorial.md](docs/tutorial.md): build the wallet demo step by step.
 - [docs/recipes/README.md](docs/recipes/README.md): loaders, forms without JavaScript, overlays, flow approval, static pages, i18n, web components, incremental adoption and the DesignX map.

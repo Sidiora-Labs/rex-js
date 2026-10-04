@@ -39,7 +39,10 @@ export function generateRenderModule(options: RenderModuleOptions): string {
 
 export type RenderAssetsSource = () => RexDocumentAssets | Promise<RexDocumentAssets>;
 
-export function renderModulePlugin(assets: RenderAssetsSource, ssr: string = ssrRuntimePath()): Plugin {
+export function renderModulePlugin(
+  assets: RenderAssetsSource,
+  ssr: string = ssrRuntimePath(),
+): Plugin {
   return {
     name: "rex:render",
     enforce: "pre",

@@ -45,7 +45,10 @@ export function bunRuntime(): BunRuntime | null {
     : null;
 }
 
-export function startBunServer(app: FetchApp, options: BunServerOptions): Promise<RunningBunServer> {
+export function startBunServer(
+  app: FetchApp,
+  options: BunServerOptions,
+): Promise<RunningBunServer> {
   const runtime = bunRuntime();
   if (runtime === null) throw new RuntimeMissingError("Bun", "startBunServer");
   const { port, hostname } = options;

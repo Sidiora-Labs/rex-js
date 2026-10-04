@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { unsafeHtml, UNSAFE_HTML_ATTRIBUTE, type UnsafeHtmlTag } from "../../client/unsafe-html.tsx";
+import {
+  unsafeHtml,
+  UNSAFE_HTML_ATTRIBUTE,
+  type UnsafeHtmlTag,
+} from "../../client/unsafe-html.tsx";
 import { discoverApp, runRules } from "../engine.ts";
 import { createSourceLoader } from "../rule.ts";
 import { defaultRules } from "./index.ts";
@@ -16,7 +20,8 @@ const passRoot = path.join(fixtures, "pass");
 const failRoot = path.join(fixtures, "fail");
 const sourceRoot = path.resolve(here, "../..");
 const SANCTIONED_MODULE = "client/unsafe-html.tsx";
-const ESCAPE_IMPORT = /import\s*\{[^}]*\bescapeInlineJson\b[^}]*\}\s*from\s*"[./]*core\/serialize\.ts"/;
+const ESCAPE_IMPORT =
+  /import\s*\{[^}]*\bescapeInlineJson\b[^}]*\}\s*from\s*"[./]*core\/serialize\.ts"/;
 
 function packageSources(dir: string, found: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
