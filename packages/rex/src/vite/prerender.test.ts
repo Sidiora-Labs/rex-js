@@ -473,6 +473,78 @@ describe("path expansion", () => {
     }
   });
 
+  it("runs paths { action, map } through the router as the anonymous actor with policy, validation and audit", async () => {
+    const slugsSeen: string[] = [];
+    const listDocs = action("list-docs", {
+      input: z.object({}),
+      output: z.object({ slugs: z.array(text()) }),
+      policy: always(),
+      effect: "read",
+      handler: (_input, ctx) => {
+        slugsSeen.push(ctx.actor.id);
+        return { slugs: ["getting started", "faq", "faq"] };
+      },
+    });
+    const docs = page("docs", {
+      route: "/docs/:slug",
+      params: slugParams,
+      render: "static",
+      paths: { action: listDocs, map: (output) => output.slugs.map((slug) => ({ slug })) },
+    });
+    const ledger = memoryLedger();
+    expect(await expandPagePaths(docs, { ledger })).toEqual([
+      "/docs/getting%20started",
+      "/docs/faq",
+    ]);
+    expect(slugsSeen).toEqual([anonymousActor.id]);
+    const records = await ledger.list();
+    expect(records.map((record) => [record.actor, record.actionId, record.outcome])).toEqual([
+      [anonymousActor.id, "list-docs", "ok"],
+    ]);
+
+    const guarded = action("list-private", {
+      input: z.object({}),
+      output: z.object({ slugs: z.array(text()) }),
+      policy: can("docs.read"),
+      effect: "read",
+      handler: () => ({ slugs: ["secret"] }),
+    });
+    const hidden = page("hidden", {
+      route: "/hidden/:slug",
+      params: slugParams,
+      render: "ssg",
+      paths: { action: guarded, map: (output) => output.slugs.map((slug) => ({ slug })) },
+    });
+    const denied = await expandPagePaths(hidden).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(isRexError(denied)).toBe(true);
+    expect((denied as { code: string }).code).toBe("REX202");
+    expect(String((denied as Error).message)).toContain(
+      'action "list-private" failed at prerender',
+    );
+
+    const malformed = action("list-malformed", {
+      input: z.object({}),
+      output: z.object({ slugs: z.array(text()) }),
+      policy: always(),
+      effect: "read",
+      handler: () => ({ slugs: 3 }) as never,
+    });
+    const broken = page("broken", {
+      route: "/broken/:slug",
+      params: slugParams,
+      render: "static",
+      paths: { action: malformed, map: (output) => output.slugs.map((slug) => ({ slug })) },
+    });
+    const invalid = await expandPagePaths(broken).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect((invalid as { code: string }).code).toBe("REX202");
+  });
+
   it("strips every hydration artefact from a server-rendered document", () => {
     const document = [
       "<!doctype html><html><head>",

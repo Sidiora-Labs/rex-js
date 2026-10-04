@@ -16,15 +16,19 @@ Every error Rex raises is a `RexError` carrying a code, a message naming the fil
 | [REX112](https://rex.sidioralabs.com/errors/REX112) | Invalid config server | Set server to a function from the app bundle to a fetch app, such as (app) => createRexServer({ registry: app.registry, ledger, actor }). |
 | [REX113](https://rex.sidioralabs.com/errors/REX113) | Invalid config render | Set render to { default: "ssr" \| "csr" \| "ssg" \| "static" }. |
 | [REX114](https://rex.sidioralabs.com/errors/REX114) | Invalid config budgets | Set budgets.core, budgets.client and budgets.page to positive numbers of gzipped kilobytes. |
-| [REX115](https://rex.sidioralabs.com/errors/REX115) | Invalid config security | Set security to { csp: "strict" \| "report" \| "off", origins: ["https://example.com"], headers?: { name: value }, secretNames?: ["NAME"] }. |
-| [REX116](https://rex.sidioralabs.com/errors/REX116) | Invalid config i18n | Set i18n to { locales: ["en", ...], default: one of the locales, routing: "prefix" \| "none" }. |
-| [REX117](https://rex.sidioralabs.com/errors/REX117) | Invalid config images | Set images to { sizes: positive integer widths, formats: a list of avif, webp, jpeg and png }. |
-| [REX118](https://rex.sidioralabs.com/errors/REX118) | Invalid config fonts | Set fonts to a list of { family, src, weight?, style?, preload? } with src a URL or a path starting with /. |
+| [REX115](https://rex.sidioralabs.com/errors/REX115) | Invalid config security | Set security to { csp: "strict" \| "report" \| "off", origins: ["https://example.com"], headers?: { name: value }, secretNames?: ["NAME"], forwarded?: true or false }. |
+| [REX116](https://rex.sidioralabs.com/errors/REX116) | Invalid config i18n | Set i18n to { locales: ["en", ...], default: one of the locales, routing: "prefix" \| "none", direction?: "ltr" \| "rtl" or { locale: "ltr" \| "rtl" } }. |
+| [REX117](https://rex.sidioralabs.com/errors/REX117) | Invalid config images | Set images to { sizes: positive integer widths, formats: a list of avif, webp, jpeg and png, remote: a list of http(s) origins or URL prefixes ending with / }. |
+| [REX118](https://rex.sidioralabs.com/errors/REX118) | Invalid config fonts | Set fonts to a list of { family, src, weight?, style?, preload?, variable?: a CSS custom property such as --font-sans, fallback?: a local font such as Arial } with src a URL or a path starting with /. |
 | [REX119](https://rex.sidioralabs.com/errors/REX119) | Invalid config telemetry | Set telemetry to { tracer?: an OpenTelemetry tracer, logger?: { debug, info, warn, error } }. |
 | [REX120](https://rex.sidioralabs.com/errors/REX120) | Invalid config ui | Set ui to "designx" or "none". |
 | [REX121](https://rex.sidioralabs.com/errors/REX121) | Invalid config client | Set client to { apiOrigin?: an http(s) origin such as https://api.example.com }. |
-| [REX122](https://rex.sidioralabs.com/errors/REX122) | Invalid config flag | Set compiler, devtools and tailwind to true or false. |
+| [REX122](https://rex.sidioralabs.com/errors/REX122) | Invalid config flag | Set compiler, devtools and tailwind to true or false, and prefetch to "hover", "viewport" or "none". |
 | [REX123](https://rex.sidioralabs.com/errors/REX123) | Invalid config check | Set check to { tokens?: { colors?, spacing?, classes? } } with each allow list a list of strings. |
+| [REX124](https://rex.sidioralabs.com/errors/REX124) | Invalid config site | Set site to { origin?: an http(s) origin such as https://example.com, name?, description?, image?: a path starting with / or an http(s) URL, titleTemplate?: a string holding {title} once such as "{title} \| Docs" }. |
+| [REX125](https://rex.sidioralabs.com/errors/REX125) | Invalid config env | Set env to { client?: { VITE_NAME: schema }, server?: { NAME: schema } } written with the rex/schema field helpers; client keys start with VITE_, server keys never do and no key is in both. |
+| [REX126](https://rex.sidioralabs.com/errors/REX126) | Invalid config redirects | Set redirects to a list of { source: a route such as /old/:slug, destination: a route using only the source params or an http(s) URL, status?: 301, 302, 307 or 308 } with each source listed once. |
+| [REX127](https://rex.sidioralabs.com/errors/REX127) | Invalid config deploy | Set deploy to { host: "node" \| "bun" \| "deno" \| "docker" \| "deno-deploy" \| "cloudflare" \| "vercel" \| "netlify" \| "github-pages" \| "static", runtime?: "node" \| "edge" (vercel only) }. |
 
 ## REX2xx Declarations
 
@@ -32,7 +36,7 @@ Every error Rex raises is a `RexError` carrying a code, a message naming the fil
 | --- | --- | --- |
 | [REX200](https://rex.sidioralabs.com/errors/REX200) | Invalid page render mode | Set render to "ssr", "csr", "ssg" or "static", or leave it out to use the app default. |
 | [REX201](https://rex.sidioralabs.com/errors/REX201) | Invalid page revalidate | Set revalidate to a positive whole number of seconds on a page with render "ssg", or remove it. |
-| [REX202](https://rex.sidioralabs.com/errors/REX202) | Invalid page paths | Set paths to a function returning the params of every page to prerender, on a page with render "ssg" or "static" and route params. |
+| [REX202](https://rex.sidioralabs.com/errors/REX202) | Invalid page paths | Set paths to a function returning the params of every page to prerender, or to { action: a read action, map: (output) => params[] }, on a page with render "ssg" or "static" and route params. |
 | [REX203](https://rex.sidioralabs.com/errors/REX203) | Invalid page loader | Map each camelCase loader name to a read action or to { action: readAction, input: (params) => input }. |
 | [REX204](https://rex.sidioralabs.com/errors/REX204) | Invalid page cache | Set cache to { staleTime: milliseconds } with a whole number of zero or more. |
 | [REX205](https://rex.sidioralabs.com/errors/REX205) | Invalid page transition | Set transition to "view" or "none". |
@@ -55,6 +59,12 @@ Every error Rex raises is a `RexError` carrying a code, a message naming the fil
 | [REX222](https://rex.sidioralabs.com/errors/REX222) | Page names an unregistered action | Register the action in app/actions or remove it from the page actions list. |
 | [REX223](https://rex.sidioralabs.com/errors/REX223) | Page names an unknown page | Point recovery and chrome.back at the id of a registered page. |
 | [REX224](https://rex.sidioralabs.com/errors/REX224) | Registered value is not a complete declaration | Register only values returned by entity(), action(), page(), policy() and flow(). |
+| [REX225](https://rex.sidioralabs.com/errors/REX225) | Invalid page chrome | Set chrome.description to a non-empty string, chrome.image to a path starting with / or an http(s) URL, chrome.frame to a camelCase export of the frames map, chrome.order to a whole number and chrome.icon to a kebab-case icon name; {param} placeholders in title and description name declared params and chrome.back never forms a cycle. |
+| [REX226](https://rex.sidioralabs.com/errors/REX226) | Invalid page islands | Set islands to { region: "load" \| "idle" \| "visible" \| "never" } naming only regions the page declares, and keep at least one hydrated region on a page whose actions have shortcuts. |
+| [REX227](https://rex.sidioralabs.com/errors/REX227) | Invalid action HTTP endpoint | Set http to { method: "GET" \| "POST", path: a path outside /rex such as /tokens.json, contentType?, csrf?: false on POST only }; GET needs a read action and no two endpoints or page routes share a path. |
+| [REX228](https://rex.sidioralabs.com/errors/REX228) | Invalid action cache | Set cache to { maxAge: a positive whole number of seconds, scope?: "shared" \| "actor" \| "locale" } on a read action only. |
+| [REX229](https://rex.sidioralabs.com/errors/REX229) | Invalid action optimistic update | Set optimistic to { name: (current, input) => next } on a mutating action, keying each update by a name its invalidates lists and that names a loader or a read action. |
+| [REX230](https://rex.sidioralabs.com/errors/REX230) | Invalid not-found page or fallback | Declare the not-found page as page("not-found", { route: "/404", chrome: { nav: false } }), keep /404 for it alone, and set fallback to "render" or "not-found" only on a page with paths. |
 
 ## REX3xx Runtime
 
@@ -95,6 +105,7 @@ Every error Rex raises is a `RexError` carrying a code, a message naming the fil
 | [REX332](https://rex.sidioralabs.com/errors/REX332) | Value rejected by its schema | Pass a value the schema accepts; the message lists each issue with the path of the field it concerns. |
 | [REX333](https://rex.sidioralabs.com/errors/REX333) | Flow has no pending approval | Decide only on a flow instance that is paused at an approval gate; the flow status shows the pending gate, and a gate is decided once. |
 | [REX334](https://rex.sidioralabs.com/errors/REX334) | Actor may not decide the approval gate | Decide the gate as an actor its approvers policy allows; the error reason names the missing permission or condition. |
+| [REX335](https://rex.sidioralabs.com/errors/REX335) | Page failed to render | Fix the throw in the page's view, states or a region outside its RegionBoundary; the page renders its RecoverableError with a retry until then. |
 
 ## REX4xx Server and build
 
@@ -113,6 +124,7 @@ Every error Rex raises is a `RexError` carrying a code, a message naming the fil
 | [REX441](https://rex.sidioralabs.com/errors/REX441) | Secret referenced by client code | Read secrets only in action handlers or app/server; expose public values to the client through import.meta.env with the VITE_ prefix. |
 | [REX442](https://rex.sidioralabs.com/errors/REX442) | Action handler called in the browser | Invoke actions through useAct, ActionForm or the RPC client; client builds replace action handlers because handlers run only on the server. |
 | [REX450](https://rex.sidioralabs.com/errors/REX450) | Runtime not available for the adapter | Run the bun adapter under Bun and the deno adapter under Deno, or pick the matching rex build --target. |
+| [REX451](https://rex.sidioralabs.com/errors/REX451) | Server environment invalid or missing | Set the named key in the server environment (process.env, the .env files or the host bindings) to a value the env.server schema in rex.config.ts accepts. |
 | [REX460](https://rex.sidioralabs.com/errors/REX460) | App folder layout is invalid | Keep the app under app/ with one folder per page in app/pages named after its page id (lowercase letters, digits, dot and dash) holding page.ts, view.tsx and states.tsx. |
 | [REX461](https://rex.sidioralabs.com/errors/REX461) | Invalid Vite client manifest | Build the client with rex build, which writes the Vite manifest with exactly one entry chunk to dist/client/.vite/manifest.json. |
 | [REX462](https://rex.sidioralabs.com/errors/REX462) | Invalid rex:app module | Export exactly one declaration of the folder's kind from each app module, give view, state, region and overlay modules a default export and name each page folder after its page id. |

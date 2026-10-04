@@ -3,6 +3,7 @@ import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts
 import { RexDeclarationOptionError, RexError, errorDetail } from "./errors.ts";
 import { isValidName } from "./ids.ts";
 import { isPredicate, type Predicate } from "./policy.ts";
+import { DEFAULT_DENSITY, REX_RPC_PREFIX, isRexDensity, type RexDensity } from "./protocol.ts";
 import type { JsonSchema } from "./schema.ts";
 import {
   isStandardSchema,
@@ -123,8 +124,80 @@ export interface ActionJsonSchema {
   readonly output: JsonSchema | null;
 }
 
+export interface RexServerEnv {
+  readonly [key: string]: unknown;
+}
+
 export interface ActionContext {
   readonly actor: Actor;
+  readonly env: RexServerEnv | null;
+  readonly locale: string | null;
+  readonly density: RexDensity;
+}
+
+export interface ActionInvocation {
+  readonly actor: Actor;
+  readonly env?: RexServerEnv | null;
+  readonly locale?: string | null;
+  readonly density?: RexDensity;
+}
+
+export const ACTION_HTTP_METHODS = ["GET", "POST"] as const;
+
+export type ActionHttpMethod = (typeof ACTION_HTTP_METHODS)[number];
+
+export interface ActionHttpConfig {
+  readonly method: ActionHttpMethod;
+  readonly path: string;
+  readonly contentType?: string;
+  readonly csrf?: boolean;
+}
+
+export interface ActionHttp {
+  readonly method: ActionHttpMethod;
+  readonly path: string;
+  readonly contentType: string | null;
+  readonly csrf: boolean;
+}
+
+export const ACTION_CACHE_SCOPES = ["shared", "actor", "locale"] as const;
+
+export type ActionCacheScope = (typeof ACTION_CACHE_SCOPES)[number];
+
+export const DEFAULT_ACTION_CACHE_SCOPE: ActionCacheScope = "actor";
+
+export interface ActionCacheConfig {
+  readonly maxAge: number;
+  readonly scope?: ActionCacheScope;
+}
+
+export interface ActionCache {
+  readonly maxAge: number;
+  readonly scope: ActionCacheScope;
+}
+
+export type OptimisticUpdate<In = unknown> = (current: unknown, input: In) => unknown;
+
+export type ActionOptimistic<In = unknown> = Readonly<Record<string, OptimisticUpdate<In>>>;
+
+const HTTP_PATH_SEGMENT = /^[A-Za-z0-9._~-]+$/;
+const CONTENT_TYPE = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+(?:\s*;.*)?$/i;
+const REX_PATH_PREFIX = REX_RPC_PREFIX.slice(0, REX_RPC_PREFIX.indexOf("/", 1));
+
+export function httpPathProblem(path: unknown): string | null {
+  if (typeof path !== "string" || !path.startsWith("/") || path.startsWith("//")) {
+    return "must be a path starting with /";
+  }
+  if (path === REX_PATH_PREFIX || path.startsWith(`${REX_PATH_PREFIX}/`)) {
+    return `must not be under ${REX_PATH_PREFIX}, which Rex reserves`;
+  }
+  if (path === "/") return "must name a resource, not the site root";
+  for (const segment of path.slice(1).split("/")) {
+    if (!HTTP_PATH_SEGMENT.test(segment) || segment === "." || segment === "..") {
+      return `segment "${segment}" must be letters, digits, dot, dash, underscore or tilde`;
+    }
+  }
+  return null;
 }
 
 export interface ActionConfig<I extends StandardSchemaV1, O extends StandardSchemaV1> {
@@ -137,6 +210,9 @@ export interface ActionConfig<I extends StandardSchemaV1, O extends StandardSche
   readonly invalidates?: readonly string[];
   readonly form?: ActionFormConfig;
   readonly jsonSchema?: ActionJsonSchemaConfig;
+  readonly http?: ActionHttpConfig;
+  readonly cache?: ActionCacheConfig;
+  readonly optimistic?: ActionOptimistic<StandardInferOutput<I>>;
   readonly handler: (
     input: StandardInferOutput<I>,
     ctx: ActionContext,
@@ -160,9 +236,12 @@ export interface ActionDeclaration<
   readonly invalidates: readonly string[];
   readonly form: ActionForm | null;
   readonly jsonSchema: ActionJsonSchema | null;
+  readonly http: ActionHttp | null;
+  readonly cache: ActionCache | null;
+  readonly optimistic: ActionOptimistic | null;
   handler(
     input: StandardInferOutput<I>,
-    ctx: ActionContext,
+    ctx: ActionInvocation,
   ): StandardInferInput<O> | Promise<StandardInferInput<O>>;
 }
 
@@ -185,9 +264,30 @@ const ACTION_KEYS = new Set([
   "invalidates",
   "form",
   "jsonSchema",
+  "http",
+  "cache",
+  "optimistic",
   "handler",
 ]);
 const FORM_KEYS = new Set(["redirect", "confirmTitle"]);
+const HTTP_KEYS = new Set(["method", "path", "contentType", "csrf"]);
+const CACHE_KEYS = new Set(["maxAge", "scope"]);
+
+export function actionContext(invocation: ActionInvocation): ActionContext {
+  const density = invocation.density ?? DEFAULT_DENSITY;
+  if (!isRexDensity(density)) {
+    throw new RexError(
+      "REX321",
+      `action context density "${String(density)}" is not a Rex density`,
+    );
+  }
+  return Object.freeze({
+    actor: invocation.actor,
+    env: invocation.env ?? null,
+    locale: invocation.locale ?? null,
+    density,
+  });
+}
 const JSON_SCHEMA_KEYS = new Set(["input", "output"]);
 
 export function action<
@@ -199,7 +299,11 @@ export function action<
   const fail = (field: string, problem: string): never => {
     throw new RexDeclarationError("action", id, field, problem);
   };
-  const reject = (code: "REX207" | "REX208", field: string, problem: string): never => {
+  const reject = (
+    code: "REX207" | "REX208" | "REX227" | "REX228" | "REX229",
+    field: string,
+    problem: string,
+  ): never => {
     throw new RexDeclarationOptionError(code, { declaration: "action", id, field, problem });
   };
 
@@ -291,6 +395,81 @@ export function action<
     });
   }
 
+  let http: ActionHttp | null = null;
+  if (config.http !== undefined) {
+    if (!isPlainObject(config.http as unknown)) reject("REX227", "http", "must be an object");
+    for (const property of Object.keys(config.http)) {
+      if (!HTTP_KEYS.has(property)) {
+        reject("REX227", `http.${property}`, "is not one of method, path, contentType, csrf");
+      }
+    }
+    const { method, path, contentType, csrf } = config.http;
+    if (!(ACTION_HTTP_METHODS as readonly unknown[]).includes(method)) {
+      reject("REX227", "http.method", `must be one of ${ACTION_HTTP_METHODS.join(", ")}`);
+    }
+    if (method === "GET" && config.effect !== "read") {
+      reject("REX227", "http.method", "GET is only allowed on a read action");
+    }
+    const pathProblem = httpPathProblem(path);
+    if (pathProblem !== null) reject("REX227", "http.path", pathProblem);
+    if (
+      contentType !== undefined &&
+      (typeof contentType !== "string" || !CONTENT_TYPE.test(contentType))
+    ) {
+      reject("REX227", "http.contentType", "must be a media type such as application/xml");
+    }
+    if (csrf !== undefined) {
+      if (typeof csrf !== "boolean") reject("REX227", "http.csrf", "must be true or false");
+      if (method !== "POST") reject("REX227", "http.csrf", "only applies to a POST endpoint");
+    }
+    http = Object.freeze({
+      method,
+      path,
+      contentType: contentType ?? null,
+      csrf: csrf ?? true,
+    });
+  }
+
+  let cache: ActionCache | null = null;
+  if (config.cache !== undefined) {
+    if (config.effect !== "read") reject("REX228", "cache", "is only allowed on a read action");
+    if (!isPlainObject(config.cache as unknown)) reject("REX228", "cache", "must be an object");
+    for (const property of Object.keys(config.cache)) {
+      if (!CACHE_KEYS.has(property)) {
+        reject("REX228", `cache.${property}`, "is not one of maxAge, scope");
+      }
+    }
+    const { maxAge, scope } = config.cache;
+    if (!Number.isInteger(maxAge) || maxAge <= 0) {
+      reject("REX228", "cache.maxAge", "must be a positive whole number of seconds");
+    }
+    if (scope !== undefined && !(ACTION_CACHE_SCOPES as readonly unknown[]).includes(scope)) {
+      reject("REX228", "cache.scope", `must be one of ${ACTION_CACHE_SCOPES.join(", ")}`);
+    }
+    cache = Object.freeze({ maxAge, scope: scope ?? DEFAULT_ACTION_CACHE_SCOPE });
+  }
+
+  let optimistic: ActionOptimistic | null = null;
+  if (config.optimistic !== undefined) {
+    if (config.effect === "read") {
+      reject("REX229", "optimistic", "is only allowed on a mutating action");
+    }
+    if (!isPlainObject(config.optimistic as unknown)) {
+      reject("REX229", "optimistic", "must map invalidated names to update functions");
+    }
+    const updates: Record<string, OptimisticUpdate> = {};
+    for (const [name, update] of Object.entries(config.optimistic)) {
+      if (!invalidates.includes(name)) {
+        reject("REX229", `optimistic.${name}`, `names "${name}", which invalidates does not list`);
+      }
+      if (typeof update !== "function") {
+        reject("REX229", `optimistic.${name}`, "must be a function (current, input) => next");
+      }
+      updates[name] = update as OptimisticUpdate;
+    }
+    optimistic = Object.freeze(updates);
+  }
+
   const handler = config.handler;
   return Object.freeze({
     kind: "action",
@@ -305,8 +484,11 @@ export function action<
     invalidates: Object.freeze([...new Set(invalidates)]),
     form,
     jsonSchema,
-    handler(value: StandardInferOutput<I>, ctx: ActionContext) {
-      return handler(value, ctx);
+    http,
+    cache,
+    optimistic,
+    handler(value: StandardInferOutput<I>, ctx: ActionInvocation) {
+      return handler(value, actionContext(ctx));
     },
   });
 }

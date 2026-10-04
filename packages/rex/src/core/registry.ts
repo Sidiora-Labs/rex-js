@@ -2,6 +2,7 @@ import type { AnyAction } from "./action.ts";
 import { RexDeclarationError } from "./entity.ts";
 import { RexError } from "./errors.ts";
 import type { AnyEntity } from "./entity.ts";
+import { NOT_FOUND_PAGE_ID, type AnyPage } from "./page.ts";
 import type { AnyPolicy } from "./policy.ts";
 
 export interface RegistryKinds {
@@ -53,6 +54,45 @@ export function compareIds(a: { readonly id: string }, b: { readonly id: string 
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
+function pageProblem(code: "REX225" | "REX230", page: AnyPage, problem: string): RexError {
+  return new RexError(code, `registry: page "${page.id}" ${problem}`);
+}
+
+export function validatePageSet(pages: readonly AnyPage[]): void {
+  const notFound = pages.find((declared) => declared.id === NOT_FOUND_PAGE_ID);
+  if (notFound !== undefined) {
+    if (notFound.policy.kind !== "always") {
+      throw pageProblem(
+        "REX230",
+        notFound,
+        "is the reserved not-found page and must keep policy always() so every actor sees it",
+      );
+    }
+    for (const declared of pages) {
+      if (declared.recovery === NOT_FOUND_PAGE_ID) {
+        throw pageProblem("REX230", declared, `names the not-found page as its recovery page`);
+      }
+      if (declared.chrome.back === NOT_FOUND_PAGE_ID) {
+        throw pageProblem("REX230", declared, `names the not-found page as chrome.back`);
+      }
+    }
+  }
+  const frames = new Map<string, string>();
+  for (const declared of pages) {
+    const frame = declared.chrome.frame;
+    if (typeof frame !== "string") continue;
+    const known = frames.get(frame.toLowerCase());
+    if (known !== undefined && known !== frame) {
+      throw pageProblem(
+        "REX225",
+        declared,
+        `names chrome.frame "${frame}" while another page names "${known}"; frame names differ by case only`,
+      );
+    }
+    frames.set(frame.toLowerCase(), frame);
+  }
+}
+
 export function createRegistry(): Registry {
   const byKind = new Map<string, Map<string, AnyDeclaration>>(
     DECLARATION_KINDS.map((kind) => [kind, new Map()]),
@@ -99,6 +139,7 @@ export function createRegistry(): Registry {
         lists[LIST_NAMES[kind]] = Object.freeze(sorted);
         indexes.set(kind, new Map(sorted.map((declaration) => [declaration.id, declaration])));
       }
+      validatePageSet(lists.pages as unknown as readonly AnyPage[]);
       const find = (kind: string, id: string) => indexes.get(kind)?.get(id);
       return Object.freeze({
         ...lists,

@@ -7,3 +7,43 @@ symbol = "rex build --target option listing"
 observed = "Task 0.2 lets hostFor pick the build target from deploy.host when --target is absent, so rex build --target no longer carries the commander default node; cli/cli.test.ts line 386, outside the 0.2 touches and outside its verify_cmd, still expects { long: --target, value: target, default: node } in the rex build listing; evidence: revision 9f91ac13fc131e15e820505ccdb94cc690d9fb32 plus the 0.2 change, command pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/outputs.test.ts src/cli/hosts src/cli/commands/build.test.ts src/cli/static-target.test.ts src/core/store.memory.test.ts src/core/schema.test.ts src/store src/schema src/zod-boundary.test.ts src/size.test.ts && pnpm -C examples/demo exec rex build --target static --no-check, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-parity-0.2-private/logs/0.2-verify.log."
 assumption = "The feature manager or the task owning cli/cli.test.ts updates that listing expectation to { long: --target, value: target } with no default, as build.test.ts now asserts."
 severity = "contradiction"
+
+[qualification.011]
+task = "0.1"
+file = "packages/rex/src/manifest/build.ts"
+symbol = "validateInvalidates (action.invalidates against loaders, read actions and page ids)"
+observed = "The strict check of do_2 throws on packages/rex/src/manifest/fixtures/app send invalidates [tokens], whose AGENTS.md line src/manifest/scan.test.ts asserts verbatim, and on src/client/act.test.tsx rename invalidates [balance], a custom useQuery key; neither test is in the 0.1 touches and scan.test.ts runs in the 0.1 verify_cmd, so buildManifest refuses only a name that is a mutating action (REX212) and keeps other names; optimistic keys are checked strictly (REX229)."
+assumption = "The full check lands once the owner of scan.test.ts and act.test.tsx (3.2 owns act.test.tsx) moves those fixtures to loader, read action or page names; validateInvalidates then also refuses an unknown name."
+severity = "minor"
+
+[qualification.012]
+task = "0.1"
+file = "packages/rex/src/manifest/scan.ts"
+symbol = "buildAppManifest and vite/app-module.ts manifest emission"
+observed = "buildManifest accepts site, redirects, deploy and i18n and writes app.site, redirects, deploy { host, target } and i18n, but rex manifest (manifest/scan.ts) and the rex:app module (vite/app-module.ts) still pass only { app }, so the demo manifest and AGENTS.md list no locales, redirects or deploy host; neither file is in the 0.1 touches."
+assumption = "The task that reads rex.config in every environment (2.5 config-file) or the demo task passes resolveOptions(config) site, redirects, deploy and i18n to buildManifest in both callers and regenerates the demo manifest."
+severity = "minor"
+
+[qualification.013]
+task = "0.1"
+file = "docs/reference.md"
+symbol = "tools/freshness.mjs exports check for @sidioralabs/rex/errors"
+observed = "freshness discovers package exports from package.json, so the new ./errors export needs a docs/reference.md section (node tools/freshness.mjs --write-reference) and a docs/api page (node tools/docs-api.mjs); both are generated files outside the 0.1 touches and the 0.3 type changes stale docs/api anyway; tools/freshness.mjs itself needed no entry."
+assumption = "The wave gate regenerates docs/reference.md and docs/api once on the merged wave revision."
+severity = "minor"
+
+[qualification.014]
+task = "0.1"
+file = "packages/rex/src/check/runtime.ts"
+symbol = "pageTarget"
+observed = "rex check --runtime takes params from declared.paths() only; a page declaring paths { action, map } keeps paths null and its action form in pathsAction, so the runtime check reports it needs params; runtime.ts is outside the 0.1 touches."
+assumption = "The content collection task (2.3) or the runtime check owner runs pathsAction through createActionLoaderRunner the way vite/prerender.ts expandPagePaths does."
+severity = "minor"
+
+[qualification.015]
+task = "0.1"
+file = "packages/rex/src/core/config.ts"
+symbol = "ResolvedSecurityConfig and ResolvedFontConfig"
+observed = "server/middleware/security.ts builds ResolvedSecurity and cli/load.test.ts builds ResolvedFont as literals outside the 0.1 touches, so security.forwarded and fonts[].variable and fallback resolve on the subtypes ResolvedSecurityConfig and ResolvedFontConfig that ResolvedRexOptions carries; cli/load.ts fontSpec still drops variable and fallback on the way to the Vite plugin."
+assumption = "1.3 (forwarded origin) reads options.security.forwarded and 2.6 (fonts) carries variable and fallback through fontSpec and FontSpec, which already accepts both."
+severity = "minor"

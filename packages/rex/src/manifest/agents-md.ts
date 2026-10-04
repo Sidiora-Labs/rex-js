@@ -133,6 +133,71 @@ export function renderAgentsMd(manifest: Manifest): string {
       manifest.flows.map((entry) => [`\`${entry.id}\``, list(entry.steps.map(describeStep))]),
     ),
     "",
+    "## Endpoints",
+    "",
+    ...table(
+      ["Method", "Path", "Action", "Content type", "Policy"],
+      manifest.actions
+        .filter((entry) => entry.http !== null)
+        .map((entry) => {
+          const http = entry.http as NonNullable<typeof entry.http>;
+          return [
+            http.method,
+            `\`${cell(http.path)}\``,
+            `\`${entry.id}\``,
+            http.contentType === null ? "application/json" : cell(http.contentType),
+            cell(describePredicate(entry.policy)),
+          ];
+        }),
+    ),
+    "",
+    "## Islands",
+    "",
+    ...table(
+      ["Page", "Region", "Hydration"],
+      manifest.pages.flatMap((entry) =>
+        Object.entries(entry.islands).map(([region, mode]) => [
+          `\`${entry.id}\``,
+          `\`${region}\``,
+          mode,
+        ]),
+      ),
+    ),
+    "",
+    "## Redirects",
+    "",
+    ...table(
+      ["Source", "Destination", "Status"],
+      manifest.redirects.map((entry) => [
+        `\`${cell(entry.source)}\``,
+        `\`${cell(entry.destination)}\``,
+        String(entry.status),
+      ]),
+    ),
+    "",
+    "## Locales",
+    "",
+    ...(manifest.i18n === null
+      ? ["_None._"]
+      : [
+          `Routing: ${manifest.i18n.routing}. Switch with \`?locale=<locale>\`.`,
+          "",
+          ...table(
+            ["Locale", "Default", "Direction"],
+            manifest.i18n.locales.map((locale) => [
+              `\`${cell(locale)}\``,
+              locale === manifest.i18n?.default ? "yes" : "no",
+              manifest.i18n?.direction[locale] ?? "ltr",
+            ]),
+          ),
+        ]),
+    "",
+    "## Deploy",
+    "",
+    manifest.deploy === null
+      ? "_None._"
+      : `Host \`${manifest.deploy.host}\`, build target \`${manifest.deploy.target}\`.`,
+    "",
     "## Folder convention",
     "",
     ...FOLDER_CONVENTION.map((line) => `- ${line}`),

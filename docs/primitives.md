@@ -86,8 +86,21 @@ interface ActionConfig<I, O> {
   handler: (input, ctx: ActionContext) => output | Promise<output>;
 }
 
-interface ActionContext { actor: Actor }
+interface ActionContext {
+  actor: Actor;
+  env: RexServerEnv | null;     // the validated server env; null in flows and direct calls
+  locale: string | null;        // the request locale when the app registers i18n
+  density: "default" | "agent"; // the request density
+}
 ```
+
+| Field (0.3)  | Value                                                                                                        | Validated (code)                                                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `http`       | `{ method: "GET" \| "POST", path, contentType?, csrf? }`; declaration `ActionHttp` (`csrf` defaults to true) | method, a path outside `/rex`, a media type, `csrf` only on POST, GET only on a read action (REX227); `buildManifest` rejects a path shared with another action or a page route (REX227) |
+| `cache`      | `{ maxAge, scope? }`; declaration `ActionCache` (`scope` defaults to `actor`)                                | read actions only, `maxAge` a positive whole number of seconds, `scope` one of `shared`, `actor`, `locale` (REX228)                                                                      |
+| `optimistic` | `{ [name]: (current, input) => next }`                                                                       | mutating actions only, each key listed in `invalidates` (REX229); `buildManifest` requires the key to name a loader or read action (REX229)                                              |
+
+`invalidates` names page loaders, read actions or page ids; `buildManifest` throws REX212 when a name is a mutating action. The handler always receives a complete `ActionContext`: the router fills it from the request context, flows pass `env: null`, `locale: null` and the default density, and a direct `declared.handler(input, { actor })` call gets the same defaults (`actionContext`).
 
 The declaration adds `label` and `shortcut` as `string | null` and `invalidates` (deduplicated), and keeps the declared `input` and `output` schemas. `buildManifest` derives their JSON Schema, or uses a declared `jsonSchema` override, and throws REX210 naming the action when neither is possible.
 
@@ -119,6 +132,23 @@ interface PageConfig {
   transition?: "view" | "none";      // View Transitions on navigation; default "none"
 }
 ```
+
+| Field (0.3)          | Value                                                                                                  | Validated (code)                                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `route` rest segment | `:name*` or `:name*?` as the last segment; `params` declares it as an array of strings                 | last segment only (REX220); a required array, or one accepting `[]` when optional (REX213)                                                     |
+| `chrome.title`       | a literal, a `msg:` key or a template with `{param}` placeholders                                      | each placeholder names a declared param (REX225)                                                                                               |
+| `chrome.description` | the same forms as `title`                                                                              | non-empty, placeholders name declared params (REX225)                                                                                          |
+| `chrome.image`       | a path starting with `/` or an http(s) URL                                                             | REX225                                                                                                                                         |
+| `chrome.frame`       | the camelCase name of an export of the `frames` map in the `ui.components` module                      | REX225; names differing only by case across pages are refused when the registry freezes                                                        |
+| `chrome.order`       | a whole number ordering the derived navigation                                                         | REX225; `buildManifest` refuses a `chrome.back` cycle (REX225)                                                                                 |
+| `chrome.icon`        | a kebab-case icon name                                                                                 | REX225                                                                                                                                         |
+| `islands`            | `{ [region]: "load" \| "idle" \| "visible" \| "never" }`                                               | declared regions only, the four modes, not every region `never` on a page with a shortcut (REX226)                                             |
+| `prefetch`           | `"hover" \| "viewport" \| "none"`; default from `rex.config` `prefetch`                                | REX213                                                                                                                                         |
+| `paths`              | a function, or `{ action: readAction, map: (output) => params[] }` run through the router at prerender | REX202; the declaration keeps the function in `paths` and the action form in `pathsAction`                                                     |
+| `fallback`           | `"render" \| "not-found"` for a path outside `paths`                                                   | only with `paths` (REX230)                                                                                                                     |
+| id `not-found`       | the reserved 404 page: `route: "/404"`, `chrome.nav: false`                                            | REX230; `/404` belongs to it alone, and the registry refuses it with a policy other than `always()` or as a `recovery` or `chrome.back` target |
+
+`resolveChromeText(template, params)` fills `{param}` placeholders without React (arrays join with `/`, a missing value keeps its placeholder, `msg:` keys are left to the message formatter); the sidecar `document` field and the text rendering carry the resolved title and description.
 
 Chrome defaults: `header: true`, `nav: true`, `back: null`, and a title derived from the id (`titleFromId`: `send-money` becomes "Send money"). `recovery` and `chrome.back` must name a different page; `buildManifest` checks that the target exists. The declaration adds `routeParams` and `states` in canonical order and keeps the declared `params` schema; `buildManifest` derives its JSON Schema. `PageParams<P>`, `PageParamsInput<P>`, `PageStates<P>` and `PageStatesModule<P>` extract types; `PageStatesModule` is the type `states.tsx` must satisfy.
 
@@ -232,18 +262,32 @@ Raw input is never stored; `digest(input)` hashes `canonicalJson(input)` (keys s
 
 ## The manifest
 
-`buildManifest(source, { app? })` from `@sidioralabs/rex/manifest` turns registered declarations into a `Manifest` (`packages/rex/src/manifest/types.ts`):
+`buildManifest(source, { app?, render?, site?, redirects?, deploy?, i18n? })` from `@sidioralabs/rex/manifest` turns registered declarations into a `Manifest` (`packages/rex/src/manifest/types.ts`):
 
 ```ts
 interface Manifest {
   version: 1;
-  app: { name: string };
+  app: { name: string; site?: { origin; name; description; image; titleTemplate } };
   entities: { id; key; fields: { name; kind; ref; required }[]; schema }[];
-  actions: { id; label; shortcut; effect; invalidates; policy; form; input; output }[];
+  actions: {
+    id;
+    label;
+    shortcut;
+    effect;
+    invalidates;
+    policy;
+    form;
+    http;
+    cache;
+    optimistic: string[];
+    input;
+    output;
+  }[];
   pages: {
     id;
     route;
     routeParams;
+    restParam: { name; optional } | null;
     params;
     policy;
     recovery;
@@ -251,10 +295,14 @@ interface Manifest {
     render;
     revalidate;
     paths;
+    pathsAction: string | null;
+    fallback;
     loaders: { name; action; input: "params" | "mapped"; invalidatedBy }[];
     cache;
     transition;
-    chrome;
+    prefetch;
+    islands: Record<string, "load" | "idle" | "visible" | "never">;
+    chrome: { header; nav; back; title; description; image; frame; order; icon };
     regions;
     overlays;
     states;
@@ -265,12 +313,34 @@ interface Manifest {
     id;
     steps: ({ kind: "action"; action } | { kind: "approval"; id; label; approvers })[];
   }[];
+  redirects: { source; destination; status }[];
+  deploy: { host; target } | null;
+  i18n: { locales; default; routing; direction } | null;
 }
 ```
+
+`app.site` is written only when `site` is passed. `buildManifest` also refuses an `invalidates` name that is a mutating action (REX212), an `http.path` shared by two actions or by a page route (REX227), a redirect source that matches a page route (REX126) and a `chrome.back` cycle (REX225). `AGENTS.md` adds the Endpoints, Islands, Redirects, Locales and Deploy sections.
 
 Every list is sorted by id, page actions are listed by id, and `stableStringify` writes keys in sorted order, so the output is deterministic. `buildManifest` throws when a page lists an unregistered action or names an unknown page in `recovery` or `chrome.back`.
 
 `rex manifest` writes the manifest to `.rex/manifest.json` and renders `AGENTS.md` from it (pages, actions, entities, policies, flows and the folder convention). `scanManifest(root)` loads the declaration files in process through a Vite dev server in middleware mode (`withModuleLoader` in `src/cli/load.ts`, `ssrLoadModule`) and wraps a failure in `ManifestScanError` (`REX500`); `writeManifest(root)` writes both files. The server serves the same manifest at `GET /rex/manifest`, and the client checks at startup that the manifest and the registry list the same pages and actions.
+
+### rex.config 0.3 fields
+
+`defineConfig` from `@sidioralabs/rex/config` validates these fields at load and `buildManifest` writes `site`, `redirects`, `deploy` and `i18n` when they are passed to it.
+
+| Field                | Value                                                                                                                  | Validated (code)                                                                                                                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `site`               | `{ origin?, name?, description?, image?, titleTemplate? }`; `titleTemplate` holds `{title}` once                       | origin an http(s) origin, image a `/` path or http(s) URL (REX124)                                                                       |
+| `redirects`          | `[{ source, destination, status? }]`; status 301, 302, 307 or 308, default 308                                         | source a route (params and a rest segment allowed), listed once; destination a route using only source params or an http(s) URL (REX126) |
+| `deploy`             | `{ host, runtime? }`; `DEPLOY_HOST_TARGETS` maps each host to one build target, `runtime` picks node or edge on vercel | one of `DEPLOY_HOSTS` (REX127)                                                                                                           |
+| `env`                | `{ client?: { VITE_NAME: schema }, server?: { NAME: schema } }` with rex/schema field helpers                          | client keys start with `VITE_`, server keys never do, each value a Standard Schema (REX125)                                              |
+| `prefetch`           | `"hover" \| "viewport" \| "none"`, default `hover`                                                                     | REX122                                                                                                                                   |
+| `security.forwarded` | `true` to read `X-Forwarded-Proto` and `X-Forwarded-Host` as the request origin; default false                         | REX115                                                                                                                                   |
+| `images.remote`      | http(s) origins or URL prefixes ending with `/` that remote `Img` sources may use                                      | REX117                                                                                                                                   |
+| `fonts[].variable`   | the CSS custom property of the family, such as `--font-sans`                                                           | REX118                                                                                                                                   |
+| `fonts[].fallback`   | the local font the metric-matched fallback face adjusts, such as `Arial`                                               | REX118                                                                                                                                   |
+| `i18n.direction`     | `"ltr" \| "rtl"` for every locale, or a map from locale to direction; default `ltr`                                    | REX116                                                                                                                                   |
 
 ## Shell components
 

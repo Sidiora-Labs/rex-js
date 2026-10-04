@@ -1,8 +1,10 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { action, type AnyAction } from "./action.ts";
 import { RexDeclarationError, entity, type AnyEntity } from "./entity.ts";
+import { RexError } from "./errors.ts";
+import { NOT_FOUND_PAGE_ID, page } from "./page.ts";
 import { always, policy, type AnyPolicy } from "./policy.ts";
-import { createRegistry } from "./registry.ts";
+import { createRegistry, validatePageSet } from "./registry.ts";
 import { id, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 
@@ -97,5 +99,43 @@ describe("createRegistry", () => {
     expectTypeOf(snapshot.entities).toEqualTypeOf<readonly AnyEntity[]>();
     expectTypeOf(snapshot.actions).toEqualTypeOf<readonly AnyAction[]>();
     expectTypeOf(snapshot.policies).toEqualTypeOf<readonly AnyPolicy[]>();
+  });
+});
+
+describe("the page set check on freeze", () => {
+  it("validates the not-found page and frame names once when the registry freezes", () => {
+    const notFound = page(NOT_FOUND_PAGE_ID, { route: "/404", chrome: { nav: false } });
+    const guarded = page(NOT_FOUND_PAGE_ID, {
+      route: "/404",
+      chrome: { nav: false },
+      policy: wallet.can("view"),
+    });
+    const recovering = page("recovering", { route: "/recovering", recovery: "not-found" });
+    const backing = page("backing", { route: "/backing", chrome: { back: "not-found" } });
+    const docs = page("docs-home", { route: "/docs", chrome: { frame: "docs" } });
+    const guide = page("guide", { route: "/guide", chrome: { frame: "docs" } });
+    const shouting = page("shouting", { route: "/shouting", chrome: { frame: "dOCS" } });
+    expect(createRegistry().register(notFound, docs, guide).freeze().pages).toHaveLength(3);
+    const codeOf = (run: () => unknown): string => {
+      try {
+        run();
+      } catch (error) {
+        expect(error).toBeInstanceOf(RexError);
+        return (error as RexError).code;
+      }
+      throw new Error("expected a RexError");
+    };
+    expect(codeOf(() => createRegistry().register(guarded, wallet).freeze())).toBe("REX230");
+    expect(codeOf(() => createRegistry().register(notFound, recovering).freeze())).toBe("REX230");
+    expect(codeOf(() => createRegistry().register(notFound, backing).freeze())).toBe("REX230");
+    expect(codeOf(() => createRegistry().register(docs, shouting).freeze())).toBe("REX225");
+  });
+
+  it("checks a page list directly with validatePageSet", () => {
+    const notFound = page(NOT_FOUND_PAGE_ID, { route: "/404", chrome: { nav: false } });
+    expect(() => validatePageSet([notFound])).not.toThrow();
+    expect(() =>
+      validatePageSet([notFound, page("lost", { route: "/lost", recovery: "not-found" })]),
+    ).toThrow(RexError);
   });
 });

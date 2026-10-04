@@ -13,7 +13,7 @@ import type { ActionEffect, AnyAction } from "../../core/action.ts";
 import type { Actor } from "../../core/actor.ts";
 import { RexError } from "../../core/errors.ts";
 import { regionAddress } from "../../core/ids.ts";
-import type { AnyPage } from "../../core/page.ts";
+import { resolveChromeText, type AnyPage, type IslandMode } from "../../core/page.ts";
 import { evaluate } from "../../core/policy.ts";
 import type { JsonSchema } from "../../core/schema.ts";
 import { escapeInlineJson } from "../../core/serialize.ts";
@@ -24,9 +24,12 @@ import {
   SIDECAR_MIME_TYPE,
   SIDECAR_VERSION,
   type InvocationRoute,
+  type TextDirection,
 } from "../../core/protocol.ts";
 import type {
   SidecarAction,
+  SidecarDocument,
+  SidecarLoader,
   SidecarOutcome,
   SidecarOverlay,
   SidecarPayload,
@@ -36,7 +39,7 @@ import type {
 import type { Manifest } from "../../manifest/types.ts";
 import { actionLabel } from "../act.ts";
 import { useActor, useManifest } from "../context.ts";
-import { useText, type TextResolver } from "../i18n/context.ts";
+import { useI18n, useText, type TextResolver } from "../i18n/context.ts";
 import { useOutcome, type Outcome } from "../outcome.ts";
 import { PageRuntimeContext, usePageQueries } from "../page.tsx";
 import { useActivePage, type PageResolution } from "../router.tsx";
@@ -349,6 +352,12 @@ export function sidecarOutcome(
   };
 }
 
+export interface SidecarLocale {
+  readonly locale: string;
+  readonly locales: readonly string[];
+  readonly direction?: TextDirection;
+}
+
 export interface SidecarSource {
   readonly manifest: Manifest;
   readonly page: AnyPage;
@@ -362,18 +371,54 @@ export interface SidecarSource {
   readonly stores?: Readonly<Record<string, unknown>>;
   readonly text?: TextResolver;
   readonly screen?: ScreenState | null;
+  readonly document?: SidecarDocument;
+  readonly locale?: SidecarLocale | null;
 }
 
 export function sidecarRegions(
   page: string,
   failures: readonly RegionFailure[],
+  islands: Readonly<Partial<Record<string, IslandMode>>> = {},
+  state: RexDataState = "ready",
+  order: readonly string[] = [],
 ): readonly SidecarRegion[] {
-  return failures.map((failure) => ({
-    id: failure.region,
-    address: regionAddress(page, failure.region),
-    state: "recoverable-error",
-    code: failure.code,
-  }));
+  const failed = new Map(failures.map((failure) => [failure.region, failure]));
+  const ids = new Set([...order.filter((region) => islands[region] !== undefined)]);
+  for (const failure of failures) ids.add(failure.region);
+  return [...ids].map((region): SidecarRegion => {
+    const failure = failed.get(region);
+    const island = islands[region];
+    return {
+      id: region,
+      address: regionAddress(page, region),
+      state: failure === undefined ? state : "recoverable-error",
+      ...(failure === undefined ? {} : { code: failure.code }),
+      ...(island === undefined ? {} : { island }),
+    };
+  });
+}
+
+export function sidecarDocument(
+  declared: AnyPage,
+  params: Readonly<Record<string, unknown>>,
+  text: TextResolver = literalText,
+): SidecarDocument {
+  const { title, description } = declared.chrome;
+  return {
+    title: text(resolveChromeText(title, params)),
+    description: description === null ? null : text(resolveChromeText(description, params)),
+    canonical: null,
+  };
+}
+
+export function sidecarLoaders(declared: AnyPage): readonly SidecarLoader[] {
+  return [...declared.loaders]
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+    .map((loader) => ({
+      name: loader.name,
+      action: loader.action.id,
+      invalidatedBy: [...loader.invalidatedBy].sort(),
+    }));
 }
 
 export function sidecarStores(stores: Readonly<Record<string, unknown>>): SidecarStores | null {
@@ -425,8 +470,16 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
     dismiss: overlay.dismiss,
   }));
   const failures = source.failures ?? [];
-  const regions = sidecarRegions(declared.id, failures);
+  const regions = sidecarRegions(
+    declared.id,
+    failures,
+    declared.islands,
+    source.state,
+    declared.regions,
+  );
   const stores = sidecarStores(source.stores ?? {});
+  const loaders = sidecarLoaders(declared);
+  const locale = source.locale ?? null;
   return {
     version: SIDECAR_VERSION,
     page: declared.id,
@@ -437,6 +490,16 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
     outcome: sidecarOutcome(source.outcome, text),
     ...(regions.length > 0 ? { regions: [...regions] } : {}),
     ...(stores === null ? {} : { stores }),
+    ...(loaders.length > 0 ? { loaders: [...loaders] } : {}),
+    document: source.document ?? sidecarDocument(declared, source.params, text),
+    ...(locale === null
+      ? {}
+      : {
+          locale: locale.locale,
+          locales: [...locale.locales],
+          ...(locale.direction === undefined ? {} : { direction: locale.direction }),
+        }),
+    ...(declared.chrome.frame === null ? {} : { frame: declared.chrome.frame }),
     ...(source.screen === undefined || source.screen === null
       ? {}
       : {
@@ -470,6 +533,12 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
   const outcome = useOutcome(resolution.page.id);
   const stores = useExposedStores();
   const text = useText();
+  const i18n = useI18n();
+  const locale = useMemo(
+    () =>
+      i18n.source === null ? null : { locale: i18n.locale, locales: i18n.source.settings.locales },
+    [i18n.source, i18n.locale],
+  );
   const screen = useContext(ScreenContext);
   return useMemo(
     () =>
@@ -486,6 +555,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
         stores,
         text,
         screen,
+        locale,
       }),
     [
       manifest,
@@ -499,6 +569,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
       stores,
       text,
       screen,
+      locale,
     ],
   );
 }

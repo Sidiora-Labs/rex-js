@@ -90,15 +90,29 @@ The payload shape is defined by `sidecarSchema` in `packages/rex/src/manifest/si
   screen?: "phone" | "tablet" | "desktop" | "wide",
   pointer?: "coarse" | "fine",
   density?: "comfortable" | "compact" | "agent",
-  regions?: Array<{ id: string, address: string, state: RexDataState, code: string }>, // regions whose error boundary caught a failure; present only when non-empty, and the page state becomes recoverable-error
+  regions?: Array<{
+    id: string,
+    address: string,
+    state: RexDataState,
+    code?: string,                  // the error code; required when state is recoverable-error
+    island?: "load" | "idle" | "visible" | "never", // the region's page.islands entry
+    optimistic?: true,              // present while an optimistic value is shown
+  }>, // regions whose error boundary caught a failure and regions listed in page.islands; present only when non-empty, and a failure turns the page state to recoverable-error
   stores?: Record<string, unknown>,  // stores declared with expose: true; omitted when there are none
-  loaders?: Array<{ name: string, action: string, invalidatedBy: string[] }>, // accepted by the schema; the runtime does not write it yet
+  loaders?: Array<{ name: string, action: string, invalidatedBy: string[], defer?: boolean }>, // the page loaders, sorted by name; omitted when the page declares none
+  document?: { title: string, description: string | null, canonical: string | null }, // the resolved document head: chrome.title and chrome.description with {param} placeholders filled and message keys resolved
+  locale?: string,                  // the active locale when the app registers i18n
+  locales?: string[],               // every configured locale; present with locale
+  direction?: "ltr" | "rtl",        // the text direction of the active locale
+  frame?: string,                   // the chrome.frame the page renders in
 }
 ```
 
+The runtime writes `document` on every page, `loaders` when the page declares loaders, `locale` and `locales` when the app registers i18n, `frame` when the page declares `chrome.frame`, and one region entry with `island` per region listed in `page.islands`. The text rendering at `/rex/pages/<id>.md` prints the same document as the Title, Description and Canonical rows and the loaders as its Loaders table.
+
 `screen`, `pointer` and `density` are present together whenever the page runs under the runtime's screen provider (every app started with `createRexEntry` or rendered by the server); they carry the same values as the `data-rex-screen`, `data-rex-pointer` and `data-rex-density` attributes on the document root and change with them. `SIDECAR_SCREEN_FIELDS` names them, and the schema rejects a payload that carries only some of the three.
 
-Additional constraints checked by the schema: an allowed action has `reason: null`, a disallowed action has a non-null reason, and action ids and overlay ids are unique. `actions` lists the page's declared actions in declaration order, followed by registered affordances such as flow approval gates. `via` is `click`, `key`, `palette`, `url` for a declared action, without `key` when the action has no shortcut; flow gate affordances list `click` and `palette`.
+Additional constraints checked by the schema: an allowed action has `reason: null`, a disallowed action has a non-null reason, action ids and overlay ids are unique, `locales` comes with `locale` and contains it, and `document.canonical` is an absolute URL. `actions` lists the page's declared actions in declaration order, followed by registered affordances such as flow approval gates. `via` is `click`, `key`, `palette`, `url` for a declared action, without `key` when the action has no shortcut; flow gate affordances list `click` and `palette`.
 
 The JSON Schema is exported as `sidecarJsonSchema` (`$id` `https://sidioralabs.com/rex/sidecar.schema.json`, title "Rex page sidecar"), and `validateSidecar(payload)` returns either `{ valid: true, payload }` or `{ valid: false, issues }`. `readSidecar(root)` parses the single sidecar element in a document and throws if there is not exactly one.
 
@@ -139,7 +153,7 @@ Disallowed actions appear in the sidecar and the palette with their reason. Thei
 
 ### Reserved query keys
 
-`RESERVED_QUERY_KEYS` in `packages/rex/src/core/protocol.ts` is `act`, `input`, `draft`, `density`. Page params with these names are not read from the query string, and `nav.href()` refuses to put a param with a reserved name into a URL. URL-bound overlays use a separate `overlay` query key (`OVERLAY_QUERY_KEY`).
+`RESERVED_QUERY_KEYS` in `packages/rex/src/core/protocol.ts` is `act`, `input`, `draft`, `density`, `locale`, `devtools`. Page params with these names are not read from the query string, and `nav.href()` refuses to put a param with a reserved name into a URL. URL-bound overlays use a separate `overlay` query key (`OVERLAY_QUERY_KEY`).
 
 ### The palette
 

@@ -1,7 +1,15 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { ActionEffect, ActionForm } from "../core/action.ts";
+import type { ActionCache, ActionEffect, ActionForm, ActionHttp } from "../core/action.ts";
+import type { DeployHost, DeployTarget, RedirectStatus } from "../core/config.ts";
 import type { OverlayBinding, OverlayDismiss } from "../core/overlay.ts";
-import type { PageDraft, PageRender, PageTransition } from "../core/page.ts";
+import type {
+  IslandMode,
+  PageDraft,
+  PageFallback,
+  PagePrefetch,
+  PageRender,
+  PageTransition,
+} from "../core/page.ts";
 import type { Predicate, PredicateJson } from "../core/policy.ts";
 import type { RexDataState } from "../core/states.ts";
 import { buildManifest } from "./build.ts";
@@ -14,7 +22,11 @@ import {
   type FlowStepSource,
   type Manifest,
   type ManifestAction,
+  type ManifestApp,
+  type ManifestDeploy,
   type ManifestFlowStep,
+  type ManifestRedirect,
+  type ManifestSite,
   type ManifestOverlay,
   type ManifestPage,
   type RexPointer,
@@ -54,10 +66,13 @@ describe("manifest types", () => {
     expect(Object.keys(manifest).sort()).toEqual([
       "actions",
       "app",
+      "deploy",
       "entities",
       "flows",
+      "i18n",
       "pages",
       "policies",
+      "redirects",
       "version",
     ]);
     expectTypeOf(manifest.version).toEqualTypeOf<1>();
@@ -75,6 +90,18 @@ describe("manifest types", () => {
     expectTypeOf<ManifestPage["render"]>().toEqualTypeOf<PageRender>();
     expectTypeOf<ManifestPage["transition"]>().toEqualTypeOf<PageTransition>();
     expectTypeOf<ManifestPage["loaders"][number]["input"]>().toEqualTypeOf<"params" | "mapped">();
+    expectTypeOf<ManifestAction["http"]>().toEqualTypeOf<ActionHttp | null>();
+    expectTypeOf<ManifestAction["cache"]>().toEqualTypeOf<ActionCache | null>();
+    expectTypeOf<ManifestAction["optimistic"]>().toEqualTypeOf<readonly string[]>();
+    expectTypeOf<ManifestPage["prefetch"]>().toEqualTypeOf<PagePrefetch | null>();
+    expectTypeOf<ManifestPage["fallback"]>().toEqualTypeOf<PageFallback | null>();
+    expectTypeOf<ManifestPage["islands"][string]>().toEqualTypeOf<IslandMode>();
+    expectTypeOf<ManifestPage["chrome"]["order"]>().toEqualTypeOf<number | null>();
+    expectTypeOf<ManifestRedirect["status"]>().toEqualTypeOf<RedirectStatus>();
+    expectTypeOf<ManifestDeploy["host"]>().toEqualTypeOf<DeployHost>();
+    expectTypeOf<ManifestDeploy["target"]>().toEqualTypeOf<DeployTarget>();
+    expectTypeOf<ManifestApp["site"]>().toEqualTypeOf<ManifestSite | undefined>();
+    expectTypeOf<ManifestSite["origin"]>().toEqualTypeOf<string | null>();
     expectTypeOf<
       Extract<ManifestFlowStep, { kind: "approval" }>["approvers"]
     >().toEqualTypeOf<PredicateJson>();

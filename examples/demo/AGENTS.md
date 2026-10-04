@@ -47,6 +47,26 @@ Invoke an action by its control (`data-rex="<page>/<action>"`), its shortcut, th
 
 _None._
 
+## Endpoints
+
+_None._
+
+## Islands
+
+_None._
+
+## Redirects
+
+_None._
+
+## Locales
+
+_None._
+
+## Deploy
+
+_None._
+
 ## Folder convention
 
 - app/pages/<page>/page.ts: the page declaration (route, params, policy, actions, chrome, regions, overlays, states); imports entities, actions and policies, never React.

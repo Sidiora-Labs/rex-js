@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import type { Hono } from "hono";
-import { buildSidecarPayload } from "../../client/agent/sidecar.tsx";
+import { buildSidecarPayload, type SidecarLocale } from "../../client/agent/sidecar.tsx";
 import { i18nFor, type TextResolver } from "../../client/i18n/context.ts";
 import { localizeHref } from "../../client/i18n/locale.ts";
 import { translate } from "../../client/i18n/messages.ts";
@@ -57,6 +57,7 @@ export interface PageTextSource {
   readonly policy: PolicyResult;
   readonly state: RexDataState;
   readonly text?: TextResolver;
+  readonly locale?: SidecarLocale | null;
 }
 
 export interface PageText {
@@ -133,10 +134,12 @@ export function renderPageText(source: PageTextSource): PageText {
     openOverlays: [],
     outcome: null,
     text,
+    locale: source.locale ?? null,
   });
+  const document = sidecar.document ?? null;
   const access = source.policy.allowed ? "allowed" : `denied: ${source.policy.reason}`;
   const lines: string[] = [
-    `# ${cell(text(declared.chrome.title))}`,
+    `# ${cell(document === null ? text(declared.chrome.title) : document.title)}`,
     "",
     ...table(
       ["Field", "Value"],
@@ -148,6 +151,15 @@ export function renderPageText(source: PageTextSource): PageText {
         ["Actor", code(actor.id)],
         ["State", code(source.state)],
         ["Access", cell(access)],
+        ["Title", document === null ? "-" : cell(document.title)],
+        [
+          "Description",
+          document === null || document.description === null ? "-" : cell(document.description),
+        ],
+        [
+          "Canonical",
+          document === null || document.canonical === null ? "-" : code(document.canonical),
+        ],
       ],
     ),
     "",
@@ -164,6 +176,22 @@ export function renderPageText(source: PageTextSource): PageText {
     );
   }
   lines.push(
+    "## Loaders",
+    "",
+    ...table(
+      ["Loader", "Action", "Input", "Invalidated by"],
+      [...declared.loaders]
+        .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+        .map((loader) => [
+          code(loader.name),
+          code(loader.action.id),
+          loader.input === null ? "params" : "mapped",
+          loader.invalidatedBy.length === 0
+            ? "-"
+            : [...loader.invalidatedBy].sort().map(code).join(", "),
+        ]),
+    ),
+    "",
     "## Regions",
     "",
     ...table(
@@ -338,6 +366,8 @@ async function pageTextFor(input: PageTextRequest): Promise<PageTextAnswer> {
     state,
     text:
       source === null || locale === null ? literal : (value) => translate(source, locale, value),
+    locale:
+      source === null || locale === null ? null : { locale, locales: source.settings.locales },
   });
   return { markdown, allowed: policy.allowed };
 }

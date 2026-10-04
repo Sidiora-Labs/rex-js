@@ -1,6 +1,11 @@
 import { toORPCError } from "@orpc/client";
 import { ORPCError, os, type Procedure } from "@orpc/server";
-import type { AnyAction } from "../core/action.ts";
+import {
+  actionContext,
+  type ActionContext,
+  type AnyAction,
+  type RexServerEnv,
+} from "../core/action.ts";
 import type { Actor } from "../core/actor.ts";
 import { RexError } from "../core/errors.ts";
 import { evaluate } from "../core/policy.ts";
@@ -201,6 +206,20 @@ type Confirmations = ReturnType<typeof createConfirmations>;
 
 const base = os.$context<RexContext>();
 
+function contextEnv(context: RexContext): RexServerEnv | null {
+  const env = (context as { readonly env?: unknown }).env;
+  return typeof env === "object" && env !== null ? (env as RexServerEnv) : null;
+}
+
+export function handlerContext(context: RexContext): ActionContext {
+  return actionContext({
+    actor: context.actor,
+    env: contextEnv(context),
+    locale: context.locale ?? null,
+    density: context.density,
+  });
+}
+
 function actionProcedure(
   declared: AnyAction,
   ledger: Ledger,
@@ -250,7 +269,7 @@ function actionProcedure(
       if (declared.effect === "irreversible") {
         await confirmations.consume(declared, input, context);
       }
-      return declared.handler(input, { actor: context.actor });
+      return declared.handler(input, handlerContext(context));
     });
 }
 

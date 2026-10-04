@@ -40,16 +40,16 @@ export const REX_ERROR_DOCS = {
     hint: "Set budgets.core, budgets.client and budgets.page to positive numbers of gzipped kilobytes.",
   },
   REX115: {
-    hint: 'Set security to { csp: "strict" | "report" | "off", origins: ["https://example.com"], headers?: { name: value }, secretNames?: ["NAME"] }.',
+    hint: 'Set security to { csp: "strict" | "report" | "off", origins: ["https://example.com"], headers?: { name: value }, secretNames?: ["NAME"], forwarded?: true or false }.',
   },
   REX116: {
-    hint: 'Set i18n to { locales: ["en", ...], default: one of the locales, routing: "prefix" | "none" }.',
+    hint: 'Set i18n to { locales: ["en", ...], default: one of the locales, routing: "prefix" | "none", direction?: "ltr" | "rtl" or { locale: "ltr" | "rtl" } }.',
   },
   REX117: {
-    hint: "Set images to { sizes: positive integer widths, formats: a list of avif, webp, jpeg and png }.",
+    hint: "Set images to { sizes: positive integer widths, formats: a list of avif, webp, jpeg and png, remote: a list of http(s) origins or URL prefixes ending with / }.",
   },
   REX118: {
-    hint: "Set fonts to a list of { family, src, weight?, style?, preload? } with src a URL or a path starting with /.",
+    hint: "Set fonts to a list of { family, src, weight?, style?, preload?, variable?: a CSS custom property such as --font-sans, fallback?: a local font such as Arial } with src a URL or a path starting with /.",
   },
   REX119: {
     hint: "Set telemetry to { tracer?: an OpenTelemetry tracer, logger?: { debug, info, warn, error } }.",
@@ -58,9 +58,23 @@ export const REX_ERROR_DOCS = {
   REX121: {
     hint: "Set client to { apiOrigin?: an http(s) origin such as https://api.example.com }.",
   },
-  REX122: { hint: "Set compiler, devtools and tailwind to true or false." },
+  REX122: {
+    hint: 'Set compiler, devtools and tailwind to true or false, and prefetch to "hover", "viewport" or "none".',
+  },
   REX123: {
     hint: "Set check to { tokens?: { colors?, spacing?, classes? } } with each allow list a list of strings.",
+  },
+  REX124: {
+    hint: 'Set site to { origin?: an http(s) origin such as https://example.com, name?, description?, image?: a path starting with / or an http(s) URL, titleTemplate?: a string holding {title} once such as "{title} | Docs" }.',
+  },
+  REX125: {
+    hint: "Set env to { client?: { VITE_NAME: schema }, server?: { NAME: schema } } written with the rex/schema field helpers; client keys start with VITE_, server keys never do and no key is in both.",
+  },
+  REX126: {
+    hint: "Set redirects to a list of { source: a route such as /old/:slug, destination: a route using only the source params or an http(s) URL, status?: 301, 302, 307 or 308 } with each source listed once.",
+  },
+  REX127: {
+    hint: 'Set deploy to { host: "node" | "bun" | "deno" | "docker" | "deno-deploy" | "cloudflare" | "vercel" | "netlify" | "github-pages" | "static", runtime?: "node" | "edge" (vercel only) }.',
   },
   REX200: {
     hint: 'Set render to "ssr", "csr", "ssg" or "static", or leave it out to use the app default.',
@@ -69,7 +83,7 @@ export const REX_ERROR_DOCS = {
     hint: 'Set revalidate to a positive whole number of seconds on a page with render "ssg", or remove it.',
   },
   REX202: {
-    hint: 'Set paths to a function returning the params of every page to prerender, on a page with render "ssg" or "static" and route params.',
+    hint: 'Set paths to a function returning the params of every page to prerender, or to { action: a read action, map: (output) => params[] }, on a page with render "ssg" or "static" and route params.',
   },
   REX203: {
     hint: "Map each camelCase loader name to a read action or to { action: readAction, input: (params) => input }.",
@@ -126,6 +140,24 @@ export const REX_ERROR_DOCS = {
   REX223: { hint: "Point recovery and chrome.back at the id of a registered page." },
   REX224: {
     hint: "Register only values returned by entity(), action(), page(), policy() and flow().",
+  },
+  REX225: {
+    hint: "Set chrome.description to a non-empty string, chrome.image to a path starting with / or an http(s) URL, chrome.frame to a camelCase export of the frames map, chrome.order to a whole number and chrome.icon to a kebab-case icon name; {param} placeholders in title and description name declared params and chrome.back never forms a cycle.",
+  },
+  REX226: {
+    hint: 'Set islands to { region: "load" | "idle" | "visible" | "never" } naming only regions the page declares, and keep at least one hydrated region on a page whose actions have shortcuts.',
+  },
+  REX227: {
+    hint: 'Set http to { method: "GET" | "POST", path: a path outside /rex such as /tokens.json, contentType?, csrf?: false on POST only }; GET needs a read action and no two endpoints or page routes share a path.',
+  },
+  REX228: {
+    hint: 'Set cache to { maxAge: a positive whole number of seconds, scope?: "shared" | "actor" | "locale" } on a read action only.',
+  },
+  REX229: {
+    hint: "Set optimistic to { name: (current, input) => next } on a mutating action, keying each update by a name its invalidates lists and that names a loader or a read action.",
+  },
+  REX230: {
+    hint: 'Declare the not-found page as page("not-found", { route: "/404", chrome: { nav: false } }), keep /404 for it alone, and set fallback to "render" or "not-found" only on a page with paths.',
   },
   REX300: {
     hint: "Validate the schema with validateStandard (async) or use a schema whose ~standard.validate returns synchronously.",
@@ -226,6 +258,9 @@ export const REX_ERROR_DOCS = {
   REX334: {
     hint: "Decide the gate as an actor its approvers policy allows; the error reason names the missing permission or condition.",
   },
+  REX335: {
+    hint: "Fix the throw in the page's view, states or a region outside its RegionBoundary; the page renders its RecoverableError with a retry until then.",
+  },
   REX400: {
     hint: "Pass createRexServer and the server helpers the options they document; the message names the function and the option.",
   },
@@ -262,6 +297,9 @@ export const REX_ERROR_DOCS = {
   },
   REX450: {
     hint: "Run the bun adapter under Bun and the deno adapter under Deno, or pick the matching rex build --target.",
+  },
+  REX451: {
+    hint: "Set the named key in the server environment (process.env, the .env files or the host bindings) to a value the env.server schema in rex.config.ts accepts.",
   },
   REX460: {
     hint: "Keep the app under app/ with one folder per page in app/pages named after its page id (lowercase letters, digits, dot and dash) holding page.ts, view.tsx and states.tsx.",
