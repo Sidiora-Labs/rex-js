@@ -153,7 +153,7 @@
 ## Wave 4
 
 - [ ] 4. CLI, generators and the Vite plugin
-  - [ ] 4.1 Implement the Vite plugin and the rex:app virtual module
+  - [x] 4.1 Implement the Vite plugin and the rex:app virtual module
     - Implement src/vite/index.ts: rex() Vite plugin resolving the virtual module rex:app that imports app/pages/*/page.ts, view.tsx, states.tsx, regions/*/region.tsx, overlays/*.tsx, app/actions/*.ts, app/entities/*.ts, app/policies/*.ts and app/flows/*.ts by glob and exports a typed app bundle; invalidates on file add and remove.
     - Add a dev middleware option that mounts a provided Hono app under /rex so one Vite process serves client and API, forwarding the x-rex-density header.
     - Write src/vite/vite.test.ts building a fixture app with the Vite JavaScript API and asserting the virtual module exports.

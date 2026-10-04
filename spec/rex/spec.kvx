@@ -741,7 +741,7 @@ status  = "pending"
 
 [task.4.1]
 title = "Implement the Vite plugin and the rex:app virtual module"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 4
 requires = ["0.7"]
