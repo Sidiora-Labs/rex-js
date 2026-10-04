@@ -53,7 +53,7 @@
 ## Wave 1
 
 - [ ] 1. Server runtime: audit, action router, Hono server, Drizzle store
-  - [ ] 1.1 Implement the audit ledger
+  - [x] 1.1 Implement the audit ledger
     - Implement src/server/audit.ts: AuditRecord (id, actor, actionId, inputDigest, outcome ok|error code, effect, durationMs, at), Ledger interface append and list with filters by actor, actionId, outcome and time range, and the in-memory ledger.
     - Implement digest(input) as sha-256 over canonical JSON (sorted keys) using the Web Crypto API so it runs in Node and browsers.
     - Write src/server/audit.test.ts covering filters, digest stability, and that raw input never appears in a record.

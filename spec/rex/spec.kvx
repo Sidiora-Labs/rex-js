@@ -386,7 +386,7 @@ status  = "pending"
 
 [task.1.1]
 title = "Implement the audit ledger"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 1
 requires = ["0.7"]
