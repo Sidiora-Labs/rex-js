@@ -38,6 +38,17 @@ Other attributes the runtime renders:
 | `data-rex-nav-form` | on the shell navigation and the default frame: `bar`, `sidebar` or `dock` |
 | `data-rex-app-state` | `loading` or `error` while the app starts, `not-found` for an unknown route |
 | `data-rex-shell` | the shell container |
+| `data-rex-ssr` | the `#root` element of a server-rendered page; the entry hydrates when present |
+| `data-rex-palette-trigger="palette"` | the shell's palette button |
+| `data-rex-form="<page>/<action>"`, `data-rex-field="<path>"`, `data-rex-field-error="<path>"`, `data-rex-form-errors="<action>"` | `ActionForm`, its fields and its validation errors |
+| `data-rex-list="<page>/<list>"`, `data-rex-list-page`, `data-rex-list-size`, `data-rex-list-shown`, `data-rex-list-total`, `data-rex-list-more` | `Page.List` and its Load more control |
+| `data-rex-region-error="<page>/<region>"`, `data-rex-error-code` | a region's recoverable-error fallback |
+| `data-rex-page-loading` | the page's Suspense fallback `main` |
+| `data-rex-default-state="<state>"` | the built-in state renderer |
+| `data-rex-announcer` | the route announcer live region |
+| `data-rex-frame` | the default frame |
+| `data-rex-unsafe-html` | an element rendered by `unsafeHtml()` |
+| `data-rex-alternative="<page>/<action>"` | the declared keyboard alternative of a drag, canvas or custom-element control |
 
 An action control from `act(declaration).controlProps` carries `data-rex`, `data-rex-allowed`, `disabled`, `aria-disabled`, `aria-busy`, and, when the actor is not allowed, `title="Not allowed: <reason>"` (`ActControlProps`).
 
@@ -77,6 +88,9 @@ The payload shape is defined by `sidecarSchema` in `packages/rex/src/manifest/si
   screen?: "phone" | "tablet" | "desktop" | "wide",
   pointer?: "coarse" | "fine",
   density?: "comfortable" | "compact" | "agent",
+  regions?: Array<{ id: string, address: string, state: RexDataState, code: string }>, // regions whose error boundary caught a failure; present only when non-empty, and the page state becomes recoverable-error
+  stores?: Record<string, unknown>,  // stores declared with expose: true; omitted when there are none
+  loaders?: Array<{ name: string, action: string, invalidatedBy: string[] }>, // accepted by the schema; the runtime does not write it yet
 }
 ```
 
@@ -90,7 +104,7 @@ Policy reason codes (`packages/rex/src/core/policy.ts`): `never`, `locked` (the 
 
 ## The outcome region
 
-`OutcomeRegion` renders inside `Page.Outcome`, a `<section role="status" aria-live="polite" aria-atomic="true" aria-label="Outcome">`. There is one per page, rendered by the shell under the page body.
+`OutcomeRegion` renders inside `Page.Outcome`, a `<section role="status" aria-live="polite" aria-atomic="true" aria-label="Outcome">`. There is one per page, rendered by the shell between the page header and the page body.
 
 - With no outcome: `<p data-rex-outcome="none">No action has run on this page yet.</p>`.
 - After an invocation: a `<div data-rex-outcome="<action id>" data-rex-outcome-ok="true|false" data-rex-outcome-at="<ISO time>">` containing `<label>: Succeeded` or `<label>: Failed`, the message, and a Dismiss button (`data-rex-outcome-dismiss="<page>"`) that clears it.
@@ -127,7 +141,7 @@ Disallowed actions appear in the sidecar and the palette with their reason. Thei
 
 ### The palette
 
-`RexPalette` (cmdk) toggles on mod+k (`PALETTE_SHORTCUT`). It renders `role="dialog" aria-modal="true" aria-label="Command palette"` with `data-rex-palette`, a search input ("Search actions and pages"), and two groups:
+`RexPalette` toggles on mod+k (`PALETTE_SHORTCUT`); the cmdk menu is loaded lazily on first open (as are the confirmation dialog, the overlay host, the flow gate, the error and not-found renderers and the message formatter), and a chunk that fails to load writes a `REX326` outcome to the outcome region. It renders `role="dialog" aria-modal="true" aria-label="Command palette"` with `data-rex-palette`, a search input ("Search actions and pages"), and two groups:
 
 - **Actions**: the active page's declared actions and registered affordances. Each item has `data-rex-palette-item="<page>/<id>"`, `data-rex-allowed`, the label, the id, the shortcut if any, and "Not allowed: `<reason>`" when disallowed. Items are filtered by label and id.
 - **Pages**: every page whose `chrome.nav` is true and whose params accept `{}`, as "Go to `<title>`" with `data-rex-palette-page="<page>"`. Selecting one navigates.
@@ -148,7 +162,7 @@ Cancelling records `<label> cancelled` with code `CANCELLED`.
 
 ## Density
 
-The density preference is `default` or `agent` on the wire (`REX_DENSITIES` in `packages/rex/src/server/context.ts`), and the client also accepts `comfortable` and `compact` (`DENSITY_PREFERENCES` in `packages/rex/src/client/agent/density.ts`). `DensityProvider`, which `createRexEntry` mounts at the root, resolves it in this order (`resolveDensity`):
+The density preference is `default` or `agent` on the wire (`REX_DENSITIES` in `packages/rex/src/core/protocol.ts`, re-exported by the server context), and the client also accepts `comfortable` and `compact` (`DENSITY_PREFERENCES` in `packages/rex/src/client/agent/density.ts`). `DensityProvider`, which `createRexEntry` mounts at the root, resolves it in this order (`resolveDensity`):
 
 1. a value set at runtime with `useDensity().setDensity(...)`, which is also stored;
 2. the `density` query parameter of the page URL;
