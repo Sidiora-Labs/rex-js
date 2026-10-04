@@ -1,8 +1,10 @@
 import { resolve } from "node:path";
 import { createServer, type LogLevel, type Plugin, type ViteDevServer } from "vite";
+import type { RexConfigExport } from "../core/config.ts";
 import type { RexAppBundle } from "../vite/app-module.ts";
 import { rex, type RexPluginOptions } from "../vite/plugin.ts";
 import { APP_MODULE_ID } from "../vite/virtual.ts";
+import { hasConfig, loadRexConfig } from "./config.ts";
 
 export interface ModuleLoaderOptions {
   readonly logLevel?: LogLevel;
@@ -17,6 +19,23 @@ export interface ModuleLoader {
   close(): Promise<void>;
 }
 
+export function configPluginOptions(read: RexConfigExport): RexPluginOptions {
+  return { compiler: read.options.compiler };
+}
+
+async function pluginOptionsFor(
+  appRoot: string,
+  options: ModuleLoaderOptions,
+): Promise<RexPluginOptions> {
+  const given = options.rex ?? {};
+  if (given.compiler !== undefined || !hasConfig(appRoot)) return given;
+  const loaded = await loadRexConfig(
+    appRoot,
+    options.logLevel === undefined ? {} : { logLevel: options.logLevel },
+  );
+  return { ...configPluginOptions(loaded.read), ...given };
+}
+
 export async function createModuleLoader(
   root: string,
   options: ModuleLoaderOptions = {},
@@ -28,7 +47,7 @@ export async function createModuleLoader(
     logLevel: options.logLevel ?? "silent",
     appType: "custom",
     server: { middlewareMode: true, hmr: false, watch: null },
-    plugins: [...rex(options.rex), ...(options.plugins ?? [])],
+    plugins: [...rex(await pluginOptionsFor(appRoot, options)), ...(options.plugins ?? [])],
   });
   return {
     root: appRoot,

@@ -1,5 +1,6 @@
 import { useMemo, type ComponentType } from "react";
 import type { AnyPage } from "../core/page.ts";
+import { validateStandardSync } from "../core/standard.ts";
 import { OutcomeRegion } from "./agent/outcome.tsx";
 import { PageInvokers } from "./agent/confirm.tsx";
 import { RexPalette } from "./agent/palette.tsx";
@@ -23,7 +24,7 @@ export interface ShellProps {
 }
 
 export function isNavigable(declared: AnyPage): boolean {
-  return declared.chrome.nav && declared.params.safeParse({}).success;
+  return declared.chrome.nav && validateStandardSync(declared.params, {}).issues === undefined;
 }
 
 interface FrameProps {

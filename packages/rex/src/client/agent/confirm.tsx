@@ -13,6 +13,7 @@ import {
 } from "react";
 import type { ActionInput, AnyAction } from "../../core/action.ts";
 import { actionAddress } from "../../core/ids.ts";
+import { validateStandard } from "../../core/standard.ts";
 import { actionLabel, describeError, useAct, type ActHandle, type ActResult } from "../act.ts";
 import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
 import { useActivePage } from "../router.tsx";
@@ -190,7 +191,7 @@ export function useInvoke<A extends AnyAction>(declared: A): InvokeHandle<A> {
       if (
         declared.effect !== "irreversible" ||
         !allowed ||
-        !declared.input.safeParse(input).success
+        (await validateStandard(declared.input, input)).issues !== undefined
       ) {
         return run(input);
       }

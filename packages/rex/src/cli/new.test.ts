@@ -17,7 +17,7 @@ import { defaultRules, runCheck } from "../check/index.ts";
 import { boundariesRule } from "../check/rules/boundaries.ts";
 import { REX_VERSION } from "../index.ts";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, run, type RexCliIO } from "./index.ts";
-import { appModuleTypesPath } from "./commands/new.ts";
+import { APP_PEERS, appModuleTypesPath } from "./commands/new.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
@@ -126,12 +126,10 @@ describe("rex new", { timeout: NEW_TEST_TIMEOUT_MS }, () => {
     expect(manifest.name).toBe("notes-app");
     expect(manifest.type).toBe("module");
     expect(manifest.dependencies["@sidioralabs/rex"]).toBe(`^${REX_VERSION}`);
-    expect(Object.keys(manifest.dependencies).sort()).toEqual([
-      "@sidioralabs/rex",
-      "@tanstack/react-query",
-      "react",
-      "react-dom",
-    ]);
+    expect(Object.keys(manifest.dependencies).sort()).toEqual(
+      ["@sidioralabs/rex", ...APP_PEERS].sort(),
+    );
+    expect(manifest.dependencies.zod).toBeDefined();
     expect(manifest.scripts).toMatchObject({
       dev: "rex dev",
       build: "rex build",

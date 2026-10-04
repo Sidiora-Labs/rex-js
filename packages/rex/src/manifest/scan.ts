@@ -1,25 +1,21 @@
-import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-import { register } from "tsx/esm/api";
+import { withModuleLoader, type ModuleLoader } from "../cli/load.ts";
 import type { AnyFlow } from "../core/flow.ts";
 import {
   DECLARATION_KINDS,
-  createRegistry,
   type AnyDeclaration,
   type RegistrySnapshot,
 } from "../core/registry.ts";
+import { runtimePaths } from "../vite/resolve.ts";
+import { CORE_SPECIFIER } from "../vite/virtual.ts";
 import { renderAgentsMd } from "./agents-md.ts";
-import { buildManifest, stableStringify } from "./build.ts";
+import { stableStringify } from "./build.ts";
 import type { Manifest } from "./types.ts";
 
 export const MANIFEST_DIR = ".rex";
 export const MANIFEST_FILE = ".rex/manifest.json";
 export const AGENTS_FILE = "AGENTS.md";
-export const SCAN_TIMEOUT_MS = 60_000;
 
 const DECLARATION_DIRS = ["entities", "policies", "actions", "flows"] as const;
 
@@ -104,112 +100,70 @@ export function appName(appRoot: string): string {
   return path.basename(path.resolve(appRoot));
 }
 
-export async function loadRegistry(appRoot: string): Promise<RegistrySnapshot> {
-  const root = path.resolve(appRoot);
-  const files = declarationFiles(root);
-  const tsconfig = path.join(root, "tsconfig.json");
-  const api = register({
-    namespace: `rex-scan-${randomUUID()}`,
-    tsconfig: existsSync(tsconfig) ? tsconfig : false,
-  });
-  const registry = createRegistry();
-  try {
-    for (const file of files) {
-      let loaded: Record<string, unknown>;
-      try {
-        loaded = (await api.import(pathToFileURL(file).href, import.meta.url)) as Record<
-          string,
-          unknown
-        >;
-      } catch (error) {
-        throw new ManifestScanError(
-          root,
-          `cannot import ${path.relative(root, file)}: ${(error as Error).message}`,
-        );
-      }
-      for (const key of Object.keys(loaded).sort()) {
-        const value = loaded[key];
-        if (isDeclaration(value)) registry.register(value as AnyDeclaration);
-      }
+type AppCore = Pick<typeof import("../index.ts"), "buildManifest" | "createRegistry">;
+
+async function loadAppCore(loader: ModuleLoader): Promise<AppCore> {
+  const resolved = await loader.vite.environments.ssr.pluginContainer.resolveId(
+    CORE_SPECIFIER,
+    path.join(loader.root, "index.html"),
+  );
+  const core =
+    resolved === null || resolved.external || !path.isAbsolute(resolved.id)
+      ? runtimePaths().core
+      : resolved.id;
+  return loader.load<AppCore>(core);
+}
+
+async function loadDeclarations(
+  root: string,
+  loader: ModuleLoader,
+  core: AppCore,
+): Promise<RegistrySnapshot> {
+  const registry = core.createRegistry();
+  for (const file of declarationFiles(root)) {
+    let loaded: Record<string, unknown>;
+    try {
+      loaded = await loader.load(`/${path.relative(root, file).split(path.sep).join("/")}`);
+    } catch (error) {
+      throw new ManifestScanError(
+        root,
+        `cannot import ${path.relative(root, file)}: ${(error as Error).message}`,
+      );
     }
-  } finally {
-    await api.unregister();
+    for (const key of Object.keys(loaded).sort()) {
+      const value = loaded[key];
+      if (isDeclaration(value)) registry.register(value as AnyDeclaration);
+    }
   }
   return registry.freeze();
 }
 
-export async function buildAppManifest(appRoot: string): Promise<Manifest> {
-  const snapshot = await loadRegistry(appRoot);
-  return buildManifest(snapshot, { app: appName(appRoot) });
-}
-
-const CHILD_SOURCE = `
-let result;
-try {
-  const { buildAppManifest } = await import(process.env.REX_SCAN_MODULE);
-  result = { ok: true, manifest: await buildAppManifest(process.env.REX_SCAN_ROOT) };
-} catch (error) {
-  result = { ok: false, error: error instanceof Error ? error.message : String(error) };
-}
-process.send(result, () => process.exit(0));
-`;
-
-type ChildMessage =
-  | { readonly ok: true; readonly manifest: Manifest }
-  | { readonly ok: false; readonly error: string };
-
-export function scanManifest(appRoot: string): Promise<Manifest> {
+export async function loadRegistry(appRoot: string): Promise<RegistrySnapshot> {
   const root = path.resolve(appRoot);
   declarationFiles(root);
-  const require = createRequire(import.meta.url);
-  const loader = pathToFileURL(require.resolve("tsx")).href;
-  return new Promise<Manifest>((resolve, reject) => {
-    const child = spawn(
-      process.execPath,
-      ["--import", loader, "--input-type=module", "--eval", CHILD_SOURCE],
-      {
-        cwd: root,
-        env: {
-          ...process.env,
-          REX_SCAN_MODULE: import.meta.url,
-          REX_SCAN_ROOT: root,
-        },
-        stdio: ["ignore", "pipe", "pipe", "ipc"],
-      },
-    );
-    let message: ChildMessage | null = null;
-    let stderr = "";
-    const timer = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new ManifestScanError(root, `timed out after ${SCAN_TIMEOUT_MS} ms`));
-    }, SCAN_TIMEOUT_MS);
-    child.stdout?.resume();
-    child.stderr?.setEncoding("utf8");
-    child.stderr?.on("data", (chunk: string) => {
-      stderr += chunk;
-    });
-    child.on("message", (received) => {
-      message = received as ChildMessage;
-    });
-    child.on("error", (error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      const result = message as ChildMessage | null;
-      if (result?.ok) resolve(result.manifest);
-      else if (result) reject(new ManifestScanError(root, result.error));
-      else {
-        reject(
-          new ManifestScanError(
-            root,
-            `the scan process exited with code ${code} without a result${stderr ? `: ${stderr.trim()}` : ""}`,
-          ),
-        );
-      }
-    });
+  return withModuleLoader(root, async (loader) =>
+    loadDeclarations(root, loader, await loadAppCore(loader)),
+  );
+}
+
+export async function buildAppManifest(appRoot: string): Promise<Manifest> {
+  const root = path.resolve(appRoot);
+  declarationFiles(root);
+  return withModuleLoader(root, async (loader) => {
+    const core = await loadAppCore(loader);
+    const snapshot = await loadDeclarations(root, loader, core);
+    return core.buildManifest(snapshot, { app: appName(root) });
   });
+}
+
+export async function scanManifest(appRoot: string): Promise<Manifest> {
+  const root = path.resolve(appRoot);
+  try {
+    return await buildAppManifest(root);
+  } catch (error) {
+    if (error instanceof ManifestScanError) throw error;
+    throw new ManifestScanError(root, error instanceof Error ? error.message : String(error));
+  }
 }
 
 export function renderManifestFiles(manifest: Manifest): ManifestFiles {

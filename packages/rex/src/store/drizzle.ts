@@ -43,10 +43,12 @@ const KIND_COLUMNS: Readonly<Record<FieldKind, ColumnType>> = {
   text: "text",
   money: "text",
   integer: "integer",
+  real: "real",
   boolean: "boolean",
   enum: "text",
   ref: "text",
   timestamp: "text",
+  json: "json",
 };
 
 const SQL_TYPES: Readonly<Record<ColumnType, string>> = {

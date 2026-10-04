@@ -3,7 +3,7 @@ import { RPCHandler } from "@orpc/server/fetch";
 import type { Hono } from "hono";
 import { FlowDecisionError, decide, runFlow, type AnyFlow } from "../core/flow.ts";
 import { completedSteps, type FlowInstance, type FlowStatus } from "../core/journal.ts";
-import { z } from "../core/schema.ts";
+import * as zm from "zod/mini";
 import type { RexServerSetup } from "./app.ts";
 import {
   RexDensityError,
@@ -29,29 +29,31 @@ export interface FlowState {
   readonly completed: number;
 }
 
-const instanceInput = z.strictObject({
-  flow: z.string().min(1),
-  instance: z.string().min(1),
+const nonEmpty = () => zm.string().check(zm.minLength(1));
+
+const instanceInput = zm.strictObject({
+  flow: nonEmpty(),
+  instance: nonEmpty(),
 });
 
-const startInput = z.strictObject({
-  flow: z.string().min(1),
-  instance: z.string().min(1),
-  input: z.unknown().optional(),
+const startInput = zm.strictObject({
+  flow: nonEmpty(),
+  instance: nonEmpty(),
+  input: zm.optional(zm.unknown()),
 });
 
-const decideInput = z.strictObject({
-  flow: z.string().min(1),
-  instance: z.string().min(1),
-  decision: z.enum(["approve", "reject"]),
+const decideInput = zm.strictObject({
+  flow: nonEmpty(),
+  instance: nonEmpty(),
+  decision: zm.enum(["approve", "reject"]),
 });
 
-export const flowStateSchema = z.strictObject({
-  flow: z.string().min(1),
-  instance: z.string().min(1),
-  status: z.enum(["idle", "running", "paused", "completed", "rejected", "failed"]),
-  gate: z.strictObject({ id: z.string().min(1), label: z.string().min(1) }).nullable(),
-  completed: z.number().int().min(0),
+export const flowStateSchema = zm.strictObject({
+  flow: nonEmpty(),
+  instance: nonEmpty(),
+  status: zm.enum(["idle", "running", "paused", "completed", "rejected", "failed"]),
+  gate: zm.nullable(zm.strictObject({ id: nonEmpty(), label: nonEmpty() })),
+  completed: zm.int().check(zm.gte(0)),
 });
 
 export function flowState(

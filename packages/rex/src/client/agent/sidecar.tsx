@@ -26,8 +26,9 @@ import {
   type SidecarOverlay,
   type SidecarPayload,
 } from "../../manifest/sidecar.schema.ts";
+import type { Manifest } from "../../manifest/types.ts";
 import { actionLabel } from "../act.ts";
-import { useActor } from "../context.ts";
+import { useActor, useManifest } from "../context.ts";
 import { useOutcome, type Outcome } from "../outcome.ts";
 import { PageRuntimeContext, usePageQueries } from "../page.tsx";
 import { useActivePage, type PageResolution } from "../router.tsx";
@@ -292,7 +293,19 @@ export function actionRoutes(declared: AnyAction): readonly InvocationRoute[] {
   return INVOCATION_ROUTES.filter((route) => route !== "key" || declared.shortcut !== null);
 }
 
-export function sidecarAction(declared: AnyAction, subject: Actor): SidecarAction {
+export function manifestInputSchema(manifest: Manifest, declared: AnyAction): JsonSchema {
+  const listed = manifest.actions.find((entry) => entry.id === declared.id);
+  if (listed === undefined) {
+    throw new Error(`rex: the manifest does not list action "${declared.id}"`);
+  }
+  return listed.input;
+}
+
+export function sidecarAction(
+  declared: AnyAction,
+  subject: Actor,
+  input: JsonSchema,
+): SidecarAction {
   const decision = evaluate(declared.policy, subject);
   return {
     id: declared.id,
@@ -300,7 +313,7 @@ export function sidecarAction(declared: AnyAction, subject: Actor): SidecarActio
     allowed: decision.allowed,
     reason: decision.reason,
     effect: declared.effect,
-    input: declared.inputJsonSchema,
+    input,
     via: [...actionRoutes(declared)],
   };
 }
@@ -311,6 +324,7 @@ export function sidecarOutcome(outcome: Outcome | null): SidecarOutcome | null {
 }
 
 export interface SidecarSource {
+  readonly manifest: Manifest;
   readonly page: AnyPage;
   readonly params: Readonly<Record<string, unknown>>;
   readonly state: RexDataState;
@@ -328,7 +342,7 @@ function jsonParams(params: Readonly<Record<string, unknown>>): Record<string, u
 export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
   const declared = source.page;
   const actions: SidecarAction[] = declared.actions.map((entry) =>
-    sidecarAction(entry, source.actor),
+    sidecarAction(entry, source.actor, manifestInputSchema(source.manifest, entry)),
   );
   const ids = new Set(actions.map((entry) => entry.id));
   for (const affordance of source.affordances ?? []) {
@@ -384,6 +398,7 @@ export function usePageDataState(resolution: PageResolution): RexDataState {
 }
 
 export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
+  const manifest = useManifest();
   const subject = useActor();
   const state = usePageDataState(resolution);
   const openOverlays = useOpenOverlays(resolution.page.id);
@@ -393,6 +408,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
   return useMemo(
     () =>
       buildSidecarPayload({
+        manifest,
         page: resolution.page,
         params: resolution.params,
         state,
@@ -402,7 +418,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
         failures,
         outcome,
       }),
-    [resolution, state, subject, openOverlays, affordances, failures, outcome],
+    [manifest, resolution, state, subject, openOverlays, affordances, failures, outcome],
   );
 }
 

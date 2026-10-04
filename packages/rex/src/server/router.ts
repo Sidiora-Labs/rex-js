@@ -4,7 +4,7 @@ import type { AnyAction } from "../core/action.ts";
 import type { Actor } from "../core/actor.ts";
 import { evaluate } from "../core/policy.ts";
 import { CONFIRM_PROCEDURE } from "../core/protocol.ts";
-import { z } from "../core/schema.ts";
+import * as zm from "zod/mini";
 import { validateStandard } from "../core/standard.ts";
 import {
   AUDIT_OK,
@@ -63,20 +63,20 @@ export type ActionProcedure<A extends AnyAction> = Procedure<
   NoMeta
 >;
 
-export const confirmInputSchema = z.strictObject({
-  action: z.string().min(1),
-  input: z.unknown(),
+export const confirmInputSchema = zm.strictObject({
+  action: zm.string().check(zm.minLength(1)),
+  input: zm.unknown(),
 });
 
-export const confirmOutputSchema = z.strictObject({
-  token: z.string().min(1),
-  action: z.string().min(1),
-  inputDigest: z.string().min(1),
-  expiresAt: z.iso.datetime(),
+export const confirmOutputSchema = zm.strictObject({
+  token: zm.string().check(zm.minLength(1)),
+  action: zm.string().check(zm.minLength(1)),
+  inputDigest: zm.string().check(zm.minLength(1)),
+  expiresAt: zm.iso.datetime(),
 });
 
-export type ConfirmInput = z.input<typeof confirmInputSchema>;
-export type ConfirmOutput = z.output<typeof confirmOutputSchema>;
+export type ConfirmInput = zm.input<typeof confirmInputSchema>;
+export type ConfirmOutput = zm.output<typeof confirmOutputSchema>;
 
 export type ConfirmProcedure = Procedure<
   RexContext,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { z as zc } from "zod";
 import * as zm from "zod/mini";
 import {
   STANDARD_VENDOR_KEY,
@@ -11,7 +12,9 @@ import {
   fieldKind,
   id,
   integer,
+  json,
   money,
+  real,
   ref,
   refTarget,
   text,
@@ -55,6 +58,24 @@ describe("field helpers validate values", () => {
     expect(integer({ min: 0, max: 10 }).safeParse(11).success).toBe(false);
   });
 
+  it("real", () => {
+    expect(real().parse(2.5)).toBe(2.5);
+    expect(real().parse(-3)).toBe(-3);
+    expect(real().safeParse("2.5").success).toBe(false);
+    expect(real().safeParse(Number.NaN).success).toBe(false);
+    expect(real({ min: 0, max: 1 }).safeParse(-0.1).success).toBe(false);
+    expect(real({ min: 0, max: 1 }).safeParse(1.1).success).toBe(false);
+    expect(real({ min: 0, max: 1 }).parse(0.5)).toBe(0.5);
+  });
+
+  it("json", () => {
+    const value = { tags: ["a", "b"], nested: { on: true, count: 2, none: null } };
+    expect(json().parse(value)).toEqual(value);
+    expect(json().parse("text")).toBe("text");
+    expect(json().safeParse(undefined).success).toBe(false);
+    expect(json().safeParse({ at: new Date(0) }).success).toBe(false);
+  });
+
   it("boolean", () => {
     expect(boolean().parse(true)).toBe(true);
     expect(boolean().safeParse("true").success).toBe(false);
@@ -88,6 +109,8 @@ describe("field kinds", () => {
     expect(fieldKind(text())).toBe("text");
     expect(fieldKind(money())).toBe("money");
     expect(fieldKind(integer())).toBe("integer");
+    expect(fieldKind(real())).toBe("real");
+    expect(fieldKind(json())).toBe("json");
     expect(fieldKind(boolean())).toBe("boolean");
     expect(fieldKind(enumOf(["a", "b"]))).toBe("enum");
     expect(fieldKind(ref("token"))).toBe("ref");
@@ -95,6 +118,8 @@ describe("field kinds", () => {
     expect(fieldKind(text().optional())).toBe("text");
     expect(fieldKind(integer().nullable())).toBe("integer");
     expect(fieldKind(boolean().default(false))).toBe("boolean");
+    expect(fieldKind(real().optional())).toBe("real");
+    expect(fieldKind(json().nullable())).toBe("json");
     expect(fieldKind(z.string())).toBeUndefined();
     expect(refTarget(ref({ id: "account" }).optional())).toBe("account");
     expect(refTarget(text())).toBeUndefined();
@@ -151,6 +176,19 @@ describe("toJsonSchema", () => {
       [FIELD_KIND_KEY]: "ref",
       [FIELD_REF_KEY]: "token",
     });
+    expect(toJsonSchema(real({ min: 0 }))).toEqual({
+      $schema: DRAFT,
+      type: "number",
+      minimum: 0,
+      [FIELD_KIND_KEY]: "real",
+    });
+    const value = toJsonSchema(zm.object({ value: json() }));
+    const property = (value.properties as Record<string, Record<string, unknown>>).value;
+    const defs = value.$defs as Record<string, Record<string, unknown>>;
+    const target = defs[String(property?.$ref).replace("#/$defs/", "")];
+    expect(target?.[FIELD_KIND_KEY]).toBe("json");
+    expect(target?.anyOf).toHaveLength(6);
+    expect(value.required).toEqual(["value"]);
     const stamp = toJsonSchema(timestamp());
     expect(stamp.$schema).toBe(DRAFT);
     expect(stamp.type).toBe("string");
@@ -180,13 +218,30 @@ describe("toJsonSchema", () => {
 });
 
 describe("field helpers are built on zod/mini", () => {
+  it("exports zod/mini as the core z", () => {
+    expect(z.object).toBe(zm.object);
+    expect(z.string()).toBeInstanceOf(zm.ZodMiniString);
+    expect(z.string()).not.toBeInstanceOf(zc.ZodType);
+    expect(typeof (z.string() as unknown as { min?: unknown }).min).toBe("undefined");
+  });
+
   it("returns zod/mini schemas, not classic zod schemas", () => {
-    for (const schema of [id(), text(), money(), integer(), boolean(), ref("token"), timestamp()]) {
+    for (const schema of [
+      id(),
+      text(),
+      money(),
+      integer(),
+      real(),
+      boolean(),
+      ref("token"),
+      timestamp(),
+      json(),
+    ]) {
       expect(isZodSchema(schema)).toBe(true);
-      expect(schema).not.toBeInstanceOf(z.ZodType);
+      expect(schema).not.toBeInstanceOf(zc.ZodType);
       expect(typeof (schema as unknown as { min?: unknown }).min).toBe("undefined");
     }
-    expect(enumOf(["a", "b"])).not.toBeInstanceOf(z.ZodType);
+    expect(enumOf(["a", "b"])).not.toBeInstanceOf(zc.ZodType);
   });
 
   it("keeps optional, nullable, default and meta on the helpers with their field tags", () => {
@@ -211,13 +266,13 @@ describe("field helpers are built on zod/mini", () => {
   it("composes with zod/mini and classic zod objects", () => {
     const mini = zm.object({ to: ref("contact"), memo: zm.optional(text()) });
     expect(mini.parse({ to: "c-1" })).toEqual({ to: "c-1" });
-    const classic = z.object({ to: ref("contact"), amount: money() });
+    const classic = zc.object({ to: ref("contact"), amount: money() });
     expect(classic.safeParse({ to: "c-1", amount: "x" }).success).toBe(false);
     expect(fieldKind(classic.shape.amount)).toBe("money");
   });
 
   it("reads field tags from classic zod schemas tagged with meta", () => {
-    const classic = z.string().meta({ [FIELD_KIND_KEY]: "text" }).optional();
+    const classic = zc.string().meta({ [FIELD_KIND_KEY]: "text" }).optional();
     expect(fieldKind(classic)).toBe("text");
   });
 });

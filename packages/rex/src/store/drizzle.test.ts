@@ -2,7 +2,7 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { describe, expect, it } from "vitest";
 import { entity } from "../core/entity.ts";
-import { boolean, id, integer, text, z } from "../core/schema.ts";
+import { boolean, id, integer, json, real, text, z } from "../core/schema.ts";
 import { bind } from "../core/store.ts";
 import {
   conformanceEntity,
@@ -65,7 +65,7 @@ describe("drizzleStore", () => {
     const profile = entity("profile.settings", {
       fields: {
         id: id(),
-        nickname: z.string().nullable(),
+        nickname: z.nullable(z.string()),
         score: z.number(),
         tags: z.array(z.string()),
         prefs: z.object({ dust: boolean(), theme: z.enum(["light", "dark"]) }),
@@ -94,9 +94,45 @@ describe("drizzleStore", () => {
     expect((await store.list({ filter: { score: 2.5 } })).total).toBe(1);
   });
 
+  it("stores real and json field kinds in real and json columns", async () => {
+    const reading = entity("reading", {
+      fields: {
+        id: id(),
+        value: real({ min: 0 }),
+        ratio: real().optional(),
+        payload: json(),
+      },
+      label: (record) => record.id,
+    });
+    expect(columnSpecs(reading).map((spec) => [spec.field, spec.type])).toEqual([
+      ["id", "text"],
+      ["value", "real"],
+      ["ratio", "real"],
+      ["payload", "json"],
+    ]);
+    expect(createTableStatement(reading)).toBe(
+      'CREATE TABLE IF NOT EXISTS "reading" (' +
+        '"id" text PRIMARY KEY NOT NULL, "value" real NOT NULL, "ratio" real, "payload" text)',
+    );
+    const db = memoryDb();
+    const store = bind(reading, drizzleStore(reading, db));
+    const record = {
+      id: "r-1",
+      value: 2.75,
+      payload: { tags: ["a"], nested: { on: true, count: 3, none: null } },
+    };
+    expect(await store.put(record)).toEqual(record);
+    expect(await store.get("r-1")).toEqual(record);
+    expect((await store.list({ filter: { value: 2.75 } })).total).toBe(1);
+    const rows = await db.$client.execute('SELECT "value", "payload" FROM "reading"');
+    expect(rows.rows.map((row) => [row.value, JSON.parse(String(row.payload))])).toEqual([
+      [2.75, record.payload],
+    ]);
+  });
+
   it("refuses fields that are both optional and nullable", () => {
     const ambiguous = entity("ambiguous", {
-      fields: { id: id(), note: z.string().nullable().optional() },
+      fields: { id: id(), note: z.optional(z.nullable(z.string())) },
       label: (record) => record.id,
     });
     expect(() => drizzleStore(ambiguous, memoryDb())).toThrow("both optional and nullable");

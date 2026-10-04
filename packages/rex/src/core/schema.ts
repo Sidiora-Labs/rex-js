@@ -1,27 +1,37 @@
-import { z } from "zod";
 import * as zm from "zod/mini";
 import type { $ZodType, util } from "zod/v4/core";
 import { validateName } from "./ids.ts";
 import { standardSource } from "./standard.ts";
 
-export { z };
+export * as z from "zod/mini";
 
 export const FIELD_KIND_KEY = "x-rex-field";
 export const FIELD_REF_KEY = "x-rex-ref";
 export const STANDARD_VENDOR_KEY = "x-rex-standard";
 
 export type FieldKind =
-  "id" | "text" | "money" | "integer" | "boolean" | "enum" | "ref" | "timestamp";
+  | "id"
+  | "text"
+  | "money"
+  | "integer"
+  | "real"
+  | "boolean"
+  | "enum"
+  | "ref"
+  | "timestamp"
+  | "json";
 
 export const FIELD_KINDS: readonly FieldKind[] = [
   "id",
   "text",
   "money",
   "integer",
+  "real",
   "boolean",
   "enum",
   "ref",
   "timestamp",
+  "json",
 ];
 
 export type JsonSchema = { [key: string]: unknown };
@@ -35,6 +45,11 @@ export interface TextOptions {
 }
 
 export interface IntegerOptions {
+  readonly min?: number;
+  readonly max?: number;
+}
+
+export interface RealOptions {
   readonly min?: number;
   readonly max?: number;
 }
@@ -101,6 +116,18 @@ export function integer(options: IntegerOptions = {}) {
   );
 }
 
+export function real(options: RealOptions = {}) {
+  return field(
+    zm.number().check(
+      ...[
+        ...(options.min === undefined ? [] : [zm.gte(options.min)]),
+        ...(options.max === undefined ? [] : [zm.lte(options.max)]),
+      ],
+    ),
+    { [FIELD_KIND_KEY]: "real" },
+  );
+}
+
 export function boolean() {
   return field(zm.boolean(), { [FIELD_KIND_KEY]: "boolean" });
 }
@@ -122,6 +149,10 @@ export function ref(target: RefTarget) {
 
 export function timestamp() {
   return field(zm.iso.datetime(), { [FIELD_KIND_KEY]: "timestamp" });
+}
+
+export function json() {
+  return field(zm.json(), { [FIELD_KIND_KEY]: "json" });
 }
 
 const WRAPPER_TYPES = new Set(["optional", "nullable", "default"]);
