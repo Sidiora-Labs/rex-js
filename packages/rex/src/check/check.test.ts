@@ -125,6 +125,61 @@ function addStaticPageAndImage(root: string): void {
   }
 }
 
+function copyEnginePassWithServerReader(): string {
+  const root = tempRoot();
+  cpSync(enginePass, root, { recursive: true });
+  writeFileSync(
+    path.join(root, "package.json"),
+    `${JSON.stringify({ name: "engine-pass", private: true, type: "module" })}\n`,
+  );
+  link(root, "@sidioralabs/rex", packageRoot);
+  link(root, "react", path.join(packageRoot, "node_modules/react"));
+  link(root, "@types/react", path.join(packageRoot, "node_modules/@types/react"));
+  link(root, "zod", path.join(packageRoot, "node_modules/zod"));
+  const files: Record<string, string> = {
+    "app/server/content/greeting.ts": [
+      "export interface Greeting {",
+      "  readonly text: string;",
+      "}",
+      "",
+      "export function readGreeting(): Greeting {",
+      '  return { text: "Welcome to Rex." };',
+      "}",
+      "",
+    ].join("\n"),
+    "app/actions/home/read-greeting.ts": [
+      'import { action, always } from "@sidioralabs/rex";',
+      'import { z } from "zod/mini";',
+      'import { readGreeting } from "../../server/content/greeting.ts";',
+      "",
+      'export const readGreetingAction = action("read-greeting", {',
+      "  input: z.object({}),",
+      "  output: z.object({ text: z.string() }),",
+      "  policy: always(),",
+      '  effect: "read",',
+      "  handler: () => readGreeting(),",
+      "});",
+      "",
+    ].join("\n"),
+    "app/pages/home/page.ts": [
+      'import { page } from "@sidioralabs/rex";',
+      'import { readGreetingAction } from "../../actions/home/read-greeting.ts";',
+      "",
+      'export default page("home", {',
+      '  route: "/",',
+      "  load: { greeting: readGreetingAction },",
+      '  chrome: { title: "Home" },',
+      "});",
+      "",
+    ].join("\n"),
+  };
+  for (const [file, content] of Object.entries(files)) {
+    mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+    writeFileSync(path.join(root, file), content);
+  }
+  return root;
+}
+
 const ruleOf = (entry: Finding) => entry.rule.split("/")[0];
 
 describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
@@ -157,6 +212,40 @@ describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
     const json = await runCheck(enginePass, { json: true });
     expect(json.output).toBe("[]\n");
     expect(json.exitCode).toBe(0);
+  });
+
+  it("reports zero findings on an app whose action folder imports an app/server reader", async () => {
+    const root = copyEnginePassWithServerReader();
+    const app = discoverApp(root);
+    expect(app.fileAt("app/actions/home/read-greeting.ts")?.role).toBe("action");
+    expect(app.fileAt("app/server/content/greeting.ts")?.role).toBe("server");
+    const result = await runCheck(root, { json: true });
+    expect(result.findings).toEqual([]);
+    expect(result.exitCode).toBe(0);
+
+    writeFileSync(
+      path.join(root, "app/pages/home/view.tsx"),
+      [
+        'import { readGreeting } from "../../server/content/greeting.ts";',
+        "",
+        "export default function HomeView() {",
+        "  return (",
+        "    <article>",
+        "      <h1>Home</h1>",
+        "      <p>{readGreeting().text}</p>",
+        "    </article>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const leaked = await runRules(
+      discoverApp(root),
+      defaultRules.filter((rule) => rule.id === "boundaries"),
+    );
+    expect(leaked.findings.map((entry) => [entry.rule, entry.file, entry.line])).toEqual([
+      ["boundaries/import-table", "app/pages/home/view.tsx", 1],
+    ]);
   });
 
   it("reports findings from every rule on the combined fail fixture", async () => {

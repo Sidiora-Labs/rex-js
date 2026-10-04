@@ -17,6 +17,7 @@ export const FILE_ROLES = [
   "flow",
   "component",
   "data",
+  "server",
   "test",
 ] as const;
 
@@ -85,11 +86,12 @@ export interface RunRulesOptions {
 const SOURCE_FILE = /\.tsx?$/;
 const TEST_FILE = /\.test\.tsx?$/;
 const TOP_LEVEL_ROLES: Readonly<Record<string, FileRole>> = {
-  actions: "action",
   entities: "entity",
   policies: "policy",
   flows: "flow",
 };
+const ACTIONS_FOLDER = "actions";
+const FIXTURES_FOLDER = "fixtures";
 
 function toPosix(file: string): string {
   return file.split(path.sep).join("/");
@@ -165,6 +167,12 @@ export function classify(relativeToApp: string): Classification | null {
     return null;
   }
   if (TEST_FILE.test(base)) return { role: "test", page: null, region: null };
+  if (top === ACTIONS_FOLDER && segments.length >= 2) {
+    if (segments.slice(1, -1).includes(FIXTURES_FOLDER)) {
+      return { role: "test", page: null, region: null };
+    }
+    return isTs ? { role: "action", page: null, region: null } : null;
+  }
   if (top !== undefined && segments.length === 2 && isTs) {
     const role = TOP_LEVEL_ROLES[top];
     if (role) return { role, page: null, region: null };
@@ -173,6 +181,9 @@ export function classify(relativeToApp: string): Classification | null {
     return { role: "component", page: null, region: null };
   }
   if (top === "data" && segments.length >= 2) return { role: "data", page: null, region: null };
+  if (top === "server" && segments.length >= 2) {
+    return { role: "server", page: null, region: null };
+  }
   return null;
 }
 

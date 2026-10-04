@@ -9,6 +9,7 @@ Sources: `packages/rex/src/check/engine.ts` (file roles), `packages/rex/src/chec
 ```
 app/
   actions/<action>.ts          one action() per file
+  actions/<folder>/<action>.ts action folders: organisation only, at any depth
   entities/<entity>.ts         one entity() per file
   policies/<policy>.ts         one policy() per file
   flows/<flow>.ts              one flow() per file
@@ -17,7 +18,7 @@ app/
   components/Shell.tsx         the shell component overrides named by ui.components
   theme.css                    the DesignX theme
   locales/<locale>.json        messages per locale (i18n)
-  server/                      server-only modules, never bundled for the client
+  server/                      server-only modules, never bundled for the client (role server)
   data/                        stores and queries
   pages/<page>/
     page.ts                    page() declaration
@@ -36,24 +37,25 @@ A page folder is named after its page id. `page.ts`, `view.tsx` and `states.tsx`
 
 ## File roles
 
-The checker classifies every `.ts` and `.tsx` file under `app/` (skipping `.d.ts`, dot-folders and `node_modules`) into one of 14 roles (`FILE_ROLES`):
+The checker classifies every `.ts` and `.tsx` file under `app/` (skipping `.d.ts`, dot-folders and `node_modules`) into one of 15 roles (`FILE_ROLES`):
 
-| Role        | Path pattern                                                             |
-| ----------- | ------------------------------------------------------------------------ |
-| `page`      | `pages/<page>/page.ts`                                                   |
-| `view`      | `pages/<page>/view.tsx`                                                  |
-| `states`    | `pages/<page>/states.tsx`                                                |
-| `hook`      | `pages/<page>/hooks/<file>.ts` or `.tsx` (directly in `hooks/`)          |
-| `region`    | `pages/<page>/regions/<region>/region.tsx`                               |
-| `part`      | `pages/<page>/regions/<region>/parts/<file>.tsx`                         |
-| `overlay`   | `pages/<page>/overlays/<file>.tsx`                                       |
-| `test`      | anything under `pages/<page>/test/`, and any `*.test.ts` or `*.test.tsx` |
-| `action`    | `actions/<file>.ts`                                                      |
-| `entity`    | `entities/<file>.ts`                                                     |
-| `policy`    | `policies/<file>.ts`                                                     |
-| `flow`      | `flows/<file>.ts`                                                        |
-| `component` | anything under `components/`                                             |
-| `data`      | anything under `data/`                                                   |
+| Role        | Path pattern                                                                                                                |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `page`      | `pages/<page>/page.ts`                                                                                                      |
+| `view`      | `pages/<page>/view.tsx`                                                                                                     |
+| `states`    | `pages/<page>/states.tsx`                                                                                                   |
+| `hook`      | `pages/<page>/hooks/<file>.ts` or `.tsx` (directly in `hooks/`)                                                             |
+| `region`    | `pages/<page>/regions/<region>/region.tsx`                                                                                  |
+| `part`      | `pages/<page>/regions/<region>/parts/<file>.tsx`                                                                            |
+| `overlay`   | `pages/<page>/overlays/<file>.tsx`                                                                                          |
+| `test`      | anything under `pages/<page>/test/`, any `*.test.ts` or `*.test.tsx`, and anything under a `fixtures/` folder in `actions/` |
+| `action`    | `actions/<file>.ts` or `actions/<folder>/.../<file>.ts` at any depth                                                        |
+| `entity`    | `entities/<file>.ts`                                                                                                        |
+| `policy`    | `policies/<file>.ts`                                                                                                        |
+| `flow`      | `flows/<file>.ts`                                                                                                           |
+| `component` | anything under `components/`                                                                                                |
+| `data`      | anything under `data/`                                                                                                      |
+| `server`    | anything under `server/`                                                                                                    |
 
 A file that matches none of these is "unclassified" and is reported by `naming/unclassified`, `naming/barrel` or `naming/region-file`.
 
@@ -69,6 +71,8 @@ The component roles, which may not fetch data directly, are `view`, `states`, `r
 - **`regions/<region>/parts/<Part>.tsx`** has a single default export, a PascalCase component. Parts receive props and raise events; they do not fetch, call actions or navigate.
 - **`overlays/<Overlay>.tsx`** default-exports `overlay(id, { dismiss, binding }, render)`. The id is PascalCase and must match the file name and a `page.ts` overlay entry with the same `dismiss` and `binding`.
 - **`app/actions`, `app/entities`, `app/policies`, `app/flows`** hold declarations, one per file. The manifest scanner and the Vite plugin collect every exported value whose `kind` is the declaration kind.
+- **Action folders.** `app/actions` may hold folders: every `.ts` file under `app/actions`, at any depth, except `*.test.ts` files and anything under a `fixtures/` folder, is an action module. The Vite plugin registers it, the checker gives it the `action` role and the manifest addresses its action by its id, exactly as a top-level `app/actions/<action>.ts`. The folder is organisation only and carries no meaning: `app/actions/home/read-home-meta.ts` declares the action `read-home-meta`, not `home/read-home-meta`.
+- **`app/server`** holds server-only modules: file readers, database access and other code that never reaches the client bundle. The checker gives every module under it the `server` role; actions and other `app/server` modules may import it, and a page, view, region, part, overlay, states, hook or component that imports it is a `boundaries/import-table` finding. The Vite plugin enforces the same boundary at build time (`REX440`).
 - **`app/components`** holds shared components. `rex promote` moves a part here.
 - **`app/data`** holds stores (`bind(entity, memoryStore(entity, seed))`) and query helpers.
 
@@ -87,17 +91,18 @@ The `boundaries` rule enforces this table (`IMPORT_TABLE` in `packages/rex/src/c
 | `states.tsx` | states.tsx may import its page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never hooks.                                                                                |
 | component    | app/components may import other app/components, entity types and UI packages, never app data, actions or pages.                                                                                                                                                                                                                                                                          |
 | data         | app/data may import app/data, app/entities, app/actions, app/policies and packages.                                                                                                                                                                                                                                                                                                      |
-| action       | actions may import app/entities, app/policies, app/actions, app/data and non-React packages; declarations never import React.                                                                                                                                                                                                                                                            |
+| action       | actions may import app/entities, app/policies, app/actions, app/data, app/server and non-React packages; declarations never import React.                                                                                                                                                                                                                                                |
 | entity       | entities may import other app/entities and non-React packages.                                                                                                                                                                                                                                                                                                                           |
 | policy       | policies may import app/policies, app/entities and non-React packages.                                                                                                                                                                                                                                                                                                                   |
 | flow         | flows may import app/actions, app/policies, app/flows, app/entities, app/data and non-React packages.                                                                                                                                                                                                                                                                                    |
+| server       | app/server may import app/server, app/data, app/entities, app/policies and non-React packages; only actions and other app/server modules import it, never a page, view, region, part, overlay, states, hook or component.                                                                                                                                                                |
 | test         | tests may import anything within their own page and the shared app folders.                                                                                                                                                                                                                                                                                                              |
 
 Further boundary rules:
 
 - **No cross-page imports.** No file under `app/pages/<a>` imports from `app/pages/<b>`.
 - **No direct data access from components.** A file with a component role may not import `@tanstack/react-query`, `drizzle-orm`, `@libsql/client`, any `@orpc/*` package or `@sidioralabs/rex/server`; may not import `memoryStore` or `bind` from `@sidioralabs/rex` or `useRexClient` from `@sidioralabs/rex/client`; and may not call `fetch()`, `window.fetch()`, `globalThis.fetch()`, `self.fetch()` or construct `XMLHttpRequest`, `EventSource` or `WebSocket`. Type-only imports are allowed.
-- **Declarations never import React.** Actions, entities, policies and flows may not import `react`, `react-dom` or `@sidioralabs/rex/client`.
+- **Declarations never import React.** Actions, entities, policies and flows may not import `react`, `react-dom` or `@sidioralabs/rex/client`; neither may `app/server` modules.
 - **No hooks in views and states.** `view.tsx` and `states.tsx` may not import a `use*` export; parts and overlays may not import `use*` exports of `@sidioralabs/rex/client`.
 
 ## Naming rules
