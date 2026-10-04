@@ -623,7 +623,7 @@ status  = "pending"
 
 [task.3.1]
 title = "Implement the checker engine and findings format"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["0.7"]

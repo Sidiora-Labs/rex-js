@@ -120,7 +120,7 @@
 ## Wave 3
 
 - [ ] 3. Checker and manifest tooling
-  - [ ] 3.1 Implement the checker engine and findings format
+  - [x] 3.1 Implement the checker engine and findings format
     - Implement src/check/engine.ts: discoverApp(root) mapping the app directory into typed file roles (page, view, states, region, part, hook, overlay, action, entity, policy, flow, component, data); runRules(app, rules) collecting Finding {rule, severity, file, line, column, message, hint}; exit code 1 on any error.
     - Implement src/check/report.ts with JSON and grouped human formatters, and src/check/rule.ts with the Rule interface and a shared TypeScript source loader using the typescript compiler API.
     - Create the fixtures layout src/check/fixtures/<rule>/{pass,fail}/app and write src/check/engine.test.ts covering discovery roles, formatting and exit codes.
