@@ -97,7 +97,7 @@
     - Add client/devtools/ with RexDevtools (shift+mod+d toggle) and the Manifest, Page, Sidecar, Outcomes, Queries, Renders and Audit panels per [design] devtools; register a slot in client/shell/slots.ts guarded by import.meta.env.DEV and config.devtools; add server/routes/dev.ts serving GET /rex/dev/audit only in dev mode; add the ./devtools export.
     - Write client/devtools/devtools.test.tsx (toggle, each panel reads real data from the fixture app) and extend vite/vite.test.ts with a production build asserting the devtools module is absent from the bundle.
     - _Requirements: 15.1, 15.2_
-  - [ ] 2.4 First-party testing helpers on the real runtime
+  - [x] 2.4 First-party testing helpers on the real runtime
     - Add src/testing/index.ts exporting createTestApp, renderPage, renderRegion, testServer and readSidecar per [design] testing_api on the real server and runtime, calling resetAll from client/reset.ts between renders; add the ./testing export and a vitest setup helper.
     - Write src/testing/testing.test.tsx proving each helper against the fixture app.
     - _Requirements: 16.1_

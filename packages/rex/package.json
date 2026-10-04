@@ -26,6 +26,7 @@
     "./store/drizzle": "./src/store/index.ts",
     "./vite": "./src/vite/index.ts",
     "./check": "./src/check/index.ts",
+    "./testing": "./src/testing/index.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -80,6 +81,10 @@
         "types": "./dist/check/index.d.ts",
         "import": "./dist/check/index.js"
       },
+      "./testing": {
+        "types": "./dist/testing/index.d.ts",
+        "import": "./dist/testing/index.js"
+      },
       "./package.json": "./package.json"
     }
   },
@@ -106,6 +111,7 @@
     "@opentelemetry/api": "^1.9.0",
     "@tailwindcss/vite": "^4.1.0",
     "@tanstack/react-query": "^5.104.1",
+    "@testing-library/react": "^16.3.3",
     "@vitejs/plugin-react": "^6.1.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "cmdk": "^1.1.1",
@@ -132,6 +138,9 @@
       "optional": true
     },
     "@tailwindcss/vite": {
+      "optional": true
+    },
+    "@testing-library/react": {
       "optional": true
     },
     "@vitejs/plugin-react": {

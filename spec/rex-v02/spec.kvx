@@ -825,14 +825,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.4]
 title = "First-party testing helpers on the real runtime"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["0.7"]
 reqs = ["16.1"]
 do_1 = "Add src/testing/index.ts exporting createTestApp, renderPage, renderRegion, testServer and readSidecar per [design] testing_api on the real server and runtime, calling resetAll from client/reset.ts between renders; add the ./testing export and a vitest setup helper."
 do_2 = "Write src/testing/testing.test.tsx proving each helper against the fixture app."
-touches = ["packages/rex/src/testing", "packages/rex/src/client/reset.ts"]
+touches = ["packages/rex/src/testing"]
 verify_cmd = "pnpm -C packages/rex exec vitest run src/testing/testing.test.tsx"
 gate_kind = "planned"
 max_builds = 1
