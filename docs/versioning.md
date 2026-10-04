@@ -22,7 +22,7 @@ These parts of Rex are covered by the version number. A change to any of them th
 - the `rex` CLI: commands, flags, output formats documented as machine-readable (`rex check --json`, `.rex/manifest.json`) and exit codes ([cli.md](cli.md));
 - the app layout and file roles of the [convention](convention.md), including the import table;
 - the agent contract: `data-rex` addresses, the sidecar schema, the outcome region, the four invocation routes and density ([agent-contract.md](agent-contract.md));
-- the `/rex` HTTP surface: `/rex/manifest`, `/rex/rpc`, `/rex/flow`, `/rex/form/<action>` and their payloads;
+- the `/rex` HTTP surface: `/rex/manifest`, `/rex/rpc`, `/rex/flow`, `/rex/form/<action>`, `/rex/health`, `/rex/pages/<id>.md` and their payloads (`/rex/dev/audit` exists only in dev and is not covered);
 - error codes and checker rule ids ([errors.md](errors.md)).
 
 Anything not listed (module paths under `src/` that no export map entry names, test helpers outside `@sidioralabs/rex/testing`, generated virtual module internals other than the `rex:app` types) is internal and may change in any release.
@@ -73,9 +73,13 @@ The report lists each codemod with the files it changed, then one line per flag,
 0.1-raw-img: 2 changed
   changed app/pages/gallery/regions/cover/parts/Thumb.tsx
   changed app/pages/gallery/regions/cover/region.tsx
+0.1-schema-entry: 1 changed
+  changed app/entities/note.ts
 REX610 app/pages/gallery/regions/cover/region.tsx:6:5 Img width, height are placeholders; set the real values (https://rex.sidioralabs.com/errors/REX610)
-migrated from 0.1: 4 files changed, 1 flagged for the author
+migrated from 0.1: 5 files changed, 1 flagged for the author
 ```
+
+The example is illustrative; a run with nothing to move prints `0.1-schema-entry: no changes`.
 
 Every codemod is idempotent: a second `rex migrate` changes no file and reports `no changes` for each codemod. Flags stay in the report until the author replaces the placeholders, because they are read from the migrated source.
 
@@ -83,8 +87,9 @@ Every codemod is idempotent: a second `rex migrate` changes no file and reports 
 
 | Codemod | Change |
 | --- | --- |
-| `0.1-config` | Wraps a bare server default export of `rex.config.ts` in `defineConfig({ app, server: (app) => <the old export> })`, importing `defineConfig` from `@sidioralabs/rex` and the default export of `rex:app` when they are missing. A config that already default-exports `defineConfig(...)` is left alone. This removes deprecation `REX101`. |
+| `0.1-config` | Wraps a bare server default export of `rex.config.ts` in `defineConfig({ app, server: (app) => <the old export> })`, importing `defineConfig` from `@sidioralabs/rex/config` and the default export of `rex:app` when they are missing. A config that already default-exports `defineConfig(...)` is left alone. This removes deprecation `REX101`. |
 | `0.1-page-render` | 0.1 rendered every page in the browser; 0.2 renders on the server by default. A page whose view, states, regions, parts, hooks, overlays or the app components and data modules they import read `window`, `document`, `localStorage`, `sessionStorage`, `navigator`, `location`, `history` or `matchMedia` while rendering gets `render: "csr"` after its `route`. Reads inside `useEffect`, `useLayoutEffect`, `useInsertionEffect` or an `on*` event handler, `typeof` guards and locally declared names do not count. Every other page is left alone and takes the 0.2 default. |
-| `0.1-raw-img` | Converts `<img>` in regions and parts to `<Img>` from `@sidioralabs/rex/client` and adds the import. Numeric string `width` and `height` become numbers. A missing `width`, `height` or `alt` gets a placeholder marked `/* REX610 placeholder */` (`1` for a size, `""` for alt), and each `Img` carrying a placeholder is reported as `REX610` with its file, line and column. `createElement("img")` is not rewritten and is reported as `REX610`. |
+| `0.1-raw-img` | Converts `<img>` in regions and parts to `<Img>` from `@sidioralabs/rex/client/media` and adds the import. Numeric string `width` and `height` become numbers. A missing `width`, `height` or `alt` gets a placeholder marked `/* REX610 placeholder */` (`1` for a size, `""` for alt), and each `Img` carrying a placeholder is reported as `REX610` with its file, line and column. `createElement("img")` is not rewritten and is reported as `REX610`. |
+| `0.1-schema-entry` | Moves named imports to the 0.2 entries: `z` to `zod/mini`; field helpers, `MONEY_PATTERN` and the schema types to `@sidioralabs/rex/schema`; config names and types to `@sidioralabs/rex/config`; manifest, JSON Schema and sidecar names to `@sidioralabs/rex/manifest`; interop, media and i18n names from `@sidioralabs/rex/client` to `@sidioralabs/rex/client/interop`, `.../media` and `.../i18n`. Type-only imports keep `import type`; it never flags. |
 
 `REX610` is not a checker error: the migrated app passes `rex check`. Replace each placeholder with the real value and run `rex check` again.

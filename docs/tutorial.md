@@ -1,6 +1,6 @@
 # Tutorial: build the wallet
 
-This tutorial builds the wallet demo in [`examples/demo`](../examples/demo) from an empty folder with `rex new` and `rex make`, one command and one file at a time. At the end you have a two-page app, a portfolio and a send form, that a person and an agent operate through the same DOM: every action has a `data-rex` address, a keyboard shortcut, a URL and a palette entry, every page publishes a sidecar, and `rex check` passes.
+This tutorial builds the portfolio and send pages of the wallet demo in [`examples/demo`](../examples/demo) from an empty folder with `rex new` and `rex make`, one command and one file at a time. At the end you have the two main pages of the demo, a portfolio and a send form, that a person and an agent operate through the same DOM: every action has a `data-rex` address, a keyboard shortcut, a URL and a palette entry, every page publishes a sidecar, and `rex check` passes. The demo additionally ships a `tokens` page (`render: "ssg"`, `revalidate: 60`), a static `about` page and an `embed` page with their `list-tokens` and `send-feedback` actions; this tutorial does not build them.
 
 Every file of the finished app is in `examples/demo`. Where this page does not print a file in full, it links to it.
 
@@ -29,10 +29,11 @@ cd wallet
 | `package.json` | scripts `dev`, `build`, `check`, `manifest`, `start`, `lint`, `format`; `@sidioralabs/rex` and its peers; DesignX and Tailwind packages; TypeScript, ESLint and Prettier dev dependencies |
 | `tsconfig.json` | strict compiler options; `include` covers `app`, `rex.config.ts` and the `rex:app` typings of the package |
 | `index.html` | `<div id="root">`, the `/app/theme.css` stylesheet and `<script type="module" src="/@rex/entry">` |
-| `rex.config.ts` | `defineConfig({ app, ui: "designx", server })` with `createRexServer` |
+| `rex.config.ts` | `defineConfig({ app, ui: { kit: "designx", components: "app/components/Shell.tsx" }, server })` with `createRexServer` |
 | `app/entities/note.ts`, `app/policies/viewer.ts`, `app/actions/ping.ts`, `app/data/notes.ts` | a starter entity, policy, action and store |
 | `app/components/Button.tsx` | a button over the DesignX `Button` |
-| `app/components/ui/`, `app/theme.css`, `dx.json` | the DesignX theme and base components: badge, button, card, command, dialog, empty, field, input, kbd, select, sheet, skeleton, table, tabs, tooltip |
+| `app/components/Shell.tsx` | the shell overrides `Button`, `Sheet`, `PaletteItem`, `Outcome` and `Nav` on the DesignX primitives, registered through `ui.components` |
+| `app/components/ui/`, `app/theme.css`, `dx.json` | the DesignX theme and the standard set from `@sidioralabs/rex/designx` (`DESIGNX_STANDARD`: the 15 base items plus alert, avatar, breadcrumb, checkbox, data-table, form, navigation-menu, number-field, pagination, progress, radio-group, scroll-area, separator, sidebar, spinner, switch, textarea, toolbar, typography and the use-media-query and use-touch-capable hooks), `ui/utils.ts` and `ui/use-screen.ts` over `useScreen` |
 | `app/pages/home/...` | a `home` page at `/` with `page.ts`, `view.tsx`, `states.tsx`, `hooks/useNotes.ts`, the `welcome` region with its `Welcome` part, and `test/` |
 | `app/locales/en.json` | the default locale's messages |
 | `eslint.config.js`, `.prettierrc`, `.prettierignore` | the Rex ESLint and Prettier presets |
@@ -50,10 +51,10 @@ rex dev
 The wallet keeps the `viewer` policy and the shared `Button` and drops the rest of the starter:
 
 ```sh
-rm -r app/pages/home app/actions/ping.ts app/entities/note.ts app/data/notes.ts app/locales
+rm -r app/pages/home app/actions/ping.ts app/entities/note.ts app/data/notes.ts
 ```
 
-The wallet is English only; [Translate an app](recipes/i18n.md) shows how to add `app/locales` back.
+Keep `app/locales`: the demo ships English and German messages (`en.json`, `de.json`, whose keys serve the about, tokens and embed pages and the locale switch; see [Translate an app](recipes/i18n.md)) and its `rex.config.ts` declares `i18n`, `fonts` and `check.i18n.allow`. The portfolio and send pages keep literal English labels, listed under `check.i18n.allow` so `i18n/literal` accepts them.
 
 ## 3. Entities
 
@@ -191,15 +192,14 @@ export const accounts = bind(
   ]),
 );
 
-export const tokens = bind(
-  token,
-  memoryStore(token, [
-    { id: "dust", symbol: "DUST", name: "Dust Token", balance: "0.05", priceUsd: "0.004" },
-    { id: "eth", symbol: "ETH", name: "Ether", balance: "25", priceUsd: "3000" },
-    { id: "pax", symbol: "PAX", name: "Paxeer", balance: "320", priceUsd: "0.25" },
-    { id: "usdc", symbol: "USDC", name: "USD Coin", balance: "1500", priceUsd: "1" },
-  ]),
-);
+export const TOKEN_SEED: readonly Token[] = [
+  { id: "dust", symbol: "DUST", name: "Dust Token", balance: "0.05", priceUsd: "0.004" },
+  { id: "eth", symbol: "ETH", name: "Ether", balance: "25", priceUsd: "3000" },
+  { id: "pax", symbol: "PAX", name: "Paxeer", balance: "320", priceUsd: "0.25" },
+  { id: "usdc", symbol: "USDC", name: "USD Coin", balance: "1500", priceUsd: "1" },
+];
+
+export const tokens = bind(token, memoryStore(token, [...TOKEN_SEED]));
 
 export const contacts = bind(
   contact,
@@ -211,7 +211,7 @@ export const contacts = bind(
 );
 ```
 
-The rest of the file defines `toUnits` and `fromUnits` (decimal string to scaled `bigint` and back), `valueUsd`, `isDust`, `accountIdOf` (the actor's `account` attribute or `main`), `requireAccount`, `nextId` (the next id in sorted order, used by the pickers) and `walletOverview(accountId)`, which returns the account, every token with its USD value and dust flag, the contacts and the total. Copy it from [examples/demo/app/data/wallet.ts](../examples/demo/app/data/wallet.ts).
+The rest of the file defines `CHANGE_24H_PCT` and `change24hPct` (the seeded 24h price change per token), `TOKEN_PRICES` and `tokenPrices`, `toUnits` and `fromUnits` (decimal string to scaled `bigint` and back), `valueUsd`, `isDust`, `accountIdOf` (the actor's `account` attribute or `main`), `requireAccount`, `nextId` (the next id in sorted order, used by the pickers) and `walletOverview(accountId)`, which returns the account, every token with its USD value, dust flag and 24h change, the contacts, the total and the 24h change (`change24hUsd`, `change24hPct`). Copy it from [examples/demo/app/data/wallet.ts](../examples/demo/app/data/wallet.ts).
 
 ## 6. Actions
 
@@ -243,9 +243,18 @@ export const loadWallet = action("load-wallet", {
   input: z.object({}),
   output: z.object({
     account: z.object(account.fields),
-    tokens: z.array(z.object({ ...token.fields, valueUsd: money(), dust: boolean() })),
+    tokens: z.array(
+      z.object({
+        ...token.fields,
+        valueUsd: money(),
+        dust: boolean(),
+        change24hPct: z.string(),
+      }),
+    ),
     contacts: z.array(z.object(contact.fields)),
     totalUsd: money(),
+    change24hUsd: z.string(),
+    change24hPct: z.string(),
   }),
   policy: viewer.can("viewer.read"),
   effect: "read",
@@ -338,6 +347,7 @@ export const send = action("send", {
   effect: "irreversible",
   label: "Send",
   shortcut: "mod+enter",
+  form: { redirect: "/send" },
   invalidates: ["wallet"],
   handler: async (input, ctx) => {
     const owner = await requireAccount(accountIdOf(ctx.actor.attributes));
@@ -358,24 +368,9 @@ export const send = action("send", {
 });
 ```
 
-From each declaration Rex derives an oRPC procedure at `/rex/rpc` that validates input and output and evaluates the policy before the handler, one audit record per call, a palette entry, the shortcut, `?act=<id>` URL invocation, a form route at `/rex/form/<id>`, and a manifest entry. `effect: "irreversible"` puts a confirmation step on every route. `invalidates: ["wallet"]` refetches the queries keyed `wallet` after success.
+From each declaration Rex derives an oRPC procedure at `/rex/rpc` that validates input and output and evaluates the policy before the handler, one audit record per call, a palette entry, the shortcut, `?act=<id>` URL invocation, a form route at `/rex/form/<id>`, and a manifest entry. `effect: "irreversible"` puts a confirmation step on every route. `invalidates: ["wallet"]` refetches the `wallet` loader after success.
 
-The pages read the wallet through `load-wallet` with a TanStack query helper, `app/data/wallet-query.ts`:
-
-```ts
-import { procedureOf, type RexClient } from "@sidioralabs/rex/client";
-import { queryOptions } from "@tanstack/react-query";
-import { loadWallet } from "../actions/load-wallet.ts";
-
-export const WALLET_QUERY = "wallet";
-
-export function walletQuery(client: RexClient) {
-  return queryOptions({
-    queryKey: [WALLET_QUERY],
-    queryFn: async () => loadWallet.output.parse(await procedureOf(client, loadWallet.id)({})),
-  });
-}
-```
+The pages read the wallet through a loader: `load: { wallet: loadWallet }` in page.ts (see [Load page data with a loader](recipes/loader.md)); during server rendering it runs in process and is dehydrated into the HTML, on the client it is a TanStack query keyed `["loader", <page>, "wallet", <digest>]` that `useLoader(page, "wallet")` reads.
 
 ## 7. Server and config
 
@@ -438,6 +433,9 @@ import { createDemoServer } from "./server.ts";
 export default defineConfig({
   app,
   ui: { kit: "designx", components: "app/components/Shell.tsx" },
+  i18n: { locales: ["en", "de"], default: "en", routing: "none" },
+  fonts: [{ family: "Liberation Mono", src: "/fonts/LiberationMono-Regular.ttf", weight: 400, preload: true }],
+  check: { i18n: { allow: [/* the untranslated labels, see examples/demo/rex.config.ts */] } },
   server: (bundle) => createDemoServer(bundle),
 });
 ```
@@ -470,14 +468,16 @@ export default function Button({ tone = "quiet", type = "button", ...props }: Bu
 }
 ```
 
-Add three more and the shell overrides:
+Add five more and replace the generated shell overrides:
 
 | File | Role |
 | --- | --- |
 | [app/components/Card.tsx](../examples/demo/app/components/Card.tsx) | a titled card over DesignX `Card` |
 | [app/components/Field.tsx](../examples/demo/app/components/Field.tsx) | a labelled input with hint and error, wired with `aria-describedby` and `aria-invalid` |
 | [app/components/Sheet.tsx](../examples/demo/app/components/Sheet.tsx) | the body of the wallet's sheets, with an optional description |
-| [app/components/Shell.tsx](../examples/demo/app/components/Shell.tsx) | `Button`, `Sheet`, `PaletteItem` and `Outcome` overrides for the Rex shell, typed with `ShellButtonProps`, `ShellSheetProps`, `ShellPaletteItemProps` and `ShellOutcomeProps` |
+| [app/components/BalanceCard.tsx](../examples/demo/app/components/BalanceCard.tsx) | the balance card: name, token count, the total formatted as USD, the 24h change and the address (with `AnimatedNumber.tsx` and `ChangeBadge.tsx`) |
+| [app/components/HoldingsTable.tsx](../examples/demo/app/components/HoldingsTable.tsx) | the `Holding` type and the holdings rows in a DesignX `DataTable` with a search field (with `TokenAvatar.tsx`) |
+| [app/components/Shell.tsx](../examples/demo/app/components/Shell.tsx) | `Button`, `Sheet`, `PaletteItem`, `Outcome`, `Nav` and `Frame` overrides for the Rex shell (a DesignX sidebar frame with breadcrumb, palette trigger and theme toggle), typed with `ShellButtonProps`, `ShellSheetProps`, `ShellPaletteItemProps`, `ShellOutcomeProps`, `ShellNavProps` and `ShellFrameProps` |
 
 ## 9. The portfolio page
 
@@ -490,8 +490,9 @@ rex make part portfolio QuickActions --region actions
 rex make part portfolio FilterForm --region actions
 rex make part portfolio DustToggle --region holdings
 rex make part portfolio HoldingsList --region holdings
-rex make part portfolio HoldingRow --region holdings
 ```
+
+The row rendering lives in the shared `app/components/HoldingsTable.tsx` over the DesignX `DataTable`, so the holdings region needs no row part.
 
 `rex make page` writes `page.ts`, `view.tsx` (the three regions in `Page.Stack`), `states.tsx` (the eight non-ready states), `hooks/`, one `region.tsx` per region, the overlay file and `test/`. The other commands add one file each.
 
@@ -499,6 +500,7 @@ rex make part portfolio HoldingRow --region holdings
 
 ```ts
 import { page } from "@sidioralabs/rex";
+import { loadWallet } from "../../actions/load-wallet.ts";
 import { toggleHideDust } from "../../actions/toggle-hide-dust.ts";
 import { viewer } from "../../policies/viewer.ts";
 
@@ -506,16 +508,15 @@ export default page("portfolio", {
   route: "/",
   policy: viewer.can("viewer.read"),
   draft: "route",
+  load: { wallet: loadWallet },
   actions: [toggleHideDust],
   chrome: { title: "Portfolio" },
   regions: ["hero", "actions", "holdings"],
-  overlays: [
-    { id: "HoldingsFilterSheet", dismiss: "both", binding: "url" },
-  ],
+  overlays: [{ id: "HoldingsFilterSheet", dismiss: "both", binding: "url" }],
 });
 ```
 
-`view.tsx` stays as generated:
+`view.tsx` keeps the generated shape with a wider gap, `<Page.Stack space={5}>`:
 
 ```tsx
 import { Page, view } from "@sidioralabs/rex/client";
@@ -524,7 +525,7 @@ import HeroRegion from "./regions/hero/region.tsx";
 import HoldingsRegion from "./regions/holdings/region.tsx";
 
 export default view(() => (
-  <Page.Stack space={4}>
+  <Page.Stack space={5}>
     <HeroRegion />
     <ActionsRegion />
     <HoldingsRegion />
@@ -534,15 +535,21 @@ export default view(() => (
 
 In `states.tsx`, import `Button` from `../../components/Button.tsx` and use it for the generated retry buttons ([examples/demo/app/pages/portfolio/states.tsx](../examples/demo/app/pages/portfolio/states.tsx)). Each state receives `params`, `retry` and `error`.
 
-The hooks. `hooks/useWallet.ts` reads the wallet query:
+The hooks. `hooks/useWallet.ts` reads the page's `wallet` loader:
 
 ```ts
-import { useRexClient } from "@sidioralabs/rex/client";
-import { useQuery } from "@tanstack/react-query";
-import { walletQuery } from "../../../data/wallet-query.ts";
+import type { ActionOutput } from "@sidioralabs/rex";
+import { useActivePage, useLoader, type RexLoaderError } from "@sidioralabs/rex/client";
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { loadWallet } from "../../../actions/load-wallet.ts";
 
-export function useWallet() {
-  return useQuery(walletQuery(useRexClient()));
+type WalletOverview = ActionOutput<typeof loadWallet>;
+
+export function useWallet(): UseQueryResult<WalletOverview, RexLoaderError> {
+  const active = useActivePage();
+  if (active === null)
+    throw new Error("useWallet reads the wallet loader of the active portfolio page");
+  return useLoader(active.page, "wallet") as UseQueryResult<WalletOverview, RexLoaderError>;
 }
 ```
 
@@ -581,44 +588,29 @@ export default region("hero", () => {
       address={data.account.address}
       totalUsd={data.totalUsd}
       tokenCount={data.tokens.length}
+      change24hUsd={data.change24hUsd}
+      change24hPct={data.change24hPct}
     />
   );
 });
 ```
 
-`regions/hero/parts/BalanceHero.tsx`:
+`regions/hero/parts/BalanceHero.tsx` renders the shared `BalanceCard`:
 
 ```tsx
-import Card from "../../../../../components/Card.tsx";
+import BalanceCard, { type BalanceCardProps } from "../../../../../components/BalanceCard.tsx";
 
-export interface BalanceHeroProps {
-  readonly name: string;
-  readonly address: string;
-  readonly totalUsd: string;
-  readonly tokenCount: number;
-}
+export type BalanceHeroProps = BalanceCardProps;
 
-export default function BalanceHero({ name, address, totalUsd, tokenCount }: BalanceHeroProps) {
-  return (
-    <Card title={name}>
-      <p>
-        Total balance <strong data-demo-total="">{`$${totalUsd}`}</strong>
-      </p>
-      <p>
-        {tokenCount} {tokenCount === 1 ? "token" : "tokens"} held
-      </p>
-      <p>
-        Address <code>{address}</code>
-      </p>
-    </Card>
-  );
+export default function BalanceHero(props: BalanceHeroProps) {
+  return <BalanceCard {...props} />;
 }
 ```
 
 `regions/holdings/region.tsx` binds the `toggle-hide-dust` action with `act()` and filters the holdings:
 
 ```tsx
-import { Page, region } from "@sidioralabs/rex/client";
+import { region } from "@sidioralabs/rex/client";
 import { toggleHideDust } from "../../../../actions/toggle-hide-dust.ts";
 import { useHoldingsFilter } from "../../hooks/useHoldingsFilter.ts";
 import { useWallet } from "../../hooks/useWallet.ts";
@@ -641,26 +633,31 @@ export default region("holdings", ({ act }) => {
       entry.name.toLowerCase().includes(needle),
   );
   return (
-    <Page.Stack space={3}>
-      <DustToggle
-        hideDust={hideDust}
-        hiddenCount={data.tokens.length - shown.length}
-        control={toggle.controlProps}
-        onToggle={() => {
-          void toggle.run({});
-        }}
-      />
-      <HoldingsList holdings={matching} filter={filter.query} />
-    </Page.Stack>
+    <HoldingsList
+      holdings={matching}
+      filter={filter.query}
+      onFilter={filter.setQuery}
+      toolbar={
+        <DustToggle
+          hideDust={hideDust}
+          hiddenCount={data.tokens.length - shown.length}
+          control={toggle.controlProps}
+          onToggle={() => {
+            void toggle.run({});
+          }}
+        />
+      }
+    />
   );
 });
 ```
 
-`act(action)` returns `controlProps` (the `data-rex` address, the allowed state and the reason) and `run(input)`. The part spreads `controlProps` on its button, `regions/holdings/parts/DustToggle.tsx`:
+`act(action)` returns `controlProps` (the `data-rex` address, the allowed state and the reason) and `run(input)`. The part spreads `controlProps` on its DesignX `Switch`, `regions/holdings/parts/DustToggle.tsx`:
 
 ```tsx
 import type { ActControlProps } from "@sidioralabs/rex/client";
-import Button from "../../../../../components/Button.tsx";
+import { useId } from "react";
+import { Switch } from "../../../../../components/ui/switch.tsx";
 
 export interface DustToggleProps {
   readonly hideDust: boolean;
@@ -670,52 +667,74 @@ export interface DustToggleProps {
 }
 
 export default function DustToggle({ hideDust, hiddenCount, control, onToggle }: DustToggleProps) {
+  const labelId = useId();
+  const statusId = useId();
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--rex-space-3)" }}>
-      <Button {...control} aria-pressed={hideDust} onClick={onToggle}>
-        {hideDust ? "Show dust" : "Hide dust"}
-      </Button>
-      <p style={{ margin: 0 }} data-demo-dust={hideDust ? "hidden" : "shown"}>
-        {hideDust
-          ? `Dust is hidden (${hiddenCount} ${hiddenCount === 1 ? "token" : "tokens"} under $1)`
-          : "Dust is shown"}
-      </p>
+    <div className="flex items-center gap-3">
+      <Switch
+        {...control}
+        checked={hideDust}
+        aria-labelledby={labelId}
+        aria-describedby={statusId}
+        onCheckedChange={() => onToggle()}
+      />
+      <span className="flex flex-col">
+        <span id={labelId} className="text-sm font-medium">
+          Hide dust
+        </span>
+        <span
+          id={statusId}
+          className="text-xs text-muted-foreground"
+          data-demo-dust={hideDust ? "hidden" : "shown"}
+        >
+          {hideDust
+            ? `Dust is hidden (${hiddenCount} ${hiddenCount === 1 ? "token" : "tokens"} under $1)`
+            : "Dust is shown"}
+        </span>
+      </span>
     </div>
   );
 }
 ```
 
-`regions/holdings/parts/HoldingsList.tsx` renders the list with `Page.List`, which pages it through the `page` and `size` URL params with a "load more" link instead of loading on scroll:
+`regions/holdings/parts/HoldingsList.tsx` wraps the shared `HoldingsTable` (a DesignX `DataTable` with a search field) in a `Card` whose action slot holds the dust toggle:
 
 ```tsx
-import { Page } from "@sidioralabs/rex/client";
+import type { ReactNode } from "react";
 import Card from "../../../../../components/Card.tsx";
-import HoldingRow, { type Holding } from "./HoldingRow.tsx";
+import HoldingsTable, { type Holding } from "../../../../../components/HoldingsTable.tsx";
 
 export interface HoldingsListProps {
   readonly holdings: readonly Holding[];
   readonly filter: string;
+  readonly onFilter: (query: string) => void;
+  readonly toolbar?: ReactNode;
 }
 
-export default function HoldingsList({ holdings, filter }: HoldingsListProps) {
+export default function HoldingsList({ holdings, filter, onFilter, toolbar }: HoldingsListProps) {
   return (
-    <Card title="Holdings">
-      <Page.List
-        name="holdings"
-        label="Holdings"
-        items={holdings}
-        itemKey={(holding) => holding.id}
-        size={3}
-        empty={<p>{filter === "" ? "No holdings to show" : `No holding matches "${filter}"`}</p>}
-      >
-        {(holding) => <HoldingRow holding={holding} />}
-      </Page.List>
+    <Card
+      title="Holdings"
+      description={
+        filter === "" ? (
+          `${holdings.length} ${holdings.length === 1 ? "token" : "tokens"}`
+        ) : holdings.length === 0 ? (
+          <span role="status">{`No holding matches "${filter}"`}</span>
+        ) : (
+          `${holdings.length} matching "${filter}"`
+        )
+      }
+      action={toolbar}
+    >
+      <HoldingsTable holdings={holdings} search={filter} onSearch={onFilter} />
     </Card>
   );
 }
 ```
 
-`regions/holdings/parts/HoldingRow.tsx` exports the `Holding` type and renders one row ([source](../examples/demo/app/pages/portfolio/regions/holdings/parts/HoldingRow.tsx)).
+`Page.List` from `@sidioralabs/rex/client` remains the paged-list primitive (page and size in the URL, a visible "load more" control); the `traps/infinite-list` rule points at it ([migration.md](migration.md#5-fix-the-new-checker-findings)).
+
+`app/components/HoldingsTable.tsx` exports the `Holding` type and renders the rows ([source](../examples/demo/app/components/HoldingsTable.tsx)).
 
 The `actions` region opens the filter sheet and navigates to the send page. It hands the sheet its content through a context the overlay exports, because an overlay may not call hooks itself; [Add an overlay](recipes/overlay.md) walks through `overlays/HoldingsFilterSheet.tsx` and this region:
 
@@ -773,6 +792,7 @@ rex make part send TransferReceipt --region success
 
 ```ts
 import { page } from "@sidioralabs/rex";
+import { loadWallet } from "../../actions/load-wallet.ts";
 import { pickContact } from "../../actions/pick-contact.ts";
 import { pickToken } from "../../actions/pick-token.ts";
 import { send } from "../../actions/send.ts";
@@ -783,6 +803,7 @@ export default page("send", {
   policy: viewer.can("viewer.read"),
   recovery: "portfolio",
   draft: "route",
+  load: { wallet: loadWallet },
   actions: [send, pickToken, pickContact],
   chrome: { title: "Send", back: "portfolio" },
   regions: ["form", "confirm", "success"],
@@ -793,7 +814,7 @@ export default page("send", {
 });
 ```
 
-`view.tsx` stays as generated, `states.tsx` uses `Button` as on the portfolio page, and `hooks/useWallet.ts` is the same as the portfolio's: pages never import each other, so each page has its own hook over the shared query in `app/data`.
+`view.tsx` stays as generated, `states.tsx` uses `Button` as on the portfolio page, and `hooks/useWallet.ts` is the same as the portfolio's: pages never import each other, so each page has its own hook over its own `wallet` loader.
 
 `hooks/useSendDraft.ts` keeps the amount in the route draft and validates it with `MONEY_PATTERN`:
 
@@ -815,11 +836,12 @@ export function useSendDraft() {
 }
 ```
 
-`regions/confirm/region.tsx` binds the irreversible `send`:
+`regions/confirm/region.tsx` binds the irreversible `send`. The send control is an `ActionForm` (so it also works without JavaScript, see [A form that works without JavaScript](recipes/form-without-js.md)) carrying the draft amount as a hidden input, and a disabled bound `Button` while the draft is invalid:
 
 ```tsx
-import { region } from "@sidioralabs/rex/client";
+import { ActionForm, region } from "@sidioralabs/rex/client";
 import { send } from "../../../../actions/send.ts";
+import Button from "../../../../components/Button.tsx";
 import { useSendDraft } from "../../hooks/useSendDraft.ts";
 import { useWallet } from "../../hooks/useWallet.ts";
 import SendSummary from "./parts/SendSummary.tsx";
@@ -838,29 +860,45 @@ export default region("confirm", ({ act }) => {
       recipient={contact?.name ?? null}
       amount={draft.amount}
       valid={draft.valid}
-      control={sending.controlProps}
-      onSend={() => {
-        void sending.run(draft.amount === "" ? {} : { amount: draft.amount });
-      }}
-    />
+    >
+      {draft.valid ? (
+        <ActionForm action={send} submitLabel="Send">
+          <input type="hidden" name="amount" value={draft.amount} />
+        </ActionForm>
+      ) : (
+        <Button {...sending.controlProps} tone="primary" disabled aria-disabled>
+          Send
+        </Button>
+      )}
+    </SendSummary>
   );
 });
 ```
 
-`regions/confirm/parts/SendSummary.tsx`:
+`regions/confirm/parts/SendSummary.tsx` takes the region's send control as `children`:
 
 ```tsx
-import type { ActControlProps } from "@sidioralabs/rex/client";
-import Button from "../../../../../components/Button.tsx";
+import { ShieldAlertIcon } from "../../../../../components/icons.ts";
+import type { ReactNode } from "react";
 import Card from "../../../../../components/Card.tsx";
+import { Alert, AlertDescription } from "../../../../../components/ui/alert.tsx";
+import { Separator } from "../../../../../components/ui/separator.tsx";
 
 export interface SendSummaryProps {
   readonly symbol: string | null;
   readonly recipient: string | null;
   readonly amount: string;
   readonly valid: boolean;
-  readonly control: ActControlProps;
-  readonly onSend: () => void;
+  readonly children: ReactNode;
+}
+
+function Row({ label, value }: { readonly label: string; readonly value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="m-0 truncate font-medium tabular-nums">{value}</dd>
+    </div>
+  );
 }
 
 export default function SendSummary({
@@ -868,32 +906,39 @@ export default function SendSummary({
   recipient,
   amount,
   valid,
-  control,
-  onSend,
+  children,
 }: SendSummaryProps) {
   const shown = amount === "" ? "0.001 (default)" : amount;
   return (
-    <Card title="Review">
-      <p data-demo-summary="">
+    <Card title="Review" variant="elevated">
+      <p className="m-0 text-[15px] font-medium" data-demo-summary="">
         {`Send ${shown} ${symbol ?? "?"} to ${recipient ?? "?"}`}
       </p>
-      <p>Sending cannot be undone; you confirm it in the next step.</p>
-      {valid ? null : <p role="alert">Fix the amount before sending.</p>}
-      <Button
-        {...control}
-        tone="primary"
-        disabled={control.disabled || !valid}
-        aria-disabled={control["aria-disabled"] || !valid}
-        onClick={onSend}
-      >
-        Send
-      </Button>
+      <dl className="m-0 flex flex-col gap-2">
+        <Row label="Token" value={symbol ?? "Not selected"} />
+        <Row label="Amount" value={shown} />
+        <Row label="Recipient" value={recipient ?? "Not selected"} />
+        <Row label="Network fee" value="Included" />
+      </dl>
+      <Separator />
+      <p className="m-0 flex items-start gap-2 text-sm text-muted-foreground">
+        <ShieldAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        Sending cannot be undone; you confirm it in the next step.
+      </p>
+      {valid ? null : (
+        <Alert variant="destructive">
+          <AlertDescription>
+            <p className="m-0">Fix the amount before sending.</p>
+          </AlertDescription>
+        </Alert>
+      )}
+      {children}
     </Card>
   );
 }
 ```
 
-Because `send` is irreversible, `run` opens the confirmation dialog first; the same happens when the action is invoked by shortcut, URL or palette.
+Because `send` is irreversible, submitting the `ActionForm` opens the confirmation dialog first; the same happens when the action is invoked by shortcut, URL or palette.
 
 `regions/success/region.tsx` shows the last transfer:
 
@@ -913,19 +958,28 @@ export default region("success", () => {
 `regions/success/parts/TransferReceipt.tsx`:
 
 ```tsx
-import Card from "../../../../../components/Card.tsx";
+import { CircleCheckIcon, HistoryIcon } from "../../../../../components/icons.ts";
+import { Alert, AlertDescription, AlertTitle } from "../../../../../components/ui/alert.tsx";
 
 export interface TransferReceiptProps {
   readonly transfer: string | null;
 }
 
 export default function TransferReceipt({ transfer }: TransferReceiptProps) {
+  const sent = transfer !== null;
+  const Icon = sent ? CircleCheckIcon : HistoryIcon;
   return (
-    <Card title="Last transfer">
-      <p data-demo-transfer={transfer === null ? "none" : "sent"}>
-        {transfer ?? "No transfer has been sent from this wallet yet."}
-      </p>
-    </Card>
+    <Alert role="status" variant={sent ? "success" : "outline"}>
+      <Icon aria-hidden="true" />
+      <AlertTitle>
+        <h2 className="m-0 text-sm font-medium">Last transfer</h2>
+      </AlertTitle>
+      <AlertDescription>
+        <p className="m-0 break-all" data-demo-transfer={sent ? "sent" : "none"}>
+          {transfer ?? "No transfer has been sent from this wallet yet."}
+        </p>
+      </AlertDescription>
+    </Alert>
   );
 }
 ```
@@ -1004,7 +1058,7 @@ describe("portfolio hero region", () => {
   it("renders the balance hero alone on the page runtime", async () => {
     const view = await renderRegion(walletApp(owner), "portfolio", "hero");
     await waitFor(() =>
-      expect(view.container.querySelector("[data-demo-total]")?.textContent).toBe("$76580.0002"),
+      expect(view.container.querySelector("[data-demo-total]")?.textContent).toBe("$76,580.00"),
     );
   });
 });
@@ -1029,6 +1083,6 @@ The demo also carries a Playwright operability walk, [e2e/operability.spec.ts](.
 
 ## Next steps
 
-- [Recipes](recipes/README.md): loaders, forms without JavaScript, overlays, flow approvals, static pages, i18n, web components and incremental adoption.
+- [Recipes](recipes/README.md): loaders, forms without JavaScript, overlays, flow approvals, static pages, i18n, web components, incremental adoption and the DesignX standard.
 - [convention.md](convention.md) for the file roles and the import table, [primitives.md](primitives.md) for the declarations, [cli.md](cli.md) for every command.
 - [API reference](api/README.md), generated from the package entries.

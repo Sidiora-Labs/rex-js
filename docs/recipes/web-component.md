@@ -4,7 +4,7 @@ A part is a pure component: props in, events out. `defineElement` from `@sidiora
 
 ## 1. Pick the part
 
-The demo's `HoldingRow` part (`examples/demo/app/pages/portfolio/regions/holdings/parts/HoldingRow.tsx`) takes one `holding` prop. A part exported as an element takes its props from attributes, so give it flat props:
+The demo's `TokenChip` component (`examples/demo/app/components/TokenChip.tsx`) takes flat `symbol` and `price` string props and is registered as `<demo-token-chip>` in `examples/demo/app/components/token-chip-element.ts` (`defineElement(TOKEN_CHIP_TAG, TokenChip, { props: { symbol: "string", price: "string" } })`), which the embed page renders. A part exported as an element takes its props from attributes, so give it flat props. The example below extends that chip with a number, a boolean and a json prop to show every attribute kind; its import below is a path to the extended part rather than the demo file:
 
 ```tsx
 export interface TokenChipProps {
@@ -25,7 +25,7 @@ export default function TokenChip({ symbol = "?", amount = 0, muted = false, tag
 
 ## 2. Register it
 
-Registration is a side effect, so it lives in a module of its own outside `app/` (the checker classifies every file under `app/` and has no role for an element entry). For example `widgets/token-chip.ts`:
+Registration is a side effect, so it lives in a module of its own, for example `app/components/token-chip-element.ts` (as the demo does; files under `app/components` are classified as components) or a `widgets/` entry outside `app/`, such as `widgets/token-chip.ts`:
 
 ```ts
 import { defineElement } from "@sidioralabs/rex/client/interop";
