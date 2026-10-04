@@ -1,6 +1,10 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
+  ACTION_CACHE_SCOPES,
+  ACTION_HTTP_METHODS,
   action,
+  actionContext,
+  httpPathProblem,
   parseShortcut,
   validateShortcut,
   type ActionContext,
@@ -56,7 +60,12 @@ const toggle = action("toggle-hide-dust", {
   handler: (input) => ({ hide: !input.hide }),
 });
 
-const ctx: ActionContext = { actor: actor({ id: "u-1" }) };
+const ctx: ActionContext = {
+  actor: actor({ id: "u-1" }),
+  env: null,
+  locale: null,
+  density: "default",
+};
 
 function fieldOf(run: () => unknown): string {
   try {
@@ -336,5 +345,151 @@ describe("Standard Schema actions", () => {
     expect(fieldOf(() => action("a", { ...base, input: { parse: () => ({}) } } as never))).toBe(
       "input",
     );
+  });
+});
+
+describe("0.3 action options", () => {
+  function optionError(run: () => unknown): { code: RexErrorCode; field: string } {
+    try {
+      run();
+    } catch (error) {
+      expect(error).toBeInstanceOf(RexDeclarationOptionError);
+      const failure = error as RexDeclarationOptionError;
+      expect(failure.declaration).toBe("action");
+      expect(failure.message).toContain(`field "${failure.field}"`);
+      return { code: failure.code, field: failure.field };
+    }
+    throw new Error("expected a RexDeclarationOptionError");
+  }
+
+  it("defaults http, cache and optimistic to null", () => {
+    expect(toggle.http).toBeNull();
+    expect(toggle.cache).toBeNull();
+    expect(toggle.optimistic).toBeNull();
+  });
+
+  it("records an HTTP endpoint with its defaults", () => {
+    expect(ACTION_HTTP_METHODS).toEqual(["GET", "POST"]);
+    const feed = action("list-feed", {
+      ...base,
+      http: { method: "GET", path: "/feed.xml", contentType: "application/rss+xml" },
+    });
+    expect(feed.http).toEqual({
+      method: "GET",
+      path: "/feed.xml",
+      contentType: "application/rss+xml",
+      csrf: true,
+    });
+    const hook = action("receive-hook", {
+      ...base,
+      effect: "reversible",
+      http: { method: "POST", path: "/hooks/payments", csrf: false },
+    });
+    expect(hook.http).toEqual({
+      method: "POST",
+      path: "/hooks/payments",
+      contentType: null,
+      csrf: false,
+    });
+    expect(manifestAction(feed).http).toEqual(feed.http);
+    expect(httpPathProblem("/tokens.json")).toBeNull();
+    expect(httpPathProblem("/rex/tokens")).toContain("/rex");
+    expect(httpPathProblem("/rex")).toContain("/rex");
+    expect(httpPathProblem("/")).not.toBeNull();
+    expect(httpPathProblem("/a/../b")).not.toBeNull();
+  });
+
+  it("records a server cache on a read action with the actor scope by default", () => {
+    expect(ACTION_CACHE_SCOPES).toEqual(["shared", "actor", "locale"]);
+    const cached = action("load-quote", { ...base, cache: { maxAge: 30 } });
+    expect(cached.cache).toEqual({ maxAge: 30, scope: "actor" });
+    const shared = action("load-prices", { ...base, cache: { maxAge: 60, scope: "shared" } });
+    expect(shared.cache).toEqual({ maxAge: 60, scope: "shared" });
+    expect(manifestAction(shared).cache).toEqual({ maxAge: 60, scope: "shared" });
+  });
+
+  it("records optimistic updates keyed by invalidated names", () => {
+    const hide = action("hide-dust", {
+      ...base,
+      input: z.object({ hide: boolean() }),
+      effect: "reversible",
+      invalidates: ["wallet", "token"],
+      optimistic: { wallet: (current, input) => ({ ...(current as object), hide: input.hide }) },
+    });
+    expect(Object.keys(hide.optimistic ?? {})).toEqual(["wallet"]);
+    expect(hide.optimistic?.wallet?.({ total: 1 }, { hide: true })).toEqual({
+      total: 1,
+      hide: true,
+    });
+    expect(Object.isFrozen(hide.optimistic)).toBe(true);
+  });
+
+  it.each([
+    [{ http: "GET /x" }, "REX227", "http"],
+    [{ http: { method: "PUT", path: "/x" } }, "REX227", "http.method"],
+    [{ http: { method: "GET", path: "x" } }, "REX227", "http.path"],
+    [{ http: { method: "GET", path: "/rex/x" } }, "REX227", "http.path"],
+    [{ http: { method: "GET", path: "/a b" } }, "REX227", "http.path"],
+    [{ http: { method: "GET", path: "/x", contentType: "xml" } }, "REX227", "http.contentType"],
+    [{ http: { method: "GET", path: "/x", csrf: false } }, "REX227", "http.csrf"],
+    [{ http: { method: "GET", path: "/x", cors: true } }, "REX227", "http.cors"],
+    [{ effect: "reversible", http: { method: "GET", path: "/x" } }, "REX227", "http.method"],
+    [
+      { effect: "reversible", http: { method: "POST", path: "/x", csrf: "no" } },
+      "REX227",
+      "http.csrf",
+    ],
+    [{ effect: "reversible", cache: { maxAge: 10 } }, "REX228", "cache"],
+    [{ cache: 10 }, "REX228", "cache"],
+    [{ cache: { maxAge: 0 } }, "REX228", "cache.maxAge"],
+    [{ cache: { maxAge: 1.5 } }, "REX228", "cache.maxAge"],
+    [{ cache: { maxAge: 10, scope: "global" } }, "REX228", "cache.scope"],
+    [{ cache: { maxAge: 10, tags: [] } }, "REX228", "cache.tags"],
+    [{ optimistic: { wallet: () => null }, invalidates: ["wallet"] }, "REX229", "optimistic"],
+    [
+      { effect: "reversible", invalidates: ["wallet"], optimistic: { token: () => null } },
+      "REX229",
+      "optimistic.token",
+    ],
+    [
+      { effect: "reversible", invalidates: ["wallet"], optimistic: { wallet: 1 } },
+      "REX229",
+      "optimistic.wallet",
+    ],
+    [{ effect: "reversible", optimistic: [] }, "REX229", "optimistic"],
+  ] as const)("rejects %j with %s naming %s", (extra, code, field) => {
+    expect(optionError(() => action("probe", { ...base, ...extra } as never))).toEqual({
+      code,
+      field,
+    });
+  });
+
+  it("hands the handler the actor, env, locale and density with the defaults filled", async () => {
+    const seen: ActionContext[] = [];
+    const probe = action("probe-context", {
+      ...base,
+      handler: (_input, context) => {
+        seen.push(context);
+        return {};
+      },
+    });
+    const owner = actor({ id: "owner" });
+    await probe.handler({}, { actor: owner });
+    await probe.handler(
+      {},
+      { actor: owner, env: { API_KEY: "k" }, locale: "pt", density: "agent" },
+    );
+    expect(seen).toEqual([
+      { actor: owner, env: null, locale: null, density: "default" },
+      { actor: owner, env: { API_KEY: "k" }, locale: "pt", density: "agent" },
+    ]);
+    expect(actionContext({ actor: owner })).toEqual(seen[0]);
+    let failure: unknown;
+    try {
+      actionContext({ actor: owner, density: "dense" as never });
+    } catch (error) {
+      failure = error;
+    }
+    expect((failure as RexError).code).toBe("REX321");
   });
 });

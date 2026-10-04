@@ -69,6 +69,7 @@ import { memoryJournal } from "./journal.ts";
 import { page, parseRoute } from "./page.ts";
 import { always } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
+import { resolveOptions } from "./config.ts";
 import { enumOf, id, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { bind } from "./store.ts";
@@ -343,6 +344,111 @@ describe("catalogued codes in core and manifest", () => {
     expect(caught(() => buildManifest(createRegistry().freeze(), { app: " " })).code).toBe(
       "REX501",
     );
+  });
+
+  it("raises the 0.3 config, declaration and manifest codes", () => {
+    expect(caught(() => resolveOptions({ site: { origin: "rex.dev" } })).code).toBe("REX124");
+    expect(caught(() => resolveOptions({ env: { client: { API_URL: text() } } })).code).toBe(
+      "REX125",
+    );
+    expect(
+      caught(() => resolveOptions({ redirects: [{ source: "/a", destination: "/a" }] })).code,
+    ).toBe("REX126");
+    expect(caught(() => resolveOptions({ deploy: { host: "heroku" } as never })).code).toBe(
+      "REX127",
+    );
+    expect(caught(() => page("home", { route: "/", chrome: { order: 0.5 } })).code).toBe("REX225");
+    expect(
+      caught(() => page("home", { route: "/", regions: ["a"], islands: { b: "load" } } as never))
+        .code,
+    ).toBe("REX226");
+    const readBase = {
+      input: z.object({}),
+      output: z.object({}),
+      policy: always(),
+      effect: "read" as const,
+      handler: () => ({}),
+    };
+    expect(
+      caught(() => action("feed", { ...readBase, http: { method: "GET", path: "/rex/feed" } }))
+        .code,
+    ).toBe("REX227");
+    expect(caught(() => action("feed", { ...readBase, cache: { maxAge: -1 } })).code).toBe(
+      "REX228",
+    );
+    expect(
+      caught(() => action("feed", { ...readBase, optimistic: { feed: () => null } })).code,
+    ).toBe("REX229");
+    expect(caught(() => page("not-found", { route: "/missing" })).code).toBe("REX230");
+
+    const feed = action("feed", { ...readBase, http: { method: "GET", path: "/feed.xml" } });
+    const other = action("other-feed", { ...readBase, http: { method: "GET", path: "/feed.xml" } });
+    expect(
+      caught(() => buildManifest({ entities: [], actions: [feed, other], pages: [], policies: [] }))
+        .code,
+    ).toBe("REX227");
+    const shadow = page("shadow", { route: "/feed.xml" });
+    expect(
+      caught(() => buildManifest({ entities: [], actions: [feed], pages: [shadow], policies: [] }))
+        .code,
+    ).toBe("REX227");
+    expect(
+      caught(() =>
+        buildManifest(
+          { entities: [], actions: [], pages: [shadow], policies: [] },
+          { redirects: [{ source: "/feed.xml", destination: "/", status: 308 }] },
+        ),
+      ).code,
+    ).toBe("REX126");
+    const first = page("first", { route: "/first", chrome: { back: "second" } });
+    const second = page("second", { route: "/second", chrome: { back: "first" } });
+    expect(
+      caught(() =>
+        buildManifest({ entities: [], actions: [], pages: [first, second], policies: [] }),
+      ).code,
+    ).toBe("REX225");
+    const toggle = action("toggle", { ...readBase, effect: "reversible" });
+    const stale = action("stale", { ...readBase, effect: "reversible", invalidates: ["toggle"] });
+    expect(
+      caught(() =>
+        buildManifest({ entities: [], actions: [stale, toggle], pages: [], policies: [] }),
+      ).code,
+    ).toBe("REX212");
+    const board = page("board", { route: "/board" });
+    const mutate = action("mutate", {
+      ...readBase,
+      effect: "reversible",
+      invalidates: ["board"],
+      optimistic: { board: () => null },
+    });
+    expect(
+      caught(() => buildManifest({ entities: [], actions: [mutate], pages: [board], policies: [] }))
+        .code,
+    ).toBe("REX229");
+  });
+
+  it("catalogues the page render failure and the server env codes for the page boundary and the server entry", () => {
+    expect(REX_ERROR_CATALOG.REX335).toBe("Page failed to render");
+    expect(errorArea("REX335")).toBe("runtime");
+    expect(REX_ERROR_CATALOG.REX451).toBe("Server environment invalid or missing");
+    expect(errorArea("REX451")).toBe("server");
+    for (const code of [
+      "REX124",
+      "REX125",
+      "REX126",
+      "REX127",
+      "REX225",
+      "REX226",
+      "REX227",
+      "REX228",
+      "REX229",
+      "REX230",
+      "REX335",
+      "REX451",
+    ] as const) {
+      expect(isRexErrorCode(code), code).toBe(true);
+      expect(REX_ERROR_DOCS[code].hint.length, code).toBeGreaterThan(20);
+    }
   });
 
   it("leaves no bare Error throw in the core and manifest sources", () => {

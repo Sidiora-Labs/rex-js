@@ -361,10 +361,94 @@ describe("GET /rex/pages/<id>.md", () => {
       "`GET /fr/notes?act=add-note&input=<json>`",
     );
     expect(sidecarOf(french.body).actions[0]?.label).toBe("Ajouter une note");
+    expect(sidecarOf(french.body)).toMatchObject({
+      locale: "fr",
+      locales: ["en", "fr"],
+      document: { title: "Carnet", description: null, canonical: null },
+    });
+    expect(french.body).toContain("| Title | Carnet |");
 
     const english = await get(pageTextPath("notes"));
     expect(english.body.startsWith("# Notes\n")).toBe(true);
     expect(english.body).toContain("| URL | `/en/notes` |");
+  });
+});
+
+describe("the Loaders table and the document rows", () => {
+  let app: ReturnType<typeof createRexServer>;
+
+  beforeEach(() => {
+    notes = [{ id: "n1", title: "First" }];
+    app = createRexServer({
+      registry: makeRegistry(),
+      ledger: memoryLedger(),
+      actor: resolveActor,
+      app: "notes",
+    });
+  });
+
+  it("prints one row per page loader with its action, input and invalidating actions", async () => {
+    const listing = await (await app.request(pageTextPath("notes"))).text();
+    expect(section(listing, "Loaders").split("\n").slice(2, 4)).toEqual([
+      "| Loader | Action | Input | Invalidated by |",
+      "| --- | --- | --- | --- |",
+    ]);
+    expect(rowOf(listing, "Loaders", "notes")).toBe("| `notes` | `list-notes` | params | - |");
+    expect(sidecarOf(listing).loaders).toEqual([
+      { name: "notes", action: "list-notes", invalidatedBy: [] },
+    ]);
+    const detail = await (await app.request(`${pageTextPath("note")}?id=n1`)).text();
+    expect(rowOf(detail, "Loaders", "note")).toBe("| `note` | `read-note` | mapped | - |");
+    const about = await (await app.request(pageTextPath("about"))).text();
+    expect(section(about, "Loaders")).toContain("_None._");
+    expect(sidecarOf(about).loaders).toBeUndefined();
+  });
+
+  it("prints the resolved title, description and canonical rows from the sidecar document", () => {
+    const refreshed = action("refresh-docs", {
+      input: z.object({}),
+      output: z.object({}),
+      policy: always(),
+      effect: "reversible",
+      invalidates: ["article"],
+      handler: () => ({}),
+    });
+    const article = page("article", {
+      route: "/articles/:slug",
+      params: z.object({ slug: text({ min: 1 }) }),
+      regions: ["body"],
+      load: { notes: { action: listNotes, input: () => ({}), invalidatedBy: ["refresh-docs"] } },
+      chrome: { title: "Article {slug}", description: "Read {slug}", frame: "docs" },
+    });
+    const manifest = buildManifest({
+      entities: [],
+      actions: [listNotes, refreshed],
+      pages: [article],
+      policies: [],
+    });
+    const rendered = renderPageText({
+      manifest,
+      page: article,
+      params: { slug: "intro" },
+      issues: [],
+      href: "/articles/intro",
+      actor: anonymousActor,
+      policy: { allowed: true, reason: null },
+      state: "ready",
+    });
+    expect(rendered.markdown.startsWith("# Article intro\n")).toBe(true);
+    expect(rendered.markdown).toContain("| Title | Article intro |");
+    expect(rendered.markdown).toContain("| Description | Read intro |");
+    expect(rendered.markdown).toContain("| Canonical | - |");
+    expect(rowOf(rendered.markdown, "Loaders", "notes")).toBe(
+      "| `notes` | `list-notes` | mapped | `refresh-docs` |",
+    );
+    expect(rendered.sidecar).toMatchObject({
+      document: { title: "Article intro", description: "Read intro", canonical: null },
+      frame: "docs",
+      loaders: [{ name: "notes", action: "list-notes", invalidatedBy: ["refresh-docs"] }],
+    });
+    expect(sidecarOf(rendered.markdown)).toEqual(rendered.sidecar);
   });
 });
 

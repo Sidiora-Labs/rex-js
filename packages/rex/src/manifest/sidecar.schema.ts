@@ -1,10 +1,12 @@
 import { ACTION_EFFECTS, type ActionEffect } from "../core/action.ts";
 import { OVERLAY_DISMISS, type OverlayDismiss } from "../core/overlay.ts";
+import { FRAME_NAME, ISLAND_MODES } from "../core/page.ts";
 import {
   INVOCATION_ROUTES,
   SIDECAR_ELEMENT_ID,
   SIDECAR_MIME_TYPE,
   SIDECAR_VERSION,
+  TEXT_DIRECTIONS,
   type InvocationRoute,
 } from "../core/protocol.ts";
 import * as zm from "zod/mini";
@@ -53,12 +55,26 @@ export const sidecarOutcomeSchema = zm.strictObject({
 
 export const SIDECAR_ERROR_CODE_PATTERN = /^REX[0-9]{3}$/;
 
-export const sidecarRegionSchema = zm.strictObject({
-  id: nonEmpty(),
-  address: nonEmpty(),
-  state: zm.enum(REX_DATA_STATES),
-  code: zm.string().check(zm.regex(SIDECAR_ERROR_CODE_PATTERN)),
-});
+export const sidecarRegionSchema = zm
+  .strictObject({
+    id: nonEmpty(),
+    address: nonEmpty(),
+    state: zm.enum(REX_DATA_STATES),
+    code: zm.optional(zm.string().check(zm.regex(SIDECAR_ERROR_CODE_PATTERN))),
+    island: zm.optional(zm.enum(ISLAND_MODES)),
+    optimistic: zm.optional(zm.literal(true)),
+  })
+  .check(
+    zm.superRefine((region, ctx) => {
+      if (region.state === "recoverable-error" && region.code === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["code"],
+          message: "a failed region states its error code",
+        });
+      }
+    }),
+  );
 
 export const sidecarStoresSchema = zm.record(nonEmpty(), zm.unknown());
 
@@ -66,6 +82,13 @@ export const sidecarLoaderSchema = zm.strictObject({
   name: nonEmpty(),
   action: nonEmpty(),
   invalidatedBy: uniqueList(nonEmpty()),
+  defer: zm.optional(zm.boolean()),
+});
+
+export const sidecarDocumentSchema = zm.strictObject({
+  title: nonEmpty(),
+  description: zm.nullable(nonEmpty()),
+  canonical: zm.nullable(zm.url()),
 });
 
 export const SIDECAR_SCREEN_FIELDS = ["screen", "pointer", "density"] as const;
@@ -82,6 +105,11 @@ export const sidecarSchema = zm
     regions: zm.optional(zm.array(sidecarRegionSchema).check(zm.minLength(1))),
     stores: zm.optional(sidecarStoresSchema),
     loaders: zm.optional(zm.array(sidecarLoaderSchema)),
+    document: zm.optional(sidecarDocumentSchema),
+    locale: zm.optional(nonEmpty()),
+    locales: zm.optional(uniqueList(nonEmpty()).check(zm.minLength(1))),
+    direction: zm.optional(zm.enum(TEXT_DIRECTIONS)),
+    frame: zm.optional(zm.string().check(zm.regex(FRAME_NAME))),
     screen: zm.optional(zm.enum(REX_SCREENS)),
     pointer: zm.optional(zm.enum(REX_POINTERS)),
     density: zm.optional(zm.enum(REX_SCREEN_DENSITIES)),
@@ -132,6 +160,24 @@ export const sidecarSchema = zm
         }
         loaderNames.add(loader.name);
       });
+      if (payload.locales !== undefined && payload.locale === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["locale"],
+          message: "locales comes with the active locale",
+        });
+      }
+      if (
+        payload.locale !== undefined &&
+        payload.locales !== undefined &&
+        !payload.locales.includes(payload.locale)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["locale"],
+          message: `locale "${payload.locale}" is not one of locales`,
+        });
+      }
       const fit = SIDECAR_SCREEN_FIELDS.filter((field) => payload[field] !== undefined);
       if (fit.length > 0) {
         for (const field of SIDECAR_SCREEN_FIELDS) {
@@ -159,6 +205,7 @@ export type SidecarOutcome = zm.output<typeof sidecarOutcomeSchema>;
 export type SidecarRegion = zm.output<typeof sidecarRegionSchema>;
 export type SidecarStores = zm.output<typeof sidecarStoresSchema>;
 export type SidecarLoader = zm.output<typeof sidecarLoaderSchema>;
+export type SidecarDocument = zm.output<typeof sidecarDocumentSchema>;
 export type SidecarPayload = zm.output<typeof sidecarSchema>;
 
 let builtSidecarJsonSchema: JsonSchema | null = null;

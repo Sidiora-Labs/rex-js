@@ -5,9 +5,15 @@ import { RexDeclarationOptionError, RexError, type RexErrorCode } from "./errors
 import { validateStandardSync } from "./standard.ts";
 import { buildManifest } from "../manifest/build.ts";
 import {
+  ISLAND_MODES,
+  NOT_FOUND_PAGE_ID,
+  PAGE_FALLBACKS,
+  PAGE_PREFETCH,
   PAGE_RENDER_MODES,
+  chromePlaceholders,
   page,
   parseRoute,
+  resolveChromeText,
   titleFromId,
   type PageParams,
   type PageStates,
@@ -71,6 +77,14 @@ const minimal = page("settings.profile", {
   route: "/settings/profile",
   states: ["ready", "loading", "terminal-error"],
 });
+
+const CHROME_UNSET = {
+  description: null,
+  image: null,
+  frame: null,
+  order: null,
+  icon: null,
+} as const;
 
 function fieldOf(run: () => unknown): string {
   try {
@@ -161,12 +175,30 @@ describe("page", () => {
   });
 
   it("defaults chrome", () => {
-    expect(portfolio.chrome).toEqual({ header: true, nav: true, back: null, title: "Portfolio" });
-    expect(sendPage.chrome).toEqual({ header: true, nav: false, back: "portfolio", title: "Send" });
+    expect(portfolio.chrome).toEqual({
+      header: true,
+      nav: true,
+      back: null,
+      title: "Portfolio",
+      ...CHROME_UNSET,
+    });
+    expect(sendPage.chrome).toEqual({
+      header: true,
+      nav: false,
+      back: "portfolio",
+      title: "Send",
+      ...CHROME_UNSET,
+    });
     expect(minimal.chrome.title).toBe("Settings profile");
     expect(titleFromId("toggle-hide-dust")).toBe("Toggle hide dust");
     const titled = page("home", { route: "/home", chrome: { title: "Wallet", header: false } });
-    expect(titled.chrome).toEqual({ header: false, nav: true, back: null, title: "Wallet" });
+    expect(titled.chrome).toEqual({
+      header: false,
+      nav: true,
+      back: null,
+      title: "Wallet",
+      ...CHROME_UNSET,
+    });
   });
 
   it("keeps the declared params schema and leaves its JSON Schema to the manifest", () => {
@@ -205,7 +237,7 @@ describe("page", () => {
 
 describe("routes", () => {
   it("parses static and param segments", () => {
-    expect(parseRoute("/")).toEqual({ route: "/", segments: [], params: [] });
+    expect(parseRoute("/")).toEqual({ route: "/", segments: [], params: [], rest: null });
     expect(parseRoute("/send/:account/token/:tokenId")).toEqual({
       route: "/send/:account/token/:tokenId",
       segments: [
@@ -215,6 +247,7 @@ describe("routes", () => {
         { kind: "param", name: "tokenId" },
       ],
       params: ["account", "tokenId"],
+      rest: null,
     });
   });
 
@@ -275,8 +308,8 @@ describe("page declaration errors name the field", () => {
 
   it("chrome", () => {
     expect(fieldOf(() => page("send", { route: "/", chrome: [] as never }))).toBe("chrome");
-    expect(fieldOf(() => page("send", { route: "/", chrome: { icon: "x" } as never }))).toBe(
-      "chrome.icon",
+    expect(fieldOf(() => page("send", { route: "/", chrome: { badge: "x" } as never }))).toBe(
+      "chrome.badge",
     );
     expect(fieldOf(() => page("send", { route: "/", chrome: { nav: "yes" } as never }))).toBe(
       "chrome.nav",
@@ -442,7 +475,13 @@ describe("0.2 page options", () => {
     expect(portfolio.loaders).toEqual([]);
     expect(portfolio.cache).toBeNull();
     expect(portfolio.transition).toBe("none");
-    expect(portfolio.chrome).toEqual({ header: true, nav: true, back: null, title: "Portfolio" });
+    expect(portfolio.chrome).toEqual({
+      header: true,
+      nav: true,
+      back: null,
+      title: "Portfolio",
+      ...CHROME_UNSET,
+    });
   });
 
   it("records render, revalidate, paths, load, cache and transition", async () => {
@@ -597,5 +636,250 @@ describe("0.2 page options", () => {
         page("home", { route: "/", chrome: { components: { Button: ShellButton } } } as never),
       ),
     ).toBe("chrome.components");
+  });
+});
+
+describe("0.3 page fields", () => {
+  const listDocs = action("list-docs", {
+    input: z.object({}),
+    output: z.object({ slugs: z.array(text()) }),
+    policy: always(),
+    effect: "read",
+    handler: () => ({ slugs: ["intro", "faq"] }),
+  });
+  const shortcutSend = action("quick-send", {
+    input: z.object({}),
+    output: z.object({ ok: z.boolean() }),
+    policy: always(),
+    effect: "reversible",
+    shortcut: "mod+s",
+    handler: () => ({ ok: true }),
+  });
+
+  it("parses a rest segment as the last segment, required or optional", () => {
+    expect(parseRoute("/docs/:path*")).toEqual({
+      route: "/docs/:path*",
+      segments: [
+        { kind: "static", value: "docs" },
+        { kind: "rest", name: "path", optional: false },
+      ],
+      params: ["path"],
+      rest: "path",
+    });
+    expect(parseRoute("/files/:path*?").segments[1]).toEqual({
+      kind: "rest",
+      name: "path",
+      optional: true,
+    });
+    for (const route of ["/docs/:path*/edit", "/:path*/:path", "/docs/:path**", "/docs/*"]) {
+      expect(() => parseRoute(route), route).toThrow(RexError);
+      try {
+        parseRoute(route);
+      } catch (error) {
+        expect((error as RexError).code).toBe("REX220");
+      }
+    }
+  });
+
+  it("declares a rest param as a required array of strings, or one accepting [] when optional", () => {
+    const reference = page("reference", {
+      route: "/docs/:path*",
+      params: z.object({ path: z.array(text({ min: 1 })) }),
+    });
+    expect(reference.routeParams).toEqual(["path"]);
+    const files = page("files", {
+      route: "/files/:path*?",
+      params: z.object({ path: z.optional(z.array(text())) }),
+    });
+    expect(files.routeParams).toEqual(["path"]);
+    expect(
+      fieldOf(() => page("probe", { route: "/docs/:path*", params: z.object({ path: text() }) })),
+    ).toBe("params.path");
+    expect(
+      fieldOf(() =>
+        page("probe", {
+          route: "/docs/:path*",
+          params: z.object({ path: z.optional(z.array(text())) }),
+        }),
+      ),
+    ).toBe("params.path");
+    expect(
+      fieldOf(() =>
+        page("probe", {
+          route: "/files/:path*?",
+          params: z.object({ path: z.array(text()).check(z.minLength(1)) }),
+        }),
+      ),
+    ).toBe("params.path");
+  });
+
+  it("records chrome description, image, frame, order and icon", () => {
+    const article = page("article", {
+      route: "/articles/:slug",
+      params: z.object({ slug: text() }),
+      chrome: {
+        title: "Article {slug}",
+        description: "Read {slug} in the docs",
+        image: "/social/article.png",
+        frame: "docs",
+        order: 2,
+        icon: "book-open",
+      },
+    });
+    expect(article.chrome).toEqual({
+      header: true,
+      nav: true,
+      back: null,
+      title: "Article {slug}",
+      description: "Read {slug} in the docs",
+      image: "/social/article.png",
+      frame: "docs",
+      order: 2,
+      icon: "book-open",
+    });
+    expect(
+      page("remote", { route: "/r", chrome: { image: "https://cdn.example.com/a.png" } }).chrome
+        .image,
+    ).toBe("https://cdn.example.com/a.png");
+    expect(page("plain-page", { route: "/plain" }).chrome).toMatchObject(CHROME_UNSET);
+  });
+
+  it.each([
+    [{ route: "/", chrome: { description: "" } }, "chrome.description"],
+    [{ route: "/", chrome: { image: "social.png" } }, "chrome.image"],
+    [{ route: "/", chrome: { image: "//cdn.example.com/a.png" } }, "chrome.image"],
+    [{ route: "/", chrome: { image: "ftp://example.com/a.png" } }, "chrome.image"],
+    [{ route: "/", chrome: { frame: "Docs" } }, "chrome.frame"],
+    [{ route: "/", chrome: { frame: "docs-frame" } }, "chrome.frame"],
+    [{ route: "/", chrome: { order: 1.5 } }, "chrome.order"],
+    [{ route: "/", chrome: { icon: "BookOpen" } }, "chrome.icon"],
+    [{ route: "/", chrome: { title: "Doc {slug}" } }, "chrome.title"],
+    [
+      { route: "/a/:id", params: z.object({ id: text() }), chrome: { description: "{slug}" } },
+      "chrome.description",
+    ],
+  ] as const)("rejects chrome %j with REX225 naming %s", (config, field) => {
+    expect(optionError(() => page("probe", config as never))).toEqual({ code: "REX225", field });
+  });
+
+  it("fills {param} placeholders from the params and leaves message keys to the formatter", () => {
+    expect(chromePlaceholders("Article {slug} by {author}")).toEqual(["slug", "author"]);
+    expect(chromePlaceholders("msg:docs.title")).toEqual([]);
+    expect(resolveChromeText("Article {slug}", { slug: "intro" })).toBe("Article intro");
+    expect(resolveChromeText("Docs {path}", { path: ["guide", "start"] })).toBe("Docs guide/start");
+    expect(resolveChromeText("Page {n} of {missing}", { n: 2 })).toBe("Page 2 of {missing}");
+    expect(resolveChromeText("msg:docs.title", { slug: "intro" })).toBe("msg:docs.title");
+    expect(
+      page("search-page", {
+        route: "/search",
+        params: z.object({ q: z.optional(text()) }),
+        chrome: { title: "Search {q}" },
+      }).chrome.title,
+    ).toBe("Search {q}");
+  });
+
+  it("maps declared regions to island modes", () => {
+    expect(ISLAND_MODES).toEqual(["load", "idle", "visible", "never"]);
+    const about = page("about", {
+      route: "/about",
+      render: "static",
+      regions: ["copy", "filter", "footer"],
+      islands: { copy: "visible", filter: "idle", footer: "never" },
+    });
+    expect(about.islands).toEqual({ copy: "visible", filter: "idle", footer: "never" });
+    expect(portfolio.islands).toEqual({});
+    expect(
+      optionError(() =>
+        page("probe", { route: "/", regions: ["copy"], islands: { other: "load" } } as never),
+      ),
+    ).toEqual({ code: "REX226", field: "islands.other" });
+    expect(
+      optionError(() =>
+        page("probe", { route: "/", regions: ["copy"], islands: { copy: "eager" } } as never),
+      ),
+    ).toEqual({ code: "REX226", field: "islands.copy" });
+    expect(
+      optionError(() =>
+        page("probe", { route: "/", regions: ["copy"], islands: ["copy"] } as never),
+      ),
+    ).toEqual({ code: "REX226", field: "islands" });
+    expect(
+      optionError(() =>
+        page("probe", {
+          route: "/",
+          regions: ["copy"],
+          actions: [shortcutSend],
+          islands: { copy: "never" },
+        }),
+      ),
+    ).toEqual({ code: "REX226", field: "islands" });
+  });
+
+  it("records prefetch and rejects an unknown strategy", () => {
+    expect(PAGE_PREFETCH).toEqual(["hover", "viewport", "none"]);
+    expect(page("pre", { route: "/pre", prefetch: "viewport" }).prefetch).toBe("viewport");
+    expect(portfolio.prefetch).toBeNull();
+    expect(fieldOf(() => page("probe", { route: "/", prefetch: "eager" } as never))).toBe(
+      "prefetch",
+    );
+  });
+
+  it("runs paths from a read action and maps its output to params", () => {
+    const doc = page("doc", {
+      route: "/docs/:slug",
+      params: z.object({ slug: text() }),
+      render: "static",
+      paths: { action: listDocs, map: (output) => output.slugs.map((slug) => ({ slug })) },
+      fallback: "not-found",
+    });
+    expect(doc.paths).toBeNull();
+    expect(doc.pathsAction?.action).toBe(listDocs);
+    expect(doc.pathsAction?.map({ slugs: ["a", "b"] })).toEqual([{ slug: "a" }, { slug: "b" }]);
+    expect(doc.fallback).toBe("not-found");
+    expect(PAGE_FALLBACKS).toEqual(["render", "not-found"]);
+    const base = { route: "/docs/:slug", params: z.object({ slug: text() }), render: "static" };
+    expect(
+      optionError(() =>
+        page("probe", { ...base, paths: { action: send, map: () => [] } } as never),
+      ),
+    ).toEqual({ code: "REX202", field: "paths.action" });
+    expect(
+      optionError(() => page("probe", { ...base, paths: { action: listDocs } } as never)),
+    ).toEqual({ code: "REX202", field: "paths.map" });
+    expect(
+      optionError(() =>
+        page("probe", {
+          ...base,
+          paths: { action: listDocs, map: () => [], input: {} },
+        } as never),
+      ),
+    ).toEqual({ code: "REX202", field: "paths.input" });
+    expect(optionError(() => page("probe", { ...base, paths: [] } as never))).toEqual({
+      code: "REX202",
+      field: "paths",
+    });
+    expect(optionError(() => page("probe", { ...base, fallback: "render" } as never))).toEqual({
+      code: "REX230",
+      field: "fallback",
+    });
+    expect(
+      optionError(() => page("probe", { ...base, paths: () => [], fallback: "rewrite" } as never)),
+    ).toEqual({ code: "REX230", field: "fallback" });
+  });
+
+  it("reserves the not-found id for route /404 outside the navigation", () => {
+    const notFound = page(NOT_FOUND_PAGE_ID, { route: "/404", chrome: { nav: false } });
+    expect(notFound.route).toBe("/404");
+    expect(
+      optionError(() => page("not-found", { route: "/missing", chrome: { nav: false } })),
+    ).toEqual({ code: "REX230", field: "route" });
+    expect(optionError(() => page("not-found", { route: "/404" }))).toEqual({
+      code: "REX230",
+      field: "chrome.nav",
+    });
+    expect(optionError(() => page("lost", { route: "/404", chrome: { nav: false } }))).toEqual({
+      code: "REX230",
+      field: "route",
+    });
   });
 });

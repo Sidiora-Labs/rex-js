@@ -1,12 +1,14 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { REX_ERROR_CATALOG, errorDocs, type RexErrorCode } from "@sidioralabs/rex";
 import {
   REX_ERROR_AREAS,
+  REX_ERROR_CATALOG,
   REX_ERROR_DOCS,
   errorArea,
+  errorDocs,
   type RexErrorArea,
-} from "../../../../packages/rex/src/core/errors.docs.ts";
+  type RexErrorCode,
+} from "@sidioralabs/rex/errors";
 
 export const REPOSITORY_ROOT = resolve(process.cwd(), "..");
 

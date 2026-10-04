@@ -19,6 +19,9 @@ import { validateSidecar, type SidecarPayload } from "../../manifest/sidecar.sch
 import { memoryLedger } from "../../server/audit.ts";
 import { createRexServer } from "../../server/index.ts";
 import { createRexApp, type RexFetch } from "../app.tsx";
+import { registerI18n } from "../i18n/context.ts";
+import { messageFormatter } from "../i18n/formatter.ts";
+import { RexProviders } from "../providers.ts";
 import { createOutcomeStore, OutcomeProvider } from "../outcome.ts";
 import { definePageModules, region, view, type PageModuleSet } from "../page.tsx";
 import { ShellOutcome, Shell, type OutcomeSlotProps } from "../shell.tsx";
@@ -26,9 +29,13 @@ import {
   AffordanceRegistryProvider,
   OverlayRegistryProvider,
   RexSidecar,
+  buildSidecarPayload,
   createAffordanceRegistry,
   createOverlayRegistry,
   readSidecar,
+  sidecarDocument,
+  sidecarLoaders,
+  sidecarRegions,
   type AffordanceRegistry,
   type OverlayRegistry,
 } from "./sidecar.tsx";
@@ -284,6 +291,7 @@ describe("RexSidecar", () => {
       ],
       overlays: [{ id: "FilterSheet", open: false, dismiss: "both" }],
       outcome: null,
+      document: { title: "Portfolio", description: null, canonical: null },
     });
   });
 
@@ -380,6 +388,7 @@ describe("RexSidecar", () => {
       actions: [],
       overlays: [],
       outcome: null,
+      document: { title: "About", description: null, canonical: null },
     });
   });
 
@@ -434,5 +443,148 @@ describe("RexSidecar", () => {
     mount("/missing");
     expect(sidecarElements()).toHaveLength(0);
     expect(window.__rex).toBeUndefined();
+  });
+});
+
+describe("0.3 sidecar fields", () => {
+  const listNotes = action("list-notes", {
+    input: z.object({}),
+    output: z.object({ items: z.array(text()) }),
+    policy: always(),
+    effect: "read",
+    handler: () => ({ items: [] }),
+  });
+  const addNote = action("add-note", {
+    input: z.object({ title: text() }),
+    output: z.object({ title: text() }),
+    policy: always(),
+    effect: "reversible",
+    invalidates: ["notes"],
+    handler: (input) => input,
+  });
+  const article = page("article", {
+    route: "/docs/:slug",
+    params: z.object({ slug: text({ min: 1 }) }),
+    actions: [addNote],
+    regions: ["body", "toc", "comments"],
+    islands: { toc: "idle", comments: "visible" },
+    load: { notes: { action: listNotes, input: () => ({}), invalidatedBy: ["add-note"] } },
+    chrome: { title: "Doc {slug}", description: "Read {slug}", frame: "docs" },
+  });
+  const articleManifest = buildManifest({
+    entities: [],
+    actions: [listNotes, addNote],
+    pages: [article],
+    policies: [],
+  });
+  const source = {
+    manifest: articleManifest,
+    page: article,
+    params: { slug: "intro" },
+    state: "ready" as const,
+    actor: owner,
+    openOverlays: [],
+    outcome: null,
+  };
+
+  it("carries the document, the loaders, the frame and the island regions", () => {
+    const payload = buildSidecarPayload(source);
+    expect(payload.document).toEqual({
+      title: "Doc intro",
+      description: "Read intro",
+      canonical: null,
+    });
+    expect(payload.loaders).toEqual([
+      { name: "notes", action: "list-notes", invalidatedBy: ["add-note"] },
+    ]);
+    expect(payload.frame).toBe("docs");
+    expect(payload.regions).toEqual([
+      { id: "toc", address: "article/toc", state: "ready", island: "idle" },
+      { id: "comments", address: "article/comments", state: "ready", island: "visible" },
+    ]);
+    expect(payload.locale).toBeUndefined();
+    expect(validateSidecar(payload)).toEqual({ valid: true, payload });
+    expect(sidecarDocument(article, { slug: "intro" }, (value) => value.toUpperCase())).toEqual({
+      title: "DOC INTRO",
+      description: "READ INTRO",
+      canonical: null,
+    });
+    expect(sidecarLoaders(article)).toEqual(payload.loaders);
+  });
+
+  it("merges a region failure with its island entry and keeps the failure code", () => {
+    const failed = buildSidecarPayload({
+      ...source,
+      failures: [{ region: "toc", code: "REX330", message: "boom" }],
+    });
+    expect(failed.state).toBe("recoverable-error");
+    expect(failed.regions).toEqual([
+      {
+        id: "toc",
+        address: "article/toc",
+        state: "recoverable-error",
+        code: "REX330",
+        island: "idle",
+      },
+      { id: "comments", address: "article/comments", state: "ready", island: "visible" },
+    ]);
+    expect(
+      sidecarRegions("portfolio", [{ region: "holdings", code: "REX330", message: "x" }]),
+    ).toEqual([
+      { id: "holdings", address: "portfolio/holdings", state: "recoverable-error", code: "REX330" },
+    ]);
+    expect(validateSidecar(failed).valid).toBe(true);
+  });
+
+  it("carries the active locale and the locales, and a document the caller resolved", () => {
+    const localized = buildSidecarPayload({
+      ...source,
+      locale: { locale: "ar", locales: ["en", "ar"], direction: "rtl" },
+      document: {
+        title: "Doc intro | Rex",
+        description: "Read intro",
+        canonical: "https://rex.sidioralabs.com/ar/docs/intro",
+      },
+    });
+    expect(localized).toMatchObject({
+      locale: "ar",
+      locales: ["en", "ar"],
+      direction: "rtl",
+      document: { canonical: "https://rex.sidioralabs.com/ar/docs/intro" },
+    });
+    expect(validateSidecar(localized).valid).toBe(true);
+  });
+
+  it("emits the locale from the i18n context of a mounted page", async () => {
+    const localeRegistry = createRegistry()
+      .register(wallet, send, hideDust, purge, portfolio, about)
+      .freeze();
+    registerI18n(localeRegistry, {
+      config: { locales: ["en", "pt"], default: "en", routing: "none" },
+      messages: { en: {}, pt: {} },
+    });
+    const RexApp = createRexApp({
+      registry: localeRegistry,
+      manifest,
+      actor: owner,
+      fetch: async () => new Response("{}"),
+      baseUrl: "http://rex.test",
+      queryClient: new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+    });
+    const memory = memoryLocation({ path: "/about", record: true });
+    await messageFormatter.load();
+    render(
+      <OutcomeProvider store={createOutcomeStore()}>
+        <RexApp>
+          <Router hook={memory.hook}>
+            <RexProviders>
+              <Shell pages={pages} outcome={Slot} />
+            </RexProviders>
+          </Router>
+        </RexApp>
+      </OutcomeProvider>,
+    );
+    await waitFor(() => expect(screen.getByText("About Rex")).toBeTruthy());
+    expect(sidecar()).toMatchObject({ page: "about", locale: "en", locales: ["en", "pt"] });
   });
 });

@@ -12,13 +12,24 @@ export const REX_RPC_PREFIX = "/rex/rpc";
 export const REX_MANIFEST_PATH = "/rex/manifest";
 export const FLOW_RPC_PREFIX = "/rex/flow";
 
-export const RESERVED_QUERY_KEYS = ["act", "input", "draft", "density"] as const;
+export const RESERVED_QUERY_KEYS = [
+  "act",
+  "input",
+  "draft",
+  "density",
+  "locale",
+  "devtools",
+] as const;
 
 export type ReservedQueryKey = (typeof RESERVED_QUERY_KEYS)[number];
 
 export function isReservedQueryKey(key: string): key is ReservedQueryKey {
   return (RESERVED_QUERY_KEYS as readonly string[]).includes(key);
 }
+
+export const TEXT_DIRECTIONS = ["ltr", "rtl"] as const;
+
+export type TextDirection = (typeof TEXT_DIRECTIONS)[number];
 
 export const REX_DENSITIES = ["default", "agent"] as const;
 

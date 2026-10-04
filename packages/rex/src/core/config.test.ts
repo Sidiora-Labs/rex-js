@@ -8,6 +8,10 @@ import {
   DEFAULT_IMAGE_FORMATS,
   DEFAULT_IMAGE_SIZES,
   DEFAULT_OPTIONS,
+  DEFAULT_PREFETCH,
+  DEFAULT_REDIRECT_STATUS,
+  DEPLOY_HOSTS,
+  DEPLOY_HOST_TARGETS,
   LEGACY_CONFIG_MESSAGE,
   RexConfigError,
   configServer,
@@ -26,7 +30,7 @@ import { RexError, isRexError, type RexErrorCode } from "./errors.ts";
 import { page } from "./page.ts";
 import { always } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { text } from "../schema/index.ts";
+import { integer, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import * as configEntry from "../config.ts";
 import * as rootEntry from "../index.ts";
@@ -100,9 +104,24 @@ describe("parseConfig", () => {
     expect(resolved.render).toEqual({ default: "ssr" });
     expect(resolved.budgets).toEqual({ core: 15, client: 30, page: 50 });
     expect(resolved.budgets).toBe(DEFAULT_BUDGETS);
-    expect(resolved.security).toEqual({ csp: "strict", origins: [], headers: {}, secretNames: [] });
+    expect(resolved.security).toEqual({
+      csp: "strict",
+      origins: [],
+      headers: {},
+      secretNames: [],
+      forwarded: false,
+    });
     expect(resolved.i18n).toBeNull();
-    expect(resolved.images).toEqual({ sizes: DEFAULT_IMAGE_SIZES, formats: DEFAULT_IMAGE_FORMATS });
+    expect(resolved.images).toEqual({
+      sizes: DEFAULT_IMAGE_SIZES,
+      formats: DEFAULT_IMAGE_FORMATS,
+      remote: [],
+    });
+    expect(resolved.site).toBeNull();
+    expect(resolved.redirects).toEqual([]);
+    expect(resolved.deploy).toBeNull();
+    expect(resolved.env).toBeNull();
+    expect(resolved.prefetch).toBe(DEFAULT_PREFETCH);
     expect(resolved.fonts).toEqual([]);
     expect(resolved.telemetry).toEqual({ tracer: null, logger: null });
     expect(resolved.ui).toBe("none");
@@ -172,9 +191,15 @@ describe("parseConfig", () => {
       origins: ["https://wallet.example.com", "http://localhost:5173"],
       headers: { "x-frame-options": "DENY" },
       secretNames: ["DATABASE_URL"],
+      forwarded: false,
     });
-    expect(resolved.i18n).toEqual({ locales: ["en", "pt-BR"], default: "en", routing: "prefix" });
-    expect(resolved.images).toEqual({ sizes: [640, 1200], formats: ["webp"] });
+    expect(resolved.i18n).toEqual({
+      locales: ["en", "pt-BR"],
+      default: "en",
+      routing: "prefix",
+      direction: { en: "ltr", "pt-BR": "ltr" },
+    });
+    expect(resolved.images).toEqual({ sizes: [640, 1200], formats: ["webp"], remote: [] });
     expect(resolved.fonts).toEqual([
       {
         family: "Inter",
@@ -182,6 +207,8 @@ describe("parseConfig", () => {
         weight: "100 900",
         style: "normal",
         preload: true,
+        variable: null,
+        fallback: null,
       },
       {
         family: "Mono",
@@ -189,6 +216,8 @@ describe("parseConfig", () => {
         weight: "400",
         style: "italic",
         preload: false,
+        variable: null,
+        fallback: null,
       },
     ]);
     expect(resolved.telemetry.tracer).toBe(tracer);
@@ -283,11 +312,201 @@ describe("parseConfig", () => {
     [{ app, check: { i18n: { allow: "Rex" } } }, "REX123", "check.i18n.allow"],
     [{ app, check: { i18n: { allow: ["Rex", ""] } } }, "REX123", "check.i18n.allow.1"],
     [{ app, check: { i18n: { deny: ["Rex"] } } }, "REX123", "check.i18n.deny"],
+    [{ app, site: "https://rex.dev" }, "REX124", "site"],
+    [{ app, site: { origin: "https://rex.dev/docs" } }, "REX124", "site.origin"],
+    [{ app, site: { origin: "rex.dev" } }, "REX124", "site.origin"],
+    [{ app, site: { name: "" } }, "REX124", "site.name"],
+    [{ app, site: { image: "og.png" } }, "REX124", "site.image"],
+    [{ app, site: { titleTemplate: "%s | Rex" } }, "REX124", "site.titleTemplate"],
+    [{ app, site: { titleTemplate: "{title} | {title}" } }, "REX124", "site.titleTemplate"],
+    [{ app, site: { logo: "/logo.svg" } }, "REX124", "site.logo"],
+    [{ app, env: { client: { API_URL: text() } } }, "REX125", "env.client.API_URL"],
+    [{ app, env: { server: { VITE_SECRET: text() } } }, "REX125", "env.server.VITE_SECRET"],
+    [{ app, env: { server: { "bad-name": text() } } }, "REX125", "env.server.bad-name"],
+    [{ app, env: { server: { TOKEN: "string" } } }, "REX125", "env.server.TOKEN"],
+    [{ app, env: { shared: {} } }, "REX125", "env.shared"],
+    [{ app, env: { server: [] } }, "REX125", "env.server"],
+    [{ app, redirects: { "/a": "/b" } }, "REX126", "redirects"],
+    [{ app, redirects: [{ source: "old", destination: "/new" }] }, "REX126", "redirects.0.source"],
+    [
+      { app, redirects: [{ source: "/old", destination: "new" }] },
+      "REX126",
+      "redirects.0.destination",
+    ],
+    [
+      { app, redirects: [{ source: "/old", destination: "ftp://example.com" }] },
+      "REX126",
+      "redirects.0.destination",
+    ],
+    [
+      { app, redirects: [{ source: "/old/:slug", destination: "/new/:id" }] },
+      "REX126",
+      "redirects.0.destination",
+    ],
+    [
+      { app, redirects: [{ source: "/a", destination: "/a" }] },
+      "REX126",
+      "redirects.0.destination",
+    ],
+    [
+      { app, redirects: [{ source: "/a", destination: "/b", status: 303 }] },
+      "REX126",
+      "redirects.0.status",
+    ],
+    [
+      {
+        app,
+        redirects: [
+          { source: "/a", destination: "/b" },
+          { source: "/a", destination: "/c" },
+        ],
+      },
+      "REX126",
+      "redirects.1.source",
+    ],
+    [{ app, redirects: [{ source: "/a", to: "/b" }] }, "REX126", "redirects.0.to"],
+    [{ app, deploy: { host: "heroku" } }, "REX127", "deploy.host"],
+    [{ app, deploy: { host: "node", runtime: "edge" } }, "REX127", "deploy.runtime"],
+    [{ app, deploy: { host: "vercel", runtime: "lambda" } }, "REX127", "deploy.runtime"],
+    [{ app, deploy: { host: "node", region: "eu" } }, "REX127", "deploy.region"],
+    [{ app, prefetch: "eager" }, "REX122", "prefetch"],
+    [{ app, security: { forwarded: "yes" } }, "REX115", "security.forwarded"],
+    [{ app, images: { remote: ["cdn.example.com"] } }, "REX117", "images.remote.0"],
+    [{ app, images: { remote: ["https://cdn.example.com/img"] } }, "REX117", "images.remote.0"],
+    [{ app, images: { remote: ["https://cdn.example.com/?a=1"] } }, "REX117", "images.remote.0"],
+    [{ app, images: { remote: ["ftp://cdn.example.com"] } }, "REX117", "images.remote.0"],
+    [
+      { app, fonts: [{ family: "Inter", src: "/i.woff2", variable: "font-sans" }] },
+      "REX118",
+      "fonts.0.variable",
+    ],
+    [
+      { app, fonts: [{ family: "Inter", src: "/i.woff2", fallback: "" }] },
+      "REX118",
+      "fonts.0.fallback",
+    ],
+    [
+      { app, i18n: { locales: ["en"], default: "en", direction: "up" } },
+      "REX116",
+      "i18n.direction",
+    ],
+    [
+      { app, i18n: { locales: ["en"], default: "en", direction: { fr: "rtl" } } },
+      "REX116",
+      "i18n.direction.fr",
+    ],
+    [
+      { app, i18n: { locales: ["en", "ar"], default: "en", direction: { ar: "down" } } },
+      "REX116",
+      "i18n.direction.ar",
+    ],
   ] as const)("rejects %j with %s naming %s", (value, code, field) => {
     const failure = rejection(() => parseConfig(value));
     expect(failure.code).toBe(code);
     expect(failure.field).toBe(field);
     expect(failure.message).toContain(`${code} ${CONFIG_FILE}: field "${field}"`);
+  });
+
+  it("resolves the 0.3 site, redirects, deploy, env, prefetch, forwarded, remote images, font variables and direction", () => {
+    const port = integer({ min: 1 });
+    const apiUrl = text({ min: 1 });
+    const resolved = parseConfig(
+      defineConfig({
+        app,
+        site: {
+          origin: "https://rex.sidioralabs.com",
+          name: "Rex",
+          description: "Agent-operable web apps",
+          image: "/social.png",
+          titleTemplate: "{title} | Rex",
+        },
+        redirects: [
+          { source: "/wallet", destination: "/" },
+          { source: "/guide/:path*", destination: "/docs/:path*", status: 301 },
+          { source: "/github", destination: "https://github.com/Sidiora-Labs/rex-js", status: 302 },
+        ],
+        deploy: { host: "vercel", runtime: "edge" },
+        env: { client: { VITE_API_URL: apiUrl }, server: { PORT: port } },
+        prefetch: "viewport",
+        security: { forwarded: true },
+        images: { remote: ["https://images.example.com", "https://cdn.example.com/media/"] },
+        fonts: [
+          {
+            family: "Inter",
+            src: "/fonts/inter.woff2",
+            variable: "--font-sans",
+            fallback: "Arial",
+          },
+        ],
+        i18n: { locales: ["en", "ar"], default: "en", routing: "prefix", direction: { ar: "rtl" } },
+      }),
+    );
+    expect(resolved.site).toEqual({
+      origin: "https://rex.sidioralabs.com",
+      name: "Rex",
+      description: "Agent-operable web apps",
+      image: "/social.png",
+      titleTemplate: "{title} | Rex",
+    });
+    expect(resolved.redirects).toEqual([
+      { source: "/wallet", destination: "/", status: DEFAULT_REDIRECT_STATUS },
+      { source: "/guide/:path*", destination: "/docs/:path*", status: 301 },
+      { source: "/github", destination: "https://github.com/Sidiora-Labs/rex-js", status: 302 },
+    ]);
+    expect(DEFAULT_REDIRECT_STATUS).toBe(308);
+    expect(resolved.deploy).toEqual({ host: "vercel", target: "edge", runtime: "edge" });
+    expect(resolved.env?.client).toEqual({ VITE_API_URL: apiUrl });
+    expect(resolved.env?.server.PORT).toBe(port);
+    expect(resolved.prefetch).toBe("viewport");
+    expect(resolved.security.forwarded).toBe(true);
+    expect(resolved.images.remote).toEqual([
+      "https://images.example.com",
+      "https://cdn.example.com/media/",
+    ]);
+    expect(resolved.fonts[0]).toMatchObject({ variable: "--font-sans", fallback: "Arial" });
+    expect(resolved.i18n?.direction).toEqual({ en: "ltr", ar: "rtl" });
+    expect(
+      resolveOptions({ i18n: { locales: ["he", "ar"], default: "he", direction: "rtl" } }).i18n
+        ?.direction,
+    ).toEqual({ he: "rtl", ar: "rtl" });
+    expect(resolveOptions({ site: {} }).site).toEqual({
+      origin: null,
+      name: null,
+      description: null,
+      image: null,
+      titleTemplate: null,
+    });
+    expect(resolveOptions({ env: {} }).env).toEqual({ client: {}, server: {} });
+  });
+
+  it("maps every deploy host to exactly one build target", () => {
+    expect(DEPLOY_HOSTS).toEqual([
+      "node",
+      "bun",
+      "deno",
+      "docker",
+      "deno-deploy",
+      "cloudflare",
+      "vercel",
+      "netlify",
+      "github-pages",
+      "static",
+    ]);
+    expect(Object.keys(DEPLOY_HOST_TARGETS)).toEqual([...DEPLOY_HOSTS]);
+    expect(DEPLOY_HOST_TARGETS.cloudflare).toBe("edge");
+    expect(DEPLOY_HOST_TARGETS["github-pages"]).toBe("static");
+    expect(DEPLOY_HOST_TARGETS["deno-deploy"]).toBe("deno");
+    expect(DEPLOY_HOST_TARGETS.docker).toBe("node");
+    for (const host of DEPLOY_HOSTS) {
+      expect(resolveOptions({ deploy: { host } }).deploy).toEqual({
+        host,
+        target: DEPLOY_HOST_TARGETS[host],
+        runtime: null,
+      });
+    }
+    expect(resolveOptions({ deploy: { host: "vercel", runtime: "node" } }).deploy?.target).toBe(
+      "node",
+    );
   });
 
   it("admits app-scheme origins of desktop and mobile webviews in security.origins", () => {
@@ -356,6 +575,7 @@ describe("readConfigExport and configServer", () => {
         origins: ["tauri://localhost"],
         headers: {},
         secretNames: ["API_KEY"],
+        forwarded: false,
       },
       client: { apiOrigin: "https://api.example.com" },
     });

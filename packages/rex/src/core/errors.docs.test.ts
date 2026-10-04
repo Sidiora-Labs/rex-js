@@ -111,3 +111,27 @@ describe("explainRexError", () => {
     expect(explainRexError(hinted)).not.toContain(REX_ERROR_DOCS.REX100.hint);
   });
 });
+
+describe("the 0.3 codes", () => {
+  it("carry an area by prefix and a hint naming the field they validate", () => {
+    const expected: readonly (readonly [RexErrorCode, RexErrorArea, string])[] = [
+      ["REX124", "config", "site"],
+      ["REX125", "config", "env"],
+      ["REX126", "config", "redirects"],
+      ["REX127", "config", "deploy"],
+      ["REX225", "declaration", "chrome"],
+      ["REX226", "declaration", "islands"],
+      ["REX227", "declaration", "http"],
+      ["REX228", "declaration", "cache"],
+      ["REX229", "declaration", "optimistic"],
+      ["REX230", "declaration", "not-found"],
+      ["REX335", "runtime", "RecoverableError"],
+      ["REX451", "server", "env.server"],
+    ];
+    for (const [code, area, field] of expected) {
+      expect(errorArea(code), code).toBe(area);
+      expect(REX_ERROR_DOCS[code].hint, code).toContain(field);
+      expect(REX_ERROR_CATALOG[code].length, code).toBeGreaterThan(0);
+    }
+  });
+});

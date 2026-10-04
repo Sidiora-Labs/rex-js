@@ -9,7 +9,16 @@ import { z } from "zod/mini";
 import type { StandardSchemaV1 } from "../core/standard.ts";
 import { digest, memoryLedger, type Ledger } from "./audit.ts";
 import type { RexContext } from "./context.ts";
-import { CONFIRM_PROCEDURE, auditCode, buildActionRouter, type ActionProcedure } from "./router.ts";
+import {
+  CONFIRM_PROCEDURE,
+  auditCode,
+  buildActionRouter,
+  handlerContext,
+  type ActionProcedure,
+} from "./router.ts";
+import type { ActionContext } from "../core/action.ts";
+import { flow, runFlow } from "../core/flow.ts";
+import { memoryJournal } from "../core/journal.ts";
 
 const SECRET_MEMO = "do-not-store-this-memo";
 
@@ -491,5 +500,46 @@ describe("Standard Schema actions through the router", () => {
       call(router.payout, { amount: "3" }, { context: context(alice, grant.token) }),
     ).resolves.toEqual({ paid: 3 });
     expect(seen).toEqual([3]);
+  });
+});
+
+describe("the handler context", () => {
+  const seen: ActionContext[] = [];
+  const probe = action("probe-context", {
+    input: z.object({}),
+    output: z.object({ ok: z.boolean() }),
+    policy: always(),
+    effect: "reversible",
+    handler: (_input, ctx) => {
+      seen.push(ctx);
+      return { ok: true };
+    },
+  });
+
+  beforeEach(() => {
+    seen.length = 0;
+  });
+
+  it("fills env, locale and density from the RexContext the request built", async () => {
+    const router = buildActionRouter({ actions: [probe] }, { ledger: memoryLedger() });
+    const localized: RexContext = { actor: alice, density: "agent", locale: "pt-BR" };
+    await call(router["probe-context"], {}, { context: localized });
+    const withEnv = { actor: bob, density: "default", env: { API_KEY: "secret" } } as RexContext;
+    await call(router["probe-context"], {}, { context: withEnv });
+    expect(seen).toEqual([
+      { actor: alice, env: null, locale: "pt-BR", density: "agent" },
+      { actor: bob, env: { API_KEY: "secret" }, locale: null, density: "default" },
+    ]);
+    expect(handlerContext(localized)).toEqual(seen[0]);
+  });
+
+  it("runs flow steps with no env, no locale and the default density", async () => {
+    const steps = flow("probe-flow", {
+      journal: memoryJournal(),
+      steps: [{ action: probe, input: () => ({}) }],
+    });
+    const result = await runFlow(steps, "i-1", { actor: alice, input: {} });
+    expect(result.status).toBe("completed");
+    expect(seen).toEqual([{ actor: alice, env: null, locale: null, density: "default" }]);
   });
 });

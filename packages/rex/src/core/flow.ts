@@ -12,6 +12,7 @@ import {
   type Journal,
 } from "./journal.ts";
 import { evaluate, isPredicate, type Predicate, type ReasonCode } from "./policy.ts";
+import { DEFAULT_DENSITY } from "./protocol.ts";
 import { StandardValidationError, validateStandard, type StandardSchemaV1 } from "./standard.ts";
 
 declare module "./registry.ts" {
@@ -253,6 +254,9 @@ export async function runFlow(
           step.action.output,
           await step.action.handler(input as Parameters<AnyAction["handler"]>[0], {
             actor: ctx.actor,
+            env: null,
+            locale: null,
+            density: DEFAULT_DENSITY,
           }),
         );
         outputs[index] = output;

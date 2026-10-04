@@ -6,6 +6,7 @@
   "entryPoints": [
     "packages/rex/src/index.ts",
     "packages/rex/src/config.ts",
+    "packages/rex/src/errors.ts",
     "packages/rex/src/schema/index.ts",
     "packages/rex/src/manifest/index.ts",
     "packages/rex/src/client/index.ts",

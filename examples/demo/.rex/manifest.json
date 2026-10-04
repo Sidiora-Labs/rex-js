@@ -1,8 +1,10 @@
 {
   "actions": [
     {
+      "cache": null,
       "effect": "read",
       "form": null,
+      "http": null,
       "id": "list-tokens",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -11,6 +13,7 @@
       },
       "invalidates": [],
       "label": "List tokens",
+      "optimistic": [],
       "output": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
@@ -65,8 +68,10 @@
       "shortcut": null
     },
     {
+      "cache": null,
       "effect": "read",
       "form": null,
+      "http": null,
       "id": "load-wallet",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -75,6 +80,7 @@
       },
       "invalidates": [],
       "label": "Load wallet",
+      "optimistic": [],
       "output": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
@@ -265,8 +271,10 @@
       "shortcut": null
     },
     {
+      "cache": null,
       "effect": "reversible",
       "form": null,
+      "http": null,
       "id": "pick-contact",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -285,6 +293,7 @@
         "wallet"
       ],
       "label": "Pick contact",
+      "optimistic": [],
       "output": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
@@ -316,8 +325,10 @@
       "shortcut": "shift+c"
     },
     {
+      "cache": null,
       "effect": "reversible",
       "form": null,
+      "http": null,
       "id": "pick-token",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -336,6 +347,7 @@
         "wallet"
       ],
       "label": "Pick token",
+      "optimistic": [],
       "output": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
@@ -367,11 +379,13 @@
       "shortcut": "shift+t"
     },
     {
+      "cache": null,
       "effect": "irreversible",
       "form": {
         "confirmTitle": null,
         "redirect": "/send"
       },
+      "http": null,
       "id": "send",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -390,6 +404,7 @@
         "wallet"
       ],
       "label": "Send",
+      "optimistic": [],
       "output": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
@@ -425,11 +440,13 @@
       "shortcut": "mod+enter"
     },
     {
+      "cache": null,
       "effect": "reversible",
       "form": {
         "confirmTitle": null,
         "redirect": "/about"
       },
+      "http": null,
       "id": "send-feedback",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -448,6 +465,7 @@
       },
       "invalidates": [],
       "label": "Send feedback",
+      "optimistic": [],
       "output": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
@@ -469,8 +487,10 @@
       "shortcut": null
     },
     {
+      "cache": null,
       "effect": "reversible",
       "form": null,
+      "http": null,
       "id": "toggle-hide-dust",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -486,6 +506,7 @@
         "wallet"
       ],
       "label": "Toggle hide dust",
+      "optimistic": [],
       "output": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
@@ -511,6 +532,7 @@
   "app": {
     "name": "demo"
   },
+  "deploy": null,
   "entities": [
     {
       "fields": [
@@ -758,6 +780,7 @@
     }
   ],
   "flows": [],
+  "i18n": null,
   "pages": [
     {
       "actions": [
@@ -766,12 +789,19 @@
       "cache": null,
       "chrome": {
         "back": "portfolio",
+        "description": null,
+        "frame": null,
         "header": true,
+        "icon": null,
+        "image": null,
         "nav": true,
+        "order": null,
         "title": "msg:about.title"
       },
       "draft": "none",
+      "fallback": null,
       "id": "about",
+      "islands": {},
       "loaders": [],
       "overlays": [],
       "params": {
@@ -780,15 +810,18 @@
         "type": "object"
       },
       "paths": false,
+      "pathsAction": null,
       "policy": {
         "kind": "always"
       },
+      "prefetch": null,
       "recovery": null,
       "regions": [
         "intro",
         "feedback"
       ],
       "render": "static",
+      "restParam": null,
       "revalidate": null,
       "route": "/about",
       "routeParams": [],
@@ -810,12 +843,19 @@
       "cache": null,
       "chrome": {
         "back": "portfolio",
+        "description": null,
+        "frame": null,
         "header": true,
+        "icon": null,
+        "image": null,
         "nav": true,
+        "order": null,
         "title": "msg:embed.title"
       },
       "draft": "none",
+      "fallback": null,
       "id": "embed",
+      "islands": {},
       "loaders": [
         {
           "action": "list-tokens",
@@ -831,15 +871,18 @@
         "type": "object"
       },
       "paths": false,
+      "pathsAction": null,
       "policy": {
         "kind": "always"
       },
+      "prefetch": null,
       "recovery": null,
       "regions": [
         "widget",
         "locale"
       ],
       "render": "ssr",
+      "restParam": null,
       "revalidate": null,
       "route": "/embed",
       "routeParams": [],
@@ -863,12 +906,19 @@
       "cache": null,
       "chrome": {
         "back": null,
+        "description": null,
+        "frame": null,
         "header": true,
+        "icon": null,
+        "image": null,
         "nav": true,
+        "order": null,
         "title": "Portfolio"
       },
       "draft": "route",
+      "fallback": null,
       "id": "portfolio",
+      "islands": {},
       "loaders": [
         {
           "action": "load-wallet",
@@ -890,11 +940,13 @@
         "type": "object"
       },
       "paths": false,
+      "pathsAction": null,
       "policy": {
         "kind": "can",
         "permission": "viewer.read",
         "policy": "viewer"
       },
+      "prefetch": null,
       "recovery": null,
       "regions": [
         "hero",
@@ -902,6 +954,7 @@
         "holdings"
       ],
       "render": "ssr",
+      "restParam": null,
       "revalidate": null,
       "route": "/",
       "routeParams": [],
@@ -927,12 +980,19 @@
       "cache": null,
       "chrome": {
         "back": "portfolio",
+        "description": null,
+        "frame": null,
         "header": true,
+        "icon": null,
+        "image": null,
         "nav": true,
+        "order": null,
         "title": "Send"
       },
       "draft": "route",
+      "fallback": null,
       "id": "send",
+      "islands": {},
       "loaders": [
         {
           "action": "load-wallet",
@@ -959,11 +1019,13 @@
         "type": "object"
       },
       "paths": false,
+      "pathsAction": null,
       "policy": {
         "kind": "can",
         "permission": "viewer.read",
         "policy": "viewer"
       },
+      "prefetch": null,
       "recovery": "portfolio",
       "regions": [
         "form",
@@ -971,6 +1033,7 @@
         "success"
       ],
       "render": "ssr",
+      "restParam": null,
       "revalidate": null,
       "route": "/send",
       "routeParams": [],
@@ -992,12 +1055,19 @@
       "cache": null,
       "chrome": {
         "back": "portfolio",
+        "description": null,
+        "frame": null,
         "header": true,
+        "icon": null,
+        "image": null,
         "nav": true,
+        "order": null,
         "title": "msg:tokens.title"
       },
       "draft": "none",
+      "fallback": null,
       "id": "tokens",
+      "islands": {},
       "loaders": [],
       "overlays": [],
       "params": {
@@ -1006,14 +1076,17 @@
         "type": "object"
       },
       "paths": false,
+      "pathsAction": null,
       "policy": {
         "kind": "always"
       },
+      "prefetch": null,
       "recovery": null,
       "regions": [
         "prices"
       ],
       "render": "ssg",
+      "restParam": null,
       "revalidate": 60,
       "route": "/tokens",
       "routeParams": [],
@@ -1046,5 +1119,6 @@
       ]
     }
   ],
+  "redirects": [],
   "version": 1
 }

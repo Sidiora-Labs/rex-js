@@ -1,8 +1,14 @@
 import type { AnyAction } from "../core/action.ts";
+import type {
+  ResolvedDeploy,
+  ResolvedI18n,
+  ResolvedRedirect,
+  ResolvedSite,
+} from "../core/config.ts";
 import type { AnyEntity } from "../core/entity.ts";
 import { RexError } from "../core/errors.ts";
 import { isValidName } from "../core/ids.ts";
-import type { AnyPage, PageRender } from "../core/page.ts";
+import { parseRoute, type AnyPage, type PageRender } from "../core/page.ts";
 import { predicateToJson, type AnyPolicy } from "../core/policy.ts";
 import { compareIds } from "../core/registry.ts";
 import { STANDARD_VENDOR_KEY, acceptsSync, refTarget, type JsonSchema } from "../core/schema.ts";
@@ -15,6 +21,7 @@ import {
   type ManifestAction,
   type ManifestEntity,
   type ManifestFlow,
+  type ManifestI18n,
   type ManifestPage,
   type ManifestPolicy,
 } from "./types.ts";
@@ -30,6 +37,10 @@ export interface ManifestSource {
 export interface BuildManifestOptions {
   readonly app?: string;
   readonly render?: PageRender;
+  readonly site?: ResolvedSite | null;
+  readonly redirects?: readonly ResolvedRedirect[];
+  readonly deploy?: ResolvedDeploy | null;
+  readonly i18n?: ResolvedI18n | null;
 }
 
 export const DEFAULT_PAGE_RENDER: PageRender = "ssr";
@@ -102,11 +113,22 @@ function pageParamsJsonSchema(declared: AnyPage): JsonSchema {
   if (vendor === null) {
     return declaredJsonSchema(declared.params, null, "input", `page "${declared.id}" params`);
   }
+  const rest = parseRoute(declared.route).segments.find((segment) => segment.kind === "rest");
+  const required = declared.routeParams.filter(
+    (name) => rest === undefined || name !== rest.name || !rest.optional,
+  );
   return {
     $schema: "https://json-schema.org/draft/2020-12/schema",
     type: "object",
-    properties: Object.fromEntries(declared.routeParams.map((name) => [name, { type: "string" }])),
-    ...(declared.routeParams.length > 0 ? { required: [...declared.routeParams] } : {}),
+    properties: Object.fromEntries(
+      declared.routeParams.map((name) => [
+        name,
+        rest !== undefined && rest.name === name
+          ? { type: "array", items: { type: "string" } }
+          : { type: "string" },
+      ]),
+    ),
+    ...(required.length > 0 ? { required } : {}),
     additionalProperties: {},
     [STANDARD_VENDOR_KEY]: vendor,
   };
@@ -120,6 +142,9 @@ function actionManifest(declared: AnyAction): ManifestAction {
     effect: declared.effect,
     invalidates: [...declared.invalidates].sort(),
     form: declared.form === null ? null : { ...declared.form },
+    http: declared.http === null ? null : { ...declared.http },
+    cache: declared.cache === null ? null : { ...declared.cache },
+    optimistic: declared.optimistic === null ? [] : Object.keys(declared.optimistic).sort(),
     policy: predicateToJson(declared.policy),
     input: declaredJsonSchema(
       declared.input,
@@ -137,17 +162,21 @@ function actionManifest(declared: AnyAction): ManifestAction {
 }
 
 function pageManifest(declared: AnyPage, render: PageRender): ManifestPage {
+  const rest = parseRoute(declared.route).segments.find((segment) => segment.kind === "rest");
   return {
     id: declared.id,
     route: declared.route,
     routeParams: [...declared.routeParams],
+    restParam: rest === undefined ? null : { name: rest.name, optional: rest.optional },
     params: pageParamsJsonSchema(declared),
     policy: predicateToJson(declared.policy),
     recovery: declared.recovery,
     draft: declared.draft,
     render: declared.render ?? render,
     revalidate: declared.revalidate,
-    paths: declared.paths !== null,
+    paths: declared.paths !== null || declared.pathsAction !== null,
+    pathsAction: declared.pathsAction === null ? null : declared.pathsAction.action.id,
+    fallback: declared.fallback,
     loaders: [...declared.loaders]
       .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
       .map((loader) => ({
@@ -158,11 +187,24 @@ function pageManifest(declared: AnyPage, render: PageRender): ManifestPage {
       })),
     cache: declared.cache === null ? null : { ...declared.cache },
     transition: declared.transition,
+    prefetch: declared.prefetch,
+    islands: Object.fromEntries(
+      Object.entries(declared.islands)
+        .filter(
+          (entry): entry is [string, NonNullable<(typeof entry)[1]>] => entry[1] !== undefined,
+        )
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    ),
     chrome: {
       header: declared.chrome.header,
       nav: declared.chrome.nav,
       back: declared.chrome.back,
       title: declared.chrome.title,
+      description: declared.chrome.description,
+      image: declared.chrome.image,
+      frame: declared.chrome.frame,
+      order: declared.chrome.order,
+      icon: declared.chrome.icon,
     },
     regions: [...declared.regions],
     overlays: sortById(declared.overlays).map((overlay) => ({
@@ -238,15 +280,146 @@ export function buildManifest(
       }
     }
   }
+  validateInvalidates(source.actions, pages);
+  validateEndpoints(source.actions, pages);
+  validateBackChains(pages);
+  const redirects = options.redirects ?? [];
+  validateRedirects(redirects, pages);
+  const site = options.site ?? null;
+  const deploy = options.deploy ?? null;
   return {
     version: MANIFEST_VERSION,
-    app: { name: app },
+    app: site === null ? { name: app } : { name: app, site: { ...site } },
     entities: sortById(source.entities).map(entityManifest),
     actions: sortById(source.actions).map(actionManifest),
     pages: pages.map((declared) => pageManifest(declared, render)),
     policies: sortById(source.policies).map(policyManifest),
     flows: sortById(source.flows ?? []).map(flowManifest),
+    redirects: redirects.map((entry) => ({
+      source: entry.source,
+      destination: entry.destination,
+      status: entry.status,
+    })),
+    deploy: deploy === null ? null : { host: deploy.host, target: deploy.target },
+    i18n: i18nManifest(options.i18n ?? null),
   };
+}
+
+function i18nManifest(i18n: ResolvedI18n | null): ManifestI18n | null {
+  if (i18n === null) return null;
+  return {
+    locales: [...i18n.locales],
+    default: i18n.default,
+    routing: i18n.routing,
+    direction: Object.fromEntries(
+      i18n.locales.map((locale) => [locale, i18n.direction[locale] ?? "ltr"]),
+    ),
+  };
+}
+
+function validateInvalidates(actions: readonly AnyAction[], pages: readonly AnyPage[]): void {
+  const effects = new Map(actions.map((declared) => [declared.id, declared.effect]));
+  const loaderNames = new Set(
+    pages.flatMap((declared) => declared.loaders.map((loader) => loader.name)),
+  );
+  const pageIds = new Set(pages.map((declared) => declared.id));
+  for (const declared of actions) {
+    for (const name of declared.invalidates) {
+      const effect = effects.get(name);
+      if (
+        effect !== undefined &&
+        effect !== "read" &&
+        !loaderNames.has(name) &&
+        !pageIds.has(name)
+      ) {
+        throw new RexError(
+          "REX212",
+          `buildManifest: action "${declared.id}" invalidates "${name}", a ${effect} action; invalidates names page loaders, read actions or pages`,
+        );
+      }
+    }
+    for (const name of Object.keys(declared.optimistic ?? {})) {
+      const effect = effects.get(name);
+      if (effect !== undefined && effect !== "read") {
+        throw new RexError(
+          "REX229",
+          `buildManifest: action "${declared.id}" optimistic "${name}" names action "${name}" whose effect is ${effect}, not read`,
+        );
+      }
+      if (!loaderNames.has(name) && effect === undefined) {
+        throw new RexError(
+          "REX229",
+          `buildManifest: action "${declared.id}" optimistic "${name}" names no page loader or read action`,
+        );
+      }
+    }
+  }
+}
+
+function routeKey(route: string): string {
+  return parseRoute(route)
+    .segments.map((segment) =>
+      segment.kind === "static" ? segment.value : segment.kind === "rest" ? ":*" : ":",
+    )
+    .join("/");
+}
+
+function validateEndpoints(actions: readonly AnyAction[], pages: readonly AnyPage[]): void {
+  const pageRoutes = new Map(pages.map((declared) => [declared.route, declared.id]));
+  const taken = new Map<string, string>();
+  for (const declared of sortById(actions)) {
+    if (declared.http === null) continue;
+    const path = declared.http.path;
+    const page = pageRoutes.get(path);
+    if (page !== undefined) {
+      throw new RexError(
+        "REX227",
+        `buildManifest: action "${declared.id}" http.path ${path} collides with the route of page "${page}"`,
+      );
+    }
+    const other = taken.get(path);
+    if (other !== undefined) {
+      throw new RexError(
+        "REX227",
+        `buildManifest: action "${declared.id}" http.path ${path} collides with action "${other}"`,
+      );
+    }
+    taken.set(path, declared.id);
+  }
+}
+
+function validateRedirects(
+  redirects: readonly ResolvedRedirect[],
+  pages: readonly AnyPage[],
+): void {
+  const pageRoutes = new Map(pages.map((declared) => [routeKey(declared.route), declared.id]));
+  for (const redirect of redirects) {
+    const page = pageRoutes.get(routeKey(redirect.source));
+    if (page !== undefined) {
+      throw new RexError(
+        "REX126",
+        `buildManifest: redirect source ${redirect.source} matches the route of page "${page}"; a page route is never redirected`,
+      );
+    }
+  }
+}
+
+function validateBackChains(pages: readonly AnyPage[]): void {
+  const backOf = new Map(pages.map((declared) => [declared.id, declared.chrome.back]));
+  for (const declared of pages) {
+    const seen = [declared.id];
+    let next = declared.chrome.back;
+    while (next !== null && next !== undefined) {
+      if (seen.includes(next)) {
+        throw new RexError(
+          "REX225",
+          `buildManifest: page "${declared.id}" chrome.back forms a cycle: ${[...seen, next].join(" -> ")}`,
+        );
+      }
+      seen.push(next);
+      next = backOf.get(next) ?? null;
+    }
+  }
 }
 
 function canonical(value: unknown, path: string): unknown {

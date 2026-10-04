@@ -25,6 +25,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
+    "./errors": "./src/errors.ts",
     "./schema": "./src/schema/index.ts",
     "./manifest": "./src/manifest/index.ts",
     "./client": "./src/client/index.ts",
@@ -58,6 +59,10 @@
       "./config": {
         "types": "./dist/config.d.ts",
         "import": "./dist/config.js"
+      },
+      "./errors": {
+        "types": "./dist/errors.d.ts",
+        "import": "./dist/errors.js"
       },
       "./schema": {
         "types": "./dist/schema/index.d.ts",

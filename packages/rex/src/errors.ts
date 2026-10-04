@@ -1,0 +1,26 @@
+export {
+  REX_ERRORS_DOCS_BASE,
+  REX_ERROR_CATALOG,
+  REX_ERROR_CODE_PATTERN,
+  RexDeclarationOptionError,
+  RexError,
+  errorDetail,
+  errorDocs,
+  formatRexError,
+  isRexError,
+  isRexErrorCode,
+  type RexDeclarationErrorDetails,
+  type RexErrorCode,
+  type RexErrorLocation,
+  type RexErrorOptions,
+} from "./core/errors.ts";
+export {
+  REX_ERROR_AREAS,
+  REX_ERROR_DOCS,
+  errorArea,
+  errorHint,
+  explainRexError,
+  type RexErrorArea,
+  type RexErrorAreaInfo,
+  type RexErrorDocsEntry,
+} from "./core/errors.docs.ts";

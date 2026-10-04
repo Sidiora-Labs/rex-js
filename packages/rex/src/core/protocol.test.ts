@@ -24,6 +24,7 @@ import { policy } from "./policy.ts";
 import {
   CONFIRM_PROCEDURE,
   RESERVED_QUERY_KEYS,
+  TEXT_DIRECTIONS,
   REX_ACTOR_HEADER,
   REX_CONFIRM_HEADER,
   REX_DENSITY_HEADER,
@@ -120,8 +121,18 @@ describe("wire protocol constants", () => {
     expect(REX_DENSITY_HEADER).toBe("x-rex-density");
     expect(REX_RPC_PREFIX).toBe("/rex/rpc");
     expect(REX_MANIFEST_PATH).toBe("/rex/manifest");
-    expect([...RESERVED_QUERY_KEYS]).toEqual(["act", "input", "draft", "density"]);
+    expect([...RESERVED_QUERY_KEYS]).toEqual([
+      "act",
+      "input",
+      "draft",
+      "density",
+      "locale",
+      "devtools",
+    ]);
     expect(isReservedQueryKey("act")).toBe(true);
+    expect(isReservedQueryKey("locale")).toBe(true);
+    expect(isReservedQueryKey("devtools")).toBe(true);
+    expect([...TEXT_DIRECTIONS]).toEqual(["ltr", "rtl"]);
     expect(isReservedQueryKey("amount")).toBe(false);
   });
 

@@ -16,6 +16,7 @@ import {
   RexStaticPageError,
   applyScreenAttributes,
   isPrerenderMode,
+  prerenderContext,
   prerenderedFile,
   renderPrerenderedHtml,
   serializePrerenderList,
@@ -25,6 +26,7 @@ import {
 } from "../server/adapters/static-cache.ts";
 import { memoryLedger, type Ledger } from "../server/audit.ts";
 import { formPath } from "../server/form.ts";
+import { createActionLoaderRunner, type LoaderRunner } from "../server/loaders.ts";
 import type { StaticPageTextOptions } from "../server/routes/pages-text.ts";
 import type { RexPageRenderer } from "../server/routes/render.ts";
 import type { RexDocumentAssets, RexRendererOptions } from "../server/ssr.ts";
@@ -99,12 +101,42 @@ export function routePath(declared: AnyPage, params: unknown): string {
   return `/${segments.join("/")}`;
 }
 
-export async function expandPagePaths(declared: AnyPage): Promise<string[]> {
-  if (declared.routeParams.length === 0) return [declared.route];
-  if (declared.paths === null) {
+export interface PagePathsOptions {
+  readonly runner?: LoaderRunner;
+  readonly ledger?: Ledger;
+  readonly actor?: Actor;
+}
+
+async function listPageParams(declared: AnyPage, options: PagePathsOptions): Promise<unknown> {
+  if (declared.paths !== null) return declared.paths();
+  const source = declared.pathsAction;
+  if (source === null) {
     throw pathsError(declared, `is required to prerender route ${declared.route}`);
   }
-  const listed: unknown = await declared.paths();
+  const runner =
+    options.runner ??
+    createActionLoaderRunner(
+      { actions: [source.action] },
+      { ledger: options.ledger ?? memoryLedger() },
+    );
+  let output: unknown;
+  try {
+    output = await runner.run(source.action, {}, prerenderContext(options.actor ?? anonymousActor));
+  } catch (error) {
+    throw pathsError(
+      declared,
+      `action "${source.action.id}" failed at prerender: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  return source.map(output);
+}
+
+export async function expandPagePaths(
+  declared: AnyPage,
+  options: PagePathsOptions = {},
+): Promise<string[]> {
+  if (declared.routeParams.length === 0) return [declared.route];
+  const listed = await listPageParams(declared, options);
   if (!Array.isArray(listed)) throw pathsError(declared, "must return a list of params objects");
   return [...new Set(listed.map((params) => routePath(declared, params)))];
 }
@@ -180,9 +212,10 @@ export async function prerenderPages(
 
   const pages: StaticPageEntry[] = [];
   const seen = new Set<string>();
+  const pathsRunner = createActionLoaderRunner(bundle.registry, { ledger });
   for (const { set, mode } of targets) {
     const declared = set.page;
-    for (const path of await expandPagePaths(declared)) {
+    for (const path of await expandPagePaths(declared, { runner: pathsRunner, actor })) {
       if (seen.has(path)) {
         throw new RexStaticPageError(declared.id, path, "is prerendered by more than one page");
       }

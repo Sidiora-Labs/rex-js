@@ -160,6 +160,7 @@ describe("buildManifest", () => {
       id: "send",
       route: "/send/:account",
       routeParams: ["account"],
+      restParam: null,
       params: {
         $schema: DRAFT,
         type: "object",
@@ -175,10 +176,24 @@ describe("buildManifest", () => {
       render: "ssr",
       revalidate: null,
       paths: false,
+      pathsAction: null,
+      fallback: null,
       loaders: [],
       cache: null,
       transition: "none",
-      chrome: { header: true, nav: false, back: "portfolio", title: "Send" },
+      prefetch: null,
+      islands: {},
+      chrome: {
+        header: true,
+        nav: false,
+        back: "portfolio",
+        title: "Send",
+        description: null,
+        image: null,
+        frame: null,
+        order: null,
+        icon: null,
+      },
       regions: ["form", "confirm", "success"],
       overlays: [
         { id: "ContactPickerSheet", dismiss: "escape", binding: "region" },
@@ -365,7 +380,17 @@ describe("0.2 manifest options", () => {
         title: "Statement",
       },
     });
-    expect(described?.chrome).toEqual({ header: true, nav: true, back: null, title: "Statement" });
+    expect(described?.chrome).toEqual({
+      header: true,
+      nav: true,
+      back: null,
+      title: "Statement",
+      description: null,
+      image: null,
+      frame: null,
+      order: null,
+      icon: null,
+    });
   });
 
   it("uses the configured default render mode for pages that declare none", () => {
@@ -430,6 +455,258 @@ describe("0.2 manifest options", () => {
     expect(failure).toBeInstanceOf(RexError);
     expect((failure as RexError).code).toBe("REX209");
     expect((failure as RexError).message).toContain('loader "quote" names action "quote"');
+  });
+});
+
+describe("0.3 manifest fields", () => {
+  const listDocs = action("list-docs", {
+    input: z.object({}),
+    output: z.object({ slugs: z.array(text()) }),
+    policy: always(),
+    effect: "read",
+    http: { method: "GET", path: "/docs.json" },
+    cache: { maxAge: 60, scope: "shared" },
+    handler: () => ({ slugs: [] }),
+  });
+  const loadWallet = action("load-wallet", {
+    input: z.object({}),
+    output: z.object({ hide: boolean() }),
+    policy: always(),
+    effect: "read",
+    handler: () => ({ hide: false }),
+  });
+  const hide = action("hide-dust", {
+    input: z.object({ hide: boolean() }),
+    output: z.object({ hide: boolean() }),
+    policy: always(),
+    effect: "reversible",
+    invalidates: ["wallet", "list-docs", "doc"],
+    optimistic: { wallet: (current, input) => ({ ...(current as object), hide: input.hide }) },
+    handler: (input) => input,
+  });
+  const doc = page("doc", {
+    route: "/docs/:slug",
+    params: z.object({ slug: text() }),
+    render: "static",
+    paths: { action: listDocs, map: (output) => output.slugs.map((slug) => ({ slug })) },
+    fallback: "render",
+    prefetch: "viewport",
+    regions: ["article", "toc"],
+    islands: { toc: "idle", article: "never" },
+    chrome: {
+      title: "Doc {slug}",
+      description: "The {slug} page",
+      image: "/social/doc.png",
+      frame: "docs",
+      order: 2,
+      icon: "book-open",
+      back: "home",
+    },
+  });
+  const reference = page("reference", {
+    route: "/reference/:path*",
+    params: z.object({ path: z.array(text()) }),
+    chrome: { frame: "docs", back: "doc" },
+  });
+  const files = page("files", {
+    route: "/files/:path*?",
+    params: z.object({ path: z.optional(z.array(text())) }),
+  });
+  const home = page("home", {
+    route: "/",
+    load: { wallet: loadWallet },
+    actions: [hide],
+    chrome: { order: 1, icon: "house" },
+  });
+  const pages = [doc, reference, files, home];
+  const actions = [listDocs, loadWallet, hide];
+  const site = {
+    origin: "https://rex.sidioralabs.com",
+    name: "Rex",
+    description: null,
+    image: null,
+    titleTemplate: "{title} | Rex",
+  };
+  const manifest = buildManifest(
+    { entities: [], actions, pages, policies: [] },
+    {
+      app: "docs",
+      site,
+      redirects: [{ source: "/guide/:path*", destination: "/reference/:path*", status: 301 }],
+      deploy: { host: "github-pages", target: "static", runtime: null },
+      i18n: {
+        locales: ["en", "pt"],
+        default: "en",
+        routing: "prefix",
+        direction: { en: "ltr", pt: "ltr" },
+      },
+    },
+  );
+  const pageOf = (id: string) => manifest.pages.find((entry) => entry.id === id);
+  const actionOf = (id: string) => manifest.actions.find((entry) => entry.id === id);
+
+  it("writes app.site, redirects, deploy and i18n from the options and nothing when they are absent", () => {
+    expect(manifest.app).toEqual({ name: "docs", site });
+    expect(manifest.redirects).toEqual([
+      { source: "/guide/:path*", destination: "/reference/:path*", status: 301 },
+    ]);
+    expect(manifest.deploy).toEqual({ host: "github-pages", target: "static" });
+    expect(manifest.i18n).toEqual({
+      locales: ["en", "pt"],
+      default: "en",
+      routing: "prefix",
+      direction: { en: "ltr", pt: "ltr" },
+    });
+    const bare = buildManifest({ entities: [], actions: [], pages: [], policies: [] });
+    expect(bare.app).toEqual({ name: "app" });
+    expect([bare.redirects, bare.deploy, bare.i18n]).toEqual([[], null, null]);
+    expect(Object.keys(manifest).sort()).toEqual(Object.keys(bare).sort());
+  });
+
+  it("writes the page chrome, islands, prefetch, fallback and the paths action", () => {
+    expect(pageOf("doc")).toMatchObject({
+      paths: true,
+      pathsAction: "list-docs",
+      fallback: "render",
+      prefetch: "viewport",
+      islands: { article: "never", toc: "idle" },
+      restParam: null,
+      chrome: {
+        header: true,
+        nav: true,
+        back: "home",
+        title: "Doc {slug}",
+        description: "The {slug} page",
+        image: "/social/doc.png",
+        frame: "docs",
+        order: 2,
+        icon: "book-open",
+      },
+    });
+    expect(Object.keys(pageOf("doc")?.islands ?? {})).toEqual(["article", "toc"]);
+    expect(pageOf("home")).toMatchObject({
+      paths: false,
+      pathsAction: null,
+      fallback: null,
+      prefetch: null,
+      islands: {},
+    });
+  });
+
+  it("marks the rest param and describes it as an array of strings", () => {
+    const rest = pageOf("reference");
+    expect(rest?.routeParams).toEqual(["path"]);
+    expect(rest?.restParam).toEqual({ name: "path", optional: false });
+    const properties = rest?.params.properties as Record<string, Record<string, unknown>>;
+    expect(properties.path?.type).toBe("array");
+    expect((properties.path?.items as Record<string, unknown>).type).toBe("string");
+    expect(rest?.params.required).toEqual(["path"]);
+    expect(pageOf("files")?.restParam).toEqual({ name: "path", optional: true });
+    expect(pageOf("files")?.params.required ?? []).not.toContain("path");
+  });
+
+  it("writes the action endpoint, cache and optimistic names", () => {
+    expect(actionOf("list-docs")).toMatchObject({
+      http: { method: "GET", path: "/docs.json", contentType: null, csrf: true },
+      cache: { maxAge: 60, scope: "shared" },
+      optimistic: [],
+    });
+    expect(actionOf("hide-dust")).toMatchObject({
+      http: null,
+      cache: null,
+      optimistic: ["wallet"],
+      invalidates: ["doc", "list-docs", "wallet"],
+    });
+  });
+
+  function failure(run: () => unknown): RexError {
+    try {
+      run();
+    } catch (error) {
+      expect(error).toBeInstanceOf(RexError);
+      return error as RexError;
+    }
+    throw new Error("expected a RexError");
+  }
+
+  it("refuses an invalidates name that names a mutating action rather than a loader, read action or page", () => {
+    const mutating = action("mutating", {
+      input: z.object({}),
+      output: z.object({}),
+      policy: always(),
+      effect: "reversible",
+      invalidates: ["hide-dust"],
+      handler: () => ({}),
+    });
+    const error = failure(() =>
+      buildManifest({ entities: [], actions: [...actions, mutating], pages, policies: [] }),
+    );
+    expect(error.code).toBe("REX212");
+    expect(error.message).toContain(
+      'action "mutating" invalidates "hide-dust", a reversible action',
+    );
+    expect(actionOf("hide-dust")?.invalidates).toEqual(["doc", "list-docs", "wallet"]);
+  });
+
+  it("refuses an optimistic update keyed by a name that is no loader or read action", () => {
+    const board = action("board-move", {
+      input: z.object({}),
+      output: z.object({}),
+      policy: always(),
+      effect: "reversible",
+      invalidates: ["doc"],
+      optimistic: { doc: (current) => current },
+      handler: () => ({}),
+    });
+    const error = failure(() =>
+      buildManifest({ entities: [], actions: [...actions, board], pages, policies: [] }),
+    );
+    expect(error.code).toBe("REX229");
+    expect(error.message).toContain('optimistic "doc" names no page loader or read action');
+  });
+
+  it("rejects HTTP paths shared by two actions or by a page route", () => {
+    const twin = action("twin-docs", {
+      input: z.object({}),
+      output: z.object({}),
+      policy: always(),
+      effect: "read",
+      http: { method: "GET", path: "/docs.json" },
+      handler: () => ({}),
+    });
+    const collision = failure(() =>
+      buildManifest({ entities: [], actions: [...actions, twin], pages, policies: [] }),
+    );
+    expect(collision.code).toBe("REX227");
+    expect(collision.message).toContain('collides with action "list-docs"');
+    const shadow = page("docs-json", { route: "/docs.json" });
+    const routed = failure(() =>
+      buildManifest({ entities: [], actions, pages: [...pages, shadow], policies: [] }),
+    );
+    expect(routed.code).toBe("REX227");
+    expect(routed.message).toContain('page "docs-json"');
+  });
+
+  it("rejects a redirect whose source is a page route", () => {
+    const error = failure(() =>
+      buildManifest(
+        { entities: [], actions, pages, policies: [] },
+        { redirects: [{ source: "/docs/:id", destination: "/", status: 308 }] },
+      ),
+    );
+    expect(error.code).toBe("REX126");
+    expect(error.message).toContain('page "doc"');
+  });
+
+  it("rejects a chrome.back cycle", () => {
+    const loopA = page("loop-a", { route: "/loop-a", chrome: { back: "loop-b" } });
+    const loopB = page("loop-b", { route: "/loop-b", chrome: { back: "loop-c" } });
+    const loopC = page("loop-c", { route: "/loop-c", chrome: { back: "loop-a" } });
+    const error = failure(() =>
+      buildManifest({ entities: [], actions: [], pages: [loopA, loopB, loopC], policies: [] }),
+    );
+    expect(error.code).toBe("REX225");
+    expect(error.message).toContain("loop-a -> loop-b -> loop-c -> loop-a");
   });
 });
 
@@ -536,6 +813,46 @@ describe("sidecar schema", () => {
       "name",
       "action",
       "invalidatedBy",
+      "defer",
+    ]);
+  });
+
+  it("admits the document, locale, locales, direction, frame and region island and optimistic fields", () => {
+    const full = {
+      ...payload,
+      loaders: [{ name: "wallet", action: "load-wallet", invalidatedBy: ["send"], defer: true }],
+      document: {
+        title: "Send | Rex",
+        description: "Send a token",
+        canonical: "https://rex.sidioralabs.com/send/acc-1",
+      },
+      locale: "pt",
+      locales: ["en", "pt"],
+      direction: "ltr",
+      frame: "docs",
+      regions: [
+        { id: "form", address: "send/form", state: "ready", island: "visible", optimistic: true },
+        { id: "confirm", address: "send/confirm", state: "recoverable-error", code: "REX330" },
+      ],
+    };
+    expect(validateSidecar(full)).toEqual({ valid: true, payload: full });
+    const untitled = {
+      ...payload,
+      document: { title: "Send", description: null, canonical: null },
+    };
+    expect(validateSidecar(untitled).valid).toBe(true);
+    const properties = sidecarJsonSchema.properties as Record<string, Record<string, unknown>>;
+    for (const field of ["document", "locale", "locales", "direction", "frame"]) {
+      expect(properties[field], field).toBeDefined();
+    }
+    const regionItems = (properties.regions?.items ?? {}) as Record<string, unknown>;
+    expect(Object.keys(regionItems.properties as object)).toEqual([
+      "id",
+      "address",
+      "state",
+      "code",
+      "island",
+      "optimistic",
     ]);
   });
 
@@ -595,6 +912,66 @@ describe("sidecar schema", () => {
       "an overlay without dismissal",
       (p: Record<string, unknown>) => ({ ...p, overlays: [{ id: "Sheet", open: false }] }),
       "overlays.0.dismiss",
+    ],
+    [
+      "a document without a title",
+      (p: Record<string, unknown>) => ({
+        ...p,
+        document: { title: "", description: null, canonical: null },
+      }),
+      "document.title",
+    ],
+    [
+      "a relative canonical link",
+      (p: Record<string, unknown>) => ({
+        ...p,
+        document: { title: "Send", description: null, canonical: "/send" },
+      }),
+      "document.canonical",
+    ],
+    [
+      "locales without the active locale",
+      (p: Record<string, unknown>) => ({ ...p, locales: ["en"] }),
+      "locale",
+    ],
+    [
+      "an active locale outside the locales",
+      (p: Record<string, unknown>) => ({ ...p, locale: "fr", locales: ["en"] }),
+      "locale",
+    ],
+    [
+      "an unknown direction",
+      (p: Record<string, unknown>) => ({ ...p, direction: "up" }),
+      "direction",
+    ],
+    [
+      "a frame that is not an export name",
+      (p: Record<string, unknown>) => ({ ...p, frame: "Docs Frame" }),
+      "frame",
+    ],
+    [
+      "an unknown island mode",
+      (p: Record<string, unknown>) => ({
+        ...p,
+        regions: [{ id: "form", address: "send/form", state: "ready", island: "eager" }],
+      }),
+      "regions.0.island",
+    ],
+    [
+      "a failed region without its code",
+      (p: Record<string, unknown>) => ({
+        ...p,
+        regions: [{ id: "form", address: "send/form", state: "recoverable-error" }],
+      }),
+      "regions.0.code",
+    ],
+    [
+      "an optimistic flag set to false",
+      (p: Record<string, unknown>) => ({
+        ...p,
+        regions: [{ id: "form", address: "send/form", state: "ready", optimistic: false }],
+      }),
+      "regions.0.optimistic",
     ],
     [
       "an outcome without a timestamp",

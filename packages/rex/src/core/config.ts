@@ -1,7 +1,15 @@
 import { deprecated, type DeprecationWarn } from "./deprecated.ts";
-import { RexError, type RexErrorCode } from "./errors.ts";
-import { PAGE_RENDER_MODES, type PageRender } from "./page.ts";
+import { RexError, errorDetail, type RexErrorCode } from "./errors.ts";
+import {
+  PAGE_PREFETCH,
+  PAGE_RENDER_MODES,
+  parseRoute,
+  type PagePrefetch,
+  type PageRender,
+} from "./page.ts";
 import type { RegistrySnapshot } from "./registry.ts";
+import { isStandardSchema, type StandardSchemaV1 } from "./standard.ts";
+import { TEXT_DIRECTIONS, type TextDirection } from "./protocol.ts";
 
 export const CONFIG_FILE = "rex.config.ts";
 
@@ -29,6 +37,49 @@ export type UiKit = (typeof UI_KITS)[number];
 export const FONT_STYLES = ["normal", "italic"] as const;
 export type FontStyle = (typeof FONT_STYLES)[number];
 
+export const REDIRECT_STATUSES = [301, 302, 307, 308] as const;
+export type RedirectStatus = (typeof REDIRECT_STATUSES)[number];
+export const DEFAULT_REDIRECT_STATUS: RedirectStatus = 308;
+
+export const DEPLOY_HOSTS = [
+  "node",
+  "bun",
+  "deno",
+  "docker",
+  "deno-deploy",
+  "cloudflare",
+  "vercel",
+  "netlify",
+  "github-pages",
+  "static",
+] as const;
+export type DeployHost = (typeof DEPLOY_HOSTS)[number];
+
+export const DEPLOY_TARGETS = ["node", "edge", "bun", "deno", "static"] as const;
+export type DeployTarget = (typeof DEPLOY_TARGETS)[number];
+
+export const DEPLOY_RUNTIMES = ["node", "edge"] as const;
+export type DeployRuntime = (typeof DEPLOY_RUNTIMES)[number];
+
+export const DEPLOY_HOST_TARGETS: Readonly<Record<DeployHost, DeployTarget>> = Object.freeze({
+  node: "node",
+  bun: "bun",
+  deno: "deno",
+  docker: "node",
+  "deno-deploy": "deno",
+  cloudflare: "edge",
+  vercel: "node",
+  netlify: "node",
+  "github-pages": "static",
+  static: "static",
+});
+
+export const DEFAULT_PREFETCH: PagePrefetch = "hover";
+
+export const ENV_CLIENT_PREFIX = "VITE_";
+
+export const SITE_TITLE_PLACEHOLDER = "{title}";
+
 export interface RenderConfig {
   readonly default?: PageRender;
 }
@@ -44,17 +95,20 @@ export interface SecurityConfig {
   readonly origins?: readonly string[];
   readonly headers?: Readonly<Record<string, string>>;
   readonly secretNames?: readonly string[];
+  readonly forwarded?: boolean;
 }
 
 export interface I18nConfig {
   readonly locales: readonly string[];
   readonly default: string;
   readonly routing?: I18nRouting;
+  readonly direction?: TextDirection | Readonly<Record<string, TextDirection>>;
 }
 
 export interface ImagesConfig {
   readonly sizes?: readonly number[];
   readonly formats?: readonly ImageFormat[];
+  readonly remote?: readonly string[];
 }
 
 export interface FontSpec {
@@ -63,6 +117,34 @@ export interface FontSpec {
   readonly weight?: string | number;
   readonly style?: FontStyle;
   readonly preload?: boolean;
+  readonly variable?: string;
+  readonly fallback?: string;
+}
+
+export interface SiteConfig {
+  readonly origin?: string;
+  readonly name?: string;
+  readonly description?: string;
+  readonly image?: string;
+  readonly titleTemplate?: string;
+}
+
+export interface RedirectConfig {
+  readonly source: string;
+  readonly destination: string;
+  readonly status?: RedirectStatus;
+}
+
+export interface DeployConfig {
+  readonly host: DeployHost;
+  readonly runtime?: DeployRuntime;
+}
+
+export type EnvSchemaMap = Readonly<Record<string, StandardSchemaV1>>;
+
+export interface EnvConfig {
+  readonly client?: EnvSchemaMap;
+  readonly server?: EnvSchemaMap;
 }
 
 export interface RexLogger {
@@ -106,6 +188,11 @@ export interface CheckConfig {
 }
 
 export interface RexOptionsConfig {
+  readonly site?: SiteConfig;
+  readonly redirects?: readonly RedirectConfig[];
+  readonly deploy?: DeployConfig;
+  readonly env?: EnvConfig;
+  readonly prefetch?: PagePrefetch;
   readonly render?: RenderConfig;
   readonly budgets?: BudgetsConfig;
   readonly security?: SecurityConfig;
@@ -139,10 +226,15 @@ export interface ResolvedSecurity {
   readonly secretNames: readonly string[];
 }
 
+export interface ResolvedSecurityConfig extends ResolvedSecurity {
+  readonly forwarded: boolean;
+}
+
 export interface ResolvedI18n {
   readonly locales: readonly string[];
   readonly default: string;
   readonly routing: I18nRouting;
+  readonly direction: Readonly<Record<string, TextDirection>>;
 }
 
 export interface ResolvedFont {
@@ -153,13 +245,52 @@ export interface ResolvedFont {
   readonly preload: boolean;
 }
 
+export interface ResolvedFontConfig extends ResolvedFont {
+  readonly variable: string | null;
+  readonly fallback: string | null;
+}
+
+export interface ResolvedSite {
+  readonly origin: string | null;
+  readonly name: string | null;
+  readonly description: string | null;
+  readonly image: string | null;
+  readonly titleTemplate: string | null;
+}
+
+export interface ResolvedRedirect {
+  readonly source: string;
+  readonly destination: string;
+  readonly status: RedirectStatus;
+}
+
+export interface ResolvedDeploy {
+  readonly host: DeployHost;
+  readonly target: DeployTarget;
+  readonly runtime: DeployRuntime | null;
+}
+
+export interface ResolvedEnv {
+  readonly client: EnvSchemaMap;
+  readonly server: EnvSchemaMap;
+}
+
 export interface ResolvedRexOptions {
+  readonly site: ResolvedSite | null;
+  readonly redirects: readonly ResolvedRedirect[];
+  readonly deploy: ResolvedDeploy | null;
+  readonly env: ResolvedEnv | null;
+  readonly prefetch: PagePrefetch;
   readonly render: { readonly default: PageRender };
   readonly budgets: ResolvedBudgets;
-  readonly security: ResolvedSecurity;
+  readonly security: ResolvedSecurityConfig;
   readonly i18n: ResolvedI18n | null;
-  readonly images: { readonly sizes: readonly number[]; readonly formats: readonly ImageFormat[] };
-  readonly fonts: readonly ResolvedFont[];
+  readonly images: {
+    readonly sizes: readonly number[];
+    readonly formats: readonly ImageFormat[];
+    readonly remote: readonly string[];
+  };
+  readonly fonts: readonly ResolvedFontConfig[];
   readonly telemetry: { readonly tracer: RexTracer | null; readonly logger: RexLogger | null };
   readonly ui: UiKit;
   readonly shellComponents: string | null;
@@ -205,6 +336,11 @@ const REX_CONFIG_BRAND: unique symbol = Symbol.for("rex.config");
 const CONFIG_KEYS: Readonly<Record<string, RexErrorCode>> = {
   app: "REX111",
   server: "REX112",
+  site: "REX124",
+  redirects: "REX126",
+  deploy: "REX127",
+  env: "REX125",
+  prefetch: "REX122",
   render: "REX113",
   budgets: "REX114",
   security: "REX115",
@@ -224,6 +360,7 @@ const LOCALE_PATTERN = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 const HEADER_NAME_PATTERN = /^[A-Za-z0-9-]+$/;
 const SECRET_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const SHELL_COMPONENTS_PATTERN = /^app\/components\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.tsx?$/;
+const FONT_VARIABLE_PATTERN = /^--[a-z][a-z0-9-]*$/;
 
 type Fail = (field: string, problem: string) => never;
 
@@ -320,6 +457,166 @@ function flag(value: unknown, field: string, fallback: boolean): boolean {
   return value as boolean;
 }
 
+function nonEmptyText(value: unknown, field: string, fail: Fail): string | null {
+  if (value === undefined) return null;
+  if (typeof value !== "string" || value.trim() === "") fail(field, "must be a non-empty string");
+  return value as string;
+}
+
+function imageProblem(value: string): string | null {
+  if (value.startsWith("/") && !value.startsWith("//")) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol === "http:" || url.protocol === "https:") return null;
+  } catch {
+    return "must be a path starting with / or an http(s) URL";
+  }
+  return "must be a path starting with / or an http(s) URL";
+}
+
+function parseSite(value: unknown): ResolvedSite | null {
+  const fail = failFor("REX124");
+  if (value === undefined) return null;
+  const record = objectAt(
+    value,
+    "site",
+    ["origin", "name", "description", "image", "titleTemplate"],
+    fail,
+  );
+  const origin = nonEmptyText(record.origin, "site.origin", fail);
+  if (origin !== null) {
+    const problem = originProblem(origin);
+    if (problem !== null) fail("site.origin", problem);
+  }
+  const image = nonEmptyText(record.image, "site.image", fail);
+  if (image !== null) {
+    const problem = imageProblem(image);
+    if (problem !== null) fail("site.image", problem);
+  }
+  const titleTemplate = nonEmptyText(record.titleTemplate, "site.titleTemplate", fail);
+  if (titleTemplate !== null && titleTemplate.split(SITE_TITLE_PLACEHOLDER).length !== 2) {
+    fail("site.titleTemplate", `must hold ${SITE_TITLE_PLACEHOLDER} exactly once`);
+  }
+  return Object.freeze({
+    origin,
+    name: nonEmptyText(record.name, "site.name", fail),
+    description: nonEmptyText(record.description, "site.description", fail),
+    image,
+    titleTemplate,
+  });
+}
+
+function routeParamsOf(route: string, field: string, fail: Fail): readonly string[] {
+  try {
+    return parseRoute(route).params;
+  } catch (error) {
+    return fail(field, errorDetail(error));
+  }
+}
+
+function parseRedirects(value: unknown): readonly ResolvedRedirect[] {
+  const fail = failFor("REX126");
+  if (value === undefined) return Object.freeze([]);
+  if (!Array.isArray(value))
+    fail("redirects", "must be a list of { source, destination, status? }");
+  const sources = new Set<string>();
+  return Object.freeze(
+    (value as unknown[]).map((entry, index): ResolvedRedirect => {
+      const field = `redirects.${index}`;
+      const record = objectAt(entry, field, ["source", "destination", "status"], fail);
+      if (typeof record.source !== "string") fail(`${field}.source`, "must be a route string");
+      const source = record.source as string;
+      const sourceParams = routeParamsOf(source, `${field}.source`, fail);
+      if (sources.has(source)) fail(`${field}.source`, `repeats source ${JSON.stringify(source)}`);
+      sources.add(source);
+      if (typeof record.destination !== "string" || record.destination === "") {
+        fail(`${field}.destination`, "must be a route or an absolute http(s) URL");
+      }
+      const destination = record.destination as string;
+      if (destination.startsWith("/")) {
+        for (const param of routeParamsOf(destination, `${field}.destination`, fail)) {
+          if (!sourceParams.includes(param)) {
+            fail(`${field}.destination`, `uses param ":${param}" that the source does not declare`);
+          }
+        }
+        if (destination === source) fail(`${field}.destination`, "must differ from the source");
+      } else {
+        let url: URL | null = null;
+        try {
+          url = new URL(destination);
+        } catch {
+          url = null;
+        }
+        if (url === null || (url.protocol !== "http:" && url.protocol !== "https:")) {
+          fail(`${field}.destination`, "must be a route or an absolute http(s) URL");
+        }
+      }
+      let status: RedirectStatus = DEFAULT_REDIRECT_STATUS;
+      if (record.status !== undefined) {
+        if (!(REDIRECT_STATUSES as readonly unknown[]).includes(record.status)) {
+          fail(`${field}.status`, `must be one of ${REDIRECT_STATUSES.join(", ")}`);
+        }
+        status = record.status as RedirectStatus;
+      }
+      return Object.freeze({ source, destination, status });
+    }),
+  );
+}
+
+function parseDeploy(value: unknown): ResolvedDeploy | null {
+  const fail = failFor("REX127");
+  if (value === undefined) return null;
+  const record = objectAt(value, "deploy", ["host", "runtime"], fail);
+  const host = oneOf(record.host, DEPLOY_HOSTS, "deploy.host", fail);
+  let runtime: DeployRuntime | null = null;
+  if (record.runtime !== undefined) {
+    if (host !== "vercel") fail("deploy.runtime", 'is only allowed with host "vercel"');
+    runtime = oneOf(record.runtime, DEPLOY_RUNTIMES, "deploy.runtime", fail);
+  }
+  const target = host === "vercel" && runtime === "edge" ? "edge" : DEPLOY_HOST_TARGETS[host];
+  return Object.freeze({ host, target, runtime });
+}
+
+function parseEnvSide(value: unknown, side: "client" | "server", fail: Fail): EnvSchemaMap {
+  if (value === undefined) return Object.freeze({});
+  if (!isRecord(value)) fail(`env.${side}`, "must map variable names to schemas");
+  const schemas: Record<string, StandardSchemaV1> = {};
+  for (const [name, schema] of Object.entries(value as Record<string, unknown>)) {
+    const field = `env.${side}.${name}`;
+    if (!SECRET_NAME_PATTERN.test(name)) fail(field, "is not an environment variable name");
+    const isClient = name.startsWith(ENV_CLIENT_PREFIX);
+    if (side === "client" && !isClient) {
+      fail(field, `is a client key and must start with ${ENV_CLIENT_PREFIX}`);
+    }
+    if (side === "server" && isClient) {
+      fail(
+        field,
+        `is a server key and must not start with ${ENV_CLIENT_PREFIX}, which Vite inlines`,
+      );
+    }
+    if (!isStandardSchema(schema)) {
+      fail(field, "must be a schema written with the rex/schema field helpers");
+    }
+    schemas[name] = schema as StandardSchemaV1;
+  }
+  return Object.freeze(schemas);
+}
+
+function parseEnv(value: unknown): ResolvedEnv | null {
+  const fail = failFor("REX125");
+  if (value === undefined) return null;
+  const record = objectAt(value, "env", ["client", "server"], fail);
+  return Object.freeze({
+    client: parseEnvSide(record.client, "client", fail),
+    server: parseEnvSide(record.server, "server", fail),
+  });
+}
+
+function parsePrefetch(value: unknown): PagePrefetch {
+  if (value === undefined) return DEFAULT_PREFETCH;
+  return oneOf(value, PAGE_PREFETCH, "prefetch", failFor("REX122"));
+}
+
 function parseRender(value: unknown): ResolvedRexOptions["render"] {
   const fail = failFor("REX113");
   if (value === undefined) return Object.freeze({ default: "ssr" });
@@ -346,7 +643,7 @@ function parseBudgets(value: unknown): ResolvedBudgets {
   return Object.freeze({ core: budget("core"), client: budget("client"), page: budget("page") });
 }
 
-function parseSecurity(value: unknown): ResolvedSecurity {
+function parseSecurity(value: unknown): ResolvedSecurityConfig {
   const fail = failFor("REX115");
   if (value === undefined) {
     return Object.freeze({
@@ -354,9 +651,15 @@ function parseSecurity(value: unknown): ResolvedSecurity {
       origins: Object.freeze([]),
       headers: Object.freeze({}),
       secretNames: Object.freeze([]),
+      forwarded: false,
     });
   }
-  const record = objectAt(value, "security", ["csp", "origins", "headers", "secretNames"], fail);
+  const record = objectAt(
+    value,
+    "security",
+    ["csp", "origins", "headers", "secretNames", "forwarded"],
+    fail,
+  );
   const csp =
     record.csp === undefined ? "strict" : oneOf(record.csp, CSP_MODES, "security.csp", fail);
   const origins =
@@ -382,13 +685,17 @@ function parseSecurity(value: unknown): ResolvedSecurity {
       : stringList(record.secretNames, "security.secretNames", fail, (name) =>
           SECRET_NAME_PATTERN.test(name) ? null : "must be an environment variable name",
         );
-  return Object.freeze({ csp, origins, headers, secretNames });
+  if (record.forwarded !== undefined && typeof record.forwarded !== "boolean") {
+    fail("security.forwarded", "must be true or false");
+  }
+  const forwarded = (record.forwarded as boolean | undefined) ?? false;
+  return Object.freeze({ csp, origins, headers, secretNames, forwarded });
 }
 
 function parseI18n(value: unknown): ResolvedI18n | null {
   const fail = failFor("REX116");
   if (value === undefined) return null;
-  const record = objectAt(value, "i18n", ["locales", "default", "routing"], fail);
+  const record = objectAt(value, "i18n", ["locales", "default", "routing", "direction"], fail);
   const locales = stringList(record.locales, "i18n.locales", fail, (locale) =>
     LOCALE_PATTERN.test(locale) ? null : "must be a locale tag such as en or pt-BR",
   );
@@ -400,15 +707,40 @@ function parseI18n(value: unknown): ResolvedI18n | null {
     record.routing === undefined
       ? "none"
       : oneOf(record.routing, I18N_ROUTING, "i18n.routing", fail);
-  return Object.freeze({ locales, default: record.default as string, routing });
+  const direction: Record<string, TextDirection> = {};
+  if (record.direction === undefined || typeof record.direction === "string") {
+    const all =
+      record.direction === undefined
+        ? "ltr"
+        : oneOf(record.direction, TEXT_DIRECTIONS, "i18n.direction", fail);
+    for (const locale of locales) direction[locale] = all;
+  } else {
+    const byLocale = objectAt(record.direction, "i18n.direction", locales, fail);
+    for (const locale of locales) {
+      direction[locale] =
+        byLocale[locale] === undefined
+          ? "ltr"
+          : oneOf(byLocale[locale], TEXT_DIRECTIONS, `i18n.direction.${locale}`, fail);
+    }
+  }
+  return Object.freeze({
+    locales,
+    default: record.default as string,
+    routing,
+    direction: Object.freeze(direction),
+  });
 }
 
 function parseImages(value: unknown): ResolvedRexOptions["images"] {
   const fail = failFor("REX117");
   if (value === undefined) {
-    return Object.freeze({ sizes: DEFAULT_IMAGE_SIZES, formats: DEFAULT_IMAGE_FORMATS });
+    return Object.freeze({
+      sizes: DEFAULT_IMAGE_SIZES,
+      formats: DEFAULT_IMAGE_FORMATS,
+      remote: Object.freeze([]),
+    });
   }
-  const record = objectAt(value, "images", ["sizes", "formats"], fail);
+  const record = objectAt(value, "images", ["sizes", "formats", "remote"], fail);
   let sizes = DEFAULT_IMAGE_SIZES;
   if (record.sizes !== undefined) {
     if (!Array.isArray(record.sizes) || record.sizes.length === 0) {
@@ -432,17 +764,43 @@ function parseImages(value: unknown): ResolvedRexOptions["images"] {
       ),
     );
   }
-  return Object.freeze({ sizes, formats });
+  const remote =
+    record.remote === undefined
+      ? (Object.freeze([]) as readonly string[])
+      : stringList(record.remote, "images.remote", fail, remoteImageProblem);
+  return Object.freeze({ sizes, formats, remote });
 }
 
-function parseFonts(value: unknown): readonly ResolvedFont[] {
+function remoteImageProblem(value: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return "must be an http(s) origin or URL prefix such as https://images.example.com/";
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return "must use http or https";
+  if (url.search !== "" || url.hash !== "" || value.includes("?") || value.includes("#")) {
+    return "must not carry a query or a hash";
+  }
+  if (value !== url.origin && !value.endsWith("/")) {
+    return `must be an origin such as ${url.origin} or a URL prefix ending with /`;
+  }
+  return null;
+}
+
+function parseFonts(value: unknown): readonly ResolvedFontConfig[] {
   const fail = failFor("REX118");
   if (value === undefined) return Object.freeze([]);
   if (!Array.isArray(value)) fail("fonts", "must be a list of font specs");
   return Object.freeze(
-    (value as unknown[]).map((entry, index): ResolvedFont => {
+    (value as unknown[]).map((entry, index): ResolvedFontConfig => {
       const field = `fonts.${index}`;
-      const record = objectAt(entry, field, ["family", "src", "weight", "style", "preload"], fail);
+      const record = objectAt(
+        entry,
+        field,
+        ["family", "src", "weight", "style", "preload", "variable", "fallback"],
+        fail,
+      );
       if (typeof record.family !== "string" || record.family.trim() === "") {
         fail(`${field}.family`, "must be a non-empty string");
       }
@@ -470,12 +828,28 @@ function parseFonts(value: unknown): readonly ResolvedFont[] {
       if (record.preload !== undefined && typeof record.preload !== "boolean") {
         fail(`${field}.preload`, "must be true or false");
       }
+      if (
+        record.variable !== undefined &&
+        (typeof record.variable !== "string" || !FONT_VARIABLE_PATTERN.test(record.variable))
+      ) {
+        fail(`${field}.variable`, "must be a CSS custom property name such as --font-sans");
+      }
+      if (
+        record.fallback !== undefined &&
+        (typeof record.fallback !== "string" ||
+          record.fallback.trim() === "" ||
+          /["';{}]/.test(record.fallback))
+      ) {
+        fail(`${field}.fallback`, "must name a local font such as Arial or Courier New");
+      }
       return Object.freeze({
         family: record.family as string,
         src: src as string,
         weight,
         style,
         preload: (record.preload as boolean | undefined) ?? true,
+        variable: (record.variable as string | undefined) ?? null,
+        fallback: (record.fallback as string | undefined) ?? null,
       });
     }),
   );
@@ -586,6 +960,11 @@ export function resolveOptions(value: RexOptionsConfig = {}): ResolvedRexOptions
     Object.keys(CONFIG_KEYS).filter((key) => key !== "app" && key !== "server"),
   );
   return Object.freeze({
+    site: parseSite(record.site),
+    redirects: parseRedirects(record.redirects),
+    deploy: parseDeploy(record.deploy),
+    env: parseEnv(record.env),
+    prefetch: parsePrefetch(record.prefetch),
     render: parseRender(record.render),
     budgets: parseBudgets(record.budgets),
     security: parseSecurity(record.security),
