@@ -443,7 +443,7 @@ async function measurePage(
       return { page: pageInfo.id, url, interactions, metrics, failures: judge(metrics) };
     }
     await page.addInitScript({
-      content: `${ATTRIBUTION_BUILD}\n;(${registerVitals.toString()})(${String(INP_DURATION_THRESHOLD)});`,
+      content: `${ATTRIBUTION_BUILD}\n;globalThis.webVitals = webVitals;\n;(${registerVitals.toString()})(${String(INP_DURATION_THRESHOLD)});`,
     });
     await page.goto(url);
     await waitForSidecar(page, pageInfo.id);
