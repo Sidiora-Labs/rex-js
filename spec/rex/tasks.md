@@ -125,7 +125,7 @@
     - Implement src/check/report.ts with JSON and grouped human formatters, and src/check/rule.ts with the Rule interface and a shared TypeScript source loader using the typescript compiler API.
     - Create the fixtures layout src/check/fixtures/<rule>/{pass,fail}/app and write src/check/engine.test.ts covering discovery roles, formatting and exit codes.
     - _Requirements: 12.1, 12.2, 12.3, 12.4_
-  - [ ] 3.2 Implement the import boundary rule
+  - [x] 3.2 Implement the import boundary rule
     - Implement src/check/rules/boundaries.ts encoding the import table from [design] import_table by file role, the cross-page import ban, and the no-direct-fetch rule for component roles; each finding names the offending import and the allowed alternatives.
     - Create pass and fail fixtures under src/check/fixtures/boundaries and write src/check/rules/boundaries.test.ts asserting zero findings on pass and one named finding per violation on fail.
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
