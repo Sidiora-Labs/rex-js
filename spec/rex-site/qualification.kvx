@@ -231,3 +231,11 @@ symbol = "createRexEntry baseUrl in entryTree, prerenderBuild rex options, Actio
 observed = "2.8 makes a hydrated ActionForm post to <client.apiOrigin>/rex/form/<action> (the runtime that the static entry wires with baseUrl apiOrigin and apiFetch), but the server render and the static prerender build the runtime with baseUrl url.origin and buildApp passes the prerender pluginOptions without apiOrigin, so the prerendered HTML of a static build with client.apiOrigin still carries action=/rex/form/<action> until hydration, and a form submitted without JavaScript posts to the static host; read from ssr.ts entryTree and build.ts buildApp at revision f1e70bc plus the 2.8 changes."
 assumption = "Task 3.3 passes client.apiOrigin to the prerender (and the SSR runtime) so the server-rendered ActionForm action is the absolute apiOrigin URL, matching the hydrated form; the site has no mutating actions, so it does not meet this."
 severity = "low"
+
+[qualification.311]
+task = "3.1"
+file = "site/app/pages/docs/test/docs.test.tsx, site/app/pages/docs/regions/search/parts/DocSearch.tsx"
+symbol = "INDEXED and the search-region assertion of the docs page test, the DocSearch placeholder"
+observed = "Per [decision] search 3.1 adds the API pages to buildSearchIndex (section API, one entry per docs/api page) in site/app/server/content/search.ts, but the 2.2 docs test asserts the docs search lists exactly guides, recipes and errors (INDEXED = GUIDES + RECIPES + ERRORS), so it now sees 22 more results, and the DocSearch placeholder names guides, recipes and errors only; read from docs.test.tsx and search.ts at revision 00976d6 plus the 3.1 changes; outside the 3.1 touches, not run by the 3.1 verify_cmd."
+assumption = "Task 3.3 (which touches site/app/pages) adds the /api/<slug> routes to the expected docs search results and names the API in the DocSearch placeholder; the index keeps the API section, as [decision] search requires."
+severity = "medium"

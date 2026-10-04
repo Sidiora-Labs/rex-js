@@ -1,3 +1,4 @@
+import { apiSearchEntries } from "./api.ts";
 import { searchEntries as docEntries } from "./docs.ts";
 import { errorSearchEntries } from "./errors.ts";
 
@@ -13,11 +14,20 @@ export type SearchSource = () => Promise<readonly SearchEntry[]>;
 
 export const ERROR_SECTION = "Errors";
 
+export const API_SECTION = "API";
+
 async function errorEntries(): Promise<readonly SearchEntry[]> {
   return errorSearchEntries().map((entry) => ({ section: ERROR_SECTION, ...entry }));
 }
 
-export const SEARCH_SOURCES: readonly SearchSource[] = [docEntries, errorEntries];
+async function apiEntries(): Promise<readonly SearchEntry[]> {
+  return (await apiSearchEntries()).map(({ slug: _slug, ...entry }) => ({
+    section: API_SECTION,
+    ...entry,
+  }));
+}
+
+export const SEARCH_SOURCES: readonly SearchSource[] = [docEntries, errorEntries, apiEntries];
 
 export async function buildSearchIndex(): Promise<readonly SearchEntry[]> {
   const lists = await Promise.all(SEARCH_SOURCES.map((source) => source()));
@@ -31,4 +41,8 @@ export async function buildSearchIndex(): Promise<readonly SearchEntry[]> {
     entries.push(entry);
   }
   return entries;
+}
+
+export async function searchSection(section: string): Promise<readonly SearchEntry[]> {
+  return (await buildSearchIndex()).filter((entry) => entry.section === section);
 }
