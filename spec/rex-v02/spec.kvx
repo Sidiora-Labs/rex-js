@@ -1,0 +1,1208 @@
+# rex-v02 — Rex 0.2: production standard. Closes every gap against the framework
+# standards list in [standard.*]. Format: sectioned KV (.kvx); strings double-quoted.
+
+[meta]
+feature    = "rex-v02"
+name       = "Rex 0.2: production standard"
+slug       = "rex-v02"
+version    = "0.2.0"
+status     = "draft"
+intro      = "Rex 0.1 proved the convention and the agent contract. Rex 0.2 brings the framework to the standard a production web framework is held to: small budgeted runtime, per-route rendering modes with streaming SSR, loaders and progressive forms, boundaries and code splitting, edge runtimes, errors that point at source, devtools, testing helpers, accessibility and i18n, security by default, observability, DesignX UI, codemods, governance and a measured Core Web Vitals gate."
+goal       = "Ship @sidioralabs/rex 0.2.0 with every [standard.*] item either met and verified or deliberately scoped with an owning task, and the demo passing the extended operability walk, the vitals gate and the checker with zero findings."
+scope      = "Package hygiene and budgets, Standard Schema core, rendering modes, loaders, forms, runtime adapters, compiler, splitting and boundaries, DX (errors, HMR, devtools, testing, lint, docs), state and interop, navigation and accessibility, i18n, styling freedom, security, telemetry, supply chain and governance, images and fonts, cross-platform output, versioning and codemods, DesignX integration, the remaining 0.1 gaps, vitals verification and the 0.2.0 release."
+completion = "All acceptance criteria pass; rex check, the operability walk, the no-JS walk, the axe pass and the vitals gate exit zero on the demo; the standards table in README reports no open gap; 0.2.0 is tagged and packable with provenance configuration."
+
+[decision]
+baseline         = "Everything in 0.1 stays: the six primitives, the page folder convention, the nine data states, the agent contract, one DOM. 0.2 adds capability without adding a second pattern for anything that already has one."
+schema           = "Core validation uses the Standard Schema interface (~standard.validate) so any compliant library works. Rex field helpers are built on zod/mini so the core stays small. JSON Schema is produced at manifest build time on the server or CLI with z.toJSONSchema when the schema is zod, or from a declared jsonSchema otherwise. zod 4 is a peer dependency."
+reactivity       = "Rex stays on React 19. The React Compiler is enabled by the Vite plugin so a value change re-renders only what reads it. Shared state uses a store() primitive on useSyncExternalStore. No signals library is introduced."
+rendering        = "Each page declares render: ssr (default), csr, ssg or static. ssr streams with renderToReadableStream and hydrates; ssg prerenders at build with optional revalidate seconds for on-demand regeneration; static is ssg with no hydration and ships zero page JavaScript, so its actions work through forms. Routing, loaders and the sidecar behave identically in every mode."
+loaders          = "Data loading is declared in page.ts as load: a map of names to read actions. On the server loaders run in process during SSR and are dehydrated into the HTML; on the client they seed TanStack Query, which dedupes requests. Mutating actions invalidate what they declare. There is no second data primitive."
+forms            = "Every action is also reachable as an HTML form post at /rex/form/<action>. ActionForm renders a real form that works without JavaScript and is enhanced by useAct when JavaScript runs. Irreversible actions get a server-rendered confirmation page on the form route. CSRF is a double-submit cookie."
+runtimes         = "rex/server is fetch-only: Request in, Response out, no node: imports. Adapters live under rex/server/node, rex/server/bun, rex/server/deno and rex/server/edge. rex build --target picks the adapter and output layout."
+splitting        = "Each page is its own chunk, loaded lazily behind a Suspense boundary whose fallback is the page's loading state. Each region is wrapped in an error boundary that maps to the page's recoverable-error state. Budgets are declared in rex.config and enforced by rex build."
+dx               = "Every framework error carries a code (REX followed by three digits), a message naming the file and symbol, a hint and a docs link; the Vite overlay and the CLI show a source frame. Dev mode mounts a devtools overlay. HMR keeps component state because pages, regions and parts are ordinary modules. rex/testing wraps Testing Library and a real in-process server."
+config           = "rex.config.ts default-exports defineConfig({...}) from rex/config, validated with a code-carrying error. A bare Hono app default export still works in 0.2 with a deprecation warning and a codemod."
+a11y_i18n        = "On navigation focus moves to the page heading and a route announcer speaks the title. The checker gains accessibility rules and the walk runs axe. i18n is messages per locale in app/locales, a locale resolved from the URL prefix, cookie or Accept-Language, and labels and titles that may be message keys."
+styling          = "Tokens remain the default. CSS Modules, Tailwind 4 and runtime CSS-in-JS all work; the token rule only governs raw color and spacing literals. SSR emits the page's stylesheet links in the head before streaming so there is no flash."
+security         = "Output is escaped by React; raw HTML needs unsafeHtml() and the checker reports any other dangerouslySetInnerHTML. RPC and form posts check Origin. A per-request CSP nonce is applied to every inline script Rex emits. Action handlers and anything under app/server never reach the client bundle; rex build fails on a leaked secret or a server-only import."
+observability    = "createRexServer accepts a telemetry option carrying an OpenTelemetry tracer (optional peer @opentelemetry/api) and a logger. Spans cover action invocation, loaders and renders; audit records carry the trace id. The client exposes onOutcome and onNavigate hooks."
+supply_chain     = "License MIT. Minimal runtime dependencies; React, TanStack Query, Vite, zod and TypeScript are peers; Drizzle, libsql, OpenTelemetry and adapters are optional peers. CI runs typecheck, tests, check, audit and license review. Releases are published with npm provenance from a GitHub Actions workflow."
+ui               = "rex new installs DesignX UI (theme plus a base component set) from its registry into app/components/ui with Tailwind 4, under ui: designx (default) or none. The demo uses DesignX. Rex's own shell, palette, confirmation and outcome components stay token-styled and are overridable through chrome.components."
+interop          = "A part can be exported as a custom element with defineElement, a Rex page can be mounted into a foreign app with mountRexPage, and parts may use custom elements and refs to plain DOM. This is also the incremental adoption path."
+modern           = "Img requires width and height and lazy-loads by default; fonts declared in rex.config are preloaded with font-display swap; Script carries a loading strategy. Route changes use the View Transitions API and intercept the Navigation API when present. A text renderer serves every page as markdown for terminal agents."
+versioning       = "Semantic versioning. deprecated() warns once per code. rex migrate runs registered codemods built on the TypeScript compiler API; the first migrates 0.1 apps. Governance, maintainers, security policy and code of conduct files are part of the package repository."
+vitals           = "The operability walk measures LCP, CLS and INP with the web-vitals library on the built demo and fails above 2500 ms, 0.1 and 200 ms; a Lighthouse run requires performance 90 and accessibility 95 or higher. Reports are committed."
+
+[design]
+module_layout      = "Wave 0 splits the three entry points so later waves touch disjoint files. vite/: plugin.ts assembles hooks from vite/hooks.ts (ordered list); app-module.ts, entry-module.ts, resolve.ts, scan.ts, compiler.ts, split.ts, ssr.ts, prerender.ts, boundary.ts, budgets.ts, css.ts; index.ts re-exports. server/: app.ts composes createRexServer from server/routes.ts (ordered route list) and server/middleware.ts (ordered list); routes/manifest.ts, rpc.ts, health.ts, form.ts, render.ts, pages-text.ts, dev.ts; middleware/security.ts, telemetry.ts; adapters/node.ts, bun.ts, deno.ts, edge.ts, static-cache.ts; index.ts re-exports and must stay fetch-only. client/: entry.tsx (createRexEntry over client/providers.ts list), shell.tsx composed from client/shell/*.tsx registered in client/shell/slots.ts; new client features live in their own file and register in one list."
+config_schema      = "rex/config exports defineConfig and RexConfig: { app, server?: (app) => Hono, render?: { default: ssr|csr|ssg|static }, budgets?: { core, client, page }, security?: { csp: strict|report|off, origins: string[], headers?: Record }, i18n?: { locales, default, routing: prefix|none }, images?: { sizes, formats }, fonts?: FontSpec[], telemetry?: { tracer?, logger? }, ui?: designx|none, client?: { apiOrigin? }, compiler?: boolean, devtools?: boolean }. Validation errors are REX1xx."
+page_options       = "page() gains render, revalidate (seconds, ssg only), paths (() => params[] for dynamic ssg), load (Record<string, ReadAction | { action, input: (params) => input }>), cache ({ staleTime }), transition (view|none), and chrome.components overrides. Declaration validation errors are REX2xx."
+action_options     = "action() gains form?: { redirect?: string, confirmTitle?: string } and an optional jsonSchema override. Read actions are effect read and are what load may reference."
+rendering_pipeline = "GET for a page route hits routes/render.ts: resolve page, policy and locale; run loaders in process; render the app with renderToReadableStream inside a Suspense tree, with the head carrying CSS links from the Vite manifest, preloads, the CSP nonce and the dehydrated loader data in a script of type application/rex+data; the sidecar is server-rendered too. csr pages render the shell only and hydrate the page client-side. ssg pages are written by prerender.ts at build to dist/client/<route>/index.html and served by static-cache.ts with revalidate honoured through stale-while-revalidate regeneration. static pages omit the page chunk and the hydration script."
+hydration          = "The entry calls hydrateRoot when the document carries data-rex-ssr, otherwise createRoot. Loader data is read from application/rex+data and hydrated into the QueryClient before the first render. A hydration mismatch is surfaced as REX310 in dev."
+loaders_api        = "useLoader(page, name) returns the TanStack query for that loader with inferred output type. useLoaders(page) returns all. The runtime registers loader queries under keys [loader, page.id, name, inputDigest]. Mutating actions declaring invalidates still work; loaders also accept invalidatedBy for explicit keys."
+forms_protocol     = "POST /rex/form/<action> accepts multipart or urlencoded FormData, coerces it with the action input schema (numbers, booleans, arrays by repeated names), checks the CSRF double-submit cookie rex-csrf against the _csrf field, checks Origin, evaluates policy, runs the action, writes the outcome into a rex-outcome cookie and redirects to the form.redirect or the Referer. Irreversible actions without _confirm render a server-side confirmation page listing the input; its Confirm button posts with _confirm. ActionForm renders hidden _csrf and the action id and, with JavaScript, intercepts submit through useAct."
+splitting_api      = "rex:app imports each page's view, states, regions and overlays through dynamic import; PageHost renders React.lazy components under Suspense with the page loading state as fallback; each Region has an error boundary that calls the page's recoverable-error state with the error and a retry that remounts the region. rex build prints a chunk table (name, raw, gzip, budget) and exits 1 over budget."
+errors             = "RexError extends Error with code, hint, docs (https://rex.sidioralabs.com/errors/<code>), file, line and column when known. Codes: REX1xx config, REX2xx declarations, REX3xx runtime, REX4xx server, REX5xx checker, REX6xx CLI. docs/errors.md is generated from the catalog in core/errors.ts."
+devtools           = "RexDevtools mounts only when import.meta.env.DEV and config.devtools is not false; toggle with shift+mod+d; panels: Manifest, Page (state, params, loaders), Sidecar (live JSON), Outcomes, Queries, Renders (React Profiler durations per region), Audit (tail from GET /rex/dev/audit, dev only). It is tree-shaken from production builds."
+testing_api        = "rex/testing exports createTestApp(registry, { actor, server? }), renderPage(app, pageId, { params, locale, density }), renderRegion(app, pageId, regionName, props), testServer(app) returning fetch and the ledger, and readSidecar(container). All build on real createRexServer and Testing Library."
+state_api          = "store(id, { initial, expose? }) returns a typed store with get, set, update, subscribe and a useStore hook; exposed stores appear under state.stores in the sidecar; stores are serialisable and reset per test."
+interop_api        = "defineElement(tagName, Part, { props }) registers a custom element rendering the part with createRoot; mountRexPage(element, app, pageId, options) mounts a full Rex page with its providers into a foreign DOM node and returns unmount; Native is a forwardRef component exposing the DOM node for plain JS. Custom element tags in parts are allowed by the checker when they also carry tabindex or a declared keyboard equivalent."
+navigation         = "RexRoutes wraps route changes in document.startViewTransition when transition is view and the API exists; when window.navigation exists it intercepts same-origin navigate events; after commit it focuses the page heading (or main) and updates the announcer live region with the page title. Both behaviours are testable in happy-dom through injected globals of the real shapes."
+i18n_api           = "app/locales/<locale>.json holds flat message maps with ICU-style placeholders handled by a small formatter (no runtime library). useLocale(), useT() and t(key, values). Labels, titles and messages starting with msg: are resolved through the active locale, including in the sidecar and palette. With routing prefix the router mounts every page under /:locale and nav.to keeps the prefix."
+a11y_rules         = "Checker rules a11y/img-alt, a11y/control-name, a11y/label-for, a11y/heading-order, a11y/no-positive-tabindex, a11y/no-autofocus-outside-overlay. The walk runs axe-core on every page in both densities and fails on serious or critical violations."
+styling_support    = "The Vite plugin enables CSS Modules (default Vite behaviour) and, when ui is designx or tailwind is true, @tailwindcss/vite. SSR reads the Vite client manifest to emit link elements for the entry and the page chunk before the body. The token rule has allow lists for CSS Modules class references and Tailwind utilities that resolve to tokens."
+security_impl      = "middleware/security.ts: Origin check for POST on /rex/* (same origin or security.origins), CSRF for forms, per-request nonce exposed through RexContext and applied by routes/render.ts to inline scripts and by the Vite dev server through html transform, Content-Security-Policy built from config (strict: default-src self, script-src self nonce-<n>, style-src self unsafe-inline for tokens, connect-src self plus apiOrigin, img-src self data: blob:), plus X-Content-Type-Options, Referrer-Policy and Permissions-Policy defaults. boundary.ts strips handler from action modules in client builds, throws REX440 when a client module imports rex/server, app/server or a module tagged import 'rex/server-only', and the build scans the client output for process.env references not prefixed VITE_ and for the names in security.secretNames."
+telemetry_impl     = "middleware/telemetry.ts wraps each RPC procedure, form post, loader run and SSR render in a span named rex.action, rex.form, rex.loader, rex.render with attributes rex.action.id, rex.actor.id, rex.page.id, rex.outcome; the audit ledger record gains traceId and spanId; logger has debug, info, warn, error and defaults to console with a rex: prefix."
+media_api          = "Img props: src, alt, width, height (required), priority (sets fetchpriority high and a preload link in SSR), sizes and srcSet passthrough, loading lazy and decoding async by default. Script props: src, strategy beforeHydration|afterHydration|idle, nonce applied automatically. Fonts from rex.config emit preload links and a font-face block with font-display swap. Checker rule media/no-raw-img reports img elements in parts and regions."
+text_renderer      = "GET /rex/pages/<id>.md renders a page as markdown for text-only agents: title, route, current data state for the actor, regions with their actions (id, label, effect, allowed, how to invoke by URL and form), overlays, and the sidecar JSON in a fenced block. It is the second rendering target and proves the core is renderer-neutral."
+platform_output    = "rex build --target node (default), edge, bun, deno or static. static writes dist/client only and bakes client.apiOrigin into the entry so the client talks to a remote server; the server enables CORS for security.origins with credentials. docs/platforms.md covers Electron, Tauri and Capacitor using these outputs."
+migrate            = "rex migrate [--from 0.1] lists and applies codemods from cli/codemods/*.ts using the TypeScript compiler API, idempotently: 0.1-config (wrap a Hono default export in defineConfig), 0.1-page-render (add render: ssr explicitly only when the app relied on csr behaviour, otherwise nothing), 0.1-raw-img (img to Img with width and height placeholders flagged as REX610 for the author)."
+budgets            = "Defaults: core 15 KB gzip (rex entry, zod/mini included, React excluded), client 30 KB gzip (rex/client excluding React, TanStack Query, cmdk, wouter, oRPC client), page 50 KB gzip per page chunk. The size test builds the entries with Vite's build API and asserts the budgets; rex build asserts the app's page budgets."
+vitals_gate        = "examples/demo/e2e/vitals.spec.ts loads each page in Chromium with the web-vitals attribution build injected, interacts (opens the palette, invokes a reversible action) and reads LCP, CLS and INP; thresholds 2500 ms, 0.1, 200 ms. e2e/lighthouse.ts runs lighthouse programmatically against the running build for each page and asserts performance 90 and accessibility 95 or higher; both write JSON to e2e/report."
+release            = "packages/rex/package.json: version 0.2.0, license MIT, sideEffects false except CSS, exports with types first, files dist only, publishConfig provenance true. .github/workflows/ci.yml runs install, typecheck, test, check, walk, vitals, audit and license review on push and pull request; release.yml publishes on a v* tag with --provenance using OIDC. The pack test runs npm pack --dry-run and asserts every export resolves in the tarball with its types."
+
+[standard.performance]
+s1 = "Small runtime (under 10 to 15 KB gzipped for the core); unused code removable at build time."
+s1_now = "partial: core 10.6 KB gz without the schema library, 103 KB gz with zod 4; sideEffects unset"
+s1_tasks = ["0.3", "0.4", "0.7"]
+s2 = "Fine-grained reactivity or a compiler so updating one value does not re-render the whole page."
+s2_now = "gap"
+s2_tasks = ["0.6", "3.1"]
+s3 = "Good Core Web Vitals out of the box: LCP, INP and CLS without extra tuning."
+s3_now = "gap: never measured"
+s3_tasks = ["6.1"]
+s4 = "Streaming SSR, partial or lazy hydration, option to ship zero JS on static parts."
+s4_now = "gap: CSR only"
+s4_tasks = ["1.1", "1.3"]
+s5 = "Automatic code splitting per route."
+s5_now = "gap: one 158 KB chunk"
+s5_tasks = ["0.5"]
+
+[standard.rendering]
+s1 = "SSR, SSG, CSR and incremental or on-demand regeneration, chosen per route."
+s1_now = "gap"
+s1_tasks = ["0.2", "1.1", "1.3"]
+s2 = "Runs on edge runtimes as well as Node, Bun and Deno."
+s2_now = "partial: server is fetch-based, only a Node adapter exists"
+s2_tasks = ["1.5"]
+s3 = "Data loading: loaders or server functions with caching, revalidation and request deduping."
+s3_now = "partial: read actions through TanStack Query in hooks, no loader declaration"
+s3_tasks = ["1.2"]
+s4 = "Forms and mutations work without JavaScript."
+s4_now = "gap"
+s4_tasks = ["1.4"]
+s5 = "Built-in Suspense and error boundaries."
+s5_now = "gap"
+s5_tasks = ["0.5"]
+
+[standard.dx]
+s1 = "TypeScript first with types inferred end to end: props, routes, loaders, server calls."
+s1_now = "met for routes, params, actions and RPC; loaders pending"
+s1_tasks = ["1.2"]
+s2 = "Fast HMR that keeps component state."
+s2_now = "partial: react-refresh through Vite, never verified"
+s2_tasks = ["2.2"]
+s3 = "Vite-compatible tooling, no complex config to start."
+s3_now = "met: rex new, one plugin"
+s3_tasks = ["0.2"]
+s4 = "Clear error messages pointing at the exact source location."
+s4_now = "partial: checker findings have file and line; declaration errors do not"
+s4_tasks = ["2.1"]
+s5 = "Devtools for components, state and performance."
+s5_now = "gap"
+s5_tasks = ["2.3"]
+s6 = "A small set of concepts learnable in a day."
+s6_now = "met: six primitives, one folder convention; tutorial pending"
+s6_tasks = ["2.6"]
+
+[standard.architecture]
+s1 = "Composable components with one-way data flow."
+s1_now = "met: parts are props in, events out"
+s1_tasks = []
+s2 = "Built-in router: file-based or typed config, nested layouts, typed params."
+s2_now = "met: typed page declarations, derived shell, typed params; nested layouts via regions"
+s2_tasks = []
+s3 = "State primitives covering local, shared and server state without forcing a third-party library."
+s3_now = "partial: local and server covered; no shared store primitive"
+s3_tasks = ["3.1"]
+s4 = "Interop with Web Components and the native DOM, with an escape hatch to plain JS."
+s4_now = "gap"
+s4_tasks = ["3.2"]
+s5 = "Works with standard web APIs (fetch, Request, Response, FormData, URL)."
+s5_now = "met on the server (Hono); forms pending"
+s5_tasks = ["1.4"]
+
+[standard.a11y_i18n]
+s1 = "Semantic HTML by default, focus management on route changes, route announcements."
+s1_now = "partial: landmarks and regions exist; no focus management or announcer"
+s1_tasks = ["3.3"]
+s2 = "Lint rules or warnings for common accessibility mistakes."
+s2_now = "partial: trap rules only"
+s2_tasks = ["3.4"]
+s3 = "Hooks for i18n and locale-aware routing."
+s3_now = "gap"
+s3_tasks = ["3.5"]
+
+[standard.styling]
+s1 = "No lock-in: scoped CSS, CSS Modules, Tailwind and CSS-in-JS all work."
+s1_now = "partial: tokens only in the demo; the token rule is too strict for utilities"
+s1_tasks = ["3.6", "5.2"]
+s2 = "No style flashes during SSR; critical CSS extracted."
+s2_now = "gap"
+s2_tasks = ["1.1", "3.6"]
+
+[standard.security]
+s1 = "Escapes output by default; unsafe HTML needs explicit opt-in."
+s1_now = "partial: React escapes; the sidecar escapes its JSON; no opt-in helper or rule"
+s1_tasks = ["4.1"]
+s2 = "CSRF protection for server actions and Content Security Policy with nonces."
+s2_now = "gap"
+s2_tasks = ["4.2", "1.4"]
+s3 = "Clear server and client boundary so secrets cannot leak into the browser bundle."
+s3_now = "partial: handlers are bundled into the client"
+s3_tasks = ["4.3"]
+s4 = "Few dependencies and supply-chain hygiene: provenance, signed releases."
+s4_now = "gap: 15 runtime dependencies, UNLICENSED, no CI or release workflow"
+s4_tasks = ["0.4", "4.5"]
+
+[standard.testing]
+s1 = "Testable with Vitest, Playwright and Testing Library."
+s1_now = "met for the framework; no helpers for apps"
+s1_tasks = ["2.4"]
+s2 = "Deterministic rendering; components testable in isolation."
+s2_now = "met; renderRegion pending"
+s2_tasks = ["2.4"]
+s3 = "Strict mode, lint and format presets."
+s3_now = "partial: StrictMode in the entry; no presets"
+s3_tasks = ["2.5"]
+
+[standard.ecosystem]
+s1 = "Semantic versioning, documented deprecations, codemods for breaking changes."
+s1_now = "gap"
+s1_tasks = ["5.4"]
+s2 = "Real docs: tutorial, API reference, recipes, migration guide."
+s2_now = "partial: reference and guides exist; no tutorial, recipes or migration guide"
+s2_tasks = ["2.6"]
+s3 = "A component library approach, first-party or easy to adopt."
+s3_now = "partial: DesignX exists but is not wired in"
+s3_tasks = ["5.2"]
+s4 = "Incremental adoption, one page or widget at a time inside an existing app."
+s4_now = "gap"
+s4_tasks = ["3.2"]
+s5 = "Open governance and a sustainable funding model."
+s5_now = "gap"
+s5_tasks = ["5.5"]
+
+[standard.cross_platform]
+s1 = "A path to mobile and desktop through Capacitor, Tauri or Electron."
+s1_now = "partial: a node server plus static client exist; no remote-API client mode"
+s1_tasks = ["5.3"]
+s2 = "A rendering layer that can be swapped for canvas, native or terminal targets."
+s2_now = "partial: core and manifest are renderer-neutral; no second renderer"
+s2_tasks = ["5.3"]
+
+[standard.modern]
+s1 = "Built-in optimization for images, fonts and scripts."
+s1_now = "gap"
+s1_tasks = ["5.1"]
+s2 = "View transitions and the Navigation API."
+s2_now = "gap"
+s2_tasks = ["3.3"]
+s3 = "Logging and tracing hooks that work with OpenTelemetry."
+s3_now = "gap"
+s3_tasks = ["4.4"]
+s4 = "AI-friendly: predictable conventions and good type information."
+s4_now = "met: the convention, the manifest and AGENTS.md; strengthened by every task"
+s4_tasks = ["2.1", "2.6"]
+
+[standard.rex_01_gaps]
+s1 = "Paged route for lists that load more on scroll (req 10.4 of rex)."
+s1_now = "gap"
+s1_tasks = ["5.6"]
+s2 = "Flow decisions written to the audit ledger."
+s2_now = "gap"
+s2_tasks = ["5.6"]
+s3 = "Checker parity between sidecar and rendered DOM without a browser."
+s3_now = "gap: only the walk checks it"
+s3_tasks = ["5.6"]
+s4 = "Drizzle adapter exported from the package."
+s4_now = "gap"
+s4_tasks = ["0.4"]
+s5 = "Demo page test folders hold real tests."
+s5_now = "gap"
+s5_tasks = ["2.4"]
+
+[documentation]
+mode      = "auto"
+status    = "pending"
+audiences = ["user", "developer"]
+targets   = ["README.md", "docs/**", "CONTRIBUTING.md", "CHANGELOG.md", "GOVERNANCE.md", "SECURITY.md", "MAINTAINERS.md", "CODE_OF_CONDUCT.md"]
+
+[req.1]
+title = "Modular entry points"
+story = "As a fleet of agents working in parallel, I want the plugin, server and client entry points split by concern so that tasks touch disjoint files."
+ac_1  = "packages/rex/src/vite/plugin.ts assembles the Vite plugin from the ordered hook list in vite/hooks.ts; app-module.ts, entry-module.ts, resolve.ts and scan.ts each own one concern; vite/index.ts only re-exports; every existing vite test passes unchanged."
+ac_2  = "packages/rex/src/server/app.ts composes createRexServer from server/routes.ts and server/middleware.ts ordered lists; routes/manifest.ts, rpc.ts and health.ts own the existing routes; server/index.ts re-exports and imports nothing from node:; every existing server test passes unchanged."
+ac_3  = "packages/rex/src/client/entry.tsx builds createRexEntry from the client/providers.ts list and client/shell.tsx composes the Shell from the slot components registered in client/shell/slots.ts; every existing client test passes unchanged."
+
+[req.2]
+title = "Configuration and declaration options for 0.2"
+story = "As an app author, I want one validated config file and page options for the new capabilities so that every feature is declared, not wired."
+ac_1  = "rex/config exports defineConfig and the RexConfig type described in [design] config_schema; an invalid config throws a RexError with a REX1xx code naming the field."
+ac_2  = "page() accepts render, revalidate, paths, load, cache, transition and chrome.components as described in [design] page_options, validates them (revalidate only with ssg, paths only with ssg and route params, load values are read actions) and records them on the declaration and in the manifest."
+ac_3  = "action() accepts form and jsonSchema as described in [design] action_options and records them in the manifest."
+ac_4  = "rex dev, rex build, rex check and rex manifest read rex.config.ts through defineConfig; a bare Hono app default export still works and emits deprecation REX101 once."
+
+[req.3]
+title = "Standard Schema core"
+story = "As an app author, I want to bring any Standard Schema library and keep the core small so that the schema choice is mine and the bundle stays within budget."
+ac_1  = "entity(), action() and page() accept any object implementing the Standard Schema v1 interface for fields, input, output and params; validation in the runtime, the router and useAct goes through ~standard.validate."
+ac_2  = "The Rex field helpers (id, text, money, boolean, enumOf, ref, json, integer, real) are built on zod/mini and keep their x-rex-field tags; the demo and rex new templates use zod/mini."
+ac_3  = "JSON Schema is produced only in buildManifest: through z.toJSONSchema for zod schemas, from a declared jsonSchema for others, and a REX210 error names the declaration when neither is possible."
+ac_4  = "A size test proves the rex entry bundled for the browser, zod/mini included and React excluded, is at most 15 KB gzipped."
+
+[req.4]
+title = "Package hygiene"
+story = "As an adopter, I want few, honest dependencies and a clean package so that installs are small and auditable."
+ac_1  = "packages/rex/package.json lists as dependencies only hono, @orpc/server, @orpc/client and @orpc/tanstack-query; react, react-dom, @tanstack/react-query, vite, zod and typescript are peerDependencies; drizzle-orm, @libsql/client, @hono/node-server, cmdk, wouter, @opentelemetry/api, @vitejs/plugin-react, babel-plugin-react-compiler and @tailwindcss/vite are optional peers declared in peerDependenciesMeta; tsx and commander are removed."
+ac_2  = "license is MIT with a LICENSE file at the repository root; sideEffects lists only CSS files; every export has a types condition first; files publishes dist only; publishConfig sets provenance true."
+ac_3  = "Exports include ./config, ./testing, ./server/node, ./server/bun, ./server/deno, ./server/edge, ./store/drizzle, ./devtools and ./eslint, each resolving in the built package; a pack test runs npm pack --dry-run and asserts every export and its types are in the tarball."
+ac_4  = "The CLI parses its own arguments without commander and loads rex.config.ts and app code through Vite's module runner without tsx."
+
+[req.5]
+title = "Code splitting and boundaries"
+story = "As a user, I want each page to load only its own code and to recover from a region crash so that pages are fast and resilient."
+ac_1  = "rex:app imports each page's view, states, regions and overlays through dynamic import; rex build emits one chunk per page and the chunk table names them."
+ac_2  = "PageHost renders page modules under Suspense with the page's loading state as fallback; a slow module shows the loading state and never a blank screen."
+ac_3  = "Each Region is wrapped in an error boundary; a throwing region renders the page's recoverable-error state scoped to that region with a retry that remounts it, and the sidecar reports the state and the error code."
+ac_4  = "rex build prints name, raw and gzip sizes and the budget for every chunk and exits 1 when a page chunk exceeds its budget."
+
+[req.6]
+title = "React Compiler"
+story = "As a developer, I want automatic memoisation so that changing one value re-renders only what reads it."
+ac_1  = "The Vite plugin enables babel-plugin-react-compiler through @vitejs/plugin-react when config.compiler is not false; the compiled output is verified by a test that checks the React Compiler runtime import appears in a built part."
+ac_2  = "A Profiler-based test renders the fixture page, updates one store value read by one part, and asserts that only that part's commit count increases."
+
+[req.7]
+title = "Size budgets"
+story = "As a maintainer, I want budgets enforced by tests and builds so that the runtime cannot grow unnoticed."
+ac_1  = "A size test bundles the rex, rex/client and rex/server/edge entries with Vite's build API and asserts the budgets in [design] budgets."
+ac_2  = "rex.config budgets override page and client budgets; rex build applies them to the app's chunks."
+
+[req.8]
+title = "Streaming SSR"
+story = "As a user on a slow network, I want pages to render on the server and stream so that content appears before JavaScript."
+ac_1  = "A GET on a page route with render ssr returns HTML streamed from renderToReadableStream containing the shell, the page content with its data-rex attributes, the sidecar script, the dehydrated loader data script and the CSS links for the entry and the page chunk in the head."
+ac_2  = "The client hydrates with hydrateRoot when data-rex-ssr is present and the hydrated page is interactive: a click on an action control invokes it; no hydration mismatch is logged in the test."
+ac_3  = "A page with render csr returns the shell with the page loading state and hydrates the page on the client."
+ac_4  = "Policy denial, unknown routes and loader failures during SSR render the matching data state server-side with the correct HTTP status (403, 404, 500)."
+ac_5  = "The SSR HTML has no flash of unstyled content: stylesheet links precede the first body content, verified by the walk reading the response order."
+
+[req.9]
+title = "Loaders"
+story = "As an app author, I want data declared on the page and loaded once, server or client, with caching and deduping, so that no hook fetches by hand."
+ac_1  = "page.load maps names to read actions, optionally with an input function of the params; the manifest lists each loader."
+ac_2  = "During SSR loaders run in process and their results are dehydrated into the HTML; on the client they hydrate the QueryClient so the first render has data without a request."
+ac_3  = "useLoader(page, name) returns the TanStack query with the inferred output type; concurrent uses dedupe to one request; cache.staleTime is honoured."
+ac_4  = "A mutating action that declares invalidates refetches the affected loaders; a loader failure maps to the page's recoverable-error or terminal-error state by the existing precedence."
+
+[req.10]
+title = "SSG, regeneration and static pages"
+story = "As an operator, I want pages prerendered at build with on-demand regeneration and the option of zero JavaScript so that static content is cheap and fast."
+ac_1  = "rex build prerenders every page with render ssg or static to dist/client/<route>/index.html, expanding paths for dynamic routes, and lists them in the build output."
+ac_2  = "The node adapter serves prerendered pages; with revalidate set, a request after the window serves the cached page and regenerates in the background, and the next request gets the new HTML."
+ac_3  = "A static page's HTML contains no page chunk script and no hydration script; its actions render as forms and work through the form route; the sidecar is present as static JSON."
+ac_4  = "The checker reports a static page that declares an action with a shortcut or an overlay bound to region state, because those need JavaScript (rule render/static-needs-js)."
+
+[req.11]
+title = "Progressive enhancement forms"
+story = "As a user without JavaScript, I want every action to work as a form so that the app degrades gracefully."
+ac_1  = "ActionForm renders a form posting to /rex/form/<action> with hidden _csrf and action fields and inputs for the action's input schema; a submit with JavaScript enabled is intercepted and run through useAct with the same outcome handling."
+ac_2  = "POST /rex/form/<action> coerces FormData with the input schema, checks CSRF and Origin, evaluates policy, runs the action, writes the outcome cookie and redirects; the outcome region shows the cookie outcome on the next render and clears it."
+ac_3  = "An irreversible action posted without _confirm returns a server-rendered confirmation page listing the input with a Confirm form; posting it with _confirm runs the action."
+ac_4  = "Validation failures redirect back with the field errors in the outcome cookie and ActionForm renders them next to the fields."
+ac_5  = "The walk runs the send flow with JavaScript disabled in Playwright and asserts the audit record."
+
+[req.12]
+title = "Runtime adapters"
+story = "As an operator, I want to deploy to Node, Bun, Deno or an edge runtime so that hosting is my choice."
+ac_1  = "rex/server imports nothing from node:; a test bundles it for the browser platform and asserts no node builtins are referenced."
+ac_2  = "rex/server/node, rex/server/bun, rex/server/deno and rex/server/edge export serve or a fetch handler per [design] runtimes; the node adapter passes the existing node tests; the bun and deno adapters throw REX450 with the runtime name when their global is absent and otherwise hand the fetch handler to Bun.serve or Deno.serve; the edge adapter exports the Hono fetch handler and a test runs it against Request objects with no node globals."
+ac_3  = "rex build --target node|edge|bun|deno|static writes the matching server entry and dist layout documented in docs/platforms.md; the static target bakes client.apiOrigin into the entry."
+
+[req.13]
+title = "Errors that point at source"
+story = "As an agent fixing a build, I want every error to carry a code, location and hint so that the fix is mechanical."
+ac_1  = "RexError carries code, hint, docs, and file, line and column when known; every throw in core, server, client, vite, check and cli uses a catalogued code from core/errors.ts."
+ac_2  = "Declaration errors raised while loading app modules in the Vite plugin surface in the Vite error overlay with the declaring file and line; CLI commands print a source frame for errors with a location."
+ac_3  = "docs/errors.md is generated from the catalog by rex docs:errors (an internal script) and the docs test fails when stale."
+
+[req.14]
+title = "Hot module replacement"
+story = "As a developer, I want edits to parts and regions to keep component state so that iteration is fast."
+ac_1  = "A test starts the Vite dev server on the fixture app, edits a part file and observes an HMR update (not a full reload) for that module through the server's HMR channel."
+ac_2  = "Editing page.ts invalidates rex:app and the page chunk and triggers a full reload with a REX320 notice naming the page."
+
+[req.15]
+title = "Devtools"
+story = "As a developer, I want an in-app devtools overlay so that I can inspect the manifest, state, sidecar, outcomes, queries, renders and audit without leaving the page."
+ac_1  = "RexDevtools mounts only in dev mode and when config.devtools is not false; shift+mod+d toggles it; it is absent from production bundles (verified by a build test)."
+ac_2  = "Panels show the manifest, the current page's params, state and loaders, the live sidecar JSON, the outcome log, the QueryClient cache, per-region render durations from Profiler, and the audit tail from GET /rex/dev/audit which exists only in dev mode."
+
+[req.16]
+title = "Testing helpers"
+story = "As an app author, I want first-party test helpers so that pages and regions are tested against the real runtime."
+ac_1  = "rex/testing exports createTestApp, renderPage, renderRegion, testServer and readSidecar as described in [design] testing_api, each backed by the real server and runtime."
+ac_2  = "The demo's page test folders contain tests written with rex/testing for every page and region, run by pnpm -C examples/demo test:unit."
+
+[req.17]
+title = "Lint and format presets"
+story = "As a team, I want editor-time feedback matching the checker so that violations are seen before rex check."
+ac_1  = "rex/eslint exports a flat config that runs the checker's boundary, naming, trap, token, a11y and media rules per file through an ESLint plugin plus eslint-plugin-jsx-a11y recommended rules; rex/prettier exports the format preset."
+ac_2  = "rex new writes eslint.config.js and .prettierrc using the presets and adds lint and format scripts; rex check runs the formatter in check mode as rule format/prettier."
+
+[req.18]
+title = "Real documentation"
+story = "As a newcomer, I want a tutorial, recipes, an API reference and a migration guide so that I can learn Rex in a day."
+ac_1  = "docs/tutorial.md builds the wallet demo from rex new step by step with every command and file; docs/recipes/ holds at least eight recipes (loader, form without JS, overlay, flow approval, static page, i18n, web component, incremental adoption); docs/migration.md covers adopting Rex inside an existing Vite or Next app and upgrading 0.1 to 0.2; docs/versioning.md states the semver, deprecation and codemod policy."
+ac_2  = "docs/api/ is generated by typedoc from the package entries by pnpm docs:api and committed; a test fails when it is stale."
+ac_3  = "A link check over docs/ and README.md passes."
+
+[req.19]
+title = "Shared state"
+story = "As an app author, I want a shared state primitive that agents can see so that cross-region state needs no third-party library."
+ac_1  = "store() returns a typed store with get, set, update, subscribe and useStore built on useSyncExternalStore; stores declared with expose true appear in the sidecar under state.stores and update it on change."
+ac_2  = "Stores reset between tests through rex/testing and serialise to JSON for the devtools panel."
+
+[req.20]
+title = "Web Components, native DOM and incremental adoption"
+story = "As a team with an existing app, I want to adopt Rex one widget or page at a time and to use custom elements so that migration is gradual."
+ac_1  = "defineElement registers a custom element rendering a part with attributes mapped to props; mountRexPage mounts a page with its providers into a foreign DOM node and returns unmount; Native exposes the DOM node by ref."
+ac_2  = "A test mounts a Rex page inside a plain HTML document with other content, invokes an action through the sidecar address, and unmounts cleanly."
+ac_3  = "The checker allows custom element tags in parts when they carry tabindex or a declared keyboard equivalent and reports them otherwise (rule traps/custom-element)."
+
+[req.21]
+title = "Navigation, focus and announcements"
+story = "As a screen reader user, I want route changes announced and focus placed sensibly, with smooth transitions when supported."
+ac_1  = "After a route change focus moves to the page heading or main landmark and the announcer live region in the Shell contains the page title."
+ac_2  = "With transition view and document.startViewTransition present, route changes run inside a view transition; with window.navigation present, same-origin navigate events are intercepted and routed through RexRoutes; both verified with injected globals of the real shape."
+
+[req.22]
+title = "Accessibility rules and audit"
+story = "As a team, I want accessibility mistakes caught by the checker and the walk so that every release is accessible."
+ac_1  = "The checker reports the rules listed in [design] a11y_rules with file, line, message and hint, each with a passing and failing fixture."
+ac_2  = "The walk runs axe-core on every page in both densities and fails on serious or critical violations; the demo passes."
+
+[req.23]
+title = "Internationalisation"
+story = "As a product in several markets, I want messages per locale and locale-aware routing so that the UI and the sidecar speak the user's language."
+ac_1  = "app/locales/<locale>.json messages resolve through useT, t and msg: keys in labels, titles and outcomes, including in the sidecar and palette; placeholders and plural forms work through Intl."
+ac_2  = "With i18n.routing prefix every page mounts under /:locale, nav.to keeps the locale, the locale resolves from the prefix, then the rex-locale cookie, then Accept-Language, then the default; the html lang attribute is set."
+ac_3  = "The checker reports a label or title literal when i18n is configured and the literal is not a msg: key (rule i18n/literal), with an allow list."
+
+[req.24]
+title = "Styling freedom"
+story = "As a designer, I want to use tokens, CSS Modules, Tailwind or CSS-in-JS without fighting the checker so that styling is my choice."
+ac_1  = "CSS Modules and Tailwind 4 through @tailwindcss/vite work in a Rex app; a fixture using both passes rex check."
+ac_2  = "The token rule only reports raw color and spacing literals and resolves Tailwind utilities to tokens through the theme; its allow lists are configurable in rex.config."
+
+[req.25]
+title = "Security"
+story = "As an operator, I want XSS, CSRF and bundle leaks prevented by default so that deployments are safe without a checklist."
+ac_1  = "unsafeHtml(html) is the only sanctioned way to render raw HTML; the checker reports dangerouslySetInnerHTML elsewhere (rule security/unsafe-html); every inline serialisation Rex emits escapes <, >, & and line separators."
+ac_2  = "POST requests to /rex/* are rejected with 403 when Origin is absent or not allowed; form posts also require the CSRF cookie match."
+ac_3  = "A per-request nonce is applied to every inline script Rex emits in SSR and dev; Content-Security-Policy and the companion headers are set from security config and strict by default; the walk asserts no CSP violation is reported in the browser console."
+ac_4  = "Action handlers are stripped from the client bundle; a client import of rex/server, app/server or a rex/server-only module fails the build with REX440; rex build fails with REX441 when the client output references process.env without the VITE_ prefix or any configured secret name."
+
+[req.26]
+title = "Observability"
+story = "As an operator, I want traces and logs from Rex so that agent and user activity is observable in my existing tooling."
+ac_1  = "createRexServer accepts telemetry.tracer and telemetry.logger; spans are emitted per [design] telemetry_impl and verified with the OpenTelemetry in-memory span exporter; audit records carry traceId and spanId."
+ac_2  = "The client exposes onOutcome and onNavigate hooks on createRexApp options and the devtools Outcomes panel uses them."
+
+[req.27]
+title = "Supply chain and release engineering"
+story = "As a consumer, I want CI, audits and provenance so that the package is trustworthy."
+ac_1  = ".github/workflows/ci.yml runs install, typecheck, test, check, walk, vitals, pnpm audit and license review on push and pull request; release.yml publishes on a v* tag with npm provenance and OIDC."
+ac_2  = "tools/gate-lint.sh runs pnpm audit --prod and the license review script; both pass on the current lockfile."
+
+[req.28]
+title = "Images, fonts and scripts"
+story = "As a user, I want images, fonts and third-party scripts loaded well without manual tuning."
+ac_1  = "Img, Script and the fonts config behave as in [design] media_api; the checker rule media/no-raw-img reports raw img elements in parts and regions."
+ac_2  = "SSR emits preload links for priority images and configured fonts and the font-face block with font-display swap."
+
+[req.29]
+title = "DesignX UI integration"
+story = "As a Sidiora app, I want DesignX components installed and used by default so that generated UI is on-system."
+ac_1  = "rex new --ui designx (default) fetches the DesignX theme and the base set (button, card, field, input, select, sheet, dialog, skeleton, empty, command, table, tabs, tooltip, kbd, badge) from the registry into app/components/ui and app/theme.css, installs their dependencies and Tailwind 4, and the generated app passes rex check; --ui none keeps the token components."
+ac_2  = "The demo uses DesignX components for every part and overlay; agent density still disables motion and the walk and axe pass."
+ac_3  = "chrome.components lets an app replace the shell's Button, Sheet, Palette item and Outcome renderers with DesignX ones; the demo does."
+
+[req.30]
+title = "Cross-platform output and the text renderer"
+story = "As a product team, I want a path to desktop, mobile and terminal agents so that one app serves every surface."
+ac_1  = "client.apiOrigin makes the static client talk to a remote server with CORS for security.origins; docs/platforms.md documents Electron, Tauri and Capacitor with the build targets."
+ac_2  = "GET /rex/pages/<id>.md renders the page per [design] text_renderer and the walk asserts it lists every sidecar action."
+
+[req.31]
+title = "Versioning, deprecations and codemods"
+story = "As an upgrader, I want deprecations announced once and codemods to apply them so that breaking changes are cheap."
+ac_1  = "deprecated(code, message) warns once per code with the docs link; rex migrate lists and applies the codemods in [design] migrate idempotently and reports changed files."
+ac_2  = "A 0.1 fixture app migrated by rex migrate passes rex check and the runtime test."
+
+[req.32]
+title = "Governance"
+story = "As a contributor, I want governance, maintainers, security policy and conduct documented so that the project outlives any one person."
+ac_1  = "GOVERNANCE.md, MAINTAINERS.md, SECURITY.md, CODE_OF_CONDUCT.md and .github/FUNDING.yml exist with real content and are linked from README."
+
+[req.33]
+title = "Remaining 0.1 gaps"
+story = "As the Rex team, I want the known gaps from 0.1 closed so that the README has none."
+ac_1  = "Page.List renders a paged list with page and size URL params and a load-more control that appends; the demo holdings use it; the checker rule traps/infinite-list reports scroll-loading lists without it."
+ac_2  = "Flow decisions write audit records with the gate id and decision."
+ac_3  = "rex check --runtime mounts every page in happy-dom per actor and state and reports sidecar actions without a visible control and controls without a sidecar entry (rule parity/runtime)."
+
+[req.34]
+title = "Core Web Vitals and Lighthouse gate"
+story = "As a release engineer, I want vitals measured on every release so that performance is a tested property."
+ac_1  = "examples/demo/e2e/vitals.spec.ts measures LCP, CLS and INP on every page with the web-vitals library and fails above 2500 ms, 0.1 and 200 ms; reports are written to e2e/report."
+ac_2  = "examples/demo/e2e/lighthouse.ts runs Lighthouse against every page and fails under performance 90 or accessibility 95; reports are written to e2e/report."
+
+[req.35]
+title = "Demo and release 0.2.0"
+story = "As the Rex team, I want the demo to exercise every 0.2 capability and the package to be releasable."
+ac_1  = "The demo adds a static About page, an ssg Tokens page with revalidate, a loader-driven portfolio, forms on send, a shared store, Img and fonts, a locale switch with two locales, and a web-component embed example; the walk, the no-JS walk, axe and vitals pass with zero failures."
+ac_2  = "package version is 0.2.0, CHANGELOG has the 0.2.0 entry, README carries the standards table with no open gap, docs are regenerated, and the pack test passes."
+
+[task.0.1]
+title = "Split the Vite plugin, server and client entry points into per-concern modules with registration lists"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = []
+reqs = ["1.1", "1.2", "1.3"]
+do_1 = "Create vite/plugin.ts assembling the plugin from the ordered hook list in vite/hooks.ts; move the rex:app code to vite/app-module.ts, the /@rex/entry code to vite/entry-module.ts, resolution to vite/resolve.ts and scanning to vite/scan.ts; vite/index.ts only re-exports; keep virtual.ts as the home of module id constants."
+do_2 = "Create server/app.ts composing createRexServer from server/routes.ts (ordered list of route installers) and server/middleware.ts (ordered list); move the manifest, rpc and health handlers to server/routes/manifest.ts, rpc.ts and health.ts; server/index.ts re-exports and imports nothing from node:."
+do_3 = "Create client/entry.tsx holding createRexEntry built from the provider list in client/providers.ts; split shell.tsx into client/shell/header.tsx, nav.tsx, outcome-slot.tsx and client/shell/slots.ts (ordered slot list) with shell.tsx composing them; add client/reset.ts exporting registerReset and resetAll for test helpers."
+do_4 = "Keep every public export name identical so no existing test changes; run the full existing vite, server and client test files as the verify."
+touches = ["packages/rex/src/vite", "packages/rex/src/server", "packages/rex/src/client/entry.tsx", "packages/rex/src/client/providers.ts", "packages/rex/src/client/reset.ts", "packages/rex/src/client/shell", "packages/rex/src/client/shell.tsx", "packages/rex/src/client/app.tsx", "packages/rex/src/client/index.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/vite src/server src/client/runtime.test.tsx src/client/shell.test.tsx src/client/app.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.2]
+title = "Add rex/config with defineConfig and the 0.2 page, action and context options"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.1"]
+reqs = ["2.1", "2.2", "2.3", "2.4"]
+do_1 = "Add core/errors.ts with the RexError class (code, hint, docs, file, line, column) and the initial catalog for REX1xx config and REX2xx declaration codes; add core/serialize.ts exporting escapeInlineJson used by every inline script Rex emits and make client/agent/sidecar.tsx use it."
+do_2 = "Add core/config.ts exporting defineConfig, RexConfig and parseConfig implementing [design] config_schema in full (render, budgets, security with origins, csp, headers and secretNames, i18n, images, fonts, telemetry, ui, client, compiler, devtools, tailwind, check with tokens allow lists); export it from a new src/config.ts entry and from src/index.ts."
+do_3 = "Extend page() with render, revalidate, paths, load, cache, transition and chrome.components per [design] page_options with validation and manifest output; extend action() with form and jsonSchema per [design] action_options; extend RexContext in server/context.ts with a per-request nonce (crypto.randomUUID based) and a locale field resolved later."
+do_4 = "Add cli/config.ts that loads rex.config.ts through the existing Vite ssrLoadModule path, accepts a defineConfig result or a bare Hono app (emitting deprecation REX101 once through a deprecated() helper in core/deprecated.ts), and make dev, build, check and manifest commands use it; update the rex new template to defineConfig."
+do_5 = "Write core/config.test.ts, extend core/page.test.ts, core/action.test.ts, manifest/build.test.ts and cli/commands.test.ts for every new option and error code."
+touches = ["packages/rex/src/core/errors.ts", "packages/rex/src/core/errors.test.ts", "packages/rex/src/core/serialize.ts", "packages/rex/src/core/serialize.test.ts", "packages/rex/src/core/deprecated.ts", "packages/rex/src/core/config.ts", "packages/rex/src/core/config.test.ts", "packages/rex/src/config.ts", "packages/rex/src/core/page.ts", "packages/rex/src/core/page.test.ts", "packages/rex/src/core/action.ts", "packages/rex/src/core/action.test.ts", "packages/rex/src/server/context.ts", "packages/rex/src/manifest/build.ts", "packages/rex/src/manifest/build.test.ts", "packages/rex/src/manifest/types.ts", "packages/rex/src/cli/config.ts", "packages/rex/src/cli/commands", "packages/rex/src/cli/commands.test.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/index.ts", "examples/demo/rex.config.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/config.test.ts src/core/errors.test.ts src/core/serialize.test.ts src/core/page.test.ts src/core/action.test.ts src/manifest/build.test.ts src/cli/commands.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.3]
+title = "Move validation to the Standard Schema interface and the field helpers to zod/mini"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.2"]
+reqs = ["3.1", "3.2", "3.3"]
+do_1 = "Add core/standard.ts with the StandardSchemaV1 types, validateStandard(schema, value) and isZodSchema; make entity(), action(), page(), the server router, useAct, the URL invoker and the palette validate through it."
+do_2 = "Rebuild core/schema.ts field helpers on zod/mini keeping the x-rex-field tags and the same exported names; add integer, real and json where entity storage needs them."
+do_3 = "Move JSON Schema generation into manifest/build.ts using z.toJSONSchema for zod schemas and the declared jsonSchema otherwise, throwing REX210 when neither applies; remove toJsonSchema calls from core."
+do_4 = "Switch the demo app and the rex new templates to zod/mini imports; extend the tests named in the verify to cover a non-zod Standard Schema (a hand-written object implementing ~standard) end to end through the router and useAct."
+touches = ["packages/rex/src/core/standard.ts", "packages/rex/src/core/standard.test.ts", "packages/rex/src/core/schema.ts", "packages/rex/src/core/schema.test.ts", "packages/rex/src/core/entity.ts", "packages/rex/src/core/entity.test.ts", "packages/rex/src/core/action.ts", "packages/rex/src/core/page.ts", "packages/rex/src/server/router.ts", "packages/rex/src/server/router.test.ts", "packages/rex/src/client/act.ts", "packages/rex/src/client/act.test.tsx", "packages/rex/src/client/agent/url-invoke.ts", "packages/rex/src/client/agent/palette.tsx", "packages/rex/src/manifest/build.ts", "packages/rex/src/manifest/build.test.ts", "packages/rex/src/cli/templates.ts", "examples/demo/app"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/standard.test.ts src/core/schema.test.ts src/core/entity.test.ts src/core/action.test.ts src/server/router.test.ts src/client/act.test.tsx src/manifest/build.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.4]
+title = "Package hygiene: minimal dependencies, MIT license, export map, own argument parser and Vite-based module loading"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.3"]
+reqs = ["4.1", "4.2", "4.3", "4.4"]
+do_1 = "Rewrite packages/rex/package.json per [req.4] ac_1 and ac_2: dependencies hono and @orpc/*; peers react, react-dom, @tanstack/react-query, vite, zod, typescript; optional peers for drizzle-orm, @libsql/client, @hono/node-server, cmdk, wouter, @opentelemetry/api, @vitejs/plugin-react, babel-plugin-react-compiler and @tailwindcss/vite; keep the dev dependencies the tests need; license MIT; sideEffects for CSS only; types-first exports adding ./config, ./server/node and ./store/drizzle; publishConfig provenance; add the root LICENSE (MIT, Sidiora Labs)."
+do_2 = "Replace commander with cli/args.ts (a small parser for commands, flags, repeated flags and positionals with exit code 2 on unknown input) and replace tsx with cli/load.ts that loads TypeScript modules through Vite's createServer plus ssrLoadModule; add cli/generators.ts, an ordered list of rex new file contributors that new.ts runs, so later waves add generators without editing new.ts."
+do_3 = "Add cli/pack.test.ts: build the package, run npm pack --dry-run --json and assert every export path and its types condition exist in the tarball and that no src or test files are included; regenerate pnpm-lock.yaml."
+do_4 = "Update the Drizzle store to be importable from the new ./store/drizzle export and the demo and templates to use it where storage is configured."
+touches = ["packages/rex/package.json", "packages/rex/tsconfig.build.json", "LICENSE", "pnpm-lock.yaml", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/args.test.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/cli/generators.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/cli.test.ts", "packages/rex/src/cli/pack.test.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands/check.ts", "packages/rex/src/cli/commands/manifest.ts", "packages/rex/src/cli/commands/make.ts", "packages/rex/src/cli/commands/promote.ts", "packages/rex/src/store/index.ts", "packages/rex/src/store/drizzle.ts", "packages/rex/src/server/node.ts", "examples/demo/package.json", "package.json"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/args.test.ts src/cli/cli.test.ts src/cli/pack.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.5]
+title = "Per-page code splitting with Suspense and region error boundaries"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.1"]
+reqs = ["5.1", "5.2", "5.3", "5.4"]
+do_1 = "Make vite/app-module.ts import every page's view, states, regions and overlays through dynamic import and expose them as lazy module records on the bundle; add vite/split.ts with the manual chunk naming (page-<id>) and the chunk table builder used by rex build."
+do_2 = "In client/page.tsx render lazy page modules under Suspense with the page's loading state as fallback; add client/boundary.tsx with a RegionBoundary that catches render errors, reports REX330 with the region address, renders the page's recoverable-error state scoped to the region and offers a retry that remounts it; register the boundary state in the sidecar."
+do_3 = "Make cli/commands/build.ts print the chunk table (name, raw, gzip, budget) and exit 1 over budget using the defaults from [design] budgets until 0.7 wires rex.config budgets."
+do_4 = "Write client/boundary.test.tsx (throwing region recovers and retries; sidecar shows the state) and extend client/page.test.tsx and vite/vite.test.ts (a build emits one chunk per fixture page and the table names them)."
+touches = ["packages/rex/src/vite/app-module.ts", "packages/rex/src/vite/split.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/vite/virtual.ts", "packages/rex/src/client/page.tsx", "packages/rex/src/client/page.test.tsx", "packages/rex/src/client/boundary.tsx", "packages/rex/src/client/boundary.test.tsx", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/index.ts", "packages/rex/src/cli/commands/build.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/boundary.test.tsx src/client/page.test.tsx src/vite/vite.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.6]
+title = "Enable the React Compiler in the Vite plugin and prove fine-grained re-rendering"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.5"]
+reqs = ["6.1", "6.2"]
+do_1 = "Add vite/compiler.ts registering babel-plugin-react-compiler through @vitejs/plugin-react when config.compiler is not false, targeting React 19; add babel-plugin-react-compiler as a dev dependency for the tests and keep it an optional peer."
+do_2 = "Write vite/compiler.test.ts building the fixture app and asserting the compiler runtime import (react/compiler-runtime) appears in a compiled part, and that compiler false leaves it out."
+do_3 = "Write client/compiler.test.tsx using React Profiler on the fixture page: update one store-like value read by one part and assert only that part commits again."
+touches = ["packages/rex/src/vite/compiler.ts", "packages/rex/src/vite/compiler.test.ts", "packages/rex/src/vite/hooks.ts", "packages/rex/src/client/compiler.test.tsx", "packages/rex/src/client/fixtures", "packages/rex/package.json", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/vite/compiler.test.ts src/client/compiler.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.0.7]
+title = "Enforce size budgets for the core, the client runtime and page chunks"
+status = "pending"
+mode = "BUILD"
+wave = 0
+requires = ["0.4", "0.5"]
+reqs = ["7.1", "7.2", "3.4"]
+do_1 = "Add vite/budgets.ts resolving budgets from rex.config with the defaults in [design] budgets and make cli/commands/build.ts use it for the chunk table and the exit code."
+do_2 = "Write src/size.test.ts that bundles the rex, rex/client and rex/server/edge entries (the edge entry is server/index.ts until 1.5 adds adapters) with Vite's build API, externalising react, react-dom, @tanstack/react-query, cmdk, wouter and @orpc/client, and asserts 15 KB, 30 KB and 40 KB gzipped respectively; the test prints the measured sizes."
+touches = ["packages/rex/src/vite/budgets.ts", "packages/rex/src/vite/budgets.test.ts", "packages/rex/src/size.test.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1.1]
+title = "Streaming server-side rendering with hydration and stylesheet links"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["0.7"]
+reqs = ["8.1", "8.2", "8.3", "8.4", "8.5"]
+do_1 = "Add server/ssr.ts rendering the app for a request with renderToReadableStream inside the same providers the client uses, with the head carrying stylesheet links and preloads read from the Vite client manifest (vite/ssr-css.ts), the CSP nonce from RexContext on every inline script, the server-rendered sidecar and an application/rex+data script for loader data (empty until 1.2 fills it); add server/routes/render.ts installing the page routes after the /rex routes, mapping policy denial, not found and render failure to 403, 404 and 500 with the matching state rendered."
+do_2 = "Add vite/ssr.ts producing the server bundle of rex:app and the render entry for rex build and serving it through ssrLoadModule in rex dev; make cli/commands/dev.ts and build.ts wire them; render csr pages as the shell plus loading state."
+do_3 = "Make client/entry.tsx hydrate with hydrateRoot when the document root carries data-rex-ssr and otherwise createRoot; add client/hydrate.ts reading the data script; report mismatches as REX310 in dev."
+do_4 = "Write server/ssr.test.tsx with a real createRexServer over the fixture app: streamed HTML content and order (links before body), hydration in happy-dom with an interactive click, csr behaviour, 403, 404 and 500 cases."
+touches = ["packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/routes/render.ts", "packages/rex/src/server/routes.ts", "packages/rex/src/vite/ssr.ts", "packages/rex/src/vite/ssr-css.ts", "packages/rex/src/vite/hooks.ts", "packages/rex/src/client/entry.tsx", "packages/rex/src/client/hydrate.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/client/index.ts", "packages/rex/src/server/index.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/ssr.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1.2]
+title = "Page loaders with server execution, dehydration, deduping and invalidation"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["1.1"]
+reqs = ["9.1", "9.2", "9.3", "9.4", "1.1"]
+do_1 = "Add client/loaders.ts with useLoader and useLoaders per [design] loaders_api, query keys under [loader, page, name, inputDigest], cache.staleTime applied, and invalidation wiring in client/act.ts for actions declaring invalidates or loaders declaring invalidatedBy."
+do_2 = "Add server/loaders.ts running a page's loaders in process through the action router during SSR and dehydrating the QueryClient into the application/rex+data script that server/ssr.ts emits; client/hydrate.ts hydrates it before first render."
+do_3 = "Map loader failures into the page data state through the existing precedence in client/states.ts and surface them in the sidecar."
+do_4 = "Write client/loaders.test.tsx: typed output, dedupe to one request across two consumers, staleTime, invalidation by a mutating action, SSR dehydrate and client hydrate with no request, loader failure state."
+touches = ["packages/rex/src/client/loaders.ts", "packages/rex/src/client/loaders.test.tsx", "packages/rex/src/client/act.ts", "packages/rex/src/client/hydrate.ts", "packages/rex/src/client/page.tsx", "packages/rex/src/client/states.ts", "packages/rex/src/server/loaders.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/client/index.ts", "packages/rex/src/server/index.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/loaders.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1.3]
+title = "Static generation, on-demand regeneration and zero-JavaScript pages"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["1.2"]
+reqs = ["10.1", "10.2", "10.3", "10.4"]
+do_1 = "Add vite/prerender.ts that renders every ssg and static page at build time (expanding paths) through server/ssr.ts into dist/client/<route>/index.html and lists them; for static pages omit the page chunk and hydration script and render actions as forms (ActionForm arrives in 1.4; until then render a form element with the action id and the form route)."
+do_2 = "Add server/adapters/static-cache.ts serving prerendered pages with revalidate handled as stale-while-revalidate regeneration in the background; wire it into server/routes/render.ts and the node adapter."
+do_3 = "Add check/rules/render.ts reporting a static page that declares a shortcut action or a region-bound overlay (render/static-needs-js) with fixtures."
+do_4 = "Write vite/prerender.test.ts, server/static-cache.test.ts and check/rules/render.test.ts."
+touches = ["packages/rex/src/vite/prerender.ts", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/server/adapters/static-cache.ts", "packages/rex/src/server/static-cache.test.ts", "packages/rex/src/server/routes/render.ts", "packages/rex/src/server/node.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/check/rules/render.ts", "packages/rex/src/check/rules/render.test.ts", "packages/rex/src/check/rules/index.ts", "packages/rex/src/check/fixtures"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/vite/prerender.test.ts src/server/static-cache.test.ts src/check/rules/render.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1.4]
+title = "Progressive enhancement forms with CSRF and server-rendered confirmation"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["1.3"]
+reqs = ["11.1", "11.2", "11.3", "11.4"]
+do_1 = "Add server/form.ts (FormData coercion against the input schema: numbers, booleans, arrays, nested dotted names) and server/routes/form.ts implementing [design] forms_protocol: CSRF double-submit cookie rex-csrf, Origin check, policy, action run, rex-outcome cookie, redirect, validation errors, and the server-rendered confirmation page for irreversible actions."
+do_2 = "Add client/form.tsx exporting ActionForm (hidden _csrf and action fields, inputs from the schema, field errors from the outcome) that intercepts submit through useAct when JavaScript runs; make client/agent/outcome.tsx show and clear a cookie outcome on the next render."
+do_3 = "Write server/form.test.tsx (coercion, CSRF reject, Origin reject, confirm page, confirm post, redirect, errors cookie, audit record) and client/form.test.tsx (renders real form, intercepts with JS, shows field errors)."
+touches = ["packages/rex/src/server/form.ts", "packages/rex/src/server/form.test.tsx", "packages/rex/src/server/routes/form.ts", "packages/rex/src/server/routes.ts", "packages/rex/src/client/form.tsx", "packages/rex/src/client/form.test.tsx", "packages/rex/src/client/agent/outcome.tsx", "packages/rex/src/client/index.ts", "packages/rex/src/server/index.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/form.test.tsx src/client/form.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.1.5]
+title = "Runtime adapters for Node, Bun, Deno and edge with build targets"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["1.4"]
+reqs = ["12.1", "12.2", "12.3"]
+do_1 = "Move server/node.ts to server/adapters/node.ts (keeping a re-export), add server/adapters/bun.ts, deno.ts and edge.ts per [design] runtimes with REX450 when the runtime global is absent; add server/fetch-only.test.ts that bundles src/server/index.ts for the browser platform with Vite's build API and asserts no node: specifier remains."
+do_2 = "Make rex build --target node|edge|bun|deno|static write the matching server entry and layout and bake client.apiOrigin for static; add the exports ./server/bun, ./server/deno and ./server/edge."
+do_3 = "Write server/adapters/adapters.test.ts: node adapter passes the existing node tests, edge handler answers Request objects, bun and deno adapters throw REX450 here and hand the fetch handler to the runtime serve when a real global exists."
+touches = ["packages/rex/src/server/adapters", "packages/rex/src/server/node.ts", "packages/rex/src/server/node.test.ts", "packages/rex/src/server/fetch-only.test.ts", "packages/rex/src/server/index.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/package.json"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/fetch-only.test.ts src/server/adapters/adapters.test.ts src/server/node.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.1]
+title = "Error catalog with source locations in the Vite overlay and the CLI"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["0.7"]
+reqs = ["13.1", "13.2", "13.3"]
+do_1 = "Complete core/errors.ts as the single catalog (REX1xx to REX6xx) with hint and docs for every code; convert every throw in core/, manifest/, check/ and cli/ to RexError with a catalogued code (server/, client/ and vite/ are converted by 5.7)."
+do_2 = "Add vite/overlay.ts mapping RexError thrown while loading app modules to the Vite error overlay with file and line; add cli/frame.ts printing a source frame for errors with a location and make the CLI use it."
+do_3 = "Add tools/docs-errors.mjs generating docs/errors.md from the catalog with --check; write core/errors.test.ts and cli/frame.test.ts."
+touches = ["packages/rex/src/core/errors.ts", "packages/rex/src/core/errors.test.ts", "packages/rex/src/core", "packages/rex/src/manifest", "packages/rex/src/check", "packages/rex/src/cli", "packages/rex/src/vite/overlay.ts", "packages/rex/src/vite/hooks.ts", "tools/docs-errors.mjs", "docs/errors.md"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/errors.test.ts src/cli/frame.test.ts && node tools/docs-errors.mjs --check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.2]
+title = "Verified hot module replacement for parts, regions and page declarations"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.1"]
+reqs = ["14.1", "14.2"]
+do_1 = "Add vite/hmr.ts: part and region edits flow through react-refresh as module updates; page.ts edits invalidate rex:app and the page chunk and send a full reload with a REX320 notice naming the page."
+do_2 = "Write vite/hmr.test.ts starting the dev server on a copy of the fixture app, editing a part and asserting an update event for that module (not a full reload), then editing page.ts and asserting the full reload notice."
+touches = ["packages/rex/src/vite/hmr.ts", "packages/rex/src/vite/hmr.test.ts", "packages/rex/src/vite/hooks.ts", "packages/rex/src/vite/app-module.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/vite/hmr.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.3]
+title = "Dev-only devtools overlay"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.2"]
+reqs = ["15.1", "15.2"]
+do_1 = "Add client/devtools/ with RexDevtools (shift+mod+d toggle) and the Manifest, Page, Sidecar, Outcomes, Queries, Renders and Audit panels per [design] devtools; register a slot in client/shell/slots.ts guarded by import.meta.env.DEV and config.devtools; add server/routes/dev.ts serving GET /rex/dev/audit only in dev mode; add the ./devtools export."
+do_2 = "Write client/devtools/devtools.test.tsx (toggle, each panel reads real data from the fixture app) and extend vite/vite.test.ts with a production build asserting the devtools module is absent from the bundle."
+touches = ["packages/rex/src/client/devtools", "packages/rex/src/client/shell/slots.ts", "packages/rex/src/client/shell/devtools-slot.tsx", "packages/rex/src/server/routes/dev.ts", "packages/rex/src/server/routes.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/package.json"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/devtools/devtools.test.tsx src/vite/vite.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.4]
+title = "First-party testing helpers and real demo page tests"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.3"]
+reqs = ["16.1", "16.2"]
+do_1 = "Add src/testing/index.ts exporting createTestApp, renderPage, renderRegion, testServer and readSidecar per [design] testing_api on the real server and runtime, calling resetAll from client/reset.ts between renders; add the ./testing export and a vitest setup helper."
+do_2 = "Write tests in examples/demo/app/pages/<page>/test/ for every page and region using rex/testing, a vitest config for the demo and a test:unit script."
+do_3 = "Write src/testing/testing.test.tsx proving each helper against the fixture app."
+touches = ["packages/rex/src/testing", "packages/rex/src/client/reset.ts", "packages/rex/package.json", "examples/demo/app/pages/portfolio/test", "examples/demo/app/pages/send/test", "examples/demo/vitest.config.ts", "examples/demo/package.json"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/testing/testing.test.tsx && pnpm -C examples/demo test:unit"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.5]
+title = "ESLint plugin, prettier preset and format rule"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.4"]
+reqs = ["17.1", "17.2"]
+do_1 = "Add src/eslint/index.ts exporting a flat config and an ESLint plugin whose rules run the checker's boundary, naming, trap, token, a11y and media rule functions per file (a11y and media land in waves 3 and 5; register them through check/rules/index.ts so they appear when present), plus eslint-plugin-jsx-a11y recommended; add src/prettier.ts with the format preset; add check/rules/format.ts running prettier in check mode."
+do_2 = "Add cli/gen/lint.ts contributing eslint.config.js, .prettierrc and lint and format scripts to rex new through cli/generators.ts; add eslint, prettier and eslint-plugin-jsx-a11y as dev dependencies and optional peers; add the ./eslint and ./prettier exports."
+do_3 = "Write src/eslint/eslint.test.ts running ESLint programmatically on a fixture with a boundary violation and an a11y violation."
+touches = ["packages/rex/src/eslint", "packages/rex/src/prettier.ts", "packages/rex/src/check/rules/format.ts", "packages/rex/src/check/rules/index.ts", "packages/rex/src/cli/gen/lint.ts", "packages/rex/src/cli/generators.ts", "packages/rex/package.json", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/eslint/eslint.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.6]
+title = "Tutorial, recipes, migration guide, versioning policy and generated API reference"
+status = "pending"
+mode = "BUILD"
+wave = 2
+requires = ["2.5"]
+reqs = ["18.1", "18.2", "18.3"]
+do_1 = "Write docs/tutorial.md building the wallet demo from rex new step by step, docs/recipes/ with the eight recipes named in [req.18] ac_1, docs/migration.md and docs/versioning.md."
+do_2 = "Add typedoc.json and tools/docs-api.mjs generating docs/api/ from the package entries with a --check mode that fails when stale; add tools/check-links.mjs validating local links in README.md and docs/; add root scripts docs:api and docs:check."
+do_3 = "Generate and commit docs/api/."
+touches = ["docs/tutorial.md", "docs/recipes", "docs/migration.md", "docs/versioning.md", "docs/api", "typedoc.json", "tools/docs-api.mjs", "tools/check-links.mjs", "package.json", "pnpm-lock.yaml"]
+verify_cmd = "node tools/check-links.mjs && node tools/docs-api.mjs --check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.1]
+title = "Shared state primitive exposed to the sidecar"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["0.7"]
+reqs = ["19.1", "19.2"]
+do_1 = "Add client/store.ts implementing store() per [design] state_api on useSyncExternalStore with get, set, update, subscribe, useStore, toJSON and a reset registered through client/reset.ts; exposed stores appear in the sidecar under state.stores (extend manifest/sidecar.schema.ts and client/agent/sidecar.tsx)."
+do_2 = "Write client/store.test.tsx: typed updates, single-subscriber re-render, sidecar exposure and update, reset between tests, serialisation."
+touches = ["packages/rex/src/client/store.ts", "packages/rex/src/client/store.test.tsx", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/manifest/sidecar.schema.ts", "packages/rex/src/client/index.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/store.test.tsx src/client/agent/sidecar.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.2]
+title = "Web Components, native DOM escape hatch and incremental page mounting"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.1"]
+reqs = ["20.1", "20.2", "20.3"]
+do_1 = "Add client/interop/define-element.tsx (defineElement), client/interop/mount.tsx (mountRexPage returning unmount) and client/interop/native.tsx (Native) per [design] interop_api; export them from client/index.ts."
+do_2 = "Extend check/rules/traps.ts with traps/custom-element allowing custom element tags that carry tabindex or a declared keyboard equivalent and reporting them otherwise, with fixtures."
+do_3 = "Write client/interop/interop.test.tsx: a part as a custom element with attribute props, a Rex page mounted inside a plain document with other content, an action invoked through its data-rex address, clean unmount, Native ref access."
+touches = ["packages/rex/src/client/interop", "packages/rex/src/client/index.ts", "packages/rex/src/check/rules/traps.ts", "packages/rex/src/check/rules/quality.test.ts", "packages/rex/src/check/fixtures"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/interop/interop.test.tsx src/check/rules/quality.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.3]
+title = "Focus management, route announcements, view transitions and the Navigation API"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.2"]
+reqs = ["21.1", "21.2"]
+do_1 = "Add client/shell/announcer.tsx (aria-live polite region with the page title after navigation) registered in slots.ts; make RexRoutes move focus to the page heading or main after commit; wrap route changes in document.startViewTransition when the page transition is view and the API exists; intercept same-origin window.navigation navigate events when present."
+do_2 = "Write client/navigation.test.tsx with injected globals of the real shapes for startViewTransition and navigation: focus target, announcer text, transition invoked, navigate intercepted and routed."
+touches = ["packages/rex/src/client/shell/announcer.tsx", "packages/rex/src/client/shell/slots.ts", "packages/rex/src/client/router.tsx", "packages/rex/src/client/nav.ts", "packages/rex/src/client/navigation.test.tsx", "packages/rex/src/client/nav.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/navigation.test.tsx src/client/nav.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.4]
+title = "Accessibility checker rules and the axe audit in the walk"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.3"]
+reqs = ["22.1", "22.2"]
+do_1 = "Add check/rules/a11y.ts with the rules in [design] a11y_rules, each with a passing and failing fixture, registered in check/rules/index.ts."
+do_2 = "Add examples/demo/e2e/axe.spec.ts running @axe-core/playwright on every page in both densities, failing on serious or critical violations, with the dependency added to the demo; the demo is fixed to pass in 6.2 if needed."
+do_3 = "Write check/rules/a11y.test.ts."
+touches = ["packages/rex/src/check/rules/a11y.ts", "packages/rex/src/check/rules/a11y.test.ts", "packages/rex/src/check/rules/index.ts", "packages/rex/src/check/fixtures", "examples/demo/e2e/axe.spec.ts", "examples/demo/package.json", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/check/rules/a11y.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.5]
+title = "Internationalisation: messages, locale resolution, prefixed routing and the i18n rule"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.4"]
+reqs = ["23.1", "23.2", "23.3"]
+do_1 = "Add client/i18n/ with useLocale, useT, t, the ICU-subset formatter (placeholders, plural and select through Intl.PluralRules) and msg: key resolution used by labels, titles, outcomes, the sidecar and the palette; add server/locale.ts resolving the locale from the URL prefix, the rex-locale cookie, Accept-Language and the default, setting RexContext.locale and html lang in SSR."
+do_2 = "With i18n.routing prefix mount every page under /:locale in client/router.tsx and keep the prefix in nav.to and useNav.href."
+do_3 = "Add check/rules/i18n.ts (i18n/literal with allow list) and cli/gen/i18n.ts contributing app/locales/<default>.json to rex new; write client/i18n/i18n.test.tsx and check/rules/i18n.test.ts."
+touches = ["packages/rex/src/client/i18n", "packages/rex/src/server/locale.ts", "packages/rex/src/server/context.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/client/router.tsx", "packages/rex/src/client/nav.ts", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/palette.tsx", "packages/rex/src/client/agent/outcome.tsx", "packages/rex/src/client/shell", "packages/rex/src/check/rules/i18n.ts", "packages/rex/src/check/rules/i18n.test.ts", "packages/rex/src/check/rules/index.ts", "packages/rex/src/cli/gen/i18n.ts", "packages/rex/src/cli/generators.ts", "packages/rex/src/client/index.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/i18n/i18n.test.tsx src/check/rules/i18n.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.6]
+title = "Styling freedom: CSS Modules, Tailwind 4 and a configurable token rule"
+status = "pending"
+mode = "BUILD"
+wave = 3
+requires = ["3.5"]
+reqs = ["24.1", "24.2"]
+do_1 = "Add vite/styles.ts enabling @tailwindcss/vite when config.tailwind is true or ui is designx and documenting CSS Modules as default Vite behaviour; register it in vite/hooks.ts."
+do_2 = "Rewrite check/rules/tokens.ts to report only raw color and spacing literals, resolve Tailwind utilities to tokens through the theme and honour the allow lists in config.check.tokens; add a fixture app using CSS Modules and Tailwind utilities that passes."
+do_3 = "Write vite/styles.test.ts and extend check/rules/quality.test.ts."
+touches = ["packages/rex/src/vite/styles.ts", "packages/rex/src/vite/styles.test.ts", "packages/rex/src/vite/hooks.ts", "packages/rex/src/check/rules/tokens.ts", "packages/rex/src/check/rules/quality.test.ts", "packages/rex/src/check/fixtures", "packages/rex/package.json", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/vite/styles.test.ts src/check/rules/quality.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4.1]
+title = "Explicit unsafe HTML opt-in and the escaping audit"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["0.7"]
+reqs = ["25.1"]
+do_1 = "Add client/unsafe-html.tsx exporting unsafeHtml(html) as the only sanctioned raw HTML path; add check/rules/security.ts reporting dangerouslySetInnerHTML outside it (security/unsafe-html) with fixtures."
+do_2 = "Write check/rules/security.test.ts and core/serialize.test.ts cases proving every inline serialisation escapes <, >, & and U+2028 and U+2029."
+touches = ["packages/rex/src/client/unsafe-html.tsx", "packages/rex/src/client/index.ts", "packages/rex/src/check/rules/security.ts", "packages/rex/src/check/rules/security.test.ts", "packages/rex/src/check/rules/index.ts", "packages/rex/src/check/fixtures", "packages/rex/src/core/serialize.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/check/rules/security.test.ts src/core/serialize.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4.2]
+title = "Origin checks, CSP nonces and security headers"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["4.1"]
+reqs = ["25.2", "25.3"]
+do_1 = "Add server/middleware/security.ts implementing [design] security_impl: Origin check for POST on /rex/*, CSP built from config.security with the per-request nonce from RexContext, X-Content-Type-Options, Referrer-Policy and Permissions-Policy defaults, header overrides; register it in server/middleware.ts; add vite/nonce.ts applying the nonce to inline scripts in the dev HTML transform."
+do_2 = "Write server/security.test.ts: 403 without or with a foreign Origin, allowed origins, CSP header shape in strict and report modes, nonce present on every inline script in an SSR response."
+touches = ["packages/rex/src/server/middleware/security.ts", "packages/rex/src/server/middleware.ts", "packages/rex/src/server/security.test.ts", "packages/rex/src/vite/nonce.ts", "packages/rex/src/vite/hooks.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/security.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4.3]
+title = "Server and client bundle boundary with secret leak detection"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["4.2"]
+reqs = ["25.4"]
+do_1 = "Add vite/boundary.ts: a transform that strips handler from action modules in client builds, a resolver that throws REX440 when a client module imports rex/server, app/server or a module containing import 'rex/server-only', and a closeBundle scan of the client output for process.env references without the VITE_ prefix and for config.security.secretNames that throws REX441; register in vite/hooks.ts; add the rex/server-only export (an empty module with a side-effect marker)."
+do_2 = "Write vite/boundary.test.ts covering each case with fixture apps."
+touches = ["packages/rex/src/vite/boundary.ts", "packages/rex/src/vite/boundary.test.ts", "packages/rex/src/vite/hooks.ts", "packages/rex/src/server-only.ts", "packages/rex/package.json", "packages/rex/src/vite/fixtures"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/vite/boundary.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4.4]
+title = "OpenTelemetry spans, logger and client hooks"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["4.3"]
+reqs = ["26.1", "26.2"]
+do_1 = "Add server/middleware/telemetry.ts per [design] telemetry_impl using @opentelemetry/api as an optional peer, spans for action, form, loader and render, traceId and spanId on audit records, and the logger interface with the console default; register it in server/middleware.ts and server/router.ts."
+do_2 = "Add onOutcome and onNavigate options to createRexApp in client/app.tsx."
+do_3 = "Write server/telemetry.test.ts with the in-memory span exporter from @opentelemetry/sdk-trace-base (dev dependency) asserting span names, attributes and the audit trace id, and client/app.test.tsx cases for the hooks."
+touches = ["packages/rex/src/server/middleware/telemetry.ts", "packages/rex/src/server/middleware.ts", "packages/rex/src/server/router.ts", "packages/rex/src/server/audit.ts", "packages/rex/src/server/telemetry.test.ts", "packages/rex/src/client/app.tsx", "packages/rex/src/client/app.test.tsx", "packages/rex/package.json", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/telemetry.test.ts src/client/app.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.4.5]
+title = "Continuous integration, release workflow with provenance, audit and license review"
+status = "pending"
+mode = "BUILD"
+wave = 4
+requires = ["4.4"]
+reqs = ["27.1", "27.2"]
+do_1 = "Add .github/workflows/ci.yml (install with frozen lockfile, typecheck, test, check, walk, vitals, pnpm audit --prod, license review) and .github/workflows/release.yml publishing on a v* tag with npm provenance through OIDC; add tools/license-review.mjs allowing MIT, ISC, BSD, Apache-2.0, 0BSD and CC0 and failing otherwise."
+do_2 = "Extend tools/gate-lint.sh to run pnpm audit --prod and the license review."
+touches = [".github/workflows/ci.yml", ".github/workflows/release.yml", "tools/license-review.mjs", "tools/gate-lint.sh", "package.json"]
+verify_cmd = "node tools/license-review.mjs && pnpm audit --prod"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.1]
+title = "Img, Script and fonts with preloads and the raw-img rule"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["1.5", "2.6", "3.6", "4.5"]
+reqs = ["28.1", "28.2"]
+do_1 = "Add client/media.tsx exporting Img and Script per [design] media_api; emit preload links for priority images and configured fonts plus the font-face block with font-display swap in server/ssr.ts; add check/rules/media.ts (media/no-raw-img) with fixtures and register it."
+do_2 = "Write client/media.test.tsx and check/rules/media.test.ts, and an SSR case asserting the preload and font-face output."
+touches = ["packages/rex/src/client/media.tsx", "packages/rex/src/client/media.test.tsx", "packages/rex/src/client/index.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/check/rules/media.ts", "packages/rex/src/check/rules/media.test.ts", "packages/rex/src/check/rules/index.ts", "packages/rex/src/check/fixtures"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/media.test.tsx src/check/rules/media.test.ts src/server/ssr.test.tsx"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.2]
+title = "DesignX UI installed by rex new and used by the demo and the shell"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.1"]
+reqs = ["29.1", "29.2", "29.3"]
+do_1 = "Add cli/designx.ts fetching registry items from https://dxuireact.com/r/<name>.json with their registry dependencies into app/components/ui and app/theme.css, installing npm dependencies and @tailwindcss/vite, writing dx.json; add cli/gen/designx.ts contributing it to rex new under ui designx (default) with --ui none keeping token components."
+do_2 = "Add chrome.components support in client/shell/components.ts so an app replaces the shell's Button, Sheet, palette item and Outcome renderers; make the demo use DesignX for every part, overlay and the shell components, with Tailwind 4 and the DesignX theme, keeping agent density motion-free."
+do_3 = "Write cli/designx.test.ts (real registry fetch into a temp app that passes rex check) and update the demo so pnpm -C examples/demo exec rex check reports no findings."
+touches = ["packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "packages/rex/src/cli/gen/designx.ts", "packages/rex/src/cli/generators.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/client/shell/components.ts", "packages/rex/src/client/shell", "packages/rex/src/client/index.ts", "examples/demo/", "packages/rex/package.json", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/designx.test.ts && pnpm -C examples/demo exec rex check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.3]
+title = "Remote API origin, CORS, platform docs and the markdown text renderer"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.2"]
+reqs = ["30.1", "30.2", "12.3"]
+do_1 = "Add client.apiOrigin support in client/context.ts and vite/entry-module.ts (baked for static builds) and server/middleware/cors.ts enabling CORS with credentials for config.security.origins; write docs/platforms.md for the node, edge, bun, deno and static targets with Electron, Tauri and Capacitor sections."
+do_2 = "Add server/routes/pages-text.ts serving GET /rex/pages/<id>.md per [design] text_renderer and register it."
+do_3 = "Write server/pages-text.test.ts and server/cors.test.ts."
+touches = ["packages/rex/src/client/context.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/src/server/middleware/cors.ts", "packages/rex/src/server/middleware.ts", "packages/rex/src/server/cors.test.ts", "packages/rex/src/server/routes/pages-text.ts", "packages/rex/src/server/routes.ts", "packages/rex/src/server/pages-text.test.ts", "docs/platforms.md"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/pages-text.test.ts src/server/cors.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.4]
+title = "Deprecations and rex migrate with the 0.1 codemods"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.3"]
+reqs = ["31.1", "31.2"]
+do_1 = "Finish core/deprecated.ts (warn once per code with the docs link) and add cli/commands/migrate.ts with cli/codemods/ implementing [design] migrate on the TypeScript compiler API, idempotent, reporting changed files; register the command."
+do_2 = "Add cli/fixtures/app-01 (a 0.1-shaped app) and write cli/migrate.test.ts: migrate it, assert the config wrap, the img conversion with REX610 flags, idempotency, and that the migrated app passes runCheck; add the codemod section to docs/versioning.md."
+touches = ["packages/rex/src/core/deprecated.ts", "packages/rex/src/cli/commands/migrate.ts", "packages/rex/src/cli/codemods", "packages/rex/src/cli/fixtures", "packages/rex/src/cli/migrate.test.ts", "packages/rex/src/cli/index.ts", "docs/versioning.md"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/migrate.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.5]
+title = "Governance, maintainers, security policy, code of conduct and funding"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.4"]
+reqs = ["32.1"]
+do_1 = "Write GOVERNANCE.md (decision process, roles, release authority), MAINTAINERS.md, SECURITY.md (reporting channel, supported versions, disclosure timeline), CODE_OF_CONDUCT.md and .github/FUNDING.yml, and link them from README.md."
+touches = ["GOVERNANCE.md", "MAINTAINERS.md", "SECURITY.md", "CODE_OF_CONDUCT.md", ".github/FUNDING.yml", "README.md"]
+verify_cmd = "node tools/check-links.mjs"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.6]
+title = "Close the 0.1 gaps: paged lists, audited flow decisions and runtime parity checking"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.5"]
+reqs = ["33.1", "33.2", "33.3"]
+do_1 = "Add client/list.tsx exporting Page.List with page and size URL params and a load-more control that appends; use it for the demo holdings; add traps/infinite-list to check/rules/traps.ts."
+do_2 = "Make server/flow.ts write an audit record for every decision with the gate id and decision."
+do_3 = "Add check/runtime.ts implementing rex check --runtime per [req.33] ac_3 with happy-dom, wired into cli/commands/check.ts and reported as parity/runtime; write client/list.test.tsx, check/runtime.test.ts and extend server/flow.test.ts."
+touches = ["packages/rex/src/client/list.tsx", "packages/rex/src/client/list.test.tsx", "packages/rex/src/client/layout.tsx", "packages/rex/src/client/index.ts", "packages/rex/src/check/rules/traps.ts", "packages/rex/src/check/runtime.ts", "packages/rex/src/check/runtime.test.ts", "packages/rex/src/check/index.ts", "packages/rex/src/cli/commands/check.ts", "packages/rex/src/server/flow.ts", "packages/rex/src/server/flow.test.ts", "packages/rex/src/client/agent/flow.test.tsx", "examples/demo/app/pages/portfolio"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/list.test.tsx src/check/runtime.test.ts src/server/flow.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.5.7]
+title = "Convert the remaining server, client and Vite errors to catalogued codes"
+status = "pending"
+mode = "BUILD"
+wave = 5
+requires = ["5.6"]
+reqs = ["13.1"]
+do_1 = "Convert every throw in server/, client/ and vite/ to RexError with a catalogued code, adding codes to core/errors.ts where missing, and regenerate docs/errors.md; the test asserts no bare Error throw remains in those directories by scanning the sources."
+touches = ["packages/rex/src/server", "packages/rex/src/client", "packages/rex/src/vite", "packages/rex/src/core/errors.ts", "packages/rex/src/core/errors.test.ts", "docs/errors.md"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/errors.test.ts && node tools/docs-errors.mjs --check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.6.1]
+title = "Core Web Vitals and Lighthouse gate on the built demo"
+status = "pending"
+mode = "BUILD"
+wave = 6
+requires = ["5.7"]
+reqs = ["34.1", "34.2"]
+do_1 = "Add examples/demo/e2e/vitals.spec.ts measuring LCP, CLS and INP with the web-vitals attribution build on every page (including an interaction) with the thresholds in [design] vitals_gate, and e2e/lighthouse.ts running lighthouse programmatically per page with the score thresholds; both write JSON to e2e/report; add a test:vitals script and the dependencies."
+touches = ["examples/demo/e2e/vitals.spec.ts", "examples/demo/e2e/lighthouse.ts", "examples/demo/e2e/report", "examples/demo/package.json", "examples/demo/playwright.config.ts", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C examples/demo test:vitals"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.6.2]
+title = "Demo on every 0.2 capability with the operability, no-JS, axe and vitals walks green"
+status = "pending"
+mode = "BUILD"
+wave = 6
+requires = ["6.1"]
+reqs = ["35.1", "8.5", "11.5", "22.2", "30.2", "10.3"]
+do_1 = "Extend the demo per [req.35] ac_1: a static About page, an ssg Tokens page with revalidate, loaders on portfolio, ActionForm on send, a shared store, Img and fonts, two locales with a switch, and a web-component embed example page; regenerate .rex/manifest.json and AGENTS.md."
+do_2 = "Extend e2e/operability.spec.ts for loaders, forms, static zero-JS assertion, stylesheet order, the text renderer and the CSP console check; add e2e/nojs.spec.ts running the send flow with JavaScript disabled and asserting the audit record; make the demo test script run check, operability, nojs, axe and vitals."
+touches = ["examples/demo/", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C examples/demo test"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.6.3]
+title = "Release 0.2.0"
+status = "pending"
+mode = "BUILD"
+wave = 6
+requires = ["6.2"]
+reqs = ["35.2", "4.3"]
+do_1 = "Set version 0.2.0, write the CHANGELOG 0.2.0 entry from the git log grouped by area, add the standards table to README.md with every [standard.*] item and its status, regenerate docs/api and docs/errors, and verify the pack test and the link check."
+touches = ["packages/rex/package.json", "CHANGELOG.md", "README.md", "docs/api", "docs/errors.md", "packages/rex/src/cli/pack.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/pack.test.ts && node tools/check-links.mjs && node tools/docs-api.mjs --check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
