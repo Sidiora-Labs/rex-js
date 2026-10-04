@@ -227,7 +227,7 @@ status  = "pending"
 
 [task.0.1]
 title = "Scaffold the pnpm workspace and the @sidioralabs/rex package"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = []
@@ -247,7 +247,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.2]
 title = "Implement deterministic identifiers and schema field helpers"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.1"]
@@ -266,7 +266,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.3]
 title = "Implement the Entity primitive, the store adapter interface and the memory store"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.2"]
@@ -285,7 +285,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.4]
 title = "Implement the Policy primitive and evaluation"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.2"]
@@ -304,7 +304,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.5]
 title = "Implement the Action primitive and the declaration registry"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.3", "0.4"]
@@ -323,7 +323,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.6]
 title = "Implement the Page declaration, data states and the states module contract"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.5"]
@@ -343,7 +343,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.7]
 title = "Implement manifest types, the manifest builder and the sidecar JSON schema"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.6"]
@@ -362,7 +362,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.8]
 title = "Implement the Flow primitive with a journal and approval gates"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.5"]

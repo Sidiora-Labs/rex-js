@@ -1,6 +1,7 @@
 {
   "name": "rex-js",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.27.0",
   "engines": { "node": ">=22" },
   "scripts": {
@@ -11,6 +12,8 @@
     "dev": "pnpm --filter demo dev"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
   }
 }

@@ -1,7 +1,11 @@
 node_modules
 dist
-.rex/
 *.log
+*.tsbuildinfo
 .DS_Store
 .codegraph/
 .claude/settings.local.json
+test-results/
+playwright-report/
+e2e/report/
+*.kvx.lock

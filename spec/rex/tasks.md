@@ -7,44 +7,44 @@
 ## Wave 0
 
 - [ ] 0. Foundation: workspace, core primitives, manifest
-  - [ ] 0.1 Scaffold the pnpm workspace and the @sidioralabs/rex package
+  - [x] 0.1 Scaffold the pnpm workspace and the @sidioralabs/rex package
     - Finalize root package.json, pnpm-workspace.yaml, tsconfig.base.json, .npmrc and .gitignore for a pnpm 10 workspace with packages/* and examples/*; pin typescript ^5.9, vitest ^5, tsx ^4.
     - Create packages/rex/package.json named @sidioralabs/rex with type module, bin rex -> dist/cli/index.js, and the complete subpath exports map for ., ./client, ./server, ./vite and ./check pointing at src during development and dist after build; add typecheck, test and build scripts.
     - Create packages/rex/tsconfig.json extending the base with jsx react-jsx, packages/rex/vitest.config.ts with happy-dom for tsx tests, and packages/rex/src/index.ts exporting the core entry.
     - Create examples/demo/package.json named demo with dev, build, check and test scripts calling the rex bin, examples/demo/tsconfig.json, and examples/demo/index.html; run pnpm install and commit the lockfile.
     - _Requirements: 1.1, 1.2, 1.3, 14.1, 14.2, 14.3_
-  - [ ] 0.2 Implement deterministic identifiers and schema field helpers
+  - [x] 0.2 Implement deterministic identifiers and schema field helpers
     - Implement src/core/ids.ts: validateName (lowercase, digits, dot and dash, no leading digit), pageId, actionId, regionAddress(page, region), actionAddress(page, action), overlayAddress(page, overlay), pageAddress(page); addresses are pure functions of names.
     - Implement src/core/schema.ts: re-export zod as z, field helpers id(), text(), money(), integer(), boolean(), enumOf(), ref(entity), timestamp(); toJsonSchema(schema) producing draft 2020-12 JSON Schema for sidecar and manifest use.
     - Write src/core/ids.test.ts and src/core/schema.test.ts covering valid and invalid names, address stability across calls, and JSON schema output for every field helper.
     - _Requirements: 1.1, 1.2, 1.3, 7.1, 7.2, 7.3, 7.4, 7.5, 21.1, 21.2, 21.3_
-  - [ ] 0.3 Implement the Entity primitive, the store adapter interface and the memory store
+  - [x] 0.3 Implement the Entity primitive, the store adapter interface and the memory store
     - Implement src/core/entity.ts: entity(name, {fields, label, key}) returning schema (zod object), type inference helper, jsonSchema, label function and key field; malformed declarations throw naming the field.
     - Implement src/core/store.ts: Store interface with get(id), list({filter, page, size}), put(record), delete(id) and a bind(entity, store) helper; implement src/core/store.memory.ts as the in-memory adapter.
     - Implement src/core/store.conformance.ts exporting runStoreConformance(makeStore) used by every adapter test; write src/core/entity.test.ts and src/core/store.memory.test.ts that run the conformance suite against the memory store.
     - _Requirements: 1.1, 1.2, 1.3, 21.1, 21.2, 21.3_
-  - [ ] 0.4 Implement the Policy primitive and evaluation
+  - [x] 0.4 Implement the Policy primitive and evaluation
     - Implement src/core/policy.ts: policy(name, {permissions, resolve(actor) -> granted set}); predicates requires({unlocked, account, custody, permissions}), can(permission), allOf, anyOf, always, never; evaluate(predicate, actor) -> {allowed, reason} with a stable reason code per failing clause.
     - Define the Actor type (id, roles, permissions, attributes) and the anonymous actor; evaluation is pure and identical on server and client.
     - Write src/core/policy.test.ts covering every predicate, combination, reason codes and the anonymous actor.
     - _Requirements: 1.1, 1.2, 1.3, 15.1, 15.2, 15.3_
-  - [ ] 0.5 Implement the Action primitive and the declaration registry
+  - [x] 0.5 Implement the Action primitive and the declaration registry
     - Implement src/core/action.ts: action(id, {input, output, policy, effect: reversible|irreversible|read, label, shortcut, invalidates, handler}) returning a frozen ActionDeclaration with inferred Input and Output types; validate id with validateName and shortcut syntax (mod, shift, alt plus one key).
     - Implement src/core/registry.ts: createRegistry() collecting entities, actions, pages, policies and flows; register throws on duplicate id; freeze() returns an immutable snapshot with deterministic ordering by id.
     - Write src/core/action.test.ts and src/core/registry.test.ts covering type inference, invalid ids and shortcuts, duplicate detection and ordering.
     - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
-  - [ ] 0.6 Implement the Page declaration, data states and the states module contract
+  - [x] 0.6 Implement the Page declaration, data states and the states module contract
     - Implement src/core/page.ts: page(id, {route, params, policy, recovery, draft: route|session|none, actions, chrome: {header, nav, back, title}, regions, overlays, states}) returning a frozen PageDeclaration; validate region and overlay names, route syntax and that recovery names a page id.
     - Export the closed RexDataState union of the nine states, the StatesModule type that requires one export per declared state (ready excluded, provided by view.tsx), and the StateProps type (params, retry, error).
     - Export the OverlayDeclaration type (id, dismiss: escape|button|both, binding: region|url) with no React dependency.
     - Write src/core/page.test.ts covering validation errors, default states, chrome defaults and the StatesModule type through expectTypeOf.
     - _Requirements: 1.1, 1.2, 1.3, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 6.1, 6.2, 6.3, 6.4, 6.5, 22.1, 22.2, 22.3_
-  - [ ] 0.7 Implement manifest types, the manifest builder and the sidecar JSON schema
+  - [x] 0.7 Implement manifest types, the manifest builder and the sidecar JSON schema
     - Implement src/manifest/types.ts: Manifest with version, app, entities, actions, pages (route, params JSON schema, chrome, regions, overlays, states, actions), policies, flows; every array sorted by id.
     - Implement src/manifest/build.ts: buildManifest(registry) producing a deterministic manifest and stableStringify for byte-identical output; implement src/manifest/sidecar.schema.ts exporting the JSON Schema for the application/rex+json payload and a validateSidecar function.
     - Write src/manifest/build.test.ts covering ordering determinism, JSON schema emission for params and inputs, and sidecar schema acceptance and rejection cases.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 11.1, 11.2, 11.3_
-  - [ ] 0.8 Implement the Flow primitive with a journal and approval gates
+  - [x] 0.8 Implement the Flow primitive with a journal and approval gates
     - Implement src/core/flow.ts: flow(id, {steps, journal}) where a step is {action, input(ctx)} or {approval, label, approvers policy}; FlowDeclaration is frozen and validated.
     - Implement src/core/journal.ts with the Journal interface (open, record, load, list) and the in-memory journal; implement runFlow(flow, instanceId, ctx) that executes from the first incomplete step, pauses at an approval gate, and resumes or terminates on decide(instanceId, approve|reject, actor).
     - Write src/core/flow.test.ts covering completion, restart from a partial journal, approval pause and resume, rejection termination and duplicate decision refusal.
