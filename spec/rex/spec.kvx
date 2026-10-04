@@ -798,7 +798,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.4.4]
 title = "Implement rex new and rex promote"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 4
 requires = ["4.3", "3.6"]
@@ -819,7 +819,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.4.5]
 title = "Implement rex dev, build, check and manifest commands"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 4
 requires = ["4.1", "4.2", "1.4", "2.7", "3.6"]

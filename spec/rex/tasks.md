@@ -168,14 +168,14 @@
     - Implement src/cli/commands/make.ts: rex make page <id> --regions a,b --overlays X,Y writing the full page folder; rex make region|part|overlay <page> <name>; rex make action|entity|policy|flow <name>; rex make hook <page> <name>; every command refuses to overwrite and reports each written path.
     - Write src/cli/make.test.ts generating into a temporary directory and asserting the exact file set, the page.ts declaration contents and the overwrite refusal.
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
-  - [ ] 4.4 Implement rex new and rex promote
+  - [x] 4.4 Implement rex new and rex promote
     - Implement src/cli/commands/new.ts: rex new <name> writing a complete app (package.json, tsconfig, index.html, rex.config.ts, app/ with one home page, one entity, one action, one policy, app/components, app/data) that passes rex check with zero findings.
     - Implement src/cli/commands/promote.ts: rex promote <page>/regions/<region>/parts/<Part> moving the file to app/components/<Part>.tsx and rewriting imports within the source page.
     - Add src/vite/rex-app.d.ts declaring the ambient module rex:app with default and named exports typed by RexAppBundle, reference it from src/vite/index.ts with a triple-slash directive, and have the generated app tsconfig include it so rex new passes typecheck (closes qualification.2 from wave 4).
     - Export the wave 2 client modules (router, nav, act, outcome, states, page, layout, shell) from src/client/index.ts and runCheck plus defaultRules from src/check/index.ts so generated apps and the CLI import them from the package entries (closes qualification.5 and qualification.7).
     - Write src/cli/new.test.ts generating an app into a temporary directory, running runCheck on it and asserting zero findings, then promoting a part and asserting the move and rewritten import.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 13.1, 13.2, 13.3, 13.4_
-  - [ ] 4.5 Implement rex dev, build, check and manifest commands
+  - [x] 4.5 Implement rex dev, build, check and manifest commands
     - Implement src/cli/commands/dev.ts starting one Vite dev server with the rex plugin and the app's Hono server mounted; src/cli/commands/build.ts building the client with Vite and bundling the server entry into dist with the client directory; both run runCheck first and stop on error findings unless --no-check.
     - Implement src/cli/commands/check.ts (--json) and src/cli/commands/manifest.ts calling runCheck and writeManifest and returning their exit codes.
     - Replace the top-level await in src/cli/index.ts with an explicit main guard so command modules can import it without running the CLI (closes qualification.4), and give the tsx-spawning tests in src/cli/cli.test.ts a 30 second timeout because they exceed 5 seconds under full-suite load.

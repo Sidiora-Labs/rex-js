@@ -1,0 +1,327 @@
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { Command } from "commander";
+import { validateName } from "../../core/ids.ts";
+import { titleFromId } from "../../core/page.ts";
+import { REX_VERSION } from "../../index.ts";
+import type { RexCliIO } from "../index.ts";
+import {
+  CLIENT_IMPORT,
+  CORE_IMPORT,
+  actionTemplate,
+  appPaths,
+  entityTemplate,
+  pageTemplate,
+  policyTemplate,
+  statesTemplate,
+  viewTemplate,
+} from "../templates.ts";
+import { INVALID_ARGUMENT, MAKE_REFUSED, MakeError, writePlan, type PlannedEntry } from "./make.ts";
+
+export const SERVER_IMPORT = "@sidioralabs/rex/server";
+export const REX_PACKAGE = "@sidioralabs/rex";
+export const APP_MODULE_TYPES = "rex-app.d.ts";
+export const CONFIG_FILE = "rex.config.ts";
+
+export const HOME_PAGE = "home";
+export const HOME_REGION = "welcome";
+export const HOME_PART = "Welcome";
+export const HOME_HOOK = "useNotes";
+export const APP_ENTITY = "note";
+export const APP_ACTION = "ping";
+export const APP_POLICY = "viewer";
+export const APP_DATA = "notes";
+export const APP_COMPONENT = "Button";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const packageRoot = resolve(here, "..", "..", "..");
+const viteDir = resolve(here, "..", "..", "vite");
+
+interface PackageManifest {
+  readonly dependencies?: Readonly<Record<string, string>>;
+  readonly devDependencies?: Readonly<Record<string, string>>;
+  readonly peerDependencies?: Readonly<Record<string, string>>;
+}
+
+function rexPackage(): PackageManifest {
+  return JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as PackageManifest;
+}
+
+function versionOf(manifest: PackageManifest, name: string): string {
+  const version =
+    manifest.dependencies?.[name] ??
+    manifest.devDependencies?.[name] ??
+    manifest.peerDependencies?.[name];
+  if (version === undefined) {
+    throw new Error(`rex new: ${REX_PACKAGE} does not pin a version of ${name}`);
+  }
+  return version;
+}
+
+export function appModuleTypesPath(): string {
+  const fromPackage = relative(packageRoot, join(viteDir, APP_MODULE_TYPES)).split("\\").join("/");
+  return `node_modules/${REX_PACKAGE}/${fromPackage}`;
+}
+
+function json(value: unknown): string {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+function lines(...parts: readonly (string | readonly string[])[]): string {
+  return `${parts.flat().join("\n")}\n`;
+}
+
+export function packageJsonTemplate(name: string): string {
+  const rex = rexPackage();
+  return json({
+    name,
+    version: "0.1.0",
+    private: true,
+    type: "module",
+    scripts: {
+      dev: "rex dev",
+      build: "rex build",
+      check: "rex check",
+      manifest: "rex manifest",
+      start: "node dist/server.js",
+    },
+    dependencies: {
+      [REX_PACKAGE]: `^${REX_VERSION}`,
+      "@tanstack/react-query": versionOf(rex, "@tanstack/react-query"),
+      react: versionOf(rex, "react"),
+      "react-dom": versionOf(rex, "react-dom"),
+    },
+    devDependencies: {
+      "@types/node": versionOf(rex, "@types/node"),
+      "@types/react": versionOf(rex, "@types/react"),
+      "@types/react-dom": versionOf(rex, "@types/react-dom"),
+      typescript: versionOf(rex, "typescript"),
+    },
+  });
+}
+
+export function tsconfigTemplate(): string {
+  return json({
+    compilerOptions: {
+      target: "ES2022",
+      module: "ESNext",
+      moduleResolution: "Bundler",
+      moduleDetection: "force",
+      lib: ["ES2022", "DOM", "DOM.Iterable"],
+      jsx: "react-jsx",
+      types: ["node"],
+      strict: true,
+      noUncheckedIndexedAccess: true,
+      exactOptionalPropertyTypes: true,
+      noFallthroughCasesInSwitch: true,
+      noImplicitOverride: true,
+      verbatimModuleSyntax: true,
+      isolatedModules: true,
+      skipLibCheck: true,
+      resolveJsonModule: true,
+      esModuleInterop: true,
+      forceConsistentCasingInFileNames: true,
+      allowImportingTsExtensions: true,
+      noEmit: true,
+    },
+    include: ["app", CONFIG_FILE, appModuleTypesPath()],
+  });
+}
+
+export function indexHtmlTemplate(name: string): string {
+  return lines(
+    "<!doctype html>",
+    '<html lang="en">',
+    "  <head>",
+    '    <meta charset="UTF-8" />',
+    '    <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+    `    <title>${titleFromId(name)}</title>`,
+    "  </head>",
+    "  <body>",
+    '    <div id="root"></div>',
+    '    <script type="module" src="/@rex/entry"></script>',
+    "  </body>",
+    "</html>",
+  );
+}
+
+export function configTemplate(): string {
+  return lines(
+    `import { anonymousActor } from "${CORE_IMPORT}";`,
+    `import { createRexServer, memoryLedger } from "${SERVER_IMPORT}";`,
+    'import app from "rex:app";',
+    "",
+    "export default createRexServer({",
+    "  registry: app.registry,",
+    "  ledger: memoryLedger(),",
+    "  actor: () => anonymousActor,",
+    "  app: app.name,",
+    "});",
+  );
+}
+
+export function dataTemplate(): string {
+  return lines(
+    `import { bind, memoryStore } from "${CORE_IMPORT}";`,
+    `import { ${APP_ENTITY} } from "../entities/${APP_ENTITY}.ts";`,
+    "",
+    `export const ${APP_DATA} = bind(`,
+    `  ${APP_ENTITY},`,
+    `  memoryStore(${APP_ENTITY}, [{ id: "welcome", name: "Welcome to Rex" }]),`,
+    ");",
+  );
+}
+
+export function componentTemplate(): string {
+  return lines(
+    'import type { ButtonHTMLAttributes } from "react";',
+    "",
+    `export default function ${APP_COMPONENT}(props: ButtonHTMLAttributes<HTMLButtonElement>) {`,
+    '  return <button type="button" {...props} />;',
+    "}",
+  );
+}
+
+export function homeHookTemplate(): string {
+  return lines(
+    'import { useQuery } from "@tanstack/react-query";',
+    `import { ${APP_DATA} } from "../../../data/${APP_DATA}.ts";`,
+    "",
+    `export function ${HOME_HOOK}() {`,
+    "  return useQuery({",
+    `    queryKey: [${JSON.stringify(APP_DATA)}],`,
+    `    queryFn: async () => (await ${APP_DATA}.list()).items,`,
+    "  });",
+    "}",
+  );
+}
+
+export function homeRegionTemplate(): string {
+  return lines(
+    `import { actionLabel, region } from "${CLIENT_IMPORT}";`,
+    `import { ${APP_ACTION} } from "../../../../actions/${APP_ACTION}.ts";`,
+    `import { ${HOME_HOOK} } from "../../hooks/${HOME_HOOK}.ts";`,
+    `import ${HOME_PART} from "./parts/${HOME_PART}.tsx";`,
+    "",
+    `export default region(${JSON.stringify(HOME_REGION)}, ({ act }) => {`,
+    `  const ${APP_DATA} = ${HOME_HOOK}();`,
+    `  const handle = act(${APP_ACTION});`,
+    "  return (",
+    `    <${HOME_PART}`,
+    `      notes={${APP_DATA}.data ?? []}`,
+    "      actionLabel={actionLabel(handle.action)}",
+    "      control={handle.controlProps}",
+    "      onAction={() => {",
+    "        void handle.run({});",
+    "      }}",
+    "    />",
+    "  );",
+    "});",
+  );
+}
+
+export function homePartTemplate(): string {
+  return lines(
+    `import type { ActControlProps } from "${CLIENT_IMPORT}";`,
+    `import ${APP_COMPONENT} from "../../../../../components/${APP_COMPONENT}.tsx";`,
+    "",
+    `export default function ${HOME_PART}(props: {`,
+    "  readonly notes: readonly { readonly id: string; readonly name: string }[];",
+    "  readonly actionLabel: string;",
+    "  readonly control: ActControlProps;",
+    "  readonly onAction: () => void;",
+    "}) {",
+    "  return (",
+    "    <div>",
+    "      <ul>",
+    "        {props.notes.map((note) => (",
+    "          <li key={note.id}>{note.name}</li>",
+    "        ))}",
+    "      </ul>",
+    `      <${APP_COMPONENT} {...props.control} onClick={props.onAction}>`,
+    "        {props.actionLabel}",
+    `      </${APP_COMPONENT}>`,
+    "    </div>",
+    "  );",
+    "}",
+  );
+}
+
+function file(path: string, content: string): PlannedEntry {
+  return { kind: "file", path, content };
+}
+
+function dir(path: string): PlannedEntry {
+  return { kind: "dir", path };
+}
+
+export function newAppPlan(name: string): readonly PlannedEntry[] {
+  const page = HOME_PAGE;
+  return [
+    file("package.json", packageJsonTemplate(name)),
+    file("tsconfig.json", tsconfigTemplate()),
+    file("index.html", indexHtmlTemplate(name)),
+    file(CONFIG_FILE, configTemplate()),
+    file(appPaths.entity(APP_ENTITY), entityTemplate({ name: APP_ENTITY })),
+    file(appPaths.policy(APP_POLICY), policyTemplate({ name: APP_POLICY })),
+    file(appPaths.action(APP_ACTION), actionTemplate({ name: APP_ACTION })),
+    file(`app/data/${APP_DATA}.ts`, dataTemplate()),
+    file(`app/components/${APP_COMPONENT}.tsx`, componentTemplate()),
+    file(
+      appPaths.page(page),
+      pageTemplate({ id: page, route: "/", actions: [APP_ACTION], regions: [HOME_REGION] }),
+    ),
+    file(appPaths.view(page), viewTemplate({ page, regions: [HOME_REGION] })),
+    file(appPaths.states(page), statesTemplate({ page })),
+    file(appPaths.hook(page, HOME_HOOK), homeHookTemplate()),
+    file(appPaths.region(page, HOME_REGION), homeRegionTemplate()),
+    file(appPaths.part(page, HOME_REGION, HOME_PART), homePartTemplate()),
+    dir(appPaths.testDir(page)),
+  ];
+}
+
+function isNonEmptyDirectory(target: string): boolean {
+  if (!existsSync(target)) return false;
+  if (!statSync(target).isDirectory()) return true;
+  return readdirSync(target).length > 0;
+}
+
+export function newApp(cwd: string, name: string): string[] {
+  let appName: string;
+  try {
+    appName = validateName(name, "app name");
+  } catch (error) {
+    throw new MakeError(INVALID_ARGUMENT, (error as Error).message);
+  }
+  const root = join(cwd, appName);
+  if (isNonEmptyDirectory(root)) {
+    throw new MakeError(
+      MAKE_REFUSED,
+      `refusing to write into ${appName}: it already exists and is not an empty folder`,
+    );
+  }
+  return writePlan(root, newAppPlan(appName)).map((path) => `${appName}/${path}`);
+}
+
+export function register(program: Command, io: RexCliIO): void {
+  const command: Command = program
+    .command("new")
+    .description("write a complete Rex app into a new folder")
+    .argument("<name>", "app name: lowercase letters, digits, dot and dash")
+    .action((name: string) => {
+      let written: string[];
+      try {
+        written = newApp(io.cwd, name);
+      } catch (error) {
+        if (error instanceof MakeError) {
+          command.error(`rex new: ${error.message}`, {
+            code: error.code,
+            exitCode: error.exitCode,
+          });
+        }
+        throw error;
+      }
+      for (const path of written) io.out(`wrote ${path}\n`);
+    });
+}
