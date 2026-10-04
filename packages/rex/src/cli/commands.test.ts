@@ -640,7 +640,7 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     temporary.push(empty);
     const manifest = await cli(empty, "manifest");
     expect(manifest.code).toBe(EXIT_FAILURE);
-    expect(manifest.err).toContain("rex manifest: manifest scan");
+    expect(manifest.err).toContain("rex manifest: REX500 manifest scan");
     const build = await cli(empty, "build", "--no-check");
     expect(build.code).toBe(EXIT_FAILURE);
     expect(build.err).toContain("rex.config.ts is missing");

@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { action } from "../../core/action.ts";
 import { actor } from "../../core/actor.ts";
 import { REX_ERRORS_DOCS_BASE } from "../../core/errors.ts";
+import { REX_ERROR_DOCS, errorHint } from "../../core/errors.docs.ts";
 import { page } from "../../core/page.ts";
 import { always } from "../../core/policy.ts";
 import { boolean } from "../../core/schema.ts";
@@ -71,9 +72,12 @@ function rexApp(app: string) {
 }
 
 function rpcClient(url: string, fetchImpl?: (request: Request) => Promise<Response>) {
+  const headers = { origin: new URL(url).origin };
   const client: RegistryRouterClient<typeof source> = createORPCClient(
     new RPCLink(
-      fetchImpl === undefined ? { url } : { url, fetch: (request) => fetchImpl(request) },
+      fetchImpl === undefined
+        ? { url, headers }
+        : { url, headers, fetch: (request) => fetchImpl(request) },
     ),
   );
   return client;
@@ -211,6 +215,7 @@ describe("node adapter", () => {
   it("is re-exported from rex/server/node unchanged", () => {
     expect(legacyNode.startNodeServer).toBe(nodeAdapter.startNodeServer);
     expect(legacyNode.createNodeApp).toBe(nodeAdapter.createNodeApp);
+    expect(legacyNode.createPrerenderedNodeApp).toBe(nodeAdapter.createNodeApp);
     expect(legacyNode.isApiPath).toBe(nodeAdapter.isApiPath);
     expect(legacyNode.isPageRoutePath).toBe(nodeAdapter.isPageRoutePath);
   });
@@ -249,7 +254,9 @@ describe("bun adapter", () => {
     expect(error.runtime).toBe("Bun");
     expect(error.message).toMatch(/^REX450 startBunServer: the Bun runtime global is absent/);
     expect(error.docs).toBe(`${REX_ERRORS_DOCS_BASE}/REX450`);
-    expect(error.hint).toContain("bun");
+    expect(error.hint).toBeNull();
+    expect(errorHint(error)).toBe(REX_ERROR_DOCS.REX450.hint);
+    expect(errorHint(error)).toContain("bun");
   });
 
   it("hands the Rex fetch handler to Bun.serve when the global exists", async () => {
@@ -299,7 +306,9 @@ describe("deno adapter", () => {
     expect(error.code).toBe("REX450");
     expect(error.runtime).toBe("Deno");
     expect(error.message).toMatch(/^REX450 startDenoServer: the Deno runtime global is absent/);
-    expect(error.hint).toContain("deno");
+    expect(error.hint).toBeNull();
+    expect(errorHint(error)).toBe(REX_ERROR_DOCS.REX450.hint);
+    expect(errorHint(error)).toContain("deno");
   });
 
   it("hands the Rex fetch handler to Deno.serve when the global exists", async () => {

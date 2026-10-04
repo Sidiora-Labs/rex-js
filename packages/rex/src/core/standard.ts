@@ -55,11 +55,11 @@ export type AsZodSchema<S extends StandardSchemaV1> = S extends ZodSchemaLike
   ? S
   : zm.ZodMiniType<StandardInferOutput<S>, StandardInferInput<S>>;
 
-export class StandardValidationError extends Error {
+export class StandardValidationError extends RexError {
   readonly issues: readonly StandardIssue[];
 
   constructor(issues: readonly StandardIssue[]) {
-    super(formatIssues(issues));
+    super("REX332", formatIssues(issues));
     this.name = "StandardValidationError";
     this.issues = issues;
   }
@@ -125,7 +125,7 @@ function issueKeys(issue: StandardIssue): PropertyKey[] {
 export function fromStandard<S extends StandardSchemaV1>(schema: S): AsZodSchema<S> {
   if (isZodSchema(schema)) return schema as AsZodSchema<S>;
   if (!isStandardSchema(schema)) {
-    throw new TypeError("fromStandard: the value does not implement the Standard Schema v1 interface");
+    throw new RexError("REX329", "fromStandard: the value does not implement the Standard Schema v1 interface");
   }
   const adapter = zm.pipe(
     zm.unknown(),

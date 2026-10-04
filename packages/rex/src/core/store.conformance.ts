@@ -3,6 +3,8 @@ import { entity, type InferEntity } from "./entity.ts";
 import { boolean, enumOf, id, integer, money, ref, text, timestamp } from "./schema.ts";
 import { MAX_PAGE_SIZE, type Store } from "./store.ts";
 
+const invalidArgument = expect.objectContaining({ name: "RexError", code: "REX329" });
+
 export const conformanceEntity = entity("conformance-item", {
   fields: {
     id: id(),
@@ -140,15 +142,15 @@ export function runStoreConformance(name: string, makeStore: MakeStore): void {
     });
 
     it("rejects invalid paging", async () => {
-      await expect(store.list({ page: 0 })).rejects.toThrow(RangeError);
-      await expect(store.list({ page: 1.5 })).rejects.toThrow(RangeError);
-      await expect(store.list({ size: 0 })).rejects.toThrow(RangeError);
-      await expect(store.list({ size: MAX_PAGE_SIZE + 1 })).rejects.toThrow(RangeError);
+      await expect(store.list({ page: 0 })).rejects.toThrow(invalidArgument);
+      await expect(store.list({ page: 1.5 })).rejects.toThrow(invalidArgument);
+      await expect(store.list({ size: 0 })).rejects.toThrow(invalidArgument);
+      await expect(store.list({ size: MAX_PAGE_SIZE + 1 })).rejects.toThrow(invalidArgument);
     });
 
     it("rejects an empty id", async () => {
-      await expect(store.get("")).rejects.toThrow(TypeError);
-      await expect(store.delete("")).rejects.toThrow(TypeError);
+      await expect(store.get("")).rejects.toThrow(invalidArgument);
+      await expect(store.delete("")).rejects.toThrow(invalidArgument);
     });
 
     it("isolates stored records from caller mutation", async () => {

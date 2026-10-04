@@ -1,3 +1,5 @@
+import { RexError } from "./errors.ts";
+
 export interface ActorAttributes {
   readonly unlocked?: boolean;
   readonly account?: string;
@@ -27,21 +29,21 @@ function stringList(field: string, value: readonly string[] | undefined): readon
     !Array.isArray(value) ||
     value.some((item) => typeof item !== "string" || item.length === 0)
   ) {
-    throw new TypeError(`actor: ${field} must be an array of non-empty strings`);
+    throw new RexError("REX329", `actor: ${field} must be an array of non-empty strings`);
   }
   return Object.freeze([...new Set(value)]);
 }
 
 export function actor(input: ActorInput): Actor {
   if (typeof input !== "object" || input === null) {
-    throw new TypeError("actor: expected an actor object");
+    throw new RexError("REX329", "actor: expected an actor object");
   }
   if (typeof input.id !== "string" || input.id.length === 0) {
-    throw new TypeError("actor: id must be a non-empty string");
+    throw new RexError("REX329", "actor: id must be a non-empty string");
   }
   const attributes = input.attributes ?? {};
   if (typeof attributes !== "object" || attributes === null || Array.isArray(attributes)) {
-    throw new TypeError("actor: attributes must be an object");
+    throw new RexError("REX329", "actor: attributes must be an object");
   }
   return Object.freeze({
     id: input.id,

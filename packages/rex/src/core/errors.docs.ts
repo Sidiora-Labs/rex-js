@@ -217,6 +217,15 @@ export const REX_ERROR_DOCS = {
   REX331: {
     hint: "Pass params the page's params schema accepts; rex manifest lists the params of every page.",
   },
+  REX332: {
+    hint: "Pass a value the schema accepts; the message lists each issue with the path of the field it concerns.",
+  },
+  REX333: {
+    hint: "Decide only on a flow instance that is paused at an approval gate; the flow status shows the pending gate, and a gate is decided once.",
+  },
+  REX334: {
+    hint: "Decide the gate as an actor its approvers policy allows; the error reason names the missing permission or condition.",
+  },
   REX400: {
     hint: "Pass createRexServer and the server helpers the options they document; the message names the function and the option.",
   },
@@ -298,6 +307,12 @@ export const REX_ERROR_DOCS = {
   },
   REX603: {
     hint: "Reinstall @sidioralabs/rex; its package.json pins every version rex new writes into a new app.",
+  },
+  REX604: {
+    hint: "Run rex --help, or rex <command> --help, for the commands, arguments and options each command accepts.",
+  },
+  REX605: {
+    hint: "Fix what the message names, such as an existing file or a missing page, and run the command again.",
   },
   REX610: {
     hint: "Replace the placeholder the codemod wrote, such as Img width and height, with the real values and run rex check.",

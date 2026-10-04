@@ -38,7 +38,9 @@ describe("escapeInlineJson", () => {
   });
 
   it("refuses values without a JSON representation", () => {
-    expect(() => escapeInlineJson(undefined)).toThrow(TypeError);
+    expect(() => escapeInlineJson(undefined)).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX329" }),
+    );
   });
 
   it("is the serialisation the sidecar script uses", () => {
