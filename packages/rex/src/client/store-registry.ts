@@ -1,4 +1,10 @@
-import { useSyncExternalStore } from "react";
+import {
+  createContext,
+  createElement,
+  useContext,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { RexError } from "../core/errors.ts";
 import type { RexStore } from "./store.ts";
 
@@ -18,7 +24,12 @@ export function toJsonValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export function createStoreRegistry(): StoreRegistry {
+export interface StoreRegistryOptions {
+  readonly follow?: boolean;
+}
+
+export function createStoreRegistry(options: StoreRegistryOptions = {}): StoreRegistry {
+  const follow = options.follow ?? true;
   const entries = new Map<string, RexStore<unknown>>();
   const detach = new Map<string, () => void>();
   let listeners: readonly Listener[] = [];
@@ -38,7 +49,7 @@ export function createStoreRegistry(): StoreRegistry {
         );
       }
       entries.set(entry.id, entry);
-      const unsubscribe = entry.expose ? entry.subscribe(notify) : () => {};
+      const unsubscribe = follow && entry.expose ? entry.subscribe(notify) : () => {};
       detach.set(entry.id, unsubscribe);
       if (entry.expose) notify();
       return () => {
@@ -79,10 +90,30 @@ export function createStoreRegistry(): StoreRegistry {
 
 export const defaultStoreRegistry: StoreRegistry = createStoreRegistry();
 
+export const StoreRegistryContext = createContext<StoreRegistry>(defaultStoreRegistry);
+StoreRegistryContext.displayName = "RexStoreRegistry";
+
+export interface StoreRegistryProviderProps {
+  readonly registry: StoreRegistry;
+  readonly children?: ReactNode;
+}
+
+export function StoreRegistryProvider({ registry, children }: StoreRegistryProviderProps) {
+  return createElement(StoreRegistryContext.Provider, { value: registry }, children);
+}
+
+export function useStoreRegistry(): StoreRegistry {
+  return useContext(StoreRegistryContext);
+}
+
+export function useRenderedStore(entry: RexStore<unknown>): void {
+  const registry = useStoreRegistry();
+  if (registry !== defaultStoreRegistry && registry.get(entry.id) !== entry) {
+    registry.register(entry);
+  }
+}
+
 export function useExposedStores(): Readonly<Record<string, unknown>> {
-  return useSyncExternalStore(
-    defaultStoreRegistry.subscribe,
-    defaultStoreRegistry.exposed,
-    defaultStoreRegistry.exposed,
-  );
+  const registry = useStoreRegistry();
+  return useSyncExternalStore(registry.subscribe, registry.exposed, registry.exposed);
 }
