@@ -253,7 +253,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.1]
 title = "The API reference pages from docs/api"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["2.2", "2.7", "2.8"]
