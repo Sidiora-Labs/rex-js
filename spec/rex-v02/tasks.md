@@ -35,7 +35,7 @@
     - Make cli/commands/build.ts print the chunk table (name, raw, gzip, budget) and exit 1 over budget using the defaults from [design] budgets until 0.7 wires rex.config budgets.
     - Write client/boundary.test.tsx (throwing region recovers and retries; sidecar shows the state) and extend client/page.test.tsx and vite/vite.test.ts (a build emits one chunk per fixture page and the table names them).
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
-  - [ ] 0.6 Enable the React Compiler in the Vite plugin and prove fine-grained re-rendering
+  - [x] 0.6 Enable the React Compiler in the Vite plugin and prove fine-grained re-rendering
     - Add vite/compiler.ts registering babel-plugin-react-compiler through @vitejs/plugin-react when config.compiler is not false, targeting React 19; add babel-plugin-react-compiler as a dev dependency for the tests and keep it an optional peer.
     - Write vite/compiler.test.ts building the fixture app and asserting the compiler runtime import (react/compiler-runtime) appears in a compiled part, and that compiler false leaves it out.
     - Write client/compiler.test.tsx using React Profiler on the fixture page: update one store-like value read by one part and assert only that part commits again.

@@ -580,7 +580,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.6]
 title = "Enable the React Compiler in the Vite plugin and prove fine-grained re-rendering"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.5"]

@@ -23,3 +23,11 @@ symbol = "REX330, sidecarSchema"
 observed = "The region boundary reports code REX330 but the catalog in core/errors.ts (owned by 2.1) has no REX3xx entries, so the code travels as a REGION_ERROR_CODE string; the strict sidecar schema (outside the touches) has no regions field, so a failing region is reported through the existing state (recoverable-error) and outcome (region address and REX330 message) fields; evidence: revision bef8d5c6201c6c9ac828b9362cead824740876ac, command pnpm -C packages/rex exec vitest run src/client/boundary.test.tsx src/client/page.test.tsx src/vite/vite.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.5-verify.log."
 assumption = "Task 2.1 adds REX330 to the catalog so RegionBoundary can raise a RexError, and a sidecar schema owner may add a regions list with per-region state if agents need more than the page state and outcome."
 severity = "note"
+
+[qualification.04]
+task = "0.6"
+file = "packages/rex/src/cli/commands/dev.ts, packages/rex/src/cli/commands/build.ts, packages/rex/src/cli/load.ts"
+symbol = "rex(), RexPluginOptions.compiler, ResolvedRexOptions.compiler"
+observed = "The Vite plugin honours rex({ compiler }) (default on, client environment only, through reactCompilerPreset and @babel/core), but rex dev, rex build and the module loader call rex() without the resolved rex.config.ts compiler flag because those files are outside the 0.6 touches, so compiler: false in rex.config.ts does not yet reach the plugin; evidence: revision c806c05fcb19f5aa4233c30b464bc3337f27dcff, command pnpm -C packages/rex exec vitest run src/vite/compiler.test.ts src/client/compiler.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.6-verify.log."
+assumption = "The task that next owns the dev and build commands passes { compiler: config.compiler } from the loaded config into rex()."
+severity = "assumption"
