@@ -8,15 +8,14 @@ import type {
   LCPMetricWithAttribution,
 } from "web-vitals/attribution";
 import {
-  REPORT_DIR,
   STEP_TIMEOUT,
   blurActive,
-  buildDemo,
   committedManifest,
   invokeBy,
   isStaticPage,
   pageUrl,
   readSidecar,
+  reportDir,
   startDemo,
   waitForSidecar,
   type ManifestPage,
@@ -293,7 +292,6 @@ const reports: VitalsPageReport[] = [];
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async ({ request }) => {
-  buildDemo();
   demo = await startDemo();
   const response = await request.get(new URL("/rex/manifest", demo.url).toString());
   expect(response.ok()).toBe(true);
@@ -310,10 +308,11 @@ function running(): { readonly base: string; readonly manifest: WalkManifest } {
   return { base: demo.url, manifest: served };
 }
 
-function writeVitals(): void {
-  mkdirSync(REPORT_DIR, { recursive: true });
-  const report = { thresholds: THRESHOLDS, density: DENSITY, pages: reports };
-  writeFileSync(join(REPORT_DIR, "vitals.json"), `${JSON.stringify(report, null, 2)}\n`);
+function writeVitals(project: string): void {
+  const dir = reportDir(project);
+  mkdirSync(dir, { recursive: true });
+  const report = { thresholds: THRESHOLDS, density: DENSITY, project, pages: reports };
+  writeFileSync(join(dir, "vitals.json"), `${JSON.stringify(report, null, 2)}\n`);
 }
 
 async function openAndClosePalette(page: Page): Promise<string> {
@@ -465,7 +464,7 @@ test("the served manifest lists the committed pages", () => {
 });
 
 for (const listed of committed.pages) {
-  test(`core web vitals of page ${listed.id}`, async ({ browser }) => {
+  test(`core web vitals of page ${listed.id}`, async ({ browser }, info) => {
     test.setTimeout(240_000);
     const { base, manifest } = running();
     const pageInfo = manifest.pages.find((entry) => entry.id === listed.id);
@@ -473,7 +472,7 @@ for (const listed of committed.pages) {
     if (pageInfo === undefined) return;
     const report = await measurePage(browser, base, manifest, pageInfo);
     reports.push(report);
-    writeVitals();
+    writeVitals(info.project.name);
     expect(report.failures).toEqual([]);
   });
 }

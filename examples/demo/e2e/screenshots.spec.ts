@@ -4,7 +4,6 @@ import { expect, test } from "@playwright/test";
 import {
   REPORT_DIR,
   STEP_TIMEOUT,
-  buildDemo,
   committedManifest,
   pageUrl,
   startDemo,
@@ -20,7 +19,6 @@ let demo: RunningDemo | null = null;
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(() => {
-  buildDemo();
   mkdirSync(SCREENSHOT_DIR, { recursive: true });
 });
 

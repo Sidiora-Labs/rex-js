@@ -8,10 +8,17 @@ const TABLET = {
 };
 const DESKTOP = { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } };
 const EXTERNAL_DEMO_URL = process.env.REX_DEMO_URL;
+const SCREEN_SPECS = [
+  "**/operability.spec.ts",
+  "**/axe.spec.ts",
+  "**/vitals.spec.ts",
+  "**/screen-fit.spec.ts",
+];
 
 export default defineConfig({
   testDir: "./e2e",
   testMatch: ["**/*.spec.ts", "**/lighthouse.ts"],
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -25,8 +32,8 @@ export default defineConfig({
     ...(EXTERNAL_DEMO_URL === undefined ? {} : { baseURL: EXTERNAL_DEMO_URL }),
   },
   projects: [
-    { name: "phone", use: PHONE },
-    { name: "tablet", use: TABLET },
+    { name: "phone", use: PHONE, testMatch: SCREEN_SPECS },
+    { name: "tablet", use: TABLET, testMatch: SCREEN_SPECS },
     { name: "desktop", use: DESKTOP },
   ],
 });

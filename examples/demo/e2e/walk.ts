@@ -171,9 +171,16 @@ export function startDemo(env: Readonly<Record<string, string>> = {}): Promise<R
   });
 }
 
-export function writeReport(name: string, report: PageReport): void {
-  mkdirSync(REPORT_DIR, { recursive: true });
-  writeFileSync(join(REPORT_DIR, `${name}.json`), `${JSON.stringify(report, null, 2)}\n`);
+export const REPORT_PROJECT = "desktop";
+
+export function reportDir(project: string): string {
+  return project === REPORT_PROJECT ? REPORT_DIR : join(REPORT_DIR, project);
+}
+
+export function writeReport(name: string, report: PageReport, project: string): void {
+  const dir = reportDir(project);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, `${name}.json`), `${JSON.stringify(report, null, 2)}\n`);
 }
 
 export function shortcutKeys(shortcut: string): string {
@@ -680,4 +687,133 @@ export function watchLoaderRequests(page: Page, pageInfo: ManifestPage): LoaderR
       return seen;
     },
   };
+}
+
+export const POPUP_TRIGGER_SELECTOR = [
+  '[aria-haspopup]:not([aria-haspopup="false"])',
+  '[role="combobox"]',
+  "select",
+  "[data-rex-overlay-trigger]",
+  "[data-rex-palette-trigger]",
+].join(", ");
+export const POPUP_SURFACE_SELECTOR = "[data-rex-overlay], [data-rex-palette], [data-rex-confirm]";
+const POPUP_MARK = "data-walk-popup";
+const REGION_ERROR_PATTERN = /^REX3[0-9]{2}$/;
+
+interface PopupTrigger {
+  readonly label: string;
+  readonly expanded: string | null;
+}
+
+async function markPopupTrigger(page: Page, index: number): Promise<PopupTrigger | null> {
+  return page.evaluate(
+    ([selector, surfaces, mark, wanted]) => {
+      for (const element of document.querySelectorAll(`[${mark}]`)) element.removeAttribute(mark);
+      const visible = [...document.querySelectorAll(selector)].filter((element) => {
+        if (element.closest(surfaces) !== null) return false;
+        if (element.matches(":disabled, [aria-disabled='true']")) return false;
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+      const target = visible[wanted];
+      if (target === undefined) return null;
+      target.setAttribute(mark, "");
+      const name =
+        target.getAttribute("aria-label") ??
+        target.getAttribute("data-rex") ??
+        target.getAttribute("data-rex-overlay-trigger") ??
+        target.getAttribute("data-rex-palette-trigger") ??
+        (target.textContent ?? "").trim().slice(0, 40);
+      const kind =
+        target.getAttribute("aria-haspopup") ?? target.getAttribute("role") ?? target.tagName;
+      return {
+        label: `${target.tagName.toLowerCase()} "${name}" (${kind.toLowerCase()})`,
+        expanded: target.getAttribute("aria-expanded"),
+      };
+    },
+    [POPUP_TRIGGER_SELECTOR, POPUP_SURFACE_SELECTOR, POPUP_MARK, index] as const,
+  );
+}
+
+async function regionErrors(page: Page): Promise<string[]> {
+  return page.evaluate((pattern) => {
+    const codes = new RegExp(pattern);
+    const found: string[] = [];
+    for (const element of document.querySelectorAll("[data-rex-region-error]")) {
+      found.push(
+        `${element.getAttribute("data-rex-region-error") ?? ""} ${element.getAttribute("data-rex-error-code") ?? ""}`,
+      );
+    }
+    const mirror = (
+      window as unknown as { __rex?: { regions?: { address: string; code: string }[] } }
+    ).__rex;
+    for (const region of mirror?.regions ?? []) {
+      if (codes.test(region.code)) found.push(`${region.address} ${region.code}`);
+    }
+    return [...new Set(found)];
+  }, REGION_ERROR_PATTERN.source);
+}
+
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((done) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => done()));
+      }),
+  );
+}
+
+export async function walkPopups(recorder: Recorder, page: Page): Promise<number> {
+  let opened = 0;
+  for (let index = 0; ; index += 1) {
+    const trigger = await markPopupTrigger(page, index);
+    if (trigger === null) break;
+    opened += 1;
+    await recorder.check(`popup ${trigger.label} opens without an error`, async () => {
+      const errors: string[] = [];
+      const onConsole = (message: ConsoleMessage) => {
+        if (message.type() === "error") errors.push(`console error: ${message.text()}`);
+      };
+      const onPageError = (error: Error) => {
+        errors.push(`page error: ${error.message}`);
+      };
+      page.on("console", onConsole);
+      page.on("pageerror", onPageError);
+      try {
+        const control = page.locator(`[${POPUP_MARK}]`);
+        await control.click({ timeout: STEP_TIMEOUT });
+        await settle(page);
+        if (trigger.expanded !== null) {
+          await page.waitForFunction(
+            (mark) => document.querySelector(`[${mark}]`)?.getAttribute("aria-expanded") === "true",
+            POPUP_MARK,
+            { timeout: STEP_TIMEOUT },
+          );
+        }
+        await settle(page);
+        const failed = await regionErrors(page);
+        if (failed.length > 0) fail(`a region failed after the open: ${failed.join(", ")}`);
+        if (errors.length > 0) fail(errors.join(" | "));
+        await page.keyboard.press("Escape");
+        await page.waitForFunction(
+          ([mark, surfaces]) => {
+            const element = document.querySelector(`[${mark}]`);
+            if (element?.getAttribute("aria-expanded") === "true") return false;
+            return document.querySelector(surfaces) === null;
+          },
+          [POPUP_MARK, POPUP_SURFACE_SELECTOR] as const,
+          { timeout: STEP_TIMEOUT },
+        );
+        await settle(page);
+        const after = await regionErrors(page);
+        if (after.length > 0) fail(`a region failed after the close: ${after.join(", ")}`);
+        if (errors.length > 0) fail(errors.join(" | "));
+        return "opened and closed with Escape";
+      } finally {
+        page.off("console", onConsole);
+        page.off("pageerror", onPageError);
+      }
+    });
+  }
+  return opened;
 }

@@ -5,7 +5,6 @@ import { chromium, expect, test, type Browser } from "@playwright/test";
 import lighthouse, { desktopConfig, type Flags, type Result } from "lighthouse";
 import {
   REPORT_DIR,
-  buildDemo,
   committedManifest,
   pageUrl,
   startDemo,
@@ -59,7 +58,6 @@ function freePort(): Promise<number> {
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async ({ request }) => {
-  buildDemo();
   demo = await startDemo();
   const response = await request.get(new URL("/rex/manifest", demo.url).toString());
   expect(response.ok()).toBe(true);

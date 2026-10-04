@@ -443,6 +443,9 @@
   [data-rex-overlay] > [data-rex-overlay-close] {
     @apply self-end;
   }
+  [data-rex-overlay][data-rex-overlay-form="bottom-sheet"] {
+    @apply top-auto bottom-0 w-full max-w-none rounded-t-xl rounded-b-none border-x-0 border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))];
+  }
 
   [data-rex-confirm] {
     @apply w-[min(28rem,calc(100%-2rem))];
