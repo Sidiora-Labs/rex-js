@@ -84,7 +84,7 @@
   - [ ] 1.7 rex build targets for node, edge, bun, deno and static output
     - Make rex build --target node|edge|bun|deno|static write the matching server entry and dist layout per [design] platform_output, baking client.apiOrigin into the entry for static; extend cli/commands.test.ts with a build per target asserting the entry and layout.
     - _Requirements: 12.3_
-  - [ ] 2.1 Error catalog with source locations in the Vite overlay and the CLI
+  - [x] 2.1 Error catalog with source locations in the Vite overlay and the CLI
     - Complete core/errors.ts as the single catalog (REX1xx to REX6xx, including REX330 for region boundaries) with hint and docs for every code; convert every throw in core/, manifest/ and cli/args.ts, cli/load.ts and cli/config.ts to RexError with a catalogued code (server/, client/, vite/, check/ and cli/commands are converted by 5.7).
     - Add vite/overlay.ts mapping RexError thrown while loading app modules to the Vite error overlay with file and line; add cli/frame.ts printing a source frame for errors with a location and make the CLI entry use it.
     - Add tools/docs-errors.mjs generating docs/errors.md from the catalog with --check; write core/errors.test.ts and cli/frame.test.ts.

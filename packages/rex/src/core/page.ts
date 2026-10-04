@@ -1,6 +1,6 @@
 import type { AnyAction } from "./action.ts";
 import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts";
-import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
+import { RexDeclarationOptionError, RexError, errorDetail, type RexErrorCode } from "./errors.ts";
 import { isValidName, validateName } from "./ids.ts";
 import { overlayDeclaration, type OverlayDeclaration } from "./overlay.ts";
 import { always, isPredicate, type Predicate } from "./policy.ts";
@@ -97,24 +97,27 @@ const PARAM_SEGMENT = /^:([a-z][a-zA-Z0-9]*)$/;
 
 export function parseRoute(route: string): ParsedRoute {
   if (typeof route !== "string" || !route.startsWith("/")) {
-    throw new Error("route must be a string starting with /");
+    throw new RexError("REX220", "route must be a string starting with /");
   }
   if (route === "/")
     return Object.freeze({ route, segments: Object.freeze([]), params: Object.freeze([]) });
-  if (route.endsWith("/")) throw new Error("route must not end with /");
+  if (route.endsWith("/")) throw new RexError("REX220", "route must not end with /");
   const segments: RouteSegment[] = [];
   const params: string[] = [];
   for (const part of route.slice(1).split("/")) {
     const param = PARAM_SEGMENT.exec(part);
     if (param) {
       const name = param[1] as string;
-      if (params.includes(name)) throw new Error(`route param ":${name}" is repeated`);
+      if (params.includes(name)) {
+        throw new RexError("REX220", `route param ":${name}" is repeated`);
+      }
       params.push(name);
       segments.push(Object.freeze({ kind: "param", name }));
     } else if (STATIC_SEGMENT.test(part)) {
       segments.push(Object.freeze({ kind: "static", value: part }));
     } else {
-      throw new Error(
+      throw new RexError(
+        "REX220",
         `route segment "${part}" must be lowercase letters, digits, dot, dash and underscore, or :camelCaseParam`,
       );
     }
@@ -320,7 +323,7 @@ export function page<
   try {
     parsedRoute = parseRoute(config.route);
   } catch (error) {
-    fail("route", (error as Error).message);
+    fail("route", errorDetail(error));
   }
   const route = parsedRoute as ParsedRoute;
 

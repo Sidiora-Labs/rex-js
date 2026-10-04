@@ -1,9 +1,10 @@
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { createServer, type LogLevel, type Plugin, type ViteDevServer } from "vite";
 import type { RexConfigExport } from "../core/config.ts";
 import type { RexAppBundle } from "../vite/app-module.ts";
 import { rex, type RexPluginOptions } from "../vite/plugin.ts";
-import { APP_MODULE_ID } from "../vite/virtual.ts";
+import { locateAppError } from "../vite/overlay.ts";
+import { APP_MODULE_ID, DEFAULT_APP_DIR } from "../vite/virtual.ts";
 import { hasConfig, loadRexConfig } from "./config.ts";
 
 export interface ModuleLoaderOptions {
@@ -41,18 +42,26 @@ export async function createModuleLoader(
   options: ModuleLoaderOptions = {},
 ): Promise<ModuleLoader> {
   const appRoot = resolve(root);
+  const pluginOptions = await pluginOptionsFor(appRoot, options);
+  const appPath = join(appRoot, pluginOptions.appDir ?? DEFAULT_APP_DIR);
   const vite = await createServer({
     root: appRoot,
     configFile: false,
     logLevel: options.logLevel ?? "silent",
     appType: "custom",
     server: { middlewareMode: true, hmr: false, watch: null },
-    plugins: [...rex(await pluginOptionsFor(appRoot, options)), ...(options.plugins ?? [])],
+    plugins: [...rex(pluginOptions), ...(options.plugins ?? [])],
   });
   return {
     root: appRoot,
     vite,
-    load: async <T>(specifier: string) => (await vite.ssrLoadModule(specifier)) as T,
+    load: async <T>(specifier: string) => {
+      try {
+        return (await vite.ssrLoadModule(specifier, { fixStacktrace: true })) as T;
+      } catch (error) {
+        throw locateAppError(error, appPath);
+      }
+    },
     close: () => vite.close(),
   };
 }

@@ -1,3 +1,5 @@
+import { RexError } from "../core/errors.ts";
+
 export const ARGS_ERROR = {
   unknownCommand: "rex.unknownCommand",
   unknownOption: "rex.unknownOption",
@@ -98,10 +100,15 @@ function parseFlags(
       throw new TypeError(`option flags ${JSON.stringify(flags)} cannot be parsed at "${part}"`);
     }
   }
-  if (long === null) throw new TypeError(`option flags ${JSON.stringify(flags)} need a --long name`);
+  if (long === null) {
+    throw new RexError("REX600", `option flags ${JSON.stringify(flags)} need a --long name`);
+  }
   const negate = long.startsWith("no-");
   if (negate && valueName !== null) {
-    throw new TypeError(`option ${JSON.stringify(flags)} negates a flag and takes no value`);
+    throw new RexError(
+      "REX600",
+      `option ${JSON.stringify(flags)} negates a flag and takes no value`,
+    );
   }
   const key = camelKey(negate ? long.slice("no-".length) : long);
   return {
@@ -152,7 +159,7 @@ export class RexCommand {
       throw new TypeError(`command name ${JSON.stringify(nameAndArguments)} is not valid`);
     }
     if (this.commands.some((command) => command.name() === name)) {
-      throw new TypeError(`command "${name}" is registered twice`);
+      throw new RexError("REX600", `command "${name}" is registered twice`);
     }
     const command = new RexCommand(name, this);
     for (const spec of argumentSpecs) command.argument(spec);
@@ -172,7 +179,7 @@ export class RexCommand {
     }
     const required = match[1] === "<";
     if (required && this.#arguments.some((argument) => !argument.required)) {
-      throw new TypeError(`required argument ${spec} cannot follow an optional one`);
+      throw new RexError("REX600", `required argument ${spec} cannot follow an optional one`);
     }
     this.#arguments.push({ name: match[2] as string, required, description });
     return this;
@@ -212,7 +219,7 @@ export class RexCommand {
     const spec = parseFlags(flags, description, parse, fallback, mandatory);
     for (const existing of this.#allOptions()) {
       if (existing.long === spec.long || (spec.short !== null && existing.short === spec.short)) {
-        throw new TypeError(`option ${flags} is declared twice`);
+        throw new RexError("REX600", `option ${flags} is declared twice`);
       }
     }
     this.#options.push(spec);

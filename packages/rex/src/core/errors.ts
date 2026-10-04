@@ -1,6 +1,20 @@
 export const REX_ERRORS_DOCS_BASE = "https://rex.sidioralabs.com/errors";
 
-export type RexErrorArea = "config" | "declaration";
+export type RexErrorArea = "config" | "declaration" | "runtime" | "server" | "checker" | "cli";
+
+export interface RexErrorAreaInfo {
+  readonly prefix: string;
+  readonly title: string;
+}
+
+export const REX_ERROR_AREAS = {
+  config: { prefix: "REX1", title: "Configuration" },
+  declaration: { prefix: "REX2", title: "Declarations" },
+  runtime: { prefix: "REX3", title: "Runtime" },
+  server: { prefix: "REX4", title: "Server" },
+  checker: { prefix: "REX5", title: "Checker and manifest" },
+  cli: { prefix: "REX6", title: "CLI" },
+} as const satisfies Readonly<Record<RexErrorArea, RexErrorAreaInfo>>;
 
 export interface RexErrorEntry {
   readonly area: RexErrorArea;
@@ -149,6 +163,156 @@ export const REX_ERROR_CATALOG = {
     title: "Schema cannot be represented as JSON Schema",
     hint: "Use a zod schema that JSON Schema can describe, or declare jsonSchema explicitly on the declaration.",
   },
+  REX211: {
+    area: "declaration",
+    title: "Invalid entity declaration",
+    hint: "Fix the named field of the entity(name, { fields, key?, label? }) declaration; field names are camelCase and every field is a Standard Schema such as a Rex field helper.",
+  },
+  REX212: {
+    area: "declaration",
+    title: "Invalid action declaration",
+    hint: "Fix the named field of the action(name, { label, effect, input, output, policy, handler, ... }) declaration as described in the primitives reference.",
+  },
+  REX213: {
+    area: "declaration",
+    title: "Invalid page declaration",
+    hint: "Fix the named field of the page(name, { route, chrome, regions, overlays, actions, ... }) declaration in app/pages/<page>/page.ts.",
+  },
+  REX214: {
+    area: "declaration",
+    title: "Invalid policy declaration",
+    hint: "Fix the named field of the policy(name, { permissions, grants }) declaration; grants may only name declared permissions.",
+  },
+  REX215: {
+    area: "declaration",
+    title: "Invalid policy predicate",
+    hint: "Build predicates with can(permission), requires({ unlocked?, account?, custody?, permissions? }), allOf(...) and anyOf(...) with at least one condition each.",
+  },
+  REX216: {
+    area: "declaration",
+    title: "Invalid flow declaration",
+    hint: "Fix the named field of the flow(name, { journal, input, steps }) declaration; each step is { action, input? } or an approval gate.",
+  },
+  REX217: {
+    area: "declaration",
+    title: "Duplicate declaration id",
+    hint: "Give each entity, action, page, policy and flow a unique id, or register the same declaration object only once.",
+  },
+  REX218: {
+    area: "declaration",
+    title: "Invalid name",
+    hint: "Use a name that starts with a lowercase letter and contains only lowercase letters, digits, dot and dash; component names are PascalCase.",
+  },
+  REX219: {
+    area: "declaration",
+    title: "Invalid action shortcut",
+    hint: "Write the shortcut as ordered modifiers mod, shift, alt joined by + and one key, such as mod+shift+s; mod+k and escape are reserved by Rex.",
+  },
+  REX220: {
+    area: "declaration",
+    title: "Invalid page route",
+    hint: "Write the route as / or /segment/:param with lowercase static segments, camelCase params, no repeated param and no trailing slash.",
+  },
+  REX221: {
+    area: "declaration",
+    title: "Duplicate enum value",
+    hint: "List each value once in enumOf([...]).",
+  },
+  REX222: {
+    area: "declaration",
+    title: "Page names an unregistered action",
+    hint: "Register the action in app/actions or remove it from the page actions list.",
+  },
+  REX223: {
+    area: "declaration",
+    title: "Page names an unknown page",
+    hint: "Point recovery and chrome.back at the id of a registered page.",
+  },
+  REX224: {
+    area: "declaration",
+    title: "Registered value is not a complete declaration",
+    hint: "Register only values returned by entity(), action(), page(), policy() and flow().",
+  },
+  REX300: {
+    area: "runtime",
+    title: "Schema validates asynchronously",
+    hint: "Validate the schema with validateStandard (async) or use a schema whose ~standard.validate returns synchronously.",
+  },
+  REX301: {
+    area: "runtime",
+    title: "Unknown declaration",
+    hint: "Look up a declaration that is registered in the app; rex manifest lists every registered id.",
+  },
+  REX302: {
+    area: "runtime",
+    title: "Invalid journal id",
+    hint: "Pass a non-empty string for the flow id and the instance id.",
+  },
+  REX303: {
+    area: "runtime",
+    title: "Unknown flow instance",
+    hint: "Start the flow with runFlow before recording entries or deciding on its gates.",
+  },
+  REX304: {
+    area: "runtime",
+    title: "Flow instance belongs to another flow",
+    hint: "Use a fresh instance id for each flow; an instance id is bound to the flow that opened it.",
+  },
+  REX305: {
+    area: "runtime",
+    title: "Unknown store filter field",
+    hint: "Filter a store list only by fields declared on its entity.",
+  },
+  REX310: {
+    area: "runtime",
+    title: "Hydration mismatch",
+    hint: "Render the same markup on the server and the client: read time, randomness and browser-only values in effects, not during render.",
+  },
+  REX320: {
+    area: "runtime",
+    title: "Page declaration changed",
+    hint: "No action needed: a page.ts edit invalidates rex:app and the page chunk and reloads the page; component edits keep state through HMR.",
+  },
+  REX330: {
+    area: "runtime",
+    title: "Region failed to render",
+    hint: "Fix the error thrown by the region; the page shows its recoverable-error state and Retry remounts the region.",
+  },
+  REX440: {
+    area: "server",
+    title: "Server-only module imported by client code",
+    hint: "Import rex/server, app/server and modules marked import \"rex/server-only\" only from actions, rex.config.ts and other server code.",
+  },
+  REX450: {
+    area: "server",
+    title: "Runtime not available for the adapter",
+    hint: "Run the bun adapter under Bun and the deno adapter under Deno, or pick the matching rex build --target.",
+  },
+  REX500: {
+    area: "checker",
+    title: "Manifest scan failed",
+    hint: "Fix the declaration error reported with the scan so the app declarations load, then run rex manifest again.",
+  },
+  REX501: {
+    area: "checker",
+    title: "Invalid manifest build option",
+    hint: "Pass buildManifest an app name that is a non-empty string.",
+  },
+  REX502: {
+    area: "checker",
+    title: "Manifest value cannot be serialised",
+    hint: "Keep declaration metadata to JSON values: finite numbers, strings, booleans, null, arrays and plain objects.",
+  },
+  REX600: {
+    area: "cli",
+    title: "Invalid CLI command definition",
+    hint: "Declare each command, argument and option once with a --long option name, <required> or [optional] arguments in that order, and no value on a --no- flag.",
+  },
+  REX610: {
+    area: "cli",
+    title: "Codemod left a placeholder",
+    hint: "Replace the placeholder the codemod wrote, such as Img width and height, with the real values and run rex check.",
+  },
 } as const satisfies Readonly<Record<string, RexErrorEntry>>;
 
 export type RexErrorCode = keyof typeof REX_ERROR_CATALOG;
@@ -178,6 +342,7 @@ const REX_ERROR_BRAND: unique symbol = Symbol.for("rex.error");
 
 export class RexError extends Error {
   readonly code: RexErrorCode;
+  readonly detail: string;
   readonly hint: string;
   readonly docs: string;
   readonly file: string | null;
@@ -189,6 +354,7 @@ export class RexError extends Error {
     super(`${code} ${message}`, options.cause === undefined ? undefined : { cause: options.cause });
     this.name = "RexError";
     this.code = code;
+    this.detail = message;
     this.hint = options.hint ?? REX_ERROR_CATALOG[code].hint;
     this.docs = errorDocs(code);
     this.file = options.file ?? null;
@@ -236,4 +402,47 @@ export function formatRexError(error: RexError): string {
       ? ""
       : ` (${error.file}${error.line === null ? "" : `:${error.line}${error.column === null ? "" : `:${error.column}`}`})`;
   return `${error.message}${location}\n  hint: ${error.hint}\n  docs: ${error.docs}`;
+}
+
+export function errorDetail(error: unknown): string {
+  if (isRexError(error)) return error.detail;
+  return error instanceof Error ? error.message : String(error);
+}
+
+export interface RexStackFrame {
+  readonly file: string;
+  readonly line: number;
+  readonly column: number;
+}
+
+const STACK_FRAME = /^\s*at (?:.*? \()?(.+?):(\d+):(\d+)\)?\s*$/;
+
+function frameFile(raw: string): string {
+  if (!raw.startsWith("file://")) return raw;
+  const path = decodeURIComponent(raw.slice("file://".length));
+  return /^\/[A-Za-z]:\//.test(path) ? path.slice(1) : path;
+}
+
+export function stackFrames(stack: string | undefined): RexStackFrame[] {
+  if (stack === undefined) return [];
+  const frames: RexStackFrame[] = [];
+  for (const text of stack.split("\n")) {
+    const match = STACK_FRAME.exec(text);
+    if (match === null) continue;
+    frames.push({
+      file: frameFile(match[1] as string),
+      line: Number(match[2]),
+      column: Number(match[3]),
+    });
+  }
+  return frames;
+}
+
+export function locateRexError(error: RexError, location: RexErrorLocation): RexError {
+  if (error.file !== null) return error;
+  const target = error as { -readonly [K in "file" | "line" | "column"]: RexError[K] };
+  target.file = location.file ?? null;
+  target.line = location.file === undefined ? null : (location.line ?? null);
+  target.column = location.file === undefined || location.line === undefined ? null : (location.column ?? null);
+  return error;
 }

@@ -236,36 +236,36 @@ export async function runFlow(
       });
       return { status: "paused", instance, gate: step };
     }
+    let failure: string | null = null;
     try {
       const decision = evaluate(step.action.policy, ctx.actor);
       if (!decision.allowed) {
-        throw new Error(`action "${step.action.id}" is forbidden: ${decision.reason}`);
+        failure = `action "${step.action.id}" is forbidden: ${decision.reason}`;
+      } else {
+        const input = await validated(
+          step.action.input,
+          step.input({ actor: ctx.actor, input: instance.input, outputs: [...outputs] }),
+        );
+        const output = await validated(
+          step.action.output,
+          await step.action.handler(input as Parameters<AnyAction["handler"]>[0], {
+            actor: ctx.actor,
+          }),
+        );
+        outputs[index] = output;
+        instance = await journal.record(instanceId, {
+          type: "step",
+          index,
+          action: step.action.id,
+          output,
+          at: now(),
+        });
       }
-      const input = await validated(
-        step.action.input,
-        step.input({ actor: ctx.actor, input: instance.input, outputs: [...outputs] }),
-      );
-      const output = await validated(
-        step.action.output,
-        await step.action.handler(input as Parameters<AnyAction["handler"]>[0], {
-          actor: ctx.actor,
-        }),
-      );
-      outputs[index] = output;
-      instance = await journal.record(instanceId, {
-        type: "step",
-        index,
-        action: step.action.id,
-        output,
-        at: now(),
-      });
     } catch (error) {
-      instance = await journal.record(instanceId, {
-        type: "failed",
-        index,
-        error: error instanceof Error ? error.message : String(error),
-        at: now(),
-      });
+      failure = error instanceof Error ? error.message : String(error);
+    }
+    if (failure !== null) {
+      instance = await journal.record(instanceId, { type: "failed", index, error: failure, at: now() });
       return { status: "failed", instance, gate: null };
     }
   }

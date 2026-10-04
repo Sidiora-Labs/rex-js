@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "check": "pnpm --filter demo check",
-    "dev": "pnpm --filter demo dev"
+    "dev": "pnpm --filter demo dev",
+    "docs:errors": "node tools/docs-errors.mjs"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

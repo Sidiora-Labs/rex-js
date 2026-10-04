@@ -1,6 +1,6 @@
 import type { Actor } from "./actor.ts";
 import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts";
-import { RexDeclarationOptionError } from "./errors.ts";
+import { RexDeclarationOptionError, RexError, errorDetail } from "./errors.ts";
 import { isValidName } from "./ids.ts";
 import { isPredicate, type Predicate } from "./policy.ts";
 import { toJsonSchema, type JsonSchema, type z } from "./schema.ts";
@@ -64,7 +64,7 @@ export interface ParsedShortcut {
 
 export function parseShortcut(shortcut: string): ParsedShortcut {
   if (typeof shortcut !== "string" || shortcut.length === 0) {
-    throw new Error("shortcut must be a non-empty string");
+    throw new RexError("REX219", "shortcut must be a non-empty string");
   }
   const parts = shortcut === "+" ? ["+"] : shortcut.split("+");
   const key = parts.pop() as string;
@@ -73,17 +73,21 @@ export function parseShortcut(shortcut: string): ParsedShortcut {
   for (const part of parts) {
     const index = (SHORTCUT_MODIFIERS as readonly string[]).indexOf(part);
     if (index === -1) {
-      throw new Error(`"${part}" is not a modifier; use ${SHORTCUT_MODIFIERS.join(", ")}`);
+      throw new RexError(
+        "REX219",
+        `"${part}" is not a modifier; use ${SHORTCUT_MODIFIERS.join(", ")}`,
+      );
     }
-    if (seen.has(part)) throw new Error(`modifier "${part}" is repeated`);
+    if (seen.has(part)) throw new RexError("REX219", `modifier "${part}" is repeated`);
     if (index < previous) {
-      throw new Error(`modifiers must be ordered ${SHORTCUT_MODIFIERS.join("+")}`);
+      throw new RexError("REX219", `modifiers must be ordered ${SHORTCUT_MODIFIERS.join("+")}`);
     }
     seen.add(part);
     previous = index;
   }
   if (!(/^[a-z0-9]$/.test(key) || NAMED_KEYS.has(key) || PUNCTUATION_KEYS.has(key))) {
-    throw new Error(
+    throw new RexError(
+      "REX219",
       `"${key}" is not a key; use one lowercase letter, digit, punctuation key or named key`,
     );
   }
@@ -98,7 +102,7 @@ export function parseShortcut(shortcut: string): ParsedShortcut {
 export function validateShortcut(shortcut: string): string {
   parseShortcut(shortcut);
   if (RESERVED_SHORTCUTS.includes(shortcut)) {
-    throw new Error(`"${shortcut}" is reserved by Rex`);
+    throw new RexError("REX219", `"${shortcut}" is reserved by Rex`);
   }
   return shortcut;
 }
@@ -229,7 +233,7 @@ export function action<
     try {
       validateShortcut(config.shortcut);
     } catch (error) {
-      fail("shortcut", (error as Error).message);
+      fail("shortcut", errorDetail(error));
     }
   }
   const invalidates = config.invalidates ?? [];

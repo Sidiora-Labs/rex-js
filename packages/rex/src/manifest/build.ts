@@ -15,7 +15,6 @@ import {
   refTarget,
   toJsonSchema,
   type JsonSchema,
-  type z,
 } from "../core/schema.ts";
 import { standardSource, type ZodSchemaLike } from "../core/standard.ts";
 import {
@@ -100,8 +99,8 @@ function entityManifest(declared: AnyEntity): ManifestEntity {
     fields: Object.entries(declared.fields).map(([name, schema]) => ({
       name,
       kind: declared.fieldKinds[name] ?? null,
-      ref: refTarget(schema as z.ZodType) ?? null,
-      required: !(schema as z.ZodType).safeParse(undefined).success,
+      ref: refTarget(schema as ZodSchemaLike) ?? null,
+      required: !(schema as ZodSchemaLike).safeParse(undefined).success,
     })),
     schema: entityJsonSchema(declared),
   };
@@ -201,7 +200,7 @@ export function buildManifest(
 ): Manifest {
   const app = options.app ?? DEFAULT_APP_NAME;
   if (typeof app !== "string" || app.trim() === "") {
-    throw new TypeError("buildManifest: app must be a non-empty string");
+    throw new RexError("REX501", "buildManifest: app must be a non-empty string");
   }
   const render = options.render ?? DEFAULT_PAGE_RENDER;
   const pages = sortById(source.pages);
@@ -210,7 +209,8 @@ export function buildManifest(
   for (const declared of pages) {
     for (const pageAction of declared.actions) {
       if (!actionIds.has(pageAction.id)) {
-        throw new Error(
+        throw new RexError(
+          "REX222",
           `buildManifest: page "${declared.id}" declares action "${pageAction.id}" that is not registered`,
         );
       }
@@ -228,7 +228,8 @@ export function buildManifest(
       ["chrome.back", declared.chrome.back],
     ] as const) {
       if (target !== null && (!isValidName(target) || !pageIds.has(target))) {
-        throw new Error(
+        throw new RexError(
+          "REX223",
           `buildManifest: page "${declared.id}" ${field} names unknown page "${target}"`,
         );
       }
@@ -248,7 +249,7 @@ export function buildManifest(
 function canonical(value: unknown, path: string): unknown {
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw new TypeError(`stableStringify: ${path} is not finite`);
+    if (!Number.isFinite(value)) throw new RexError("REX502", `stableStringify: ${path} is not finite`);
     return value;
   }
   if (Array.isArray(value)) {
@@ -265,7 +266,7 @@ function canonical(value: unknown, path: string): unknown {
     }
     return result;
   }
-  throw new TypeError(`stableStringify: ${path} has unsupported type ${typeof value}`);
+  throw new RexError("REX502", `stableStringify: ${path} has unsupported type ${typeof value}`);
 }
 
 export function stableStringify(value: unknown, indent = 2): string {

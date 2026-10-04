@@ -1,12 +1,14 @@
+import { RexError } from "./errors.ts";
+
 const NAME_PATTERN = /^[a-z][a-z0-9.-]*$/;
 const COMPONENT_PATTERN = /^[A-Z][A-Za-z0-9]*$/;
 
-export class RexNameError extends Error {
+export class RexNameError extends RexError {
   readonly kind: string;
   readonly value: unknown;
 
   constructor(kind: string, value: unknown, rule: string) {
-    super(`invalid ${kind} ${JSON.stringify(value)}: ${rule}`);
+    super("REX218", `invalid ${kind} ${JSON.stringify(value)}: ${rule}`);
     this.name = "RexNameError";
     this.kind = kind;
     this.value = value;

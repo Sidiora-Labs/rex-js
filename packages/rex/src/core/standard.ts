@@ -1,6 +1,7 @@
 import { $ZodType } from "zod/v4/core";
 import * as zm from "zod/mini";
 import type { z } from "zod";
+import { RexError } from "./errors.ts";
 
 export interface StandardPathSegment {
   readonly key: PropertyKey;
@@ -105,7 +106,8 @@ export function validateStandardSync<S extends StandardSchemaV1>(
 ): StandardResult<StandardInferOutput<S>> {
   const result = schema["~standard"].validate(value);
   if (result instanceof Promise) {
-    throw new TypeError(
+    throw new RexError(
+      "REX300",
       `the ${schema["~standard"].vendor} schema validates asynchronously; validate it with validateStandard`,
     );
   }
