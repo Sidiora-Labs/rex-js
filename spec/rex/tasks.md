@@ -240,7 +240,7 @@
     - Add examples/demo/rex.config.ts and server entry so rex dev and rex build run; commit .rex/manifest.json and AGENTS.md.
     - Make the rex bin runnable from the demo: pnpm -C packages/rex build must emit dist/cli/index.js that node runs directly (the gates build the package before calling the demo), and the demo scripts call rex through that bin; fix the package build configuration if the emitted output does not run.
     - _Requirements: 19.1, 19.2, 19.3, 20.1, 20.2, 20.3_
-  - [ ] 6.2 Implement the operability walk
+  - [x] 6.2 Implement the operability walk
     - Implement examples/demo/e2e/operability.spec.ts with Playwright: start the built demo, read /rex/manifest, visit every page in default and agent density, and for every declared action verify reachability by clicking its data-rex control, pressing its shortcut, loading the act URL and selecting it in the palette, with confirmation handled for irreversible actions.
     - Verify sidecar parity (listed actions equal present controls), every declared overlay opens and dismisses by Escape and by control, and the outcome region updates after each invocation; write a JSON report per page to e2e/report and exit 1 on any failure.
     - Add examples/demo/playwright.config.ts and the test script.

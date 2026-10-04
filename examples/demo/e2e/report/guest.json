@@ -1,0 +1,72 @@
+{
+  "page": "portfolio,send",
+  "actor": "guest",
+  "densities": [
+    {
+      "density": "default",
+      "checks": [
+        {
+          "name": "portfolio/toggle-hide-dust is listed as not allowed with a reason",
+          "ok": true,
+          "detail": "missing-permission:wallet.manage"
+        },
+        {
+          "name": "portfolio/toggle-hide-dust is disabled in the palette",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "portfolio/toggle-hide-dust by URL reports not allowed without running",
+          "ok": true,
+          "detail": "Toggle hide dust: FailedToggle hide dust: not allowed (missing-permission:wallet.manage)Dismiss"
+        },
+        {
+          "name": "send/send is listed as not allowed with a reason",
+          "ok": true,
+          "detail": "locked"
+        },
+        {
+          "name": "send/send is disabled in the palette",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "send/send by URL reports not allowed without running",
+          "ok": true,
+          "detail": "Send: FailedSend: not allowed (locked)Dismiss"
+        },
+        {
+          "name": "send/pick-token is listed as not allowed with a reason",
+          "ok": true,
+          "detail": "missing-permission:wallet.manage"
+        },
+        {
+          "name": "send/pick-token is disabled in the palette",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "send/pick-token by URL reports not allowed without running",
+          "ok": true,
+          "detail": "Pick token: FailedPick token: not allowed (missing-permission:wallet.manage)Dismiss"
+        },
+        {
+          "name": "send/pick-contact is listed as not allowed with a reason",
+          "ok": true,
+          "detail": "missing-permission:wallet.manage"
+        },
+        {
+          "name": "send/pick-contact is disabled in the palette",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "send/pick-contact by URL reports not allowed without running",
+          "ok": true,
+          "detail": "Pick contact: FailedPick contact: not allowed (missing-permission:wallet.manage)Dismiss"
+        }
+      ]
+    }
+  ],
+  "failures": []
+}
