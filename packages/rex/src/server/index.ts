@@ -17,7 +17,6 @@ export {
   contentSecurityPolicy,
   cspHeaderName,
   installSecurityMiddleware,
-  isAllowedOrigin,
   isRexPath,
   requestNonce,
   resolveSecurityPolicy,
