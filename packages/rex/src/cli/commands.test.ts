@@ -39,13 +39,14 @@ import {
   parsePrerenderList,
 } from "../server/adapters/static-cache.ts";
 import { devUrls, startDev } from "./commands/dev.ts";
-import { loadRexConfig } from "./config.ts";
+import { loadRexConfig, nodeEnvRestorer } from "./config.ts";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, run, type RexCliIO } from "./index.ts";
 import { configPluginOptions } from "./load.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
 const COMMANDS_TEST_TIMEOUT_MS = 240_000;
+const DEV_REACT_MARKER = "A tree hydrated but some attributes";
 const SERVER_START_TIMEOUT_MS = 30_000;
 const APP_NAME = "commands-app";
 const API_ORIGIN = "https://api.example.test";
@@ -201,7 +202,9 @@ function serverLayout(outDir: string): string[] {
 
 function entryScript(clientDir: string): string {
   const html = readFileSync(join(clientDir, "index.html"), "utf8");
-  const match = /<script type="module" crossorigin src="\/(assets\/[^"]+\.js)"><\/script>/.exec(html);
+  const match = /<script type="module" crossorigin src="\/(assets\/[^"]+\.js)"><\/script>/.exec(
+    html,
+  );
   expect(match, "index.html loads the entry chunk").not.toBeNull();
   return readFileSync(join(clientDir, (match as RegExpExecArray)[1] as string), "utf8");
 }
@@ -302,6 +305,31 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     expect(direct.serverFile).toBe(serverFile);
     expect(existsSync(serverFile)).toBe(true);
     expect(existsSync(join(direct.clientDir, "index.html"))).toBe(true);
+  });
+
+  it("rex build emits production bundles with NODE_ENV unset and leaves it unset", async () => {
+    const restoreNodeEnv = nodeEnvRestorer();
+    delete process.env.NODE_ENV;
+    try {
+      await loadRexConfig(root);
+      expect(process.env.NODE_ENV).toBeUndefined();
+
+      const built = await cli(root, "build");
+      expect(built.err).toBe("");
+      expect(built.code).toBe(EXIT_OK);
+      expect(process.env.NODE_ENV).toBeUndefined();
+
+      const assetsDir = join(root, DIST_DIR, "client", "assets");
+      const assets = readdirSync(assetsDir);
+      expect(assets.filter((name) => name.includes("jsx-dev-runtime"))).toEqual([]);
+      for (const name of assets.filter((entry) => entry.endsWith(".js"))) {
+        expect(readFileSync(join(assetsDir, name), "utf8")).not.toContain(DEV_REACT_MARKER);
+      }
+      const server = readFileSync(join(root, DIST_DIR, SERVER_FILE), "utf8");
+      expect(server).not.toMatch(/process\.env\.NODE_ENV\s*[!=]==/);
+    } finally {
+      restoreNodeEnv();
+    }
   });
 
   it("rex dev serves the client and the app server on one port", async () => {
@@ -506,7 +534,13 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
         secretNames: ["STRIPE_KEY"],
         shellComponents: "app/components/Button.tsx",
         fonts: [
-          { family: "Inter", src: "/fonts/inter.woff2", weight: "100 900", style: "normal", preload: true },
+          {
+            family: "Inter",
+            src: "/fonts/inter.woff2",
+            weight: "100 900",
+            style: "normal",
+            preload: true,
+          },
           { family: "Mono", src: "/fonts/mono.woff2", style: "normal", preload: true },
         ],
         i18n: { locales: ["en", "de"], default: "en", routing: "none" },
@@ -518,7 +552,10 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
 
   it("rex build --target node, bun and deno write dist/client, dist/server.js and the prerender list with the runtime's server entry", async () => {
     const entries = {
-      node: { start: "startPrerenderedNodeServer", hint: `start it with node ${DIST_DIR}/${SERVER_FILE}` },
+      node: {
+        start: "startPrerenderedNodeServer",
+        hint: `start it with node ${DIST_DIR}/${SERVER_FILE}`,
+      },
       bun: { start: "startBunServer", hint: `start it with bun ${DIST_DIR}/${SERVER_FILE}` },
       deno: {
         start: "startDenoServer",
@@ -531,7 +568,9 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
       expect(built.target, target).toBe(target);
       expect(built.serverFile, target).toBe(join(outDir, SERVER_FILE));
       expect(built.prerenderFile, target).toBe(join(outDir, PRERENDER_LIST_FILE));
-      expect(writtenLayout(built), target).toBe(`${DIST_DIR}/${CLIENT_DIR}/ and ${DIST_DIR}/${SERVER_FILE}`);
+      expect(writtenLayout(built), target).toBe(
+        `${DIST_DIR}/${CLIENT_DIR}/ and ${DIST_DIR}/${SERVER_FILE}`,
+      );
       expect(startHint(built), target).toBe(`${expected.hint} (${join(outDir, SERVER_FILE)})`);
 
       expect(serverLayout(outDir), target).toEqual(
@@ -593,7 +632,11 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     const answered = JSON.parse(run.stdout) as {
       readonly manifest: { readonly status: number; readonly body: Manifest };
       readonly ping: { readonly status: number; readonly body: { readonly json: unknown } };
-      readonly page: { readonly status: number; readonly type: string | null; readonly body: string };
+      readonly page: {
+        readonly status: number;
+        readonly type: string | null;
+        readonly body: string;
+      };
     };
     expect(answered.manifest.status).toBe(200);
     expect(answered.manifest.body.app).toEqual({ name: APP_NAME });
@@ -611,7 +654,10 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     try {
       writeFileSync(
         configFile,
-        generated.replace("  app,", `  app,\n  client: { apiOrigin: ${JSON.stringify(API_ORIGIN)} },`),
+        generated.replace(
+          "  app,",
+          `  app,\n  client: { apiOrigin: ${JSON.stringify(API_ORIGIN)} },`,
+        ),
       );
       const built = await buildApp(root, { logLevel: "silent", target: "static" });
       expect(built.target).toBe("static");
@@ -697,79 +743,87 @@ function declareRender(root: string, pageId: string, render: "ssg" | "static"): 
   writeFileSync(file, source.replace(route, `${route}  render: ${JSON.stringify(render)},\n`));
 }
 
-describe("rex build from the emitted dist CLI with an ssg and a static page", { timeout: DIST_BUILD_TIMEOUT_MS }, () => {
-  let root: string;
-  let distCli: string;
+describe(
+  "rex build from the emitted dist CLI with an ssg and a static page",
+  { timeout: DIST_BUILD_TIMEOUT_MS },
+  () => {
+    let root: string;
+    let distCli: string;
 
-  beforeAll(async () => {
-    distCli = emitDistCli();
-    const cwd = mkdtempSync(join(tmpdir(), "rex-prerender-app-"));
-    temporary.push(cwd);
-    expect(await run(["new", PRERENDER_APP_NAME, "--ui", "none"], captureIO(cwd).io)).toBe(EXIT_OK);
-    root = join(cwd, PRERENDER_APP_NAME);
-    installDependencies(root);
-    for (const id of ["about", "guide"]) {
-      const made = await cli(root, "make", "page", id);
-      expect(made.err, `rex make page ${id}`).toBe("");
-      expect(made.code).toBe(EXIT_OK);
-    }
-    declareRender(root, "about", "static");
-    declareRender(root, "guide", "ssg");
-    expect((await cli(root, "manifest")).code).toBe(EXIT_OK);
-  }, CLI_EMIT_TIMEOUT_MS + COMMANDS_TEST_TIMEOUT_MS);
-
-  it("prerenders both pages in the app's page runtime and the generated server serves them", async () => {
-    const built = await runNode([distCli, "build"], root, DIST_BUILD_TIMEOUT_MS);
-    expect(built.stderr).not.toMatch(/REX306|REX405/);
-    expect(built.code, `${built.stdout}${built.stderr}`).toBe(EXIT_OK);
-    expect(built.stdout).toContain(
-      `rex build: prerendered /about -> ${DIST_DIR}/${CLIENT_DIR}/about/index.html (about, static)`,
-    );
-    expect(built.stdout).toContain(
-      `rex build: prerendered /guide -> ${DIST_DIR}/${CLIENT_DIR}/guide/index.html (guide, ssg)`,
-    );
-
-    const outDir = join(root, DIST_DIR);
-    const list = parsePrerenderList(JSON.parse(readFileSync(join(outDir, PRERENDER_LIST_FILE), "utf8")));
-    expect(list.pages.map((entry) => [entry.path, entry.page, entry.render])).toEqual([
-      ["/about", "about", "static"],
-      ["/guide", "guide", "ssg"],
-    ]);
-    const about = readFileSync(join(outDir, CLIENT_DIR, "about", "index.html"), "utf8");
-    expect(about).toContain('data-rex-page="about"');
-    expect(about).not.toContain('<script type="module"');
-    expect(about).not.toContain(SSR_ATTRIBUTE);
-    const guide = readFileSync(join(outDir, CLIENT_DIR, "guide", "index.html"), "utf8");
-    expect(guide).toContain('data-rex-page="guide"');
-    expect(guide).toContain(`${SSR_ATTRIBUTE}=""`);
-    expect(guide).toContain('<script type="module"');
-
-    const child = spawn(process.execPath, [join(outDir, SERVER_FILE)], {
-      cwd: root,
-      env: { ...process.env, PORT: "0", HOST: "127.0.0.1" },
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    children.push(child);
-    const url = await waitForServing(child);
-    try {
-      for (const [path, pageId] of [
-        ["/about", "about"],
-        ["/guide", "guide"],
-      ] as const) {
-        const response = await fetch(`${url}${path}`, { headers: { accept: "text/html" } });
-        expect(response.status, path).toBe(200);
-        expect(response.headers.get(RENDER_KIND_HEADER), path).toBe("page");
-        expect(response.headers.get(RENDER_PAGE_HEADER), path).toBe(pageId);
-        expect(response.headers.get(STATIC_HEADER), path).toBe("hit");
-        expect(await response.text(), path).toContain(`data-rex-page="${pageId}"`);
+    beforeAll(async () => {
+      distCli = emitDistCli();
+      const cwd = mkdtempSync(join(tmpdir(), "rex-prerender-app-"));
+      temporary.push(cwd);
+      expect(await run(["new", PRERENDER_APP_NAME, "--ui", "none"], captureIO(cwd).io)).toBe(
+        EXIT_OK,
+      );
+      root = join(cwd, PRERENDER_APP_NAME);
+      installDependencies(root);
+      for (const id of ["about", "guide"]) {
+        const made = await cli(root, "make", "page", id);
+        expect(made.err, `rex make page ${id}`).toBe("");
+        expect(made.code).toBe(EXIT_OK);
       }
-      const home = await fetch(`${url}/`, { headers: { accept: "text/html" } });
-      expect(home.status).toBe(200);
-      expect(home.headers.get(RENDER_PAGE_HEADER)).toBe("home");
-      expect(home.headers.get(STATIC_HEADER)).toBeNull();
-      expect(await home.text()).toContain(SSR_ATTRIBUTE);
-    } finally {
-      child.kill("SIGTERM");
-    }
-  });
-});
+      declareRender(root, "about", "static");
+      declareRender(root, "guide", "ssg");
+      expect((await cli(root, "manifest")).code).toBe(EXIT_OK);
+    }, CLI_EMIT_TIMEOUT_MS + COMMANDS_TEST_TIMEOUT_MS);
+
+    it("prerenders both pages in the app's page runtime and the generated server serves them", async () => {
+      const built = await runNode([distCli, "build"], root, DIST_BUILD_TIMEOUT_MS);
+      expect(built.stderr).not.toMatch(/REX306|REX405/);
+      expect(built.code, `${built.stdout}${built.stderr}`).toBe(EXIT_OK);
+      expect(built.stdout).toContain(
+        `rex build: prerendered /about -> ${DIST_DIR}/${CLIENT_DIR}/about/index.html (about, static)`,
+      );
+      expect(built.stdout).toContain(
+        `rex build: prerendered /guide -> ${DIST_DIR}/${CLIENT_DIR}/guide/index.html (guide, ssg)`,
+      );
+
+      const outDir = join(root, DIST_DIR);
+      const list = parsePrerenderList(
+        JSON.parse(readFileSync(join(outDir, PRERENDER_LIST_FILE), "utf8")),
+      );
+      expect(list.pages.map((entry) => [entry.path, entry.page, entry.render])).toEqual([
+        ["/about", "about", "static"],
+        ["/guide", "guide", "ssg"],
+      ]);
+      const about = readFileSync(join(outDir, CLIENT_DIR, "about", "index.html"), "utf8");
+      expect(about).toContain('data-rex-page="about"');
+      expect(about).not.toContain('<script type="module"');
+      expect(about).not.toContain(SSR_ATTRIBUTE);
+      const guide = readFileSync(join(outDir, CLIENT_DIR, "guide", "index.html"), "utf8");
+      expect(guide).toContain('data-rex-page="guide"');
+      expect(guide).toContain(`${SSR_ATTRIBUTE}=""`);
+      expect(guide).toContain('<script type="module"');
+
+      const child = spawn(process.execPath, [join(outDir, SERVER_FILE)], {
+        cwd: root,
+        env: { ...process.env, PORT: "0", HOST: "127.0.0.1" },
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      children.push(child);
+      const url = await waitForServing(child);
+      try {
+        for (const [path, pageId] of [
+          ["/about", "about"],
+          ["/guide", "guide"],
+        ] as const) {
+          const response = await fetch(`${url}${path}`, { headers: { accept: "text/html" } });
+          expect(response.status, path).toBe(200);
+          expect(response.headers.get(RENDER_KIND_HEADER), path).toBe("page");
+          expect(response.headers.get(RENDER_PAGE_HEADER), path).toBe(pageId);
+          expect(response.headers.get(STATIC_HEADER), path).toBe("hit");
+          expect(await response.text(), path).toContain(`data-rex-page="${pageId}"`);
+        }
+        const home = await fetch(`${url}/`, { headers: { accept: "text/html" } });
+        expect(home.status).toBe(200);
+        expect(home.headers.get(RENDER_PAGE_HEADER)).toBe("home");
+        expect(home.headers.get(STATIC_HEADER)).toBeNull();
+        expect(await home.text()).toContain(SSR_ATTRIBUTE);
+      } finally {
+        child.kill("SIGTERM");
+      }
+    });
+  },
+);
