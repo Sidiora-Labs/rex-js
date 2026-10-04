@@ -1,0 +1,14 @@
+dist
+node_modules
+coverage
+fixtures
+.rex
+.codegraph
+**/e2e/report
+test-results
+playwright-report
+AGENTS.md
+CLAUDE.md
+.cursor/rules
+pnpm-lock.yaml
+docs/api
