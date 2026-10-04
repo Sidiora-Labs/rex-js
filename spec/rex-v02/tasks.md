@@ -119,7 +119,7 @@
     - Add a regions list to the sidecar schema carrying each region's state and error code so RegionBoundary reports through it (closes qualification.03).
     - Write client/store.test.tsx: typed updates, single-subscriber re-render, sidecar exposure and update, reset between tests, serialisation.
     - _Requirements: 19.1, 19.2_
-  - [ ] 3.2 Web Components, native DOM escape hatch and incremental page mounting
+  - [x] 3.2 Web Components, native DOM escape hatch and incremental page mounting
     - Add client/interop/define-element.tsx (defineElement), client/interop/mount.tsx (mountRexPage returning unmount) and client/interop/native.tsx (Native) per [design] interop_api; export them from client/index.ts.
     - Extend check/rules/traps.ts with traps/custom-element allowing custom element tags that carry tabindex or a declared keyboard equivalent and reporting them otherwise, with fixtures.
     - Write client/interop/interop.test.tsx: a part as a custom element with attribute props, a Rex page mounted inside a plain document with other content, an action invoked through its data-rex address, clean unmount, Native ref access.

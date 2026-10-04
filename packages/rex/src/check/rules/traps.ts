@@ -13,6 +13,8 @@ const LIST_TAGS = ["ul", "ol"];
 const LIST_ROLES = ["list", "feed"];
 const SCROLL_ATTRIBUTES = ["onScroll", "onScrollCapture", "onScrollEnd"];
 const SCROLL_EVENTS = ["scroll", "scrollend"];
+const CUSTOM_ELEMENT_TAG = /^[a-z][a-z0-9._]*-[a-z0-9._-]*$/;
+const TABINDEX_ATTRIBUTES = ["tabIndex", "tabindex"];
 
 function tagName(element: ts.JsxOpeningLikeElement): string {
   return element.tagName.getText();
@@ -40,6 +42,37 @@ function hasValue(attribute: ts.JsxAttribute | undefined): boolean {
       return expression.text.trim().length > 0;
     }
     return true;
+  }
+  return false;
+}
+
+function isCustomElement(element: ts.JsxOpeningLikeElement): boolean {
+  return ts.isIdentifier(element.tagName) && CUSTOM_ELEMENT_TAG.test(element.tagName.text);
+}
+
+function isNegative(expression: ts.Expression): boolean {
+  if (ts.isParenthesizedExpression(expression)) return isNegative(expression.expression);
+  return (
+    ts.isPrefixUnaryExpression(expression) &&
+    expression.operator === ts.SyntaxKind.MinusToken &&
+    ts.isNumericLiteral(expression.operand) &&
+    Number(expression.operand.text) > 0
+  );
+}
+
+function isFocusable(attribute: ts.JsxAttribute | undefined): boolean {
+  if (attribute === undefined || !hasValue(attribute)) return false;
+  const initializer = attribute.initializer;
+  if (initializer !== undefined && ts.isStringLiteral(initializer)) {
+    return !initializer.text.trim().startsWith("-");
+  }
+  if (initializer !== undefined && ts.isJsxExpression(initializer)) {
+    const expression = initializer.expression;
+    if (expression === undefined) return false;
+    if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
+      return !expression.text.trim().startsWith("-");
+    }
+    return !isNegative(expression);
   }
   return false;
 }
@@ -86,6 +119,18 @@ function checkFile(sources: SourceLoader, file: AppFile): Finding[] {
         "canvas",
         `<canvas> has no ${ALTERNATIVE_ATTRIBUTE}`,
         `Declare the equivalent action with ${ALTERNATIVE_ATTRIBUTE}="<page>/<action>" and render it as a control.`,
+      );
+    }
+
+    if (
+      isCustomElement(element) &&
+      !TABINDEX_ATTRIBUTES.some((name) => isFocusable(attributes.get(name))) &&
+      !hasValue(attributes.get(ALTERNATIVE_ATTRIBUTE))
+    ) {
+      report(
+        "custom-element",
+        `custom element <${tag}> has no tabIndex or ${ALTERNATIVE_ATTRIBUTE}`,
+        `Give <${tag}> tabIndex={0} so keyboard and agent users reach it, or declare its keyboard equivalent with ${ALTERNATIVE_ATTRIBUTE}="<page>/<action>" and render that control.`,
       );
     }
 
@@ -227,7 +272,7 @@ function checkOverlayDismiss(app: RexApp, sources: SourceLoader): Finding[] {
 export const trapsRule = defineRule({
   id: "traps",
   description:
-    "Reports hover-only, drag-only, canvas-only and motion-only controls, scroll-loading lists without Page.List and overlays without a declared dismiss.",
+    "Reports hover-only, drag-only, canvas-only and motion-only controls, custom elements without tabIndex or a declared keyboard equivalent, scroll-loading lists without Page.List and overlays without a declared dismiss.",
   check({ app, sources }) {
     return [
       ...app.files

@@ -57,6 +57,8 @@ describe("naming, traps and tokens on the fail fixture", () => {
       ["app/pages/home/regions/list/parts/Chart.tsx", 2, 10, "traps/canvas"],
       ["app/pages/home/regions/list/parts/Pill.tsx", 1, 1, "naming/part-exports"],
       ["app/pages/home/regions/list/parts/Pill.tsx", 1, 17, "naming/part-exports"],
+      ["app/pages/home/regions/list/parts/Ticker.tsx", 3, 5, "traps/custom-element"],
+      ["app/pages/home/regions/list/parts/Ticker.tsx", 4, 7, "traps/custom-element"],
       ["app/pages/home/regions/list/parts/holdingRow.tsx", 1, 1, "naming/part-name"],
       ["app/pages/home/regions/list/region.tsx", 5, 20, "tokens/raw-color"],
       ["app/pages/home/regions/list/region.tsx", 5, 31, "tokens/arbitrary-value"],
@@ -97,6 +99,10 @@ describe("naming, traps and tokens on the fail fixture", () => {
     expect(first("traps/hover-only").message).toBe("<li> handles onMouseEnter without onFocus");
     expect(first("traps/drag-only").message).toBe("draggable <li> has no data-rex-alternative");
     expect(first("traps/canvas").message).toBe("<canvas> has no data-rex-alternative");
+    expect(first("traps/custom-element").message).toBe(
+      "custom element <rex-ticker> has no tabIndex or data-rex-alternative",
+    );
+    expect(first("traps/custom-element").hint).toContain("tabIndex={0}");
     expect(first("traps/motion-only").message).toBe(
       '<div> conveys state only through "animate-spin"',
     );
