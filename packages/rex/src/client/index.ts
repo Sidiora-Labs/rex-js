@@ -27,6 +27,7 @@ export {
 export * from "./shell.tsx";
 export * from "./providers.ts";
 export * from "./reset.ts";
+export * from "./store.ts";
 export * from "./overlay.tsx";
 export * from "./unsafe-html.tsx";
 export * from "./agent/address.tsx";

@@ -114,7 +114,7 @@
   - [ ] 2.7 Real demo page tests written with rex/testing
     - Write tests in examples/demo/app/pages/<page>/test/ for every page and region using rex/testing, a vitest config for the demo and a test:unit script in the demo package.
     - _Requirements: 16.2_
-  - [ ] 3.1 Shared state primitive exposed to the sidecar
+  - [x] 3.1 Shared state primitive exposed to the sidecar
     - Add client/store.ts implementing store() per [design] state_api on useSyncExternalStore with get, set, update, subscribe, useStore, toJSON and a reset registered through client/reset.ts; exposed stores appear in the sidecar under state.stores (extend manifest/sidecar.schema.ts and client/agent/sidecar.tsx).
     - Add a regions list to the sidecar schema carrying each region's state and error code so RegionBoundary reports through it (closes qualification.03).
     - Write client/store.test.tsx: typed updates, single-subscriber re-render, sidecar exposure and update, reset between tests, serialisation.
