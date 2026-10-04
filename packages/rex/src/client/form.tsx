@@ -1,7 +1,6 @@
 import {
   createContext,
   useContext,
-  useId,
   useState,
   type FormEvent,
   type ReactNode,
@@ -11,10 +10,11 @@ import { isPlainObject } from "../core/entity.ts";
 import { RexError } from "../core/errors.ts";
 import type { JsonSchema } from "../core/schema.ts";
 import { issuePath, validateStandard, type StandardIssue } from "../core/standard.ts";
-import { actionLabel, type ActResult } from "./act.ts";
+import { actionLabel, type ActControlProps, type ActResult } from "./act.ts";
 import { useInvoke } from "./agent/confirm.tsx";
 import { outcomeErrors, readCookie, type FieldErrors } from "./agent/outcome.tsx";
 import { useManifest } from "./context.ts";
+import { lazyModule, useLazyModule } from "./lazy.ts";
 import { APP_OUTCOME_KEY, useOutcome } from "./outcome.ts";
 import { useActivePage } from "./router.tsx";
 
@@ -200,105 +200,24 @@ function valueAt(values: unknown, path: string): unknown {
   return current;
 }
 
-function textValue(value: unknown): string | undefined {
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "bigint") return String(value);
-  return undefined;
-}
+const actionFormView = lazyModule("rex.form", "the action form", () =>
+  import("./form-view.tsx").then((loaded) => loaded.ActionFormView),
+);
 
-interface FieldControlProps {
-  readonly field: FormField;
-  readonly id: string;
-  readonly error: readonly string[] | undefined;
-  readonly errorId: string;
-  readonly value: unknown;
-}
-
-function FieldControl({ field, id, error, errorId, value }: FieldControlProps) {
-  const invalid = error === undefined ? {} : { "aria-invalid": true, "aria-describedby": errorId };
-  const required = field.required && field.control !== "checkbox";
-  const common = { id, name: field.path, required, ...invalid };
-  const { schema } = field;
-  switch (field.control) {
-    case "checkbox":
-      return <input type="checkbox" value="true" defaultChecked={value === true} {...common} />;
-    case "select":
-      return (
-        <select defaultValue={textValue(value) ?? ""} {...common}>
-          {field.required ? null : <option value="">None</option>}
-          {field.options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      );
-    case "multiselect":
-      return (
-        <select
-          multiple
-          defaultValue={Array.isArray(value) ? value.map((entry) => String(entry)) : []}
-          {...common}
-        >
-          {field.options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      );
-    case "number":
-      return (
-        <input
-          type="number"
-          step={field.type === "integer" ? 1 : "any"}
-          {...(typeof schema.minimum === "number" ? { min: schema.minimum } : {})}
-          {...(typeof schema.maximum === "number" && Number.isSafeInteger(schema.maximum)
-            ? { max: schema.maximum }
-            : {})}
-          defaultValue={textValue(value)}
-          {...common}
-        />
-      );
-    case "text":
-      return (
-        <input
-          type="text"
-          {...(schema.format === "decimal" ? { inputMode: "decimal" as const } : {})}
-          {...(typeof schema.minLength === "number" ? { minLength: schema.minLength } : {})}
-          {...(typeof schema.maxLength === "number" ? { maxLength: schema.maxLength } : {})}
-          defaultValue={textValue(value)}
-          {...common}
-        />
-      );
-  }
-}
-
-function FormFieldRow({
-  field,
-  error,
-  value,
-}: {
-  readonly field: FormField;
-  readonly error: readonly string[] | undefined;
-  readonly value: unknown;
-}) {
-  const id = useId();
-  const errorId = `${id}-error`;
-  const checkbox = field.control === "checkbox";
-  const label = <label htmlFor={id}>{field.label}</label>;
-  return (
-    <div data-rex-field={field.path}>
-      {checkbox ? null : label}
-      <FieldControl field={field} id={id} error={error} errorId={errorId} value={value} />
-      {checkbox ? label : null}
-      {error === undefined ? null : (
-        <p id={errorId} data-rex-field-error={field.path}>
-          {error.join("; ")}
-        </p>
-      )}
-    </div>
-  );
+export interface ActionFormViewProps {
+  readonly actionId: string;
+  readonly path: string;
+  readonly label: string;
+  readonly address: string;
+  readonly hidden: readonly (readonly [string, string])[];
+  readonly fields: readonly FormField[] | null;
+  readonly errors: FieldErrors;
+  readonly values: readonly unknown[];
+  readonly unplaced: readonly (readonly [string, string])[];
+  readonly submitLabel: string;
+  readonly controlProps: ActControlProps;
+  readonly onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  readonly children?: ReactNode;
 }
 
 export interface ActionFormProps<A extends AnyAction> {
@@ -323,6 +242,7 @@ export function ActionForm<A extends AnyAction>({
   const pageKey = active === null ? APP_OUTCOME_KEY : active.page.id;
   const outcome = useOutcome(pageKey);
   const [submitted, setSubmitted] = useState<FieldErrors | null>(null);
+  const view = useLazyModule(actionFormView, { outcome: pageKey });
 
   if (active !== null && !active.page.actions.includes(declared)) {
     throw new RexError(
@@ -350,38 +270,30 @@ export function ActionForm<A extends AnyAction>({
     onResult?.(result);
   };
 
+  if (view === null || !view.ok) return null;
+  const ActionFormView = view.value;
   return (
-    <form
-      method="post"
-      action={formActionPath(declared.id)}
-      noValidate
-      aria-label={label}
-      data-rex-form={handle.controlProps["data-rex"] ?? declared.id}
+    <ActionFormView
+      actionId={declared.id}
+      path={formActionPath(declared.id)}
+      label={label}
+      address={handle.controlProps["data-rex"] ?? declared.id}
+      hidden={[
+        [CSRF_FIELD, csrf],
+        [ACTION_FIELD, declared.id],
+      ]}
+      fields={children === undefined ? fields : null}
+      errors={errors}
+      values={fields.map((field) => valueAt(defaultValues, field.path))}
+      unplaced={unplaced.map(([path, problem]) => [
+        path,
+        path === FORM_ERRORS_KEY ? problem.join("; ") : `${path}: ${problem.join("; ")}`,
+      ])}
+      submitLabel={submitLabel ?? label}
+      controlProps={controlProps}
       onSubmit={(event) => void onSubmit(event)}
     >
-      <input type="hidden" name={CSRF_FIELD} value={csrf} />
-      <input type="hidden" name={ACTION_FIELD} value={declared.id} />
-      {children ??
-        fields.map((field) => (
-          <FormFieldRow
-            key={field.path}
-            field={field}
-            error={errors[field.path]}
-            value={valueAt(defaultValues, field.path)}
-          />
-        ))}
-      {unplaced.length === 0 ? null : (
-        <ul data-rex-form-errors={declared.id}>
-          {unplaced.map(([path, problem]) => (
-            <li key={path} data-rex-field-error={path}>
-              {path === FORM_ERRORS_KEY ? problem.join("; ") : `${path}: ${problem.join("; ")}`}
-            </li>
-          ))}
-        </ul>
-      )}
-      <button type="submit" {...controlProps}>
-        {submitLabel ?? label}
-      </button>
-    </form>
+      {children}
+    </ActionFormView>
   );
 }
