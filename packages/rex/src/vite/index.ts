@@ -70,5 +70,6 @@ export {
   type RexHookContext,
   type RexHookState,
 } from "./hooks.ts";
+export { CSP_NONCE_META_PROPERTY, applyNonce, nonceHook, nonceMetaTag } from "./nonce.ts";
 export { assemblePlugins, createHookContext, rex, type RexPluginOptions } from "./plugin.ts";
 export { rex as default } from "./plugin.ts";
