@@ -186,7 +186,7 @@
   - [ ] 5.5 Governance, maintainers, security policy, code of conduct and funding — **Implemented - qualification pending**
     - Write GOVERNANCE.md (decision process, roles, release authority), MAINTAINERS.md, SECURITY.md (reporting channel, supported versions, disclosure timeline), CODE_OF_CONDUCT.md and .github/FUNDING.yml, and link them from README.md.
     - _Requirements: 32.1_
-  - [ ] 5.6 Page.List paged lists and the infinite-list trap rule
+  - [x] 5.6 Page.List paged lists and the infinite-list trap rule
     - Add client/list.tsx exporting Page.List with page and size URL params and a load-more control that appends; use it for the demo holdings and regenerate the demo manifest; add traps/infinite-list to check/rules/traps.ts with fixtures; write client/list.test.tsx.
     - _Requirements: 33.1_
   - [ ] 5.7 Convert the remaining server, client and Vite errors to catalogued codes

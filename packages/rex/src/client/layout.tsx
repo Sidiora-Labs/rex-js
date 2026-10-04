@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import { List } from "./list.tsx";
 
 export const SPACES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 export const COLUMNS = [1, 2, 3, 4] as const;
@@ -95,4 +96,4 @@ function Outcome({ space = DEFAULT_SPACE, children }: OutcomeProps) {
   );
 }
 
-export const Page = Object.freeze({ Stack, Grid, Section, Outcome });
+export const Page = Object.freeze({ Stack, Grid, Section, Outcome, List });
