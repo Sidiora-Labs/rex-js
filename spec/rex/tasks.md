@@ -214,7 +214,7 @@
     - Extend tokens.css agent density overrides: motion duration zero, collapsed groups expanded, hit targets at least 44 by 44 pixels.
     - Write src/client/agent/density.test.tsx covering precedence order and the root attribute.
     - _Requirements: 9.1, 9.2, 9.3_
-  - [ ] 5.6 Implement overlays
+  - [x] 5.6 Implement overlays
     - Implement src/client/overlay.tsx: overlay(id, {dismiss, binding}, render) producing a component that registers itself in the overlay registry with open state, renders data-rex-overlay, traps focus while open, closes on Escape and the declared dismiss control, and restores focus to the opener; open state binds to region state or the URL as declared.
     - Export overlay from src/client/index.ts by appending to the existing export list.
     - Write src/client/overlay.test.tsx covering open and close on each dismiss path, focus trap and restoration, URL binding and sidecar registration.
