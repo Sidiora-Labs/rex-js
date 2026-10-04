@@ -31,10 +31,12 @@ import {
   runtimeStylesheets,
   scanApp,
   type RexAppBundle,
+  type RexAppConfig,
 } from "./virtual.ts";
 
 const VITE_TEST_TIMEOUT_MS = 20_000;
 const DEMO_BUILD_TIMEOUT_MS = 240_000;
+const DEVTOOLS_BUILD_TIMEOUT_MS = 120_000;
 const here = dirname(fileURLToPath(import.meta.url));
 const demoRoot = join(here, "..", "..", "..", "..", "examples", "demo");
 const fixtureRoot = join(here, "fixtures", "app");
@@ -45,6 +47,7 @@ const fixture = (path: string) => normalizePath(join(fixtureRoot, path));
 const BUNDLE_EXPORTS = [
   "actions",
   "app",
+  "config",
   "default",
   "entities",
   "flows",
@@ -330,7 +333,7 @@ describe("the demo client build", { timeout: DEMO_BUILD_TIMEOUT_MS }, () => {
   });
 });
 
-describe("the devtools in client builds", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
+describe("the devtools in client builds", { timeout: DEVTOOLS_BUILD_TIMEOUT_MS }, () => {
   const devtoolsDir = normalizePath(join(here, "..", "client", "devtools"));
   const devtoolsSlot = normalizePath(join(here, "..", "client", "shell", "devtools-slot.tsx"));
 
@@ -404,6 +407,7 @@ describe("rex() with the Vite dev server", { timeout: VITE_TEST_TIMEOUT_MS }, ()
   const loadBundle = async () =>
     (await vite.ssrLoadModule(APP_MODULE_ID)) as RexAppBundle & {
       readonly app: RexAppBundle;
+      readonly config: RexAppConfig;
       readonly default: RexAppBundle;
     };
 
@@ -438,6 +442,8 @@ describe("rex() with the Vite dev server", { timeout: VITE_TEST_TIMEOUT_MS }, ()
   it("exports the typed app bundle from rex:app", async () => {
     const bundle = await loadBundle();
     expect(Object.keys(bundle).sort()).toEqual(BUNDLE_EXPORTS);
+    expect(bundle.config).toEqual({ fonts: [], i18n: null });
+    expect(Object.isFrozen(bundle.config)).toBe(true);
     expect(bundle.default).toBe(bundle.app);
     expect(bundle.app.name).toBe("fixture");
     expect(bundle.app.registry).toBe(bundle.registry);

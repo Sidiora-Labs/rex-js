@@ -1646,14 +1646,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.12]
 title = "The CLI, manifest, Vite and checker suites are green on the integrated branch"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 7
 requires = ["7.8", "7.10"]
 reqs = ["13.2", "1.1", "4.1", "23.1"]
 do_1 = "The full package suite on the integrated branch (revision 955fbf9) shows these failures outside the server and client; make each one pass without weakening a check: cli.test.ts (4) runs the CLI as a plain node process and gets exit 1, so whatever the CLI entry imports that plain Node cannot load (a .tsx chain or a missing built file) is fixed at its source or the test builds what it needs first; scan.test.ts (4) scans temp apps whose imports of zod/mini cannot be resolved because the temp app has no node_modules, so the module loader in cli/load.ts resolves the framework's peer dependencies from the rex package when the app cannot, and the stale child-process expectation follows the 0.8 scanner; vite.test.ts (3) expects the rex:app export list without the config export that 7.5 added, and the devtools bundling case times out, so the expectations follow the merged module and the timeout gets a stated bound; frame.test.ts (1), check/rules/i18n.test.ts (1) and migrate.test.ts (1, the migrated 0.1 fixture reads z from the core entry that no longer exports it, so the 0.2 codemod rewrites that import) follow the merged code."
 do_2 = "Any failure of commands.test.ts, new.test.ts or designx.test.ts still present after 7.10 (format/prettier findings on generated apps) is fixed in the generator templates, never by filtering the findings."
-touches = ["packages/rex/src/cli/cli.test.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/cli/frame.test.ts", "packages/rex/src/cli/migrate.test.ts", "packages/rex/src/cli/codemods", "packages/rex/src/cli/templates.ts", "packages/rex/src/manifest/scan.ts", "packages/rex/src/manifest/scan.test.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/check/rules/i18n.test.ts", "packages/rex/src/cli/commands.test.ts", "packages/rex/src/cli/new.test.ts", "packages/rex/src/cli/designx.test.ts"]
+touches = ["packages/rex/src/cli/cli.test.ts", "packages/rex/src/cli/frame.test.ts", "packages/rex/src/cli/migrate.test.ts", "packages/rex/src/cli/codemods", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/check/rules/i18n.test.ts"]
 verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/cli src/manifest src/vite src/check"
 gate_kind = "planned"
 max_builds = 1

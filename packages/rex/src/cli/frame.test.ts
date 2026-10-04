@@ -23,9 +23,17 @@ const here = dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = join(here, "..", "vite", "fixtures", "app");
 const packageModules = join(here, "..", "..", "node_modules");
 const coreEntry = join(here, "..", "index.ts");
+const schemaEntry = join(here, "..", "schema", "index.ts");
 const aliasPlugin: Plugin = {
   name: "frame-test-alias",
-  config: () => ({ resolve: { alias: [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }] } }),
+  config: () => ({
+    resolve: {
+      alias: [
+        { find: /^@sidioralabs\/rex$/, replacement: coreEntry },
+        { find: /^@sidioralabs\/rex\/schema$/, replacement: schemaEntry },
+      ],
+    },
+  }),
 };
 
 const SOURCE = ["a", "", "\tconst b = 1;", "d", "e", "f"].join("\n");
@@ -183,10 +191,10 @@ describe("module loading for CLI commands", () => {
     const error = failure as RexError;
     const file = `${root}/app/pages/note/page.ts`;
     expect(error.code).toBe("REX213");
-    expect([error.file, error.line]).toEqual([file, 3]);
+    expect([error.file, error.line]).toEqual([file, 5]);
     expect(error.column).toBeGreaterThan(0);
     const output = formatCliError(error);
-    expect(output).toContain(`(${file}:3:${error.column})`);
-    expect(output).toContain('> 3 | export default page("note", {');
+    expect(output).toContain(`(${file}:5:${error.column})`);
+    expect(output).toContain('> 5 | export default page("note", {');
   }, 60_000);
 });
