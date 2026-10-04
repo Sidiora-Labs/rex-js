@@ -3,6 +3,7 @@ import type { ErrorInfo } from "react";
 import type { ActorInput } from "../core/actor.ts";
 import { isPlainObject } from "../core/entity.ts";
 import { escapeInlineJson } from "../core/serialize.ts";
+import { adoptServerLoaders } from "./loaders.ts";
 
 export const REX_DATA_MIME_TYPE = "application/rex+data";
 export const REX_DATA_ELEMENT_ID = "rex-data";
@@ -81,6 +82,7 @@ export function isServerRendered(container: Element): boolean {
 
 export function hydrateQueries(queryClient: QueryClient, payload: RexDataPayload): void {
   hydrate(queryClient, payload.queries);
+  adoptServerLoaders(queryClient, payload.queries);
 }
 
 export interface HydrationMismatch {

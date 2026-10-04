@@ -57,7 +57,7 @@
     - Make client/entry.tsx hydrate with hydrateRoot when the document root carries data-rex-ssr and otherwise createRoot; add client/hydrate.ts reading the data script; report mismatches as REX310 in dev.
     - Write server/ssr.test.tsx with a real createRexServer over the fixture app: streamed HTML content and order (links before body), hydration in happy-dom with an interactive click, csr behaviour, 403, 404 and 500 cases.
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
-  - [ ] 1.2 Page loaders with server execution, dehydration, deduping and invalidation
+  - [x] 1.2 Page loaders with server execution, dehydration, deduping and invalidation
     - Add client/loaders.ts with useLoader and useLoaders per [design] loaders_api, query keys under [loader, page, name, inputDigest], cache.staleTime applied, and invalidation wiring in client/act.ts for actions declaring invalidates or loaders declaring invalidatedBy.
     - Add server/loaders.ts running a page's loaders in process through the action router during SSR and dehydrating the QueryClient into the application/rex+data script that server/ssr.ts emits; client/hydrate.ts hydrates it before first render.
     - Map loader failures into the page data state through the existing precedence in client/states.ts and surface them in the sidecar.
