@@ -1,5 +1,5 @@
 {
-  "page": "portfolio",
+  "page": "embed",
   "actor": "owner",
   "densities": [
     {
@@ -7,23 +7,13 @@
       "checks": [
         {
           "name": "page renders one ready sidecar",
-          "ok": false,
-          "detail": "window.__rex differs from the sidecar script"
-        }
-      ]
-    },
-    {
-      "density": "agent",
-      "checks": [
-        {
-          "name": "page renders one ready sidecar",
           "ok": true,
-          "detail": "1 actions, 1 overlays"
+          "detail": "0 actions, 0 overlays"
         },
         {
           "name": "loaders hydrate from the server render without a request",
           "ok": true,
-          "detail": "wallet (load-wallet)"
+          "detail": "tokens (list-tokens)"
         },
         {
           "name": "stylesheet links precede the first body content",
@@ -38,7 +28,62 @@
         {
           "name": "the text renderer lists every sidecar action",
           "ok": true,
-          "detail": "1 actions listed"
+          "detail": "0 actions listed"
+        },
+        {
+          "name": "root density is comfortable for default",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "page, region and outcome landmarks are addressed",
+          "ok": true,
+          "detail": "embed/widget, embed/locale"
+        },
+        {
+          "name": "sidecar lists exactly the present controls",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "sidecar parity holds after the walk",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "the console reports no Content Security Policy violation",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "density": "agent",
+      "checks": [
+        {
+          "name": "page renders one ready sidecar",
+          "ok": true,
+          "detail": "0 actions, 0 overlays"
+        },
+        {
+          "name": "loaders hydrate from the server render without a request",
+          "ok": true,
+          "detail": "tokens (list-tokens)"
+        },
+        {
+          "name": "stylesheet links precede the first body content",
+          "ok": true,
+          "detail": "1 stylesheet links precede the body"
+        },
+        {
+          "name": "actions rendered as forms post to the form route",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "the text renderer lists every sidecar action",
+          "ok": true,
+          "detail": "0 actions listed"
         },
         {
           "name": "root density is agent for agent",
@@ -48,57 +93,22 @@
         {
           "name": "page, region and outcome landmarks are addressed",
           "ok": true,
-          "detail": "portfolio/hero, portfolio/actions, portfolio/holdings"
+          "detail": ""
         },
         {
           "name": "sidecar lists exactly the present controls",
           "ok": true,
-          "detail": "portfolio/toggle-hide-dust"
+          "detail": ""
         },
         {
           "name": "agent density enlarges hit targets",
           "ok": true,
-          "detail": "1 controls at least 44px"
-        },
-        {
-          "name": "toggle-hide-dust by click",
-          "ok": true,
-          "detail": "SucceededToggle hide dust succeededDismiss"
-        },
-        {
-          "name": "toggle-hide-dust by key",
-          "ok": true,
-          "detail": "SucceededToggle hide dust succeededDismiss"
-        },
-        {
-          "name": "toggle-hide-dust by url",
-          "ok": true,
-          "detail": "SucceededToggle hide dust succeededDismiss"
-        },
-        {
-          "name": "toggle-hide-dust by palette",
-          "ok": true,
-          "detail": "SucceededToggle hide dust succeededDismiss"
-        },
-        {
-          "name": "overlay HoldingsFilterSheet dismisses by Escape",
-          "ok": true,
-          "detail": ""
-        },
-        {
-          "name": "overlay HoldingsFilterSheet dismisses by its control",
-          "ok": true,
-          "detail": ""
-        },
-        {
-          "name": "overlay HoldingsFilterSheet accepts typed input for its choices",
-          "ok": true,
-          "detail": "no choices; typed input present"
+          "detail": "0 controls at least 44px"
         },
         {
           "name": "sidecar parity holds after the walk",
           "ok": true,
-          "detail": "portfolio/toggle-hide-dust"
+          "detail": ""
         },
         {
           "name": "the console reports no Content Security Policy violation",
@@ -108,7 +118,5 @@
       ]
     }
   ],
-  "failures": [
-    "[default] page renders one ready sidecar: window.__rex differs from the sidecar script"
-  ]
+  "failures": []
 }

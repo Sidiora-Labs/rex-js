@@ -16,9 +16,9 @@
           "detail": "no page chunk, hydration or data script"
         },
         {
-          "name": "root density is default",
-          "ok": false,
-          "detail": "data-rex-density is null"
+          "name": "root density is comfortable for default",
+          "ok": true,
+          "detail": "comfortable"
         },
         {
           "name": "stylesheet links precede the first body content",
@@ -61,9 +61,9 @@
           "detail": "no page chunk, hydration or data script"
         },
         {
-          "name": "root density is agent",
-          "ok": false,
-          "detail": "data-rex-density is null"
+          "name": "root density is agent for agent",
+          "ok": true,
+          "detail": "agent"
         },
         {
           "name": "stylesheet links precede the first body content",
@@ -93,8 +93,5 @@
       ]
     }
   ],
-  "failures": [
-    "[default] root density is default: data-rex-density is null",
-    "[agent] root density is agent: data-rex-density is null"
-  ]
+  "failures": []
 }

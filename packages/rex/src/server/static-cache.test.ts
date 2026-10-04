@@ -16,12 +16,16 @@ import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { SIDECAR_MIME_TYPE } from "../manifest/sidecar.schema.ts";
 import { prerenderPages, writePrerenderList } from "../vite/prerender.ts";
+import { escapeInlineJson } from "../core/serialize.ts";
 import {
   PRERENDER_LIST_FILE,
   PRERENDER_NONCE,
+  PRERENDER_SCREEN,
   RexStaticPageError,
   STATIC_HEADER,
+  applyScreenAttributes,
   createStaticCache,
+  prerenderContext,
   fillCsrfToken,
   memoryStaticStore,
   normalizePagePath,
@@ -44,6 +48,7 @@ import {
   createRexRenderer,
   pageRenderMode,
   registerPageRenderer,
+  screenFromRequest,
   type RexDocumentAssets,
 } from "./ssr.ts";
 
@@ -221,6 +226,33 @@ function executableScripts(html: string): string[] {
     });
 }
 
+function rootTag(html: string): string {
+  return /<html\b[^>]*>/.exec(html)?.[0] ?? "";
+}
+
+function rootAttributes(html: string): Record<string, string> {
+  const tag = rootTag(html);
+  const found: Record<string, string> = {};
+  for (const name of ["data-rex-screen", "data-rex-pointer", "data-rex-density"]) {
+    const value = new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1];
+    if (value !== undefined) found[name] = value;
+  }
+  return found;
+}
+
+function sidecarOf(html: string): Record<string, unknown> {
+  const found = new RegExp(`<script type="${SIDECAR_MIME_TYPE.replace("+", "\\+")}"[^>]*>([\\s\\S]*?)</script>`).exec(html);
+  if (found === null) throw new Error("the page has no sidecar");
+  return JSON.parse(found[1] as string) as Record<string, unknown>;
+}
+
+const PHONE_HINTS = {
+  "sec-ch-ua-mobile": "?1",
+  "sec-ch-viewport-width": "390",
+  "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile/15E148",
+} as const;
+const TABLET_AGENT = "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1";
+
 function csrfCookieOf(response: Response): string | null {
   const header = response.headers.get("set-cookie") ?? "";
   return new RegExp(`${CSRF_COOKIE}=([0-9a-f]{64})`).exec(header)?.[1] ?? null;
@@ -387,6 +419,55 @@ describe("node adapter with prerendered pages", { timeout: 30_000 }, () => {
     }
   });
 
+  it("rewrites the root screen, pointer and density per request from the classification the render route uses", async () => {
+    const onDisk = readFileSync(join(clientDir, "landing", "index.html"), "utf8");
+    expect(rootAttributes(onDisk)).toEqual({
+      "data-rex-screen": "desktop",
+      "data-rex-pointer": "fine",
+      "data-rex-density": "comfortable",
+    });
+
+    const plain = await (await get("/landing")).text();
+    expect(rootAttributes(plain)).toEqual(rootAttributes(onDisk));
+    expect(sidecarOf(plain)).toMatchObject({ screen: "desktop", pointer: "fine", density: "comfortable" });
+
+    const phone = await get("/landing?density=agent", PHONE_HINTS);
+    expect(phone.headers.get(STATIC_HEADER)).toBe("hit");
+    expect(phone.headers.get("accept-ch")).toContain("Sec-CH-Viewport-Width");
+    const phoneHtml = await phone.text();
+    expect(rootAttributes(phoneHtml)).toEqual({
+      "data-rex-screen": "phone",
+      "data-rex-pointer": "coarse",
+      "data-rex-density": "agent",
+    });
+    expect(rootTag(phoneHtml)).toMatch(/^<html lang="en" /);
+    expect(sidecarOf(phoneHtml)).toMatchObject({
+      page: "landing",
+      screen: "phone",
+      pointer: "coarse",
+      density: "agent",
+    });
+    expect(phoneHtml).toContain("Join the list");
+
+    const tablet = await get("/stories/launch", { "user-agent": TABLET_AGENT });
+    expect(tablet.headers.get(STATIC_HEADER)).toBe("hit");
+    const tabletHtml = await tablet.text();
+    expect(rootAttributes(tabletHtml)).toEqual({
+      "data-rex-screen": "tablet",
+      "data-rex-pointer": "coarse",
+      "data-rex-density": "comfortable",
+    });
+    expect(tabletHtml).toContain('data-rex-ssr=""');
+
+    for (const headers of [PHONE_HINTS, { "user-agent": TABLET_AGENT }]) {
+      const served = rootAttributes(await (await get("/landing?density=compact", headers)).text());
+      const rendered = await get("/live?density=compact", headers);
+      expect(rendered.headers.get(STATIC_HEADER)).toBeNull();
+      expect(served).toEqual(rootAttributes(await rendered.text()));
+    }
+    expect(readFileSync(join(clientDir, "landing", "index.html"), "utf8")).toBe(onDisk);
+  });
+
   it("still serves files, the API and server-rendered pages around the prerendered ones", async () => {
     const asset = await fetch(`${running.url}${ENTRY_SCRIPT}`);
     expect(asset.status).toBe(200);
@@ -409,6 +490,7 @@ describe("static cache on the fetch-only render route", { timeout: 30_000 }, () 
     const memory = createStaticCache({
       pages: list.pages,
       store: memoryStaticStore([["/landing", landingHtml]]),
+      screen: screenFromRequest,
     });
     const unregister = registerStaticCache(registry, memory);
     try {
@@ -424,14 +506,57 @@ describe("static cache on the fetch-only render route", { timeout: 30_000 }, () 
       expect(await generated.text()).toContain("Evening edition");
       expect(memory.entry("/news")?.generatedAt).toBeGreaterThan(cache.entry("/news")?.generatedAt ?? 0);
 
-      const empty = createStaticCache({ pages: list.pages, store: memoryStaticStore() });
+      const empty = createStaticCache({ pages: list.pages, store: memoryStaticStore(), screen: screenFromRequest });
+      const context = { ...prerenderContext(), nonce: "abc" };
       await expect(
-        empty.serve(new Request("http://rex.test/landing"), renderer, "abc"),
+        empty.serve(new Request("http://rex.test/landing"), renderer, context),
       ).rejects.toThrow(RexStaticPageError);
-      await expect(empty.serve(new Request("http://rex.test/live"), renderer, "abc")).resolves.toBeNull();
+      await expect(empty.serve(new Request("http://rex.test/live"), renderer, context)).resolves.toBeNull();
+      expect(() => createStaticCache({ pages: list.pages, store: memoryStaticStore() } as never)).toThrow(
+        expect.objectContaining({ name: "RexError", code: "REX400" }),
+      );
     } finally {
       unregister();
       registerStaticCache(registry, cache);
     }
+  });
+});
+
+describe("screen attributes on prerendered documents", () => {
+  const BARE = '<!doctype html><html lang="en"><head></head><body><div id="root"></div></body></html>';
+  const phone = { screen: "phone", pointer: "coarse", density: "agent" } as const;
+
+  it("adds the attributes to an html element without them and replaces the ones already written", () => {
+    const written = applyScreenAttributes(BARE, PRERENDER_SCREEN);
+    expect(rootTag(written)).toBe(
+      '<html lang="en" data-rex-screen="desktop" data-rex-pointer="fine" data-rex-density="comfortable">',
+    );
+    expect(applyScreenAttributes(written, PRERENDER_SCREEN)).toBe(written);
+    expect(rootTag(applyScreenAttributes(written, phone))).toBe(
+      '<html lang="en" data-rex-screen="phone" data-rex-pointer="coarse" data-rex-density="agent">',
+    );
+    expect(applyScreenAttributes(written, phone).replace(rootTag(applyScreenAttributes(written, phone)), "")).toBe(
+      written.replace(rootTag(written), ""),
+    );
+  });
+
+  it("rewrites the screen fields of the sidecar and leaves a sidecar without them untouched", () => {
+    const payload = { version: 1, page: "landing", note: "<b>&</b>", screen: "desktop", pointer: "fine", density: "comfortable" };
+    const sidecar = `<script type="${SIDECAR_MIME_TYPE}" id="rex-page" data-rex-sidecar="landing">${escapeInlineJson(payload)}</script>`;
+    const html = applyScreenAttributes(BARE.replace("</body>", `${sidecar}</body>`), PRERENDER_SCREEN);
+    const rewritten = applyScreenAttributes(html, phone);
+    expect(sidecarOf(rewritten)).toEqual({ ...payload, ...phone });
+    expect(rewritten).toContain(escapeInlineJson({ ...payload, ...phone }));
+    expect(rewritten).not.toContain("<b>");
+
+    const without = `<script type="${SIDECAR_MIME_TYPE}" id="rex-page">${escapeInlineJson({ page: "landing" })}</script>`;
+    const plain = applyScreenAttributes(BARE.replace("</body>", `${without}</body>`), phone);
+    expect(plain).toContain(without);
+  });
+
+  it("refuses a document without an html element", () => {
+    expect(() => applyScreenAttributes("<main>Hi</main>", PRERENDER_SCREEN)).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX400" }),
+    );
   });
 });

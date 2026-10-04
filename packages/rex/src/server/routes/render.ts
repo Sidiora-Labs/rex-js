@@ -104,7 +104,7 @@ export function installRenderRoute(app: Hono, setup: RexServerSetup): void {
       const runner = loaderRunnerFor(c.req.raw);
       const regenerator =
         renderer === undefined || runner === undefined ? renderer : withLoaderRunner(renderer, runner);
-      const hit = await cache.serve(c.req.raw, regenerator, context.nonce);
+      const hit = await cache.serve(c.req.raw, regenerator, context);
       if (hit !== null) return staticResponse(hit, context.density);
     }
     if (renderer === undefined) {

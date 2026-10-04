@@ -3,10 +3,12 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   DENSITIES,
   buildDemo,
+  checkRootDensity,
   committedManifest,
   isStaticPage,
   openOverlay,
   pageUrl,
+  rootDensity,
   startDemo,
   waitForSidecar,
   type Density,
@@ -61,10 +63,7 @@ async function auditDensity(
   const sidecar = { mirror: !isStaticPage(pageInfo) };
   await page.goto(pageUrl(base, pageInfo.route, { density }));
   await waitForSidecar(page, pageInfo.id, sidecar);
-  const attribute = await page.evaluate(() =>
-    document.documentElement.getAttribute("data-rex-density"),
-  );
-  expect(attribute).toBe(density);
+  expect(await checkRootDensity(page, density)).toBe(rootDensity(density));
   found.push(...(await blockingViolations(page, `[${density}] ${pageInfo.id}`)));
 
   for (const overlay of pageInfo.overlays) {

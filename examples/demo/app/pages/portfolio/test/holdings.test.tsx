@@ -28,41 +28,45 @@ async function click(element: Element): Promise<void> {
 }
 
 describe("portfolio holdings region", () => {
-  it("lists the first page of holdings and loads the rest", async () => {
+  it("lists every holding in the data table with the dust switch", async () => {
     const view = await renderRegion(walletApp(owner), "portfolio", "holdings");
-    await waitFor(() => expect(holdings(view)).toEqual(["dust", "eth", "pax"]));
-    expect(view.container.querySelector('[data-rex-region="portfolio/hero"]')).toBeNull();
-    expect(within(view.container).getByText("Showing 3 of 4")).toBeTruthy();
-    expect(within(view.container).getByText("Dust is shown")).toBeTruthy();
-    const more = view.container.querySelector("[data-rex-list-more]");
-    expect(more).not.toBeNull();
-    await click(more as Element);
     await waitFor(() => expect(holdings(view)).toEqual(["dust", "eth", "pax", "usdc"]));
-    expect(view.history).toHaveLength(2);
-    expect(within(view.container).getByText("Showing 4 of 4")).toBeTruthy();
+    expect(view.container.querySelector('[data-rex-region="portfolio/hero"]')).toBeNull();
+    const scope = within(view.container);
+    expect(scope.getByRole("heading", { level: 2 }).textContent).toBe("Holdings");
+    expect(scope.getByText("4 tokens")).toBeTruthy();
+    expect(scope.getByText("Dust is shown")).toBeTruthy();
+    expect(scope.getByRole("table")).toBeTruthy();
+    expect(scope.getByLabelText("Search holdings")).toBeTruthy();
+    expect(view.container.querySelector("[data-rex-list-more]")).toBeNull();
+    const toggle = view.container.querySelector('[data-rex="portfolio/toggle-hide-dust"]');
+    expect(toggle?.getAttribute("role")).toBe("switch");
+    expect(toggle?.getAttribute("aria-checked")).toBe("false");
   });
 
   it("hides and shows dust through the real toggle-hide-dust action", async () => {
     const app = walletApp(owner);
     const view = await renderRegion(app, "portfolio", "holdings");
     await waitFor(() => expect(dust(view)).toBe("shown"));
-    const toggle = view.container.querySelector('[data-rex="portfolio/toggle-hide-dust"]');
-    expect(toggle?.getAttribute("data-rex-allowed")).toBe("true");
-    expect(toggle?.getAttribute("aria-pressed")).toBe("false");
+    const toggle = () =>
+      view.container.querySelector('[data-rex="portfolio/toggle-hide-dust"]') as Element;
+    expect(toggle().getAttribute("data-rex-allowed")).toBe("true");
+    expect(toggle().getAttribute("aria-checked")).toBe("false");
 
-    await click(toggle as Element);
+    await click(toggle());
     await waitFor(() => expect(dust(view)).toBe("hidden"));
     expect(within(view.container).getByText("Dust is hidden (1 token under $1)")).toBeTruthy();
     expect(holdings(view)).toEqual(["eth", "pax", "usdc"]);
-    expect(within(view.container).getByRole("button", { name: "Show dust" })).toBeTruthy();
+    expect(toggle().getAttribute("aria-checked")).toBe("true");
     expect((await mainAccount())?.hideDust).toBe(true);
     await waitFor(() =>
       expect(view.sidecar().outcome).toMatchObject({ action: "toggle-hide-dust", ok: true }),
     );
 
-    await click(within(view.container).getByRole("button", { name: "Show dust" }));
+    await click(toggle());
     await waitFor(() => expect(dust(view)).toBe("shown"));
-    expect(holdings(view)).toEqual(["dust", "eth", "pax"]);
+    expect(holdings(view)).toEqual(["dust", "eth", "pax", "usdc"]);
+    expect(toggle().getAttribute("aria-checked")).toBe("false");
     expect((await mainAccount())?.hideDust).toBe(false);
     const records = await app.ledger.list({ actionId: "toggle-hide-dust" });
     expect(records.map((record) => [record.outcome, record.actor])).toEqual([
@@ -73,7 +77,7 @@ describe("portfolio holdings region", () => {
 
   it("filters holdings by the route draft", async () => {
     const view = await renderRegion(walletApp(owner), "portfolio", "holdings");
-    await waitFor(() => expect(holdings(view)).toHaveLength(3));
+    await waitFor(() => expect(holdings(view)).toHaveLength(4));
     act(() => view.navigate(draftHref("usd"), { replace: true }));
     await waitFor(() => expect(holdings(view)).toEqual(["usdc"]));
     act(() => view.navigate(draftHref("ether"), { replace: true }));
@@ -90,7 +94,8 @@ describe("portfolio holdings region", () => {
     const toggle = view.container.querySelector('[data-rex="portfolio/toggle-hide-dust"]');
     expect(toggle?.getAttribute("data-rex-allowed")).toBe("false");
     expect(toggle?.getAttribute("title")).toMatch(/^Not allowed: /);
-    expect((toggle as HTMLButtonElement | null)?.disabled).toBe(true);
+    expect(toggle?.getAttribute("aria-disabled")).toBe("true");
+    expect(toggle?.hasAttribute("data-disabled")).toBe(true);
     expect(await app.ledger.list({ actionId: "toggle-hide-dust" })).toEqual([]);
   });
 });

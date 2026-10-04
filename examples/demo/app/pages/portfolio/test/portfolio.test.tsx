@@ -33,7 +33,7 @@ function heading(view: RexRenderResult): string {
 
 async function loaded(view: RexRenderResult): Promise<void> {
   await waitFor(() =>
-    expect(view.container.querySelector("[data-demo-total]")?.textContent).toBe("$76580.0002"),
+    expect(view.container.querySelector("[data-demo-total]")?.textContent).toBe("$76,580.00"),
   );
 }
 
@@ -45,7 +45,7 @@ describe("portfolio page", () => {
     expect(heading(view)).toBe("Portfolio");
     await loaded(view);
     expect(regions(view)).toEqual(["portfolio/hero", "portfolio/actions", "portfolio/holdings"]);
-    expect(holdings(view)).toEqual(["dust", "eth", "pax"]);
+    expect(holdings(view)).toEqual(["dust", "eth", "pax", "usdc"]);
     expect(within(view.container).getByText("4 tokens held")).toBeTruthy();
     const records = await app.ledger.list({ actionId: "load-wallet" });
     expect(records.length).toBeGreaterThan(0);
@@ -85,7 +85,8 @@ describe("portfolio page", () => {
     expect(entry?.reason).toEqual(expect.any(String));
     const control = view.container.querySelector('[data-rex="portfolio/toggle-hide-dust"]');
     expect(control?.getAttribute("data-rex-allowed")).toBe("false");
-    expect((control as HTMLButtonElement | null)?.disabled).toBe(true);
+    expect(control?.getAttribute("role")).toBe("switch");
+    expect(control?.getAttribute("aria-disabled")).toBe("true");
   });
 
   it("renders the permission-denied state for an actor without viewer.read", async () => {

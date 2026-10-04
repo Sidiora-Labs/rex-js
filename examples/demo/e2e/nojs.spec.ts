@@ -4,8 +4,11 @@ import {
   FORM_PREFIX,
   STEP_TIMEOUT,
   buildDemo,
+  committedManifest,
+  isStaticPage,
   pageUrl,
   startDemo,
+  type ManifestPage,
   type RunningDemo,
 } from "./walk.ts";
 
@@ -18,6 +21,13 @@ interface AuditRecord {
 }
 
 const DEV_SERVER_ENV = { NODE_ENV: "development" } as const;
+const committed = committedManifest();
+
+function listedPage(id: string): ManifestPage {
+  const found = committed.pages.find((entry) => entry.id === id);
+  if (found === undefined) throw new Error(`the committed manifest does not list page ${id}`);
+  return found;
+}
 
 let demo: RunningDemo | null = null;
 
@@ -56,7 +66,9 @@ async function auditRecords(page: Page, actionId: string): Promise<AuditRecord[]
   return body.records.filter((record) => record.actionId === actionId);
 }
 
-async function expectForm(page: Page, address: string, actionId: string): Promise<void> {
+async function expectForm(page: Page, pageInfo: ManifestPage, actionId: string): Promise<void> {
+  const address = `${pageInfo.id}/${actionId}`;
+  expect(pageInfo.actions).toContain(actionId);
   const form = page.locator(`main form[data-rex-form="${address}"]`);
   await form.waitFor({ state: "attached", timeout: STEP_TIMEOUT });
   expect(await form.getAttribute("method")).toBe("post");
@@ -64,7 +76,9 @@ async function expectForm(page: Page, address: string, actionId: string): Promis
   expect(await form.locator('input[type="hidden"][name="_action"]').getAttribute("value")).toBe(
     actionId,
   );
-  expect(await page.locator("script[type=module]").count()).toBe(0);
+  if (isStaticPage(pageInfo)) {
+    expect(await page.locator("script[type=module]").count()).toBe(0);
+  }
 }
 
 test("the send flow runs without JavaScript and writes its audit record", async ({ browser }) => {
@@ -75,7 +89,9 @@ test("the send flow runs without JavaScript and writes its audit record", async 
     await expect(page.locator("[data-demo-summary]")).toHaveText(
       "Send 0.001 (default) ETH to Alice",
     );
-    await expectForm(page, "send/send", "send");
+    const sendPage = listedPage("send");
+    expect(isStaticPage(sendPage)).toBe(false);
+    await expectForm(page, sendPage, "send");
 
     await page.locator('main [data-rex="send/send"]').click({ timeout: STEP_TIMEOUT });
     const confirmation = page.locator('[role="alertdialog"][data-rex-confirm]');
@@ -103,7 +119,9 @@ test("the static about page posts its form without JavaScript", async ({ browser
   await withoutJavaScript(browser, async (page) => {
     const before = await auditRecords(page, "send-feedback");
     await page.goto(pageUrl(base(), "/about", {}));
-    await expectForm(page, "about/send-feedback", "send-feedback");
+    const aboutPage = listedPage("about");
+    expect(isStaticPage(aboutPage)).toBe(true);
+    await expectForm(page, aboutPage, "send-feedback");
     expect(
       await page.locator('main form input[type="hidden"][name="_csrf"]').getAttribute("value"),
     ).toMatch(/^[0-9a-f]{64}$/);

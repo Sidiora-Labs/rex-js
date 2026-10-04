@@ -14,11 +14,13 @@ function total(view: RexRenderResult): string | null {
 describe("portfolio hero region", () => {
   it("renders the balance hero alone on the page runtime", async () => {
     const view = await renderRegion(walletApp(owner), "portfolio", "hero");
-    await waitFor(() => expect(total(view)).toBe("$76580.0002"));
+    await waitFor(() => expect(total(view)).toBe("$76,580.00"));
     const hero = view.container.querySelector('[data-rex-region="portfolio/hero"]');
     expect(hero).not.toBeNull();
-    const scope = within(hero as HTMLElement);
-    expect(scope.getByRole("heading", { level: 3 }).textContent).toBe("Main wallet");
+    const card = within(hero as HTMLElement).getByRole("region", { name: "Main wallet balance" });
+    const scope = within(card);
+    expect(scope.getByText("Main wallet")).toBeTruthy();
+    expect(scope.getByText("Total balance")).toBeTruthy();
     expect(scope.getByText("4 tokens held")).toBeTruthy();
     expect(scope.getByText("0x5a1e000000000000000000000000000000c0ffee")).toBeTruthy();
     expect(view.container.querySelector('[data-rex-region="portfolio/actions"]')).toBeNull();
@@ -28,7 +30,7 @@ describe("portfolio hero region", () => {
 
   it("shows the same wallet to the guest", async () => {
     const view = await renderRegion(walletApp(guest), "portfolio", "hero");
-    await waitFor(() => expect(total(view)).toBe("$76580.0002"));
+    await waitFor(() => expect(total(view)).toBe("$76,580.00"));
     expect(view.sidecar().page).toBe("portfolio");
   });
 
@@ -41,7 +43,7 @@ describe("portfolio hero region", () => {
   it("shows the new total after a transfer through the real server", async () => {
     const app = walletApp(owner);
     const view = await renderRegion(app, "portfolio", "hero");
-    await waitFor(() => expect(total(view)).toBe("$76580.0002"));
+    await waitFor(() => expect(total(view)).toBe("$76,580.00"));
     const server = testServer(app);
     const input = { amount: "1" };
     const grant = (await procedureOf(
@@ -55,6 +57,6 @@ describe("portfolio hero region", () => {
     await act(async () => {
       await view.queryClient.invalidateQueries();
     });
-    await waitFor(() => expect(total(view)).toBe("$73580.0002"));
+    await waitFor(() => expect(total(view)).toBe("$73,580.00"), { timeout: 3000 });
   });
 });
