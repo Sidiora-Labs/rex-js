@@ -111,7 +111,7 @@
     - Add typedoc.json and tools/docs-api.mjs generating docs/api/ from the package entries with a --check mode that fails when stale; add tools/check-links.mjs validating local links in README.md and docs/; add root scripts docs:api and docs:check.
     - Generate and commit docs/api/.
     - _Requirements: 18.1, 18.2, 18.3_
-  - [ ] 2.7 Real demo page tests written with rex/testing
+  - [ ] 2.7 Real demo page tests written with rex/testing — **Implemented - qualification pending**
     - Write tests in examples/demo/app/pages/<page>/test/ for every page and region using rex/testing, a vitest config for the demo and a test:unit script in the demo package.
     - _Requirements: 16.2_
   - [x] 3.1 Shared state primitive exposed to the sidecar

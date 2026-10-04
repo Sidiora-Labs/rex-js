@@ -9,7 +9,8 @@
     "check": "rex check",
     "manifest": "rex manifest",
     "start": "node dist/server.js",
-    "test": "rex check && playwright test"
+    "test": "rex check && playwright test",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -34,9 +35,13 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^24.0.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "typescript": "^5.9.3"
+    "happy-dom": "^20.14.5",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
   }
 }
