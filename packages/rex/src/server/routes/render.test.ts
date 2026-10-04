@@ -64,7 +64,11 @@ const portfolio = page("portfolio", {
 
 const vault = page("vault", { route: "/vault", policy: never(), chrome: { title: "Vault" } });
 
-const feed = page("feed", { route: "/feed", load: { feed: brokenFeed }, chrome: { title: "Feed" } });
+const feed = page("feed", {
+  route: "/feed",
+  load: { feed: brokenFeed },
+  chrome: { title: "Feed" },
+});
 
 const alice = actor({ id: "alice" });
 
@@ -110,19 +114,31 @@ function renderedApp() {
 }
 
 function csrfCookieOf(response: Response): string | undefined {
-  return response.headers
-    .getSetCookie()
-    .find((line) => line.startsWith(`${CSRF_COOKIE}=`));
+  return response.headers.getSetCookie().find((line) => line.startsWith(`${CSRF_COOKIE}=`));
 }
 
 describe("isDocumentPath", () => {
   it("treats extension-free paths outside /rex as documents", () => {
     expect(REX_PATH_PREFIX).toBe("/rex");
     expect(exportedIsDocumentPath).toBe(isDocumentPath);
-    for (const path of ["/", "/portfolio/acc-1", "/portfolio/acc-1/", "/docs/v1.2/guide", "/rexy"]) {
+    for (const path of [
+      "/",
+      "/portfolio/acc-1",
+      "/portfolio/acc-1/",
+      "/docs/v1.2/guide",
+      "/rexy",
+    ]) {
       expect(isDocumentPath(path), path).toBe(true);
     }
-    for (const path of ["/rex", "/rex/", "/rex/manifest", "/rex/pages/notes.md", "/assets/app.js", "/favicon.ico", "/docs/guide.html"]) {
+    for (const path of [
+      "/rex",
+      "/rex/",
+      "/rex/manifest",
+      "/rex/pages/notes.md",
+      "/assets/app.js",
+      "/favicon.ico",
+      "/docs/guide.html",
+    ]) {
       expect(isDocumentPath(path), path).toBe(false);
     }
   });
@@ -237,7 +253,12 @@ describe("installRenderRoute", () => {
     expect(api.status).toBe(404);
     expect(api.headers.has(RENDER_KIND_HEADER)).toBe(false);
     const registry = createRegistry().register(portfolio).freeze();
-    const plain = createRexServer({ registry, ledger: memoryLedger(), actor: () => alice, app: APP });
+    const plain = createRexServer({
+      registry,
+      ledger: memoryLedger(),
+      actor: () => alice,
+      app: APP,
+    });
     const unrendered = await plain.request("/portfolio/acc-1");
     expect(unrendered.status).toBe(404);
     expect(unrendered.headers.has(RENDER_KIND_HEADER)).toBe(false);
@@ -247,7 +268,12 @@ describe("installRenderRoute", () => {
 
   it("serves a registered static cache entry, even without a renderer, and still skips the rest", async () => {
     const registry = createRegistry().register(portfolio).freeze();
-    const server = createRexServer({ registry, ledger: memoryLedger(), actor: () => alice, app: APP });
+    const server = createRexServer({
+      registry,
+      ledger: memoryLedger(),
+      actor: () => alice,
+      app: APP,
+    });
     const html =
       '<!doctype html><html lang="en"><head><title>Landing</title></head><body><main data-rex-page="landing">Join the list</main></body></html>';
     const cache = createStaticCache({

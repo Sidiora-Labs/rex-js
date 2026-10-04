@@ -109,7 +109,11 @@ describe("matchPage", () => {
 
 describe("screenFromRequest", () => {
   it("classifies the screen from client hints, the user agent and the density preference", async () => {
-    expect(await classify()).toEqual({ screen: "desktop", pointer: "fine", density: "comfortable" });
+    expect(await classify()).toEqual({
+      screen: "desktop",
+      pointer: "fine",
+      density: "comfortable",
+    });
     expect(await classify({ [CLIENT_HINT_HEADERS.viewportWidth]: "390" })).toEqual({
       screen: "phone",
       pointer: "fine",
@@ -139,7 +143,10 @@ describe("screenFromRequest", () => {
       pointer: "coarse",
     });
     expect(
-      await classify({ [CLIENT_HINT_HEADERS.userAgent]: IPHONE, [CLIENT_HINT_HEADERS.mobile]: "?0" }),
+      await classify({
+        [CLIENT_HINT_HEADERS.userAgent]: IPHONE,
+        [CLIENT_HINT_HEADERS.mobile]: "?0",
+      }),
     ).toMatchObject({ screen: "desktop", pointer: "fine" });
     expect(await classify({ [CLIENT_HINT_HEADERS.viewportWidth]: "wide" })).toMatchObject({
       screen: "desktop",

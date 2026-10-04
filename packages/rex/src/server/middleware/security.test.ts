@@ -252,7 +252,10 @@ describe("installSecurityMiddleware", () => {
   it("applies the csp mode, header overrides and api origin from the setup options", async () => {
     const { app } = securedApp(
       setupFor({
-        security: { csp: "report", headers: { "x-frame-options": "DENY", "Referrer-Policy": "no-referrer" } },
+        security: {
+          csp: "report",
+          headers: { "x-frame-options": "DENY", "Referrer-Policy": "no-referrer" },
+        },
         client: { apiOrigin: API },
       }),
     );

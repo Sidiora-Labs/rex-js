@@ -39,23 +39,23 @@ tools/                   release gates, the docs link and API checks, the error 
 
 ## Scripts
 
-| Where | Script | Runs |
-| --- | --- | --- |
-| root | `pnpm build` | `pnpm -r --filter @sidioralabs/rex build` |
-| root | `pnpm typecheck` | `pnpm -r typecheck` |
-| root | `pnpm test` | `pnpm -r test` |
-| root | `pnpm check` | the demo's `check` script |
-| root | `pnpm dev` | the demo's `dev` script |
-| `packages/rex` | `typecheck` | `tsc -p tsconfig.json --noEmit` |
-| `packages/rex` | `test` | `vitest run` |
-| `packages/rex` | `build` | clean `dist/`, `tsc -p tsconfig.build.json`, copy the CSS files and `rex-app.d.ts`, reinstall the workspace offline to relink the `rex` bin |
-| `examples/demo` | `dev`, `build`, `check`, `manifest` | `rex dev`, `rex build`, `rex check`, `rex manifest` |
-| `examples/demo` | `start` | `node dist/server.js` |
-| `examples/demo` | `test` | `rex check && playwright test` over operability, nojs, axe, vitals, lighthouse and screenshots |
-| `examples/demo` | `test:unit` | `vitest run` (the page tests on rex/testing) |
-| `examples/demo` | `test:vitals` | `playwright test e2e/vitals.spec.ts e2e/lighthouse.ts` |
-| `examples/demo` | `lint`, `format` | `eslint .`, `prettier --write .` |
-| root | `pnpm docs:errors`, `pnpm docs:api`, `pnpm docs:check` | regenerate docs/errors.md and docs/api, check links and API freshness |
+| Where           | Script                                                 | Runs                                                                                                                                        |
+| --------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| root            | `pnpm build`                                           | `pnpm -r --filter @sidioralabs/rex build`                                                                                                   |
+| root            | `pnpm typecheck`                                       | `pnpm -r typecheck`                                                                                                                         |
+| root            | `pnpm test`                                            | `pnpm -r test`                                                                                                                              |
+| root            | `pnpm check`                                           | the demo's `check` script                                                                                                                   |
+| root            | `pnpm dev`                                             | the demo's `dev` script                                                                                                                     |
+| `packages/rex`  | `typecheck`                                            | `tsc -p tsconfig.json --noEmit`                                                                                                             |
+| `packages/rex`  | `test`                                                 | `vitest run`                                                                                                                                |
+| `packages/rex`  | `build`                                                | clean `dist/`, `tsc -p tsconfig.build.json`, copy the CSS files and `rex-app.d.ts`, reinstall the workspace offline to relink the `rex` bin |
+| `examples/demo` | `dev`, `build`, `check`, `manifest`                    | `rex dev`, `rex build`, `rex check`, `rex manifest`                                                                                         |
+| `examples/demo` | `start`                                                | `node dist/server.js`                                                                                                                       |
+| `examples/demo` | `test`                                                 | `rex check && playwright test` over operability, nojs, axe, vitals, lighthouse and screenshots                                              |
+| `examples/demo` | `test:unit`                                            | `vitest run` (the page tests on rex/testing)                                                                                                |
+| `examples/demo` | `test:vitals`                                          | `playwright test e2e/vitals.spec.ts e2e/lighthouse.ts`                                                                                      |
+| `examples/demo` | `lint`, `format`                                       | `eslint .`, `prettier --write .`                                                                                                            |
+| root            | `pnpm docs:errors`, `pnpm docs:api`, `pnpm docs:check` | regenerate docs/errors.md and docs/api, check links and API freshness                                                                       |
 
 The demo calls the built bin (`packages/rex/dist/cli/index.js`), so run `pnpm -C packages/rex build` before any demo script.
 
@@ -65,10 +65,10 @@ The demo calls the built bin (`packages/rex/dist/cli/index.js`), so run `pnpm -C
 
 `packages/rex/vitest.config.ts` defines two Vitest projects:
 
-| Project | Environment | Files |
-| --- | --- | --- |
-| `node` | Node | `src/**/*.test.ts` |
-| `dom` | happy-dom | `src/**/*.test.tsx` |
+| Project | Environment | Files               |
+| ------- | ----------- | ------------------- |
+| `node`  | Node        | `src/**/*.test.ts`  |
+| `dom`   | happy-dom   | `src/**/*.test.tsx` |
 
 There are 98 test files next to the code they test (two more inside checker fixtures are excluded by vitest). React tests use `@testing-library/react` and wouter's `memoryLocation`; server tests call real `createRexServer` apps; CLI tests run the CLI and generated apps for real. Shared test inputs:
 
@@ -81,13 +81,13 @@ Run one file with `pnpm -C packages/rex exec vitest run <path>`, the whole packa
 
 The code graph indexes these wouter locations from the tests as routes. They are test-only paths, not routes of any app:
 
-| Route | Test |
-| --- | --- |
-| `* /` | `src/client/act.test.tsx`, `src/client/agent/flow.test.tsx`, `src/core/protocol.test.ts` (the initial memory location) |
-| `* /nowhere` | `src/client/agent/address.test.tsx` (an unknown route renders not-found) |
-| `* /board` | `src/client/agent/address.test.tsx` |
-| `* /send` | `src/client/overlay.test.tsx` (overlay declaration drift) |
-| `* /rex/echo` | `src/vite/vite.test.ts` (the dev server forwards `/rex` requests and the density header to the app server) |
+| Route         | Test                                                                                                                   |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `* /`         | `src/client/act.test.tsx`, `src/client/agent/flow.test.tsx`, `src/core/protocol.test.ts` (the initial memory location) |
+| `* /nowhere`  | `src/client/agent/address.test.tsx` (an unknown route renders not-found)                                               |
+| `* /board`    | `src/client/agent/address.test.tsx`                                                                                    |
+| `* /send`     | `src/client/overlay.test.tsx` (overlay declaration drift)                                                              |
+| `* /rex/echo` | `src/vite/vite.test.ts` (the dev server forwards `/rex` requests and the density header to the app server)             |
 
 Test helper functions and fixture types are indexed in [reference.md](reference.md).
 
@@ -99,9 +99,9 @@ The demo also carries the no-JS walk (`e2e/nojs.spec.ts`, a context with `javaSc
 
 ## Release gates
 
-| Gate | Steps |
-| --- | --- |
-| `tools/gate-test.sh` | `pnpm install --frozen-lockfile`; `pnpm -C packages/rex test`; when `examples/demo/rex.config.ts` exists, `pnpm -C packages/rex build` and `pnpm -C examples/demo test` (rex check plus the Playwright walk) |
+| Gate                 | Steps                                                                                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tools/gate-test.sh` | `pnpm install --frozen-lockfile`; `pnpm -C packages/rex test`; when `examples/demo/rex.config.ts` exists, `pnpm -C packages/rex build` and `pnpm -C examples/demo test` (rex check plus the Playwright walk)                    |
 | `tools/gate-lint.sh` | `pnpm -r typecheck`; when `examples/demo/rex.config.ts` exists, `pnpm -C packages/rex build` and `pnpm -C examples/demo exec rex check`; then `pnpm audit --prod`, `node tools/license-review.mjs` and `cg spec render --check` |
 
 `spec/workflow.kvx` names them as the hierarchy's `test_gate` and `lint_gate`. They run once per wave landing on the merged revision.
@@ -133,11 +133,11 @@ The hard rules include: edit only the task's `touches`; never weaken a test or c
 
 `[hierarchy]` and `[role.*]` in `spec/workflow.kvx`:
 
-| Role | Agent | Branch |
-| --- | --- | --- |
-| Main integrator | `rex-main` | `main` (the only writer to main) |
-| Feature manager | `fm-<feature>` (`fm-rex-v02` today) | `feature/<feature>`, based on `main` |
-| Wave worker | `w-<feature>-<wave>` | `wave/<feature>/<wave>`, based on `feature/<feature>` |
+| Role            | Agent                               | Branch                                                |
+| --------------- | ----------------------------------- | ----------------------------------------------------- |
+| Main integrator | `rex-main`                          | `main` (the only writer to main)                      |
+| Feature manager | `fm-<feature>` (`fm-rex-v02` today) | `feature/<feature>`, based on `main`                  |
+| Wave worker     | `w-<feature>-<wave>`                | `wave/<feature>/<wave>`, based on `feature/<feature>` |
 
 The rex-v02 fleet also commits task work on `task/<feature>/<task>` branches signed `Rex Task Worker w-<feature>-<task>` (for example `task/rex-v02/9.3`), which `[role.worker]` in `spec/workflow.kvx` does not yet declare.
 
@@ -164,15 +164,19 @@ Signed By Rex Task Worker w-rex-v02-9.3 | Powered by Claude Opus 5.5 and Codify�
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
-| Line | Content |
-| --- | --- |
-| 1 | `rex-main` |
-| 2 | `fm-<feature>`, the active feature's manager (`fm-rex-v02` today) |
-| 3 | the date |
-| 4 | the branch the commit is made on |
-| 5 | the 40-character SHA of `HEAD` before the commit |
-| 6 | the title in double quotes, imperative and in sentence case, describing the real change, followed by the spec tag (`[spec:<feature>/<task>]`, `[spec:<feature>]` for landings, `[spec:<feature>/@docs]` for documentation) when there is one |
-| 7 | blank |
-| 8 | `Signed By <signer> \| Powered by <model> and Codify©`, where the signer is the role and agent, such as `Rex Task Worker w-rex-v02-9.3`, `Rex Wave Worker w-rex-v02-<wave>` or `Rex Feature Manager fm-rex-v02` |
+| Line | Content                                                                                                                                                                                                                                      |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | `rex-main`                                                                                                                                                                                                                                   |
+| 2    | `fm-<feature>`, the active feature's manager (`fm-rex-v02` today)                                                                                                                                                                            |
+| 3    | the date                                                                                                                                                                                                                                     |
+| 4    | the branch the commit is made on                                                                                                                                                                                                             |
+| 5    | the 40-character SHA of `HEAD` before the commit                                                                                                                                                                                             |
+| 6    | the title in double quotes, imperative and in sentence case, describing the real change, followed by the spec tag (`[spec:<feature>/<task>]`, `[spec:<feature>]` for landings, `[spec:<feature>/@docs]` for documentation) when there is one |
+| 7    | blank                                                                                                                                                                                                                                        |
+| 8    | `Signed By <signer> \| Powered by <model> and Codify©`, where the signer is the role and agent, such as `Rex Task Worker w-rex-v02-9.3`, `Rex Wave Worker w-rex-v02-<wave>` or `Rex Feature Manager fm-rex-v02`                              |
 
 Then a blank line and `Co-Authored-By: <model> <noreply@anthropic.com>`. Write the message to a file and commit with `git commit -F <file>`.
+
+## Releasing
+
+The release path (version bump, generated changelog, tag, the `release.yml` workflow with provenance and the npm trusted-publisher settings) is documented in [releasing.md](releasing.md). `pnpm smoke` runs the package smoke test the release workflow runs.

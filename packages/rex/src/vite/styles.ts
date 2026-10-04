@@ -19,7 +19,8 @@ export const TAILWIND_PLUGIN = "@tailwindcss/vite";
  * and exposes its class names as the default export, so `import styles from "./Card.module.css"`
  * works in any part, region or component.
  */
-export const CSS_MODULE_FILE = /\.module\.(?:css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
+export const CSS_MODULE_FILE =
+  /\.module\.(?:css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
 
 type TailwindFactory = () => Plugin | readonly Plugin[];
 

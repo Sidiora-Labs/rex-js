@@ -90,10 +90,17 @@ describe("the error catalog", () => {
       expect(code.startsWith(REX_ERROR_AREAS[errorArea(code)].prefix)).toBe(true);
     }
     const areas = new Set(codes.map((code) => errorArea(code)));
-    expect([...areas].sort()).toEqual(
-      (Object.keys(REX_ERROR_AREAS) as RexErrorArea[]).sort(),
-    );
-    for (const code of ["REX310", "REX320", "REX330", "REX440", "REX450", "REX500", "REX600", "REX610"]) {
+    expect([...areas].sort()).toEqual((Object.keys(REX_ERROR_AREAS) as RexErrorArea[]).sort());
+    for (const code of [
+      "REX310",
+      "REX320",
+      "REX330",
+      "REX440",
+      "REX450",
+      "REX500",
+      "REX600",
+      "REX610",
+    ]) {
       expect(isRexErrorCode(code)).toBe(true);
     }
     for (const code of ["REX100", "REX101", "REX102", "REX110", "REX200", "REX210"]) {
@@ -176,7 +183,9 @@ describe("RexError", () => {
       problem: "must be one of ssr, csr, ssg, static",
     });
     expect(error).toBeInstanceOf(RexError);
-    expect(error.message).toBe('REX200 page "home": field "render" must be one of ssr, csr, ssg, static');
+    expect(error.message).toBe(
+      'REX200 page "home": field "render" must be one of ssr, csr, ssg, static',
+    );
     expect([error.declaration, error.id, error.field]).toEqual(["page", "home", "render"]);
   });
 });
@@ -284,7 +293,10 @@ describe("catalogued codes in core and manifest", () => {
         handler: () => ({}),
       }),
     );
-    expect([shortcut.code, (shortcut as RexDeclarationError).field]).toEqual(["REX212", "shortcut"]);
+    expect([shortcut.code, (shortcut as RexDeclarationError).field]).toEqual([
+      "REX212",
+      "shortcut",
+    ]);
     expect(shortcut.message).not.toContain("REX219");
   });
 
@@ -299,7 +311,9 @@ describe("catalogued codes in core and manifest", () => {
     const duplicate = caught(() => createRegistry().register(noop(), noop()));
     expect(duplicate).toBeInstanceOf(RexDeclarationError);
     expect(duplicate.code).toBe("REX217");
-    expect(caught(() => createRegistry().register({ kind: "action" } as never)).code).toBe("REX224");
+    expect(caught(() => createRegistry().register({ kind: "action" } as never)).code).toBe(
+      "REX224",
+    );
     expect(caught(() => createRegistry().freeze().get("action", "send")).code).toBe("REX301");
   });
 
@@ -313,7 +327,9 @@ describe("catalogued codes in core and manifest", () => {
     expect((await rejected(() => journal.open("other", "i-1", null))).code).toBe("REX304");
     const note = entity("note", { fields: { id: id(), title: text() }, label: (r) => r.title });
     const store = bind(note, memoryStore(note));
-    expect((await rejected(() => store.list({ filter: { nope: 1 } as never }))).code).toBe("REX305");
+    expect((await rejected(() => store.list({ filter: { nope: 1 } as never }))).code).toBe(
+      "REX305",
+    );
   });
 
   it("raises manifest build errors with catalogued codes", () => {
@@ -324,7 +340,9 @@ describe("catalogued codes in core and manifest", () => {
     expect(caught(() => buildManifest(createRegistry().register(orphan).freeze())).code).toBe(
       "REX223",
     );
-    expect(caught(() => buildManifest(createRegistry().freeze(), { app: " " })).code).toBe("REX501");
+    expect(caught(() => buildManifest(createRegistry().freeze(), { app: " " })).code).toBe(
+      "REX501",
+    );
   });
 
   it("leaves no bare Error throw in the core and manifest sources", () => {
@@ -341,7 +359,8 @@ describe("catalogued codes in core and manifest", () => {
 });
 
 const srcRoot = join(here, "..");
-const NATIVE_ERROR = "(?:Error|TypeError|RangeError|SyntaxError|ReferenceError|EvalError|URIError|AggregateError)";
+const NATIVE_ERROR =
+  "(?:Error|TypeError|RangeError|SyntaxError|ReferenceError|EvalError|URIError|AggregateError)";
 const BARE_THROW = new RegExp(`(?:\\bthrow\\s+|\\breject\\(\\s*)new\\s+${NATIVE_ERROR}\\(`);
 const NATIVE_SUBCLASS = new RegExp(`\\bclass\\s+(\\w+)\\s+extends\\s+${NATIVE_ERROR}\\b`, "g");
 const CONVERTED_DIRS = ["server", "client", "vite", "check", "cli/commands"] as const;
@@ -486,7 +505,9 @@ describe("docs/errors.md", () => {
       });
       expect(check.status).toBe(1);
       expect(check.stderr).toContain("stale");
-      const written = spawnSync(process.execPath, [docsScript, "--out", stale], { encoding: "utf8" });
+      const written = spawnSync(process.execPath, [docsScript, "--out", stale], {
+        encoding: "utf8",
+      });
       expect(written.status).toBe(0);
       expect(readFileSync(stale, "utf8")).toBe(doc);
     } finally {

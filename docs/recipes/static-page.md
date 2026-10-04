@@ -2,12 +2,12 @@
 
 Each page declares how it renders with `render` in `page.ts`:
 
-| `render` | What the browser gets |
-| --- | --- |
-| `ssr` (default) | HTML rendered per request on the server, streamed, then hydrated |
-| `csr` | the shell only; the page renders in the browser |
-| `ssg` | HTML prerendered by `rex build`, hydrated in the browser, optionally regenerated after `revalidate` seconds |
-| `static` | HTML prerendered by `rex build` with no page chunk and no hydration script: zero page JavaScript |
+| `render`        | What the browser gets                                                                                       |
+| --------------- | ----------------------------------------------------------------------------------------------------------- |
+| `ssr` (default) | HTML rendered per request on the server, streamed, then hydrated                                            |
+| `csr`           | the shell only; the page renders in the browser                                                             |
+| `ssg`           | HTML prerendered by `rex build`, hydrated in the browser, optionally regenerated after `revalidate` seconds |
+| `static`        | HTML prerendered by `rex build` with no page chunk and no hydration script: zero page JavaScript            |
 
 Routing, loaders and the sidecar behave the same in every mode. This recipe adds a static help page and a prerendered token page.
 
@@ -35,7 +35,9 @@ A static page ships no JavaScript of its own, so every action it declares must w
 import { ActionForm, region } from "@sidioralabs/rex/client";
 import { requestCallback } from "../../../../actions/request-callback.ts";
 
-export default region("contact", () => <ActionForm action={requestCallback} submitLabel="Call me back" />);
+export default region("contact", () => (
+  <ActionForm action={requestCallback} submitLabel="Call me back" />
+));
 ```
 
 The prerendered HTML keeps the sidecar (`<script type="application/rex+json" id="rex-page">`) as static JSON, so agents read the page's actions as on any other page, and invoke them through the form route.
@@ -93,9 +95,9 @@ Without `client.apiOrigin` the client reads the manifest inlined at build time a
 
 ## Checks
 
-| Check | Reports |
-| --- | --- |
-| `render/static-needs-js` | a static page that declares an action with a shortcut, or an overlay bound to region state; both need JavaScript |
-| `rex build` | a static page that does not render one of its actions as a form: `renders static but action "<id>" is not rendered as a form; render it with ActionForm so it works without JavaScript` |
+| Check                    | Reports                                                                                                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `render/static-needs-js` | a static page that declares an action with a shortcut, or an overlay bound to region state; both need JavaScript                                                                        |
+| `rex build`              | a static page that does not render one of its actions as a form: `renders static but action "<id>" is not rendered as a form; render it with ActionForm so it works without JavaScript` |
 
 Related: [cli.md](../cli.md#rex-build), [Load page data with a loader](loader.md).

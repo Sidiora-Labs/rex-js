@@ -50,7 +50,8 @@ PageStatesContext.displayName = "RexPageStates";
 
 export function usePageRuntime(): PageRuntime {
   const runtime = useContext(PageRuntimeContext);
-  if (runtime === null) throw new RexError("REX306", "rex: this component must render inside a PageHost");
+  if (runtime === null)
+    throw new RexError("REX306", "rex: this component must render inside a PageHost");
   return runtime;
 }
 
@@ -61,7 +62,9 @@ export interface ViewContext<P = PageParamsValue> {
 
 export type ViewComponent = ComponentType & { readonly rexKind: "view" };
 
-export function view<P = PageParamsValue>(render: (ctx: ViewContext<P>) => ReactNode): ViewComponent {
+export function view<P = PageParamsValue>(
+  render: (ctx: ViewContext<P>) => ReactNode,
+): ViewComponent {
   if (typeof render !== "function") throw new RexError("REX313", "view: render must be a function");
   function RexView() {
     const runtime = usePageRuntime();
@@ -104,7 +107,10 @@ export function Region({ name, children }: RegionProps) {
   const runtime = usePageRuntime();
   const confirm = useContext(ConfirmContext);
   if (!runtime.page.regions.includes(name)) {
-    throw new RexError("REX307", `rex: region "${name}" is not declared by page "${runtime.page.id}"`);
+    throw new RexError(
+      "REX307",
+      `rex: region "${name}" is not declared by page "${runtime.page.id}"`,
+    );
   }
   const scoped = <AddressScope region={name}>{children}</AddressScope>;
   return (
@@ -121,7 +127,8 @@ export function region<P = PageParamsValue>(
   render: (ctx: RegionContext<P>) => ReactNode,
 ): RegionComponent {
   regionName(name);
-  if (typeof render !== "function") throw new RexError("REX313", "region: render must be a function");
+  if (typeof render !== "function")
+    throw new RexError("REX313", "region: render must be a function");
   function RegionBody() {
     const runtime = usePageRuntime();
     const nav = useNav();
@@ -191,8 +198,10 @@ export class RexPageModuleError extends RexError {
 function sameNames(page: string, kind: string, declared: readonly string[], provided: string[]) {
   const missing = declared.filter((name) => !provided.includes(name));
   const extra = provided.filter((name) => !declared.includes(name));
-  if (missing.length > 0) throw new RexPageModuleError(page, `missing ${kind} ${missing.join(", ")}`);
-  if (extra.length > 0) throw new RexPageModuleError(page, `undeclared ${kind} ${extra.join(", ")}`);
+  if (missing.length > 0)
+    throw new RexPageModuleError(page, `missing ${kind} ${missing.join(", ")}`);
+  if (extra.length > 0)
+    throw new RexPageModuleError(page, `undeclared ${kind} ${extra.join(", ")}`);
 }
 
 export function definePageModules<Pg extends AnyPage>(
@@ -281,7 +290,11 @@ const STATE_TEXT: { readonly [S in RexDataState]: string } = {
   ready: "Ready",
 };
 
-export function DefaultState({ state, error, retry }: { readonly state: RexDataState } & StateProps) {
+export function DefaultState({
+  state,
+  error,
+  retry,
+}: { readonly state: RexDataState } & StateProps) {
   const failed = state === "recoverable-error" || state === "stale" || state === "offline";
   return (
     <div role={state === "loading" ? "status" : "alert"} data-rex-default-state={state}>
@@ -311,7 +324,8 @@ export interface PageHostProps {
 
 function useActiveResolution(modules: PageModuleSet): PageResolution {
   const resolution = useActivePage();
-  if (resolution === null) throw new RexError("REX306", "rex: PageHost must render inside an active page route");
+  if (resolution === null)
+    throw new RexError("REX306", "rex: PageHost must render inside an active page route");
   if (resolution.page !== modules.page) {
     throw new RexError(
       "REX313",

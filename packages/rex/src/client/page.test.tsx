@@ -241,9 +241,7 @@ describe("PageHost", () => {
 
   it("renders the TerminalError export for a client error", async () => {
     mount("/basic/ada", { greeting: () => Promise.reject(new StatusError("not found", 404)) });
-    await waitFor(() =>
-      expect(screen.getByText("Greeting unavailable: not found")).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText("Greeting unavailable: not found")).toBeTruthy());
   });
 
   it("renders the TerminalError export for params that fail the schema", async () => {
@@ -323,13 +321,16 @@ describe("lazy page modules", () => {
     mount("/slow");
     const loading = document.querySelector("[data-rex-page-loading]");
     expect(loading?.getAttribute("data-rex-page")).toBe("slow");
-    expect(loading?.querySelector("[data-rex-default-state]")?.getAttribute("data-rex-default-state")).toBe(
-      "loading",
-    );
+    expect(
+      loading?.querySelector("[data-rex-default-state]")?.getAttribute("data-rex-default-state"),
+    ).toBe("loading");
     expect(screen.getByRole("status").textContent).toBe("Loading");
     expect(screen.queryByText("slow ready")).toBeNull();
     await act(async () => {
-      slowLoad.resolve({ view: view(() => <p>slow ready</p>), states: { Loading: () => <p>slow loading</p> } });
+      slowLoad.resolve({
+        view: view(() => <p>slow ready</p>),
+        states: { Loading: () => <p>slow loading</p> },
+      });
       await slowLoad.promise;
     });
     await waitFor(() => expect(screen.getByText("slow ready")).toBeTruthy());

@@ -1,0 +1,117 @@
+name: Feature request
+description: >-
+  Propose a change to a primitive, a decision or a standard. Accepted proposals become spec
+  tasks.
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Rex exists to remove micro-decisions. A proposal that adds a second pattern for something
+        Rex already has one pattern for is declined unless it replaces the existing pattern through
+        a deprecation and a codemod (GOVERNANCE.md, Convention over options). An accepted proposal
+        is recorded under `spec/` as a `[decision]`, a `[design]` entry, a `[req.*]` criterion or a
+        `[task.*]` before it is built, through the spec change process in GOVERNANCE.md.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What it concerns
+      options:
+        - >-
+          A primitive (entity, action, page, policy, flow, store, ledger, manifest or shell
+          component)
+        - A decision in spec/ ([decision])
+        - A standard in spec/ ([standard.*])
+        - The agent contract (docs/agent-contract.md)
+        - The checker (a rex check rule)
+        - The CLI (rex new, make, promote, migrate, dev, build, check or manifest)
+        - The Vite plugin or the build output
+        - The documentation
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: subject
+    attributes:
+      label: Primitive, decision or standard
+      description: >-
+        Name it exactly: the primitive (`page()`, `action()`, ...), the `[decision]` key
+        (`rendering`, `forms`, `versioning`, ...) or the `[standard.*]` section and item, with the
+        docs page or spec line it lives on.
+      placeholder: >-
+        page() data states; [decision] rendering; [standard.a11y_i18n] route announcements
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: >-
+        What you cannot do today, or what Rex makes harder than it should be, and the app or page
+        folder it came up in.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: >-
+        The change in terms of the existing primitive, decision or standard: the declaration or
+        option it adds or changes, what Rex emits for it, and how `rex check` verifies it.
+    validations:
+      required: true
+  - type: textarea
+    id: rejected
+    attributes:
+      label: Options rejected
+      description: >-
+        Other ways to solve the problem, including doing nothing, and why they are worse. A spec
+        change states the chosen option and the options rejected.
+    validations:
+      required: true
+  - type: dropdown
+    id: convention
+    attributes:
+      label: Convention lock
+      description: Does Rex already have one pattern for this?
+      options:
+        - No, Rex has no pattern for this problem.
+        - Yes, and this extends the existing pattern without adding a second one.
+        - >-
+          Yes, and this replaces the existing pattern through a deprecation and a rex migrate
+          codemod.
+    validations:
+      required: true
+  - type: dropdown
+    id: operability
+    attributes:
+      label: Agent operability
+      options:
+        - It does not change what Rex emits to the browser.
+        - >-
+          It adds or changes a control, and the control keeps its data-rex address, sidecar entry
+          and visible counterpart.
+        - It changes the agent contract in docs/agent-contract.md, which needs a major version.
+    validations:
+      required: true
+  - type: dropdown
+    id: compatibility
+    attributes:
+      label: Compatibility
+      options:
+        - Additive, nothing existing changes behaviour.
+        - Breaking, with a deprecated() warning carrying a REX code and a rex migrate codemod.
+        - Breaking, and the migration cannot be done mechanically.
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before opening
+      options:
+        - label: >-
+            I searched the open and closed issues and the specs under spec/, and this is neither
+            already decided nor in progress.
+          required: true

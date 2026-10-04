@@ -71,7 +71,12 @@ interface Setup {
 }
 
 function setup(): Setup {
-  const server = createRexServer({ registry, ledger: memoryLedger(), actor: () => ada, app: "probe" });
+  const server = createRexServer({
+    registry,
+    ledger: memoryLedger(),
+    actor: () => ada,
+    app: "probe",
+  });
   const fetch: RexFetch = async (input, init) => {
     const request = input instanceof Request ? input : new Request(input, init);
     if (request.method !== "GET" && !request.headers.has("origin")) {
@@ -140,7 +145,9 @@ describe("procedureOf", () => {
   it("returns the client's procedure for an action and for the confirm procedure", async () => {
     const { client } = setup();
     expect(await procedureOf(client, "echo")({ text: "hello" })).toEqual({ echoed: "HELLO" });
-    expect(await procedureOf(client, CONFIRM_PROCEDURE)({ action: "send", input: { amount: "1" } })).toMatchObject({
+    expect(
+      await procedureOf(client, CONFIRM_PROCEDURE)({ action: "send", input: { amount: "1" } }),
+    ).toMatchObject({
       action: "send",
       token: expect.any(String),
       expiresAt: expect.any(String),

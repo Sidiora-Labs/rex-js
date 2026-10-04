@@ -244,7 +244,9 @@ describe("the assembled entry", () => {
       ["withdraw", "ok", "irreversible"],
     ]);
     expect(records[0]?.actor).toBe("viewer");
-    await waitFor(() => expect(sidecarPayload().outcome).toMatchObject({ action: "withdraw", ok: true }));
+    await waitFor(() =>
+      expect(sidecarPayload().outcome).toMatchObject({ action: "withdraw", ok: true }),
+    );
   });
 
   it("resolves data-rex addresses inside region bodies", async () => {

@@ -99,13 +99,15 @@ export function overlayHook(context: RexHookContext): Plugin {
         void checkAppModules(vite, context.appPath());
       });
       return () => {
-        vite.middlewares.use((error: unknown, _req: unknown, _res: unknown, next: (error?: unknown) => void) => {
-          if (isRexError(error)) {
-            locateAppError(error, context.appPath(), (target) => vite.ssrFixStacktrace(target));
-            attachOverlayFields(error);
-          }
-          next(error);
-        });
+        vite.middlewares.use(
+          (error: unknown, _req: unknown, _res: unknown, next: (error?: unknown) => void) => {
+            if (isRexError(error)) {
+              locateAppError(error, context.appPath(), (target) => vite.ssrFixStacktrace(target));
+              attachOverlayFields(error);
+            }
+            next(error);
+          },
+        );
       };
     },
   };

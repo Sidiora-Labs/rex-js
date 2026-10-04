@@ -82,7 +82,9 @@ describe("vite/styles", () => {
 
   it("adds the @tailwindcss/vite plugins only when Tailwind is enabled", () => {
     expect(stylesHook(createHookContext({}))).toEqual([]);
-    expect(pluginNames(stylesHook(createHookContext({ tailwind: true })))).toEqual(TAILWIND_PLUGINS);
+    expect(pluginNames(stylesHook(createHookContext({ tailwind: true })))).toEqual(
+      TAILWIND_PLUGINS,
+    );
     expect(pluginNames(stylesHook(createHookContext({ ui: "designx" })))).toEqual(TAILWIND_PLUGINS);
     const names = pluginNames(rex({ tailwind: true }));
     for (const name of TAILWIND_PLUGINS) expect(names).toContain(name);

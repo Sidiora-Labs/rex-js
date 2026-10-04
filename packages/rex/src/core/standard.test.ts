@@ -49,9 +49,9 @@ describe("Standard Schema detection", () => {
     expect(isStandardSchema(zm.string())).toBe(true);
     expect(isStandardSchema(handAmount)).toBe(true);
     expect(isStandardSchema({})).toBe(false);
-    expect(isStandardSchema({ "~standard": { version: 2, vendor: "x", validate: () => ({}) } })).toBe(
-      false,
-    );
+    expect(
+      isStandardSchema({ "~standard": { version: 2, vendor: "x", validate: () => ({}) } }),
+    ).toBe(false);
     expect(isStandardSchema(null)).toBe(false);
     expect(isZodSchema(z.string())).toBe(true);
     expect(isZodSchema(zm.string())).toBe(true);
@@ -66,7 +66,9 @@ describe("Standard Schema detection", () => {
 
 describe("validateStandard", () => {
   it("returns the value or the issues of any vendor", async () => {
-    expect(await validateStandard(handAmount, { amount: "2.5" })).toEqual({ value: { amount: 2.5 } });
+    expect(await validateStandard(handAmount, { amount: "2.5" })).toEqual({
+      value: { amount: 2.5 },
+    });
     const failed = await validateStandard(handAmount, { amount: "-1" });
     expect(failed.issues?.map(issuePath)).toEqual(["amount"]);
     expect(await validateStandard(z.object({ n: z.number() }), { n: 1 })).toEqual({

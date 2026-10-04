@@ -1648,7 +1648,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.8.1]
 title = "A full CI pipeline with the package smoke test, the release path and the repository hygiene files"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 8
 requires = ["6.3"]
@@ -1668,7 +1668,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.8.2]
 title = "Coverage thresholds and the one-to-one test ratio, measured and enforced"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 8
 requires = ["8.1", "9.3"]
@@ -1686,7 +1686,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.8.3]
 title = "The repository lints and formats itself with the rex presets"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 8
 requires = ["8.2", "9.4"]

@@ -257,7 +257,8 @@ function formatNodes(
       }
       case "number": {
         const value = values[node.name];
-        out += value === undefined ? missing(node.name) : numberFormat(locale).format(Number(value));
+        out +=
+          value === undefined ? missing(node.name) : numberFormat(locale).format(Number(value));
         break;
       }
       case "plural": {
@@ -283,7 +284,8 @@ function formatNodes(
           out += missing(node.name);
           break;
         }
-        const branch = node.options[String(value)] ?? (node.options.other as readonly MessageNode[]);
+        const branch =
+          node.options[String(value)] ?? (node.options.other as readonly MessageNode[]);
         out += formatNodes(branch, values, locale, pound);
         break;
       }

@@ -99,6 +99,9 @@ export function formatChunkTable(rows: readonly ChunkRow[]): string {
     Math.max(title.length, ...body.map((cells) => (cells[column] as string).length)),
   );
   const line = (cells: readonly string[]) =>
-    cells.map((cell, column) => cell.padEnd(widths[column] as number)).join("  ").trimEnd();
+    cells
+      .map((cell, column) => cell.padEnd(widths[column] as number))
+      .join("  ")
+      .trimEnd();
   return `${[line(header), ...body.map(line)].join("\n")}\n`;
 }

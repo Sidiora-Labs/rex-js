@@ -104,8 +104,7 @@ const actors: Record<string, Actor> = {
 };
 
 function resolveActor(request: Request): Actor {
-  const name =
-    request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
+  const name = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
   return actors[name] ?? anonymousActor;
 }
 
@@ -129,10 +128,8 @@ function post(
   if (options.cookie !== undefined && options.cookie !== null)
     headers.set("cookie", options.cookie);
   if (options.referer !== undefined) headers.set("referer", options.referer);
-  if (options.as !== undefined)
-    headers.set("authorization", `Bearer ${options.as}`);
-  if (options.contentType !== undefined)
-    headers.set("content-type", options.contentType);
+  if (options.as !== undefined) headers.set("authorization", `Bearer ${options.as}`);
+  if (options.contentType !== undefined) headers.set("content-type", options.contentType);
   return Promise.resolve(
     app.request(`${ORIGIN}${formPath(actionId)}`, {
       method: "POST",
@@ -147,10 +144,7 @@ function setCookies(response: Response): Map<string, string> {
   for (const line of response.headers.getSetCookie()) {
     const pair = line.split(";")[0] as string;
     const index = pair.indexOf("=");
-    cookies.set(
-      pair.slice(0, index),
-      decodeURIComponent(pair.slice(index + 1)),
-    );
+    cookies.set(pair.slice(0, index), decodeURIComponent(pair.slice(index + 1)));
   }
   return cookies;
 }
@@ -168,8 +162,7 @@ function fields(
   const params = new URLSearchParams();
   params.append(CSRF_FIELD, csrf);
   for (const [name, value] of Object.entries(entries)) {
-    for (const item of typeof value === "string" ? [value] : value)
-      params.append(name, item);
+    for (const item of typeof value === "string" ? [value] : value) params.append(name, item);
   }
   return params;
 }
@@ -262,9 +255,7 @@ describe("form protocol helpers", () => {
     expect(isAllowedOrigin("", url, [])).toBe(false);
     expect(isAllowedOrigin("null", url, [])).toBe(false);
     expect(isAllowedOrigin("https://evil.test", url, [])).toBe(false);
-    expect(isAllowedOrigin("https://app.test", url, ["https://app.test"])).toBe(
-      true,
-    );
+    expect(isAllowedOrigin("https://app.test", url, ["https://app.test"])).toBe(true);
   });
 
   it("round-trips the outcome cookie payload and rejects malformed payloads", () => {
@@ -278,18 +269,10 @@ describe("form protocol helpers", () => {
     };
     expect(decodeFormOutcome(encodeFormOutcome(outcome))).toEqual(outcome);
     expect(decodeFormOutcome("not json")).toBeNull();
-    expect(
-      decodeFormOutcome(JSON.stringify({ ...outcome, ok: "yes" })),
-    ).toBeNull();
-    expect(
-      decodeFormOutcome(
-        JSON.stringify({ ...outcome, fields: { amount: "x" } }),
-      ),
-    ).toBeNull();
+    expect(decodeFormOutcome(JSON.stringify({ ...outcome, ok: "yes" }))).toBeNull();
+    expect(decodeFormOutcome(JSON.stringify({ ...outcome, fields: { amount: "x" } }))).toBeNull();
     const cookie = `${OUTCOME_COOKIE}=${encodeURIComponent(encodeFormOutcome(outcome))}`;
-    expect(
-      readFormOutcome(new Request(`${ORIGIN}/`, { headers: { cookie } })),
-    ).toEqual(outcome);
+    expect(readFormOutcome(new Request(`${ORIGIN}/`, { headers: { cookie } }))).toEqual(outcome);
   });
 });
 
@@ -353,9 +336,7 @@ describe("POST /rex/form/<action>", () => {
       cookie,
     });
     expect(foreign.status).toBe(403);
-    expect((await ledger.list()).map((record) => record.outcome)).toEqual([
-      "ok",
-    ]);
+    expect((await ledger.list()).map((record) => record.outcome)).toEqual(["ok"]);
   });
 
   it("rejects a post whose _csrf field does not match the rex-csrf cookie with 403", async () => {
@@ -364,27 +345,18 @@ describe("POST /rex/form/<action>", () => {
     });
     expect(noCookie.status).toBe(403);
     expect(setCookies(noCookie).get(CSRF_COOKIE)).toMatch(/^[0-9a-f]{64}$/);
-    const mismatch = await post(
-      app,
-      "toggle",
-      fields({ hide: "on" }, createCsrfToken()),
-      {
-        cookie,
-      },
-    );
+    const mismatch = await post(app, "toggle", fields({ hide: "on" }, createCsrfToken()), {
+      cookie,
+    });
     expect(mismatch.status).toBe(403);
     expect(setCookies(mismatch).has(CSRF_COOKIE)).toBe(false);
     const missingField = new URLSearchParams({ hide: "on" });
-    expect((await post(app, "toggle", missingField, { cookie })).status).toBe(
-      403,
-    );
+    expect((await post(app, "toggle", missingField, { cookie })).status).toBe(403);
     expect(await ledger.list()).toEqual([]);
   });
 
   it("answers 404 for an unknown action, 415 for a non-form body and 400 for a mismatched action field", async () => {
-    expect(
-      (await post(app, "missing", fields({}, csrf), { cookie })).status,
-    ).toBe(404);
+    expect((await post(app, "missing", fields({}, csrf), { cookie })).status).toBe(404);
     const json = await post(app, "toggle", JSON.stringify({ hide: true }), {
       cookie,
       contentType: "application/json",
@@ -458,10 +430,7 @@ describe("POST /rex/form/<action>", () => {
       referer: "https://evil.test/phish",
     });
     expect(foreign.headers.get("location")).toBe("/");
-    expect((await ledger.list()).map((record) => record.outcome)).toEqual([
-      "ok",
-      "ok",
-    ]);
+    expect((await ledger.list()).map((record) => record.outcome)).toEqual(["ok", "ok"]);
   });
 
   it("redirects back with field errors in the outcome cookie when validation fails", async () => {
@@ -477,10 +446,7 @@ describe("POST /rex/form/<action>", () => {
     expect(outcome.ok).toBe(false);
     expect(outcome.code).toBe("BAD_REQUEST");
     expect(outcome.message).toMatch(/^Deposit: invalid input: /);
-    expect(Object.keys(outcome.fields).sort()).toEqual([
-      "amount",
-      "meta.source",
-    ]);
+    expect(Object.keys(outcome.fields).sort()).toEqual(["amount", "meta.source"]);
     expect(outcome.fields.amount?.length).toBeGreaterThan(0);
     expect(deposits).toEqual([]);
     const records = await ledger.list();
@@ -508,25 +474,18 @@ describe("POST /rex/form/<action>", () => {
       cookie,
     });
     expect(outcomeOf(denied).code).toBe("FORBIDDEN");
-    expect(
-      (await ledger.list()).map((record) => [record.actionId, record.outcome]),
-    ).toEqual([
+    expect((await ledger.list()).map((record) => [record.actionId, record.outcome])).toEqual([
       ["purge", "FORBIDDEN"],
       ["deposit", "FORBIDDEN"],
     ]);
   });
 
   it("renders a server-side confirmation page for an irreversible action and runs it when the page is confirmed", async () => {
-    const page = await post(
-      app,
-      "send",
-      fields({ to: "bob", amount: "12.50" }, csrf),
-      {
-        cookie,
-        as: "alice",
-        referer: `${ORIGIN}/send`,
-      },
-    );
+    const page = await post(app, "send", fields({ to: "bob", amount: "12.50" }, csrf), {
+      cookie,
+      as: "alice",
+      referer: `${ORIGIN}/send`,
+    });
     expect(page.status).toBe(200);
     expect(page.headers.get("content-type")).toContain("text/html");
     expect(sent).toEqual([]);
@@ -534,17 +493,12 @@ describe("POST /rex/form/<action>", () => {
 
     const window = new Window({ url: ORIGIN });
     try {
-      const document = new window.DOMParser().parseFromString(
-        await page.text(),
-        "text/html",
-      );
+      const document = new window.DOMParser().parseFromString(await page.text(), "text/html");
       expect(document.title).toBe("Send funds?");
       expect(document.querySelector("h1")?.textContent).toBe("Send funds?");
       const dialog = document.querySelector('[data-rex-confirm="send"]');
       expect(dialog?.getAttribute("role")).toBe("alertdialog");
-      const listed = [
-        ...document.querySelectorAll("[data-rex-confirm-field]"),
-      ].map((row) => [
+      const listed = [...document.querySelectorAll("[data-rex-confirm-field]")].map((row) => [
         row.getAttribute("data-rex-confirm-field"),
         row.querySelector("dd")?.textContent,
       ]);
@@ -555,20 +509,15 @@ describe("POST /rex/form/<action>", () => {
       const form = document.querySelector('form[data-rex-form="send"]');
       expect(form?.getAttribute("method")).toBe("post");
       expect(form?.getAttribute("action")).toBe("/rex/form/send");
-      expect(
-        document
-          .querySelector('[data-rex-confirm-cancel="send"]')
-          ?.getAttribute("href"),
-      ).toBe("/send");
-      expect(
-        document.querySelector('[data-rex-confirm-accept="send"]')?.textContent,
-      ).toBe("Confirm Send");
+      expect(document.querySelector('[data-rex-confirm-cancel="send"]')?.getAttribute("href")).toBe(
+        "/send",
+      );
+      expect(document.querySelector('[data-rex-confirm-accept="send"]')?.textContent).toBe(
+        "Confirm Send",
+      );
       const submitted = new URLSearchParams();
       for (const input of form?.querySelectorAll("input") ?? []) {
-        submitted.append(
-          input.getAttribute("name") ?? "",
-          input.getAttribute("value") ?? "",
-        );
+        submitted.append(input.getAttribute("name") ?? "", input.getAttribute("value") ?? "");
       }
       expect(submitted.get(CSRF_FIELD)).toBe(csrf);
       expect(submitted.get(ACTION_FIELD)).toBe("send");
@@ -610,18 +559,11 @@ describe("POST /rex/form/<action>", () => {
   });
 
   it("refuses a confirmation token reused with different input", async () => {
-    const page = await post(
-      app,
-      "send",
-      fields({ to: "bob", amount: "1" }, csrf),
-      {
-        cookie,
-        as: "alice",
-      },
-    );
-    const token = /name="_confirm" value="([0-9a-f]{64})"/.exec(
-      await page.text(),
-    )?.[1];
+    const page = await post(app, "send", fields({ to: "bob", amount: "1" }, csrf), {
+      cookie,
+      as: "alice",
+    });
+    const token = /name="_confirm" value="([0-9a-f]{64})"/.exec(await page.text())?.[1];
     expect(token).toBeDefined();
     const tampered = fields({ to: "mallory", amount: "1000" }, csrf);
     tampered.append(CONFIRM_FIELD, token as string);
@@ -637,29 +579,16 @@ describe("POST /rex/form/<action>", () => {
   });
 
   it("does not render a confirmation page for invalid or forbidden irreversible input", async () => {
-    const invalid = await post(
-      app,
-      "send",
-      fields({ to: "", amount: "lots" }, csrf),
-      {
-        cookie,
-        as: "alice",
-        referer: `${ORIGIN}/send`,
-      },
-    );
+    const invalid = await post(app, "send", fields({ to: "", amount: "lots" }, csrf), {
+      cookie,
+      as: "alice",
+      referer: `${ORIGIN}/send`,
+    });
     expect(invalid.status).toBe(303);
-    expect(Object.keys(outcomeOf(invalid).fields).sort()).toEqual([
-      "amount",
-      "to",
-    ]);
-    const forbidden = await post(
-      app,
-      "send",
-      fields({ to: "bob", amount: "1" }, csrf),
-      {
-        cookie,
-      },
-    );
+    expect(Object.keys(outcomeOf(invalid).fields).sort()).toEqual(["amount", "to"]);
+    const forbidden = await post(app, "send", fields({ to: "bob", amount: "1" }, csrf), {
+      cookie,
+    });
     expect(forbidden.status).toBe(303);
     expect(outcomeOf(forbidden).code).toBe("FORBIDDEN");
   });
@@ -751,15 +680,10 @@ describe("an ActionForm on an ssr page without JavaScript", () => {
 
     const window = new Window({ url: ORIGIN });
     try {
-      const parsed = new window.DOMParser().parseFromString(
-        await rendered.text(),
-        "text/html",
-      );
+      const parsed = new window.DOMParser().parseFromString(await rendered.text(), "text/html");
       const form = parsed.querySelector(`form[action="${formPath("send")}"]`);
       expect(form?.getAttribute("method")).toBe("post");
-      expect(
-        form?.querySelector(`input[name="${CSRF_FIELD}"]`)?.getAttribute("value"),
-      ).toBe(token);
+      expect(form?.querySelector(`input[name="${CSRF_FIELD}"]`)?.getAttribute("value")).toBe(token);
       const submitted = submittedFields(form?.querySelectorAll("input") ?? [], {
         to: "bob",
         amount: "7.25",
@@ -791,9 +715,9 @@ describe("an ActionForm on an ssr page without JavaScript", () => {
         ok: true,
       });
       expect(sent).toEqual([{ to: "bob", amount: "7.25" }]);
-      expect((await ledger.list()).map((record) => [record.actor, record.actionId, record.outcome])).toEqual([
-        ["alice", "send", "ok"],
-      ]);
+      expect(
+        (await ledger.list()).map((record) => [record.actor, record.actionId, record.outcome]),
+      ).toEqual([["alice", "send", "ok"]]);
     } finally {
       await window.happyDOM.close();
     }
@@ -810,12 +734,10 @@ describe("an ActionForm on an ssr page without JavaScript", () => {
       headers: { accept: "text/html", authorization: "Bearer alice" },
     });
     const token = setCookies(rendered).get(CSRF_COOKIE) as string;
-    const refused = await post(
-      app,
-      "send",
-      fields({ to: "bob", amount: "7.25" }, ""),
-      { cookie: `${CSRF_COOKIE}=${token}`, as: "alice" },
-    );
+    const refused = await post(app, "send", fields({ to: "bob", amount: "7.25" }, ""), {
+      cookie: `${CSRF_COOKIE}=${token}`,
+      as: "alice",
+    });
     expect(refused.status).toBe(403);
     expect(sent).toEqual([]);
   });

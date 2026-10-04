@@ -315,7 +315,9 @@ describe("the demo client build", { timeout: DEMO_BUILD_TIMEOUT_MS }, () => {
     const chunks = items.filter((item) => item.type === "chunk");
     const appPath = normalizePath(join(demoRoot, "app"));
     const pageChunks = chunks.filter((chunk) => chunk.name.startsWith(PAGE_CHUNK_PREFIX));
-    const demoManifest = JSON.parse(readFileSync(join(demoRoot, MANIFEST_FILE), "utf8")) as Manifest;
+    const demoManifest = JSON.parse(
+      readFileSync(join(demoRoot, MANIFEST_FILE), "utf8"),
+    ) as Manifest;
     const expectedChunks = demoManifest.pages.map((entry) => pageChunkName(entry.id)).sort();
     expect(expectedChunks.length).toBeGreaterThan(0);
     expect(pageChunks.map((chunk) => chunk.name).sort()).toEqual(expectedChunks);
@@ -354,7 +356,9 @@ describe("the devtools in client builds", { timeout: DEVTOOLS_BUILD_TIMEOUT_MS }
         configFile: false,
         logLevel: "silent",
         resolve: { alias },
-        plugins: [rex(devtools === undefined ? { name: "fixture" } : { name: "fixture", devtools })],
+        plugins: [
+          rex(devtools === undefined ? { name: "fixture" } : { name: "fixture", devtools }),
+        ],
         build: { write: false, minify: false },
       });
       const outputs = Array.isArray(result) ? result : [result];

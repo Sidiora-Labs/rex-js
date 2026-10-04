@@ -8,47 +8,47 @@ Sources: `packages/rex/src/client/agent/*`, `packages/rex/src/client/act.ts`, `p
 
 Addresses are built from declaration names by the helpers in `packages/rex/src/core/ids.ts` (`pageAddress`, `regionAddress`, `overlayAddress`, `actionAddress`). They do not depend on markup or styles, so they are identical across builds.
 
-| Attribute | Value | Rendered on |
-| --- | --- | --- |
-| `data-rex-page` | `<page>` | the `<main>` element of the active page (`PageHost`) |
-| `data-rex-region` | `<page>/<region>` | the `<section>` landmark of each region (`Region`), with `aria-label` set to the region title |
-| `data-rex-overlay` | `<page>/<Overlay>` | the `role="dialog"` element of an open overlay |
-| `data-rex` | `<page>/<action>` | each action control, through `controlProps` from `act()` |
+| Attribute          | Value              | Rendered on                                                                                   |
+| ------------------ | ------------------ | --------------------------------------------------------------------------------------------- |
+| `data-rex-page`    | `<page>`           | the `<main>` element of the active page (`PageHost`)                                          |
+| `data-rex-region`  | `<page>/<region>`  | the `<section>` landmark of each region (`Region`), with `aria-label` set to the region title |
+| `data-rex-overlay` | `<page>/<Overlay>` | the `role="dialog"` element of an open overlay                                                |
+| `data-rex`         | `<page>/<action>`  | each action control, through `controlProps` from `act()`                                      |
 
 `ADDRESS_ATTRIBUTES` in `packages/rex/src/client/agent/address.tsx` holds this mapping. `readAddresses(root)` lists every address in a subtree and `findAddressed(root, kind, address)` finds the elements for one address. Inside a region, `useAddress()` returns the page, region and overlay in scope and an `action(id)` function that builds the action address.
 
 Other attributes the runtime renders:
 
-| Attribute | Meaning |
-| --- | --- |
-| `data-rex-allowed="true"` or `"false"` | on action controls and palette items: whether the current actor may run the action |
-| `data-rex-nav="<page>"` | shell navigation links, the back button and the recovery button |
-| `data-rex-overlay-trigger="<page>/<Overlay>"` | the control that opens an overlay (`useOverlay().triggerProps`) |
-| `data-rex-overlay-close="<page>/<Overlay>"` | the overlay's Close button |
-| `data-rex-overlay-dismiss` | the overlay's declared dismissal |
-| `data-rex-outcome`, `data-rex-outcome-ok`, `data-rex-outcome-at`, `data-rex-outcome-dismiss` | the outcome region |
-| `data-rex-confirm`, `data-rex-confirm-accept`, `data-rex-confirm-cancel` | the confirmation dialog and its buttons, each set to `<page>/<action>` |
-| `data-rex-palette`, `data-rex-palette-item="<page>/<action>"`, `data-rex-palette-page="<page>"` | the command palette and its entries |
-| `data-rex-sidecar="<page>"` | the sidecar script |
-| `data-rex-density` | on the document root: `comfortable`, `compact` or `agent` |
-| `data-rex-screen` | on the document root: `phone`, `tablet`, `desktop` or `wide` |
-| `data-rex-pointer` | on the document root: `coarse` or `fine` |
-| `data-rex-overlay-form` | on an open overlay: `dialog` or `bottom-sheet` |
-| `data-rex-sheet-form` | on the default Sheet inside an overlay: `dialog` or `bottom-sheet` |
-| `data-rex-nav-form` | on the shell navigation and the default frame: `bar`, `sidebar` or `dock` |
-| `data-rex-app-state` | `loading` or `error` while the app starts, `not-found` for an unknown route |
-| `data-rex-shell` | the shell container |
-| `data-rex-ssr` | the `#root` element of a server-rendered page; the entry hydrates when present |
-| `data-rex-palette-trigger="palette"` | the shell's palette button |
-| `data-rex-form="<page>/<action>"`, `data-rex-field="<path>"`, `data-rex-field-error="<path>"`, `data-rex-form-errors="<action>"` | `ActionForm`, its fields and its validation errors |
-| `data-rex-list="<page>/<list>"`, `data-rex-list-page`, `data-rex-list-size`, `data-rex-list-shown`, `data-rex-list-total`, `data-rex-list-more` | `Page.List` and its Load more control |
-| `data-rex-region-error="<page>/<region>"`, `data-rex-error-code` | a region's recoverable-error fallback |
-| `data-rex-page-loading` | the page's Suspense fallback `main` |
-| `data-rex-default-state="<state>"` | the built-in state renderer |
-| `data-rex-announcer` | the route announcer live region |
-| `data-rex-frame` | the default frame |
-| `data-rex-unsafe-html` | an element rendered by `unsafeHtml()` |
-| `data-rex-alternative="<page>/<action>"` | the declared keyboard alternative of a drag, canvas or custom-element control |
+| Attribute                                                                                                                                       | Meaning                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `data-rex-allowed="true"` or `"false"`                                                                                                          | on action controls and palette items: whether the current actor may run the action |
+| `data-rex-nav="<page>"`                                                                                                                         | shell navigation links, the back button and the recovery button                    |
+| `data-rex-overlay-trigger="<page>/<Overlay>"`                                                                                                   | the control that opens an overlay (`useOverlay().triggerProps`)                    |
+| `data-rex-overlay-close="<page>/<Overlay>"`                                                                                                     | the overlay's Close button                                                         |
+| `data-rex-overlay-dismiss`                                                                                                                      | the overlay's declared dismissal                                                   |
+| `data-rex-outcome`, `data-rex-outcome-ok`, `data-rex-outcome-at`, `data-rex-outcome-dismiss`                                                    | the outcome region                                                                 |
+| `data-rex-confirm`, `data-rex-confirm-accept`, `data-rex-confirm-cancel`                                                                        | the confirmation dialog and its buttons, each set to `<page>/<action>`             |
+| `data-rex-palette`, `data-rex-palette-item="<page>/<action>"`, `data-rex-palette-page="<page>"`                                                 | the command palette and its entries                                                |
+| `data-rex-sidecar="<page>"`                                                                                                                     | the sidecar script                                                                 |
+| `data-rex-density`                                                                                                                              | on the document root: `comfortable`, `compact` or `agent`                          |
+| `data-rex-screen`                                                                                                                               | on the document root: `phone`, `tablet`, `desktop` or `wide`                       |
+| `data-rex-pointer`                                                                                                                              | on the document root: `coarse` or `fine`                                           |
+| `data-rex-overlay-form`                                                                                                                         | on an open overlay: `dialog` or `bottom-sheet`                                     |
+| `data-rex-sheet-form`                                                                                                                           | on the default Sheet inside an overlay: `dialog` or `bottom-sheet`                 |
+| `data-rex-nav-form`                                                                                                                             | on the shell navigation and the default frame: `bar`, `sidebar` or `dock`          |
+| `data-rex-app-state`                                                                                                                            | `loading` or `error` while the app starts, `not-found` for an unknown route        |
+| `data-rex-shell`                                                                                                                                | the shell container                                                                |
+| `data-rex-ssr`                                                                                                                                  | the `#root` element of a server-rendered page; the entry hydrates when present     |
+| `data-rex-palette-trigger="palette"`                                                                                                            | the shell's palette button                                                         |
+| `data-rex-form="<page>/<action>"`, `data-rex-field="<path>"`, `data-rex-field-error="<path>"`, `data-rex-form-errors="<action>"`                | `ActionForm`, its fields and its validation errors                                 |
+| `data-rex-list="<page>/<list>"`, `data-rex-list-page`, `data-rex-list-size`, `data-rex-list-shown`, `data-rex-list-total`, `data-rex-list-more` | `Page.List` and its Load more control                                              |
+| `data-rex-region-error="<page>/<region>"`, `data-rex-error-code`                                                                                | a region's recoverable-error fallback                                              |
+| `data-rex-page-loading`                                                                                                                         | the page's Suspense fallback `main`                                                |
+| `data-rex-default-state="<state>"`                                                                                                              | the built-in state renderer                                                        |
+| `data-rex-announcer`                                                                                                                            | the route announcer live region                                                    |
+| `data-rex-frame`                                                                                                                                | the default frame                                                                  |
+| `data-rex-unsafe-html`                                                                                                                          | an element rendered by `unsafeHtml()`                                              |
+| `data-rex-alternative="<page>/<action>"`                                                                                                        | the declared keyboard alternative of a drag, canvas or custom-element control      |
 
 An action control from `act(declaration).controlProps` carries `data-rex`, `data-rex-allowed`, `disabled`, `aria-disabled`, `aria-busy`, and, when the actor is not allowed, `title="Not allowed: <reason>"` (`ActControlProps`).
 
@@ -57,7 +57,9 @@ An action control from `act(declaration).controlProps` carries `data-rex`, `data
 Each rendered page contains exactly one element:
 
 ```html
-<script type="application/rex+json" id="rex-page" data-rex-sidecar="send">{...}</script>
+<script type="application/rex+json" id="rex-page" data-rex-sidecar="send">
+  {...}
+</script>
 ```
 
 The MIME type and id are `SIDECAR_MIME_TYPE` and `SIDECAR_ELEMENT_ID`. `RexSidecar` renders it once per page and throws if a second one mounts. The JSON is escaped so `<`, `>`, `&`, U+2028 and U+2029 cannot break out of the script. The same object is assigned to `window.__rex`. The payload is rebuilt whenever the data state, the actor's permissions, an overlay's open state, a registered affordance or the outcome changes.
@@ -111,16 +113,16 @@ Policy reason codes (`packages/rex/src/core/policy.ts`): `never`, `locked` (the 
 
 Outcomes are kept per page in the outcome store (`packages/rex/src/client/outcome.ts`). The messages the runtime writes are:
 
-| Situation | Message |
-| --- | --- |
-| success | `<label> succeeded` |
-| server or network failure | `<label> failed: <message>` |
-| actor not allowed | `<label>: not allowed (<reason>)` |
-| input fails the action schema | `<label>: invalid input: <issues>` |
-| URL `input` is not JSON | `<label>: invalid input: the input parameter is not valid JSON` |
-| confirmation cancelled | `<label> cancelled` |
-| action not declared on the page | `page "<page>" declares no action "<id>"` |
-| flow gate decision | `<Approve or Reject> <gate label> succeeded; flow <status>` |
+| Situation                       | Message                                                         |
+| ------------------------------- | --------------------------------------------------------------- |
+| success                         | `<label> succeeded`                                             |
+| server or network failure       | `<label> failed: <message>`                                     |
+| actor not allowed               | `<label>: not allowed (<reason>)`                               |
+| input fails the action schema   | `<label>: invalid input: <issues>`                              |
+| URL `input` is not JSON         | `<label>: invalid input: the input parameter is not valid JSON` |
+| confirmation cancelled          | `<label> cancelled`                                             |
+| action not declared on the page | `page "<page>" declares no action "<id>"`                       |
+| flow gate decision              | `<Approve or Reject> <gate label> succeeded; flow <status>`     |
 
 The sidecar `outcome` field mirrors the same entry. Rex does not use transient toasts for action results.
 
@@ -184,11 +186,11 @@ Density is an attribute on the same component tree, not a separate agent view.
 
 The runtime classifies the screen and the pointer and writes both on the document root next to the density (`packages/rex/src/client/screen.ts`):
 
-| Attribute | Values | Source |
-| --- | --- | --- |
-| `data-rex-screen` | `phone` under 600 px, `tablet` under 1024 px, `desktop` under 1600 px, `wide` | `SCREEN_QUERIES` through `matchMedia`, refreshed on every query change and by a `ResizeObserver` on the root |
-| `data-rex-pointer` | `coarse` or `fine` | `matchMedia("(pointer: coarse)")` |
-| `data-rex-density` | `comfortable`, `compact` or `agent` | the density preference above |
+| Attribute          | Values                                                                        | Source                                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `data-rex-screen`  | `phone` under 600 px, `tablet` under 1024 px, `desktop` under 1600 px, `wide` | `SCREEN_QUERIES` through `matchMedia`, refreshed on every query change and by a `ResizeObserver` on the root |
+| `data-rex-pointer` | `coarse` or `fine`                                                            | `matchMedia("(pointer: coarse)")`                                                                            |
+| `data-rex-density` | `comfortable`, `compact` or `agent`                                           | the density preference above                                                                                 |
 
 The first server response already carries the three attributes on `<html>`: `screenFromRequest` in `packages/rex/src/server/ssr.ts` reads `Sec-CH-Viewport-Width` and `Sec-CH-UA-Mobile`, falls back to the `User-Agent` when no hint is sent, and takes the density from the `density` query parameter or the `x-rex-density` header. Every HTML response carries `Accept-CH: Sec-CH-UA-Mobile, Sec-CH-Viewport-Width` and the same names in `Vary` (`packages/rex/src/server/adapters/client-hints.ts`), so the browser sends the hints from the next request on; the node adapter's `index.html` fallback carries them too. On hydration the client starts from the server's attributes and then follows the live screen.
 

@@ -86,11 +86,11 @@ rex migrate
 
 `rex migrate` (default `--from 0.1`) applies, in order:
 
-| Codemod | What it changes |
-| --- | --- |
-| `0.1-config` | Wraps the bare server default export of `rex.config.ts` in `defineConfig({ app, server: (app) => ... })`. A 0.1 config still works in 0.2 but warns `REX101` once. |
-| `0.1-page-render` | Adds `render: "csr"` to pages that read browser globals (`window`, `document`, `localStorage` and others) while rendering, because 0.2 renders pages on the server by default. Other pages take the new default. |
-| `0.1-raw-img` | Converts `<img>` in regions and parts to `<Img>` from `@sidioralabs/rex/client/media`, which requires `width` and `height`. |
+| Codemod            | What it changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0.1-config`       | Wraps the bare server default export of `rex.config.ts` in `defineConfig({ app, server: (app) => ... })`. A 0.1 config still works in 0.2 but warns `REX101` once.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `0.1-page-render`  | Adds `render: "csr"` to pages that read browser globals (`window`, `document`, `localStorage` and others) while rendering, because 0.2 renders pages on the server by default. Other pages take the new default.                                                                                                                                                                                                                                                                                                                                                      |
+| `0.1-raw-img`      | Converts `<img>` in regions and parts to `<Img>` from `@sidioralabs/rex/client/media`, which requires `width` and `height`.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `0.1-schema-entry` | Rewrites imports for the 0.2 entry split: `z` to `zod/mini`; the field helpers (`id`, `text`, `money`, ...) and `MONEY_PATTERN` to `@sidioralabs/rex/schema`; `defineConfig` and the config types to `@sidioralabs/rex/config`; `buildManifest`, the JSON Schema and sidecar names to `@sidioralabs/rex/manifest`; `defineElement`, `mountRexPage`, `Native` to `@sidioralabs/rex/client/interop`; `Img`, `Script`, `MediaProvider` to `@sidioralabs/rex/client/media`; `useT`, `useLocale`, `t`, the formatter and locale helpers to `@sidioralabs/rex/client/i18n`. |
 
 The report lists every changed file. Codemods are idempotent; a second run reports `no changes`. The details of each codemod are in [versioning.md](versioning.md#01-codemods).
@@ -117,15 +117,15 @@ Replace each `/* REX610 placeholder */` value with the real one.
 
 `rex check` gains rules in 0.2. Run it and fix what it reports; each finding carries a hint:
 
-| Rule ids | Reports |
-| --- | --- |
-| `a11y/img-alt`, `a11y/control-name`, `a11y/label-for`, `a11y/heading-order`, `a11y/no-positive-tabindex`, `a11y/no-autofocus-outside-overlay` | missing text alternatives and names, unlabelled inputs, skipped heading levels, positive `tabIndex`, `autoFocus` outside an overlay |
-| `security/unsafe-html` | `dangerouslySetInnerHTML` anywhere except through `unsafeHtml()` |
-| `media/no-raw-img` | `<img>` in parts and regions |
-| `render/static-needs-js` | static pages with shortcuts or region-bound overlays |
-| `traps/infinite-list`, `traps/custom-element` | lists that load more on scroll without `Page.List`, custom elements no keyboard reaches |
-| `i18n/literal` | literal labels and titles, only when `i18n` is configured |
-| `format/prettier`, `format/unavailable` (warnings) | files Prettier would rewrite (with the app's `.prettierrc`, or the `@sidioralabs/rex/prettier` preset when there is none), and a missing `prettier` install |
+| Rule ids                                                                                                                                      | Reports                                                                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `a11y/img-alt`, `a11y/control-name`, `a11y/label-for`, `a11y/heading-order`, `a11y/no-positive-tabindex`, `a11y/no-autofocus-outside-overlay` | missing text alternatives and names, unlabelled inputs, skipped heading levels, positive `tabIndex`, `autoFocus` outside an overlay                         |
+| `security/unsafe-html`                                                                                                                        | `dangerouslySetInnerHTML` anywhere except through `unsafeHtml()`                                                                                            |
+| `media/no-raw-img`                                                                                                                            | `<img>` in parts and regions                                                                                                                                |
+| `render/static-needs-js`                                                                                                                      | static pages with shortcuts or region-bound overlays                                                                                                        |
+| `traps/infinite-list`, `traps/custom-element`                                                                                                 | lists that load more on scroll without `Page.List`, custom elements no keyboard reaches                                                                     |
+| `i18n/literal`                                                                                                                                | literal labels and titles, only when `i18n` is configured                                                                                                   |
+| `format/prettier`, `format/unavailable` (warnings)                                                                                            | files Prettier would rewrite (with the app's `.prettierrc`, or the `@sidioralabs/rex/prettier` preset when there is none), and a missing `prettier` install |
 
 `rex check --runtime` additionally mounts every page and reports `parity/runtime` when the sidecar and the visible controls disagree.
 

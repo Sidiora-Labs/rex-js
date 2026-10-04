@@ -1,0 +1,80 @@
+name: Agent operability report
+description: An agent driving a browser could not find, read or invoke something on a Rex page.
+title: "agent: "
+labels:
+  - agent-operability
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when a Rex app breaks the agent contract (docs/agent-contract.md): a control without a
+        `data-rex` address, a sidecar that disagrees with the page, an action that is not reachable by
+        click, keyboard shortcut, URL and command palette, or a hover-only or drag-only control.
+  - type: input
+    id: version
+    attributes:
+      label: Rex version
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page id and route
+      description: The `data-rex-page` value and the URL the agent visited.
+      placeholder: "portfolio at /"
+    validations:
+      required: true
+  - type: dropdown
+    id: route
+    attributes:
+      label: Invocation route the agent used
+      options:
+        - click on the data-rex control
+        - keyboard shortcut
+        - URL (?invoke=)
+        - command palette
+        - form post (no JavaScript)
+        - sidecar read only
+    validations:
+      required: true
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Screen, pointer and density
+      description: The `data-rex-screen`, `data-rex-pointer` and `data-rex-density` values on the document root.
+      options:
+        - desktop, fine, default
+        - desktop, fine, agent
+        - tablet, coarse, default
+        - phone, coarse, default
+        - other (say which below)
+    validations:
+      required: true
+  - type: textarea
+    id: sidecar
+    attributes:
+      label: The page sidecar
+      description: The content of `<script type="application/rex+json" id="rex-page">` on that page.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the agent tried and what the contract promises
+      description: The address or sidecar entry it acted on and the outcome it expected.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: The DOM state, the outcome element, console errors or the REX code shown.
+    validations:
+      required: true
+  - type: textarea
+    id: check
+    attributes:
+      label: Output of rex check --runtime
+      render: shell

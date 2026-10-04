@@ -71,7 +71,9 @@ export async function installNodeStaticPages(
   options: NodeStaticPagesOptions,
 ): Promise<StaticCache> {
   const list =
-    typeof options.list === "string" ? await readPrerenderList(options.list) : parsePrerenderList(options.list);
+    typeof options.list === "string"
+      ? await readPrerenderList(options.list)
+      : parsePrerenderList(options.list);
   const cache = createStaticCache({
     pages: list.pages,
     store: nodeStaticStore(options.clientDir),

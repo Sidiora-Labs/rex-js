@@ -86,10 +86,7 @@ export function gateActionId(declared: AnyFlow, gate: string, decision: FlowDeci
   return `${declared.id}.${gate}.${decision}`;
 }
 
-async function pendingGate(
-  declared: AnyFlow,
-  instanceId: string,
-): Promise<FlowGateState | null> {
+async function pendingGate(declared: AnyFlow, instanceId: string): Promise<FlowGateState | null> {
   const instance = await declared.journal.load(instanceId);
   if (instance === undefined || instance.flowId !== declared.id) return null;
   return flowState(declared, instanceId, instance).gate;

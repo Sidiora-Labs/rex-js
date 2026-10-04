@@ -3,12 +3,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { RexError } from "../../core/errors.ts";
 import { ARGS_ERROR, ARGS_USAGE_EXIT, type RexCommand as Command } from "../args.ts";
-import {
-  CODEMOD_FILE,
-  formatFlag,
-  type Codemod,
-  type CodemodFlag,
-} from "../codemods/codemod.ts";
+import { CODEMOD_FILE, formatFlag, type Codemod, type CodemodFlag } from "../codemods/codemod.ts";
 import type { RexCliIO } from "../index.ts";
 
 export const DEFAULT_FROM = "0.1";
@@ -74,10 +69,16 @@ export async function loadCodemods(dir: string = CODEMODS_DIR): Promise<readonly
     const loaded = (await import(pathToFileURL(file).href)) as { readonly codemod?: unknown };
     const stem = path.basename(file).replace(/\.(ts|js)$/, "");
     if (!isCodemod(loaded.codemod)) {
-      throw new RexError("REX612", `rex: ${file} must export codemod (defineCodemod({ id, from, description, run }))`);
+      throw new RexError(
+        "REX612",
+        `rex: ${file} must export codemod (defineCodemod({ id, from, description, run }))`,
+      );
     }
     if (loaded.codemod.id !== stem) {
-      throw new RexError("REX612", `rex: ${file} exports codemod ${loaded.codemod.id}; its id must be ${stem}`);
+      throw new RexError(
+        "REX612",
+        `rex: ${file} exports codemod ${loaded.codemod.id}; its id must be ${stem}`,
+      );
     }
     codemods.push(loaded.codemod);
   }

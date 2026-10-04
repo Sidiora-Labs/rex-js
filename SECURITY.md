@@ -8,11 +8,11 @@ Rex is before 1.0. Security fixes are released for the latest minor version; the
 
 This table applies from the 0.2.0 release; 0.1 was never published to npm.
 
-| Version | Supported |
-| --- | --- |
-| 0.2.x | Yes |
-| 0.1.x | Not published; upgrade with `rex migrate` (see docs/migration.md) |
-| Earlier | No |
+| Version | Supported                                                         |
+| ------- | ----------------------------------------------------------------- |
+| 0.2.x   | Yes                                                               |
+| 0.1.x   | Not published; upgrade with `rex migrate` (see docs/migration.md) |
+| Earlier | No                                                                |
 
 After 1.0, the latest major version receives all security fixes and the previous major version receives critical and high severity fixes for twelve months after the next major version is published.
 
@@ -33,14 +33,14 @@ If you cannot use GitHub, ask in a public issue for a private contact without de
 
 ## What happens next
 
-| Step | Target |
-| --- | --- |
-| Acknowledge the report | Within 3 business days |
-| Confirm or reject the issue and assess severity (CVSS) | Within 10 business days |
-| Agree a disclosure date with the reporter | When the issue is confirmed |
-| Release a fix for critical and high severity issues | Within 30 days of confirmation |
-| Release a fix for medium and low severity issues | Within 90 days of confirmation |
-| Publish the advisory | When the fixed version is on npm |
+| Step                                                   | Target                           |
+| ------------------------------------------------------ | -------------------------------- |
+| Acknowledge the report                                 | Within 3 business days           |
+| Confirm or reject the issue and assess severity (CVSS) | Within 10 business days          |
+| Agree a disclosure date with the reporter              | When the issue is confirmed      |
+| Release a fix for critical and high severity issues    | Within 30 days of confirmation   |
+| Release a fix for medium and low severity issues       | Within 90 days of confirmation   |
+| Publish the advisory                                   | When the fixed version is on npm |
 
 We follow coordinated disclosure. The default embargo is 90 days from the report or until a fix is released, whichever comes first; we may agree a different date with the reporter when a fix needs more time or the issue is being exploited. If we miss a target, we tell the reporter why and when to expect the next update.
 

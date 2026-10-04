@@ -113,7 +113,12 @@ function statesFor(label: string): Readonly<Record<string, unknown>> {
 
 const LandingSignup = region("signup", () => createElement(ActionForm, { action: signUp }));
 const LandingView = view(() =>
-  createElement(Fragment, null, createElement("h1", null, "Join the list"), createElement(LandingSignup)),
+  createElement(
+    Fragment,
+    null,
+    createElement("h1", null, "Join the list"),
+    createElement(LandingSignup),
+  ),
 );
 
 const NewsHeadline = region("headline", () => {
@@ -122,7 +127,9 @@ const NewsHeadline = region("headline", () => {
 });
 const NewsView = view(() => createElement(NewsHeadline));
 
-const StoryView = view<{ slug: string }>(({ params }) => createElement("h1", null, `Story ${params.slug}`));
+const StoryView = view<{ slug: string }>(({ params }) =>
+  createElement("h1", null, `Story ${params.slug}`),
+);
 const LiveView = view(() => createElement("p", null, "Live ticker"));
 
 function lazySet(declared: AnyPage, loaded: LoadedPageModules): LazyPageModuleSet {
@@ -191,7 +198,10 @@ beforeAll(async () => {
   writeFileSync(join(clientDir, "index.html"), SPA_SHELL);
   writeFileSync(join(clientDir, "assets", "entry-a1.js"), ENTRY_SOURCE);
   writeFileSync(join(clientDir, "assets", "entry-a1.css"), "body { margin: 0; }\n");
-  list = await prerenderPages({ bundle, ssr: { createRexRenderer, pageRenderMode }, assets }, { clientDir });
+  list = await prerenderPages(
+    { bundle, ssr: { createRexRenderer, pageRenderMode }, assets },
+    { clientDir },
+  );
   const listFile = writePrerenderList(outDir, list);
   cache = await installNodeStaticPages(registry, {
     clientDir,
@@ -241,7 +251,9 @@ function rootAttributes(html: string): Record<string, string> {
 }
 
 function sidecarOf(html: string): Record<string, unknown> {
-  const found = new RegExp(`<script type="${SIDECAR_MIME_TYPE.replace("+", "\\+")}"[^>]*>([\\s\\S]*?)</script>`).exec(html);
+  const found = new RegExp(
+    `<script type="${SIDECAR_MIME_TYPE.replace("+", "\\+")}"[^>]*>([\\s\\S]*?)</script>`,
+  ).exec(html);
   if (found === null) throw new Error("the page has no sidecar");
   return JSON.parse(found[1] as string) as Record<string, unknown>;
 }
@@ -251,7 +263,8 @@ const PHONE_HINTS = {
   "sec-ch-viewport-width": "390",
   "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile/15E148",
 } as const;
-const TABLET_AGENT = "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1";
+const TABLET_AGENT =
+  "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1";
 
 function csrfCookieOf(response: Response): string | null {
   const header = response.headers.get("set-cookie") ?? "";
@@ -264,20 +277,31 @@ function csrfFieldOf(html: string): string | null {
 
 async function waitPastWindow(path: string): Promise<void> {
   const entry = cache.entry(path);
-  if (entry === undefined || entry.revalidate === null) throw new Error(`${path} has no revalidate window`);
+  if (entry === undefined || entry.revalidate === null)
+    throw new Error(`${path} has no revalidate window`);
   const remaining = entry.generatedAt + entry.revalidate * 1000 + 50 - Date.now();
   if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
 }
 
 describe("prerendered page list", () => {
   it("lists every ssg and static page with its file and window and writes it beside the client", () => {
-    expect(list.pages.map((entry) => [entry.path, entry.page, entry.render, entry.revalidate, entry.file])).toEqual([
+    expect(
+      list.pages.map((entry) => [
+        entry.path,
+        entry.page,
+        entry.render,
+        entry.revalidate,
+        entry.file,
+      ]),
+    ).toEqual([
       ["/landing", "landing", "static", null, "landing/index.html"],
       ["/news", "news", "ssg", 1, "news/index.html"],
       ["/stories/launch", "story", "ssg", null, "stories/launch/index.html"],
     ]);
     for (const entry of list.pages) expect(existsSync(join(clientDir, entry.file))).toBe(true);
-    const written = parsePrerenderList(JSON.parse(readFileSync(join(outDir, PRERENDER_LIST_FILE), "utf8")));
+    const written = parsePrerenderList(
+      JSON.parse(readFileSync(join(outDir, PRERENDER_LIST_FILE), "utf8")),
+    );
     expect(written).toEqual(list);
     expect(cache.size).toBe(3);
     expect(cache.has("/news/")).toBe(true);
@@ -288,12 +312,25 @@ describe("prerendered page list", () => {
     expect(prerenderedFile("/")).toBe("index.html");
     expect(prerenderedFile("/guides/getting%20started/")).toBe("guides/getting started/index.html");
     expect(normalizePagePath("/news/")).toBe("/news");
-    expect(() => prerenderedFile("/notes/%2E%2E")).toThrow(expect.objectContaining({ name: "RexError", code: "REX404" }));
-    expect(() => prerenderedFile("/notes/a%2Fb")).toThrow(expect.objectContaining({ name: "RexError", code: "REX404" }));
+    expect(() => prerenderedFile("/notes/%2E%2E")).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX404" }),
+    );
+    expect(() => prerenderedFile("/notes/a%2Fb")).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX404" }),
+    );
     expect(() =>
       parsePrerenderList({
         version: 1,
-        pages: [{ path: "/a", page: "a", render: "csr", revalidate: null, file: "a/index.html", generatedAt: 1 }],
+        pages: [
+          {
+            path: "/a",
+            page: "a",
+            render: "csr",
+            revalidate: null,
+            file: "a/index.html",
+            generatedAt: 1,
+          },
+        ],
       }),
     ).toThrow("render must be one of ssg, static");
   });
@@ -327,7 +364,9 @@ describe("node adapter with prerendered pages", { timeout: 30_000 }, () => {
     expect(csrfFieldOf(html)).toBe(token);
     expect(html).toContain('name="_action" value="sign-up"');
 
-    const sidecar = new RegExp(`<script type="${SIDECAR_MIME_TYPE.replace("+", "\\+")}"[^>]*>([\\s\\S]*?)</script>`).exec(html);
+    const sidecar = new RegExp(
+      `<script type="${SIDECAR_MIME_TYPE.replace("+", "\\+")}"[^>]*>([\\s\\S]*?)</script>`,
+    ).exec(html);
     expect(sidecar).not.toBeNull();
     expect(JSON.parse(sidecar?.[1] as string)).toMatchObject({ page: "landing", state: "ready" });
 
@@ -340,7 +379,11 @@ describe("node adapter with prerendered pages", { timeout: 30_000 }, () => {
     const first = await get("/landing");
     const token = csrfCookieOf(first) as string;
     await first.text();
-    const body = new URLSearchParams({ _csrf: token, _action: "sign-up", email: "ada@example.com" });
+    const body = new URLSearchParams({
+      _csrf: token,
+      _action: "sign-up",
+      email: "ada@example.com",
+    });
     const response = await fetch(`${running.url}/rex/form/sign-up`, {
       method: "POST",
       redirect: "manual",
@@ -357,7 +400,11 @@ describe("node adapter with prerendered pages", { timeout: 30_000 }, () => {
     expect(signups).toEqual(["ada@example.com"]);
     const records = await ledger.list({ actionId: "sign-up" });
     expect(records).toHaveLength(1);
-    expect(records[0]).toMatchObject({ actionId: "sign-up", outcome: "ok", actor: anonymousActor.id });
+    expect(records[0]).toMatchObject({
+      actionId: "sign-up",
+      outcome: "ok",
+      actor: anonymousActor.id,
+    });
   });
 
   it("serves an ssg page that still hydrates, with the request nonce in place of the build nonce", async () => {
@@ -376,7 +423,9 @@ describe("node adapter with prerendered pages", { timeout: 30_000 }, () => {
   });
 
   it("serves the cached page after the revalidate window, regenerates in the background and serves the new HTML next", async () => {
-    expect(readFileSync(join(clientDir, "news", "index.html"), "utf8")).toContain("Morning edition");
+    expect(readFileSync(join(clientDir, "news", "index.html"), "utf8")).toContain(
+      "Morning edition",
+    );
     headline = "Evening edition";
     await waitPastWindow("/news");
 
@@ -389,7 +438,9 @@ describe("node adapter with prerendered pages", { timeout: 30_000 }, () => {
 
     await cache.settled();
     expect(regenerationErrors).toEqual([]);
-    expect(readFileSync(join(clientDir, "news", "index.html"), "utf8")).toContain("Evening edition");
+    expect(readFileSync(join(clientDir, "news", "index.html"), "utf8")).toContain(
+      "Evening edition",
+    );
 
     const fresh = await get("/news");
     expect(fresh.status).toBe(200);
@@ -411,7 +462,9 @@ describe("node adapter with prerendered pages", { timeout: 30_000 }, () => {
       expect(regenerationErrors[0]).toBeInstanceOf(RexStaticPageError);
       expect(String(regenerationErrors[0])).toContain("render ended as failed");
       expect(cache.entry("/news")?.generatedAt).toBe(before);
-      expect(readFileSync(join(clientDir, "news", "index.html"), "utf8")).toContain("Evening edition");
+      expect(readFileSync(join(clientDir, "news", "index.html"), "utf8")).toContain(
+        "Evening edition",
+      );
     } finally {
       failNews = false;
       await cache.settled();
@@ -429,7 +482,11 @@ describe("node adapter with prerendered pages", { timeout: 30_000 }, () => {
 
     const plain = await (await get("/landing")).text();
     expect(rootAttributes(plain)).toEqual(rootAttributes(onDisk));
-    expect(sidecarOf(plain)).toMatchObject({ screen: "desktop", pointer: "fine", density: "comfortable" });
+    expect(sidecarOf(plain)).toMatchObject({
+      screen: "desktop",
+      pointer: "fine",
+      density: "comfortable",
+    });
 
     const phone = await get("/landing?density=agent", PHONE_HINTS);
     expect(phone.headers.get(STATIC_HEADER)).toBe("hit");
@@ -494,27 +551,39 @@ describe("static cache on the fetch-only render route", { timeout: 30_000 }, () 
     });
     const unregister = registerStaticCache(registry, memory);
     try {
-      const hit = await server.fetch(new Request("http://rex.test/landing", { headers: { accept: "text/html" } }));
+      const hit = await server.fetch(
+        new Request("http://rex.test/landing", { headers: { accept: "text/html" } }),
+      );
       expect(hit.status).toBe(200);
       expect(hit.headers.get(STATIC_HEADER)).toBe("hit");
       const token = csrfCookieOf(hit) as string;
       expect(await hit.text()).toBe(fillCsrfToken(landingHtml, token));
 
-      const generated = await server.fetch(new Request("http://rex.test/news/", { headers: { accept: "text/html" } }));
+      const generated = await server.fetch(
+        new Request("http://rex.test/news/", { headers: { accept: "text/html" } }),
+      );
       expect(generated.status).toBe(200);
       expect(generated.headers.get(STATIC_HEADER)).toBe("generated");
       expect(await generated.text()).toContain("Evening edition");
-      expect(memory.entry("/news")?.generatedAt).toBeGreaterThan(cache.entry("/news")?.generatedAt ?? 0);
+      expect(memory.entry("/news")?.generatedAt).toBeGreaterThan(
+        cache.entry("/news")?.generatedAt ?? 0,
+      );
 
-      const empty = createStaticCache({ pages: list.pages, store: memoryStaticStore(), screen: screenFromRequest });
+      const empty = createStaticCache({
+        pages: list.pages,
+        store: memoryStaticStore(),
+        screen: screenFromRequest,
+      });
       const context = { ...prerenderContext(), nonce: "abc" };
       await expect(
         empty.serve(new Request("http://rex.test/landing"), renderer, context),
       ).rejects.toThrow(RexStaticPageError);
-      await expect(empty.serve(new Request("http://rex.test/live"), renderer, context)).resolves.toBeNull();
-      expect(() => createStaticCache({ pages: list.pages, store: memoryStaticStore() } as never)).toThrow(
-        expect.objectContaining({ name: "RexError", code: "REX400" }),
-      );
+      await expect(
+        empty.serve(new Request("http://rex.test/live"), renderer, context),
+      ).resolves.toBeNull();
+      expect(() =>
+        createStaticCache({ pages: list.pages, store: memoryStaticStore() } as never),
+      ).toThrow(expect.objectContaining({ name: "RexError", code: "REX400" }));
     } finally {
       unregister();
       registerStaticCache(registry, cache);
@@ -523,7 +592,8 @@ describe("static cache on the fetch-only render route", { timeout: 30_000 }, () 
 });
 
 describe("screen attributes on prerendered documents", () => {
-  const BARE = '<!doctype html><html lang="en"><head></head><body><div id="root"></div></body></html>';
+  const BARE =
+    '<!doctype html><html lang="en"><head></head><body><div id="root"></div></body></html>';
   const phone = { screen: "phone", pointer: "coarse", density: "agent" } as const;
 
   it("adds the attributes to an html element without them and replaces the ones already written", () => {
@@ -535,15 +605,28 @@ describe("screen attributes on prerendered documents", () => {
     expect(rootTag(applyScreenAttributes(written, phone))).toBe(
       '<html lang="en" data-rex-screen="phone" data-rex-pointer="coarse" data-rex-density="agent">',
     );
-    expect(applyScreenAttributes(written, phone).replace(rootTag(applyScreenAttributes(written, phone)), "")).toBe(
-      written.replace(rootTag(written), ""),
-    );
+    expect(
+      applyScreenAttributes(written, phone).replace(
+        rootTag(applyScreenAttributes(written, phone)),
+        "",
+      ),
+    ).toBe(written.replace(rootTag(written), ""));
   });
 
   it("rewrites the screen fields of the sidecar and leaves a sidecar without them untouched", () => {
-    const payload = { version: 1, page: "landing", note: "<b>&</b>", screen: "desktop", pointer: "fine", density: "comfortable" };
+    const payload = {
+      version: 1,
+      page: "landing",
+      note: "<b>&</b>",
+      screen: "desktop",
+      pointer: "fine",
+      density: "comfortable",
+    };
     const sidecar = `<script type="${SIDECAR_MIME_TYPE}" id="rex-page" data-rex-sidecar="landing">${escapeInlineJson(payload)}</script>`;
-    const html = applyScreenAttributes(BARE.replace("</body>", `${sidecar}</body>`), PRERENDER_SCREEN);
+    const html = applyScreenAttributes(
+      BARE.replace("</body>", `${sidecar}</body>`),
+      PRERENDER_SCREEN,
+    );
     const rewritten = applyScreenAttributes(html, phone);
     expect(sidecarOf(rewritten)).toEqual({ ...payload, ...phone });
     expect(rewritten).toContain(escapeInlineJson({ ...payload, ...phone }));

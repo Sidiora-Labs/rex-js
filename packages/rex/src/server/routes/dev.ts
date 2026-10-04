@@ -4,6 +4,7 @@ import { RexError } from "../../core/errors.ts";
 import type { RexServerOptions, RexServerSetup } from "../app.ts";
 
 declare module "../app.ts" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- an augmentation must repeat the declared type parameter
   interface RexServerOptions<A extends AnyAction> {
     readonly dev?: boolean;
   }

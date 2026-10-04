@@ -32,7 +32,9 @@ function declaredLicense(manifest) {
   if (typeof manifest.license === "string") return manifest.license;
   if (manifest.license && typeof manifest.license.type === "string") return manifest.license.type;
   if (Array.isArray(manifest.licenses) && manifest.licenses.length > 0) {
-    const types = manifest.licenses.map((entry) => (typeof entry === "string" ? entry : entry?.type));
+    const types = manifest.licenses.map((entry) =>
+      typeof entry === "string" ? entry : entry?.type,
+    );
     if (types.every((type) => typeof type === "string")) return `(${types.join(" OR ")})`;
   }
   return undefined;
@@ -112,7 +114,10 @@ function isResolvedPeer(dir, name) {
 }
 
 function workspaceProjects() {
-  const output = execFileSync("pnpm", ["ls", "-r", "--json", "--depth", "-1"], { cwd: ROOT, encoding: "utf8" });
+  const output = execFileSync("pnpm", ["ls", "-r", "--json", "--depth", "-1"], {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
   const root = realpathSync(ROOT);
   return JSON.parse(output)
     .map((project) => ({ dir: realpathSync(project.path), published: project.private !== true }))
@@ -190,7 +195,7 @@ for (const project of projects) {
     walk(project.dir, manifest, [manifest.name ?? relative(ROOT, project.dir)]);
   }
 }
-for (let grown = true; grown; ) {
+for (let grown = true; grown;) {
   const before = reviewed.size;
   for (let index = 0; index < optionalPeers.length; index++) {
     const { dir, name, chain } = optionalPeers[index];
@@ -213,7 +218,9 @@ console.log(
 
 if (failures.length > 0) {
   for (const failure of failures) {
-    console.error(`license-review: ${failure.id}: ${failure.reason} (via ${failure.path.join(" > ")})`);
+    console.error(
+      `license-review: ${failure.id}: ${failure.reason} (via ${failure.path.join(" > ")})`,
+    );
   }
   console.error(`license-review: ${failures.length} package(s) outside ${[...ALLOWED].join(", ")}`);
   process.exit(1);

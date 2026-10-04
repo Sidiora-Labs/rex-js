@@ -1,5 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const PHONE = { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } };
+const TABLET = {
+  ...devices["Galaxy Tab S4"],
+  isMobile: false,
+  viewport: { width: 820, height: 1180 },
+};
+const DESKTOP = { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } };
+const EXTERNAL_DEMO_URL = process.env.REX_DEMO_URL;
+
 export default defineConfig({
   testDir: "./e2e",
   testMatch: ["**/*.spec.ts", "**/lighthouse.ts"],
@@ -10,9 +19,14 @@ export default defineConfig({
   forbidOnly: true,
   reporter: [["list"]],
   use: {
-    ...devices["Desktop Chrome"],
+    ...DESKTOP,
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
+    ...(EXTERNAL_DEMO_URL === undefined ? {} : { baseURL: EXTERNAL_DEMO_URL }),
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "phone", use: PHONE },
+    { name: "tablet", use: TABLET },
+    { name: "desktop", use: DESKTOP },
+  ],
 });
