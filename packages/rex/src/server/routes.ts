@@ -4,6 +4,7 @@ import { installDevRoute } from "./routes/dev.ts";
 import { installFormRoute } from "./routes/form.ts";
 import { installHealthRoute } from "./routes/health.ts";
 import { installManifestRoute } from "./routes/manifest.ts";
+import { installPagesTextRoute } from "./routes/pages-text.ts";
 import { installRenderRoute } from "./routes/render.ts";
 import { installRpcRoute } from "./routes/rpc.ts";
 
@@ -15,4 +16,5 @@ export const REX_ROUTES: readonly RexServerInstaller[] = [
   installFormRoute,
   installDevRoute,
   installRenderRoute,
+  installPagesTextRoute,
 ];

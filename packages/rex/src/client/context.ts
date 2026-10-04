@@ -19,6 +19,18 @@ export const ACTOR_HEADER = REX_ACTOR_HEADER;
 export const DENSITY_HEADER = REX_DENSITY_HEADER;
 export const CONFIRM_HEADER = REX_CONFIRM_HEADER;
 
+export const API_CREDENTIALS: RequestCredentials = "include";
+
+export type ApiFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
+
+export function credentialedFetch(
+  fetchImpl: ApiFetch = (input, init) => globalThis.fetch(input, init),
+): ApiFetch {
+  return (input, init) => fetchImpl(input, { ...init, credentials: API_CREDENTIALS });
+}
+
+export const apiFetch: ApiFetch = /* @__PURE__ */ credentialedFetch();
+
 export interface RexClientContext {
   readonly confirmToken?: string;
 }

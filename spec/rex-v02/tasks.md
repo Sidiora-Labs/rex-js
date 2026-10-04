@@ -174,7 +174,7 @@
     - Add chrome.components support in client/shell/components.ts so an app replaces the shell's Button, Sheet, palette item and Outcome renderers; make the demo use DesignX for every part, overlay and the shell components, with Tailwind 4 and the DesignX theme, keeping agent density motion-free.
     - Write cli/designx.test.ts (real registry fetch into a temp app that passes rex check) and update the demo so pnpm -C examples/demo exec rex check reports no findings.
     - _Requirements: 29.1, 29.2, 29.3_
-  - [ ] 5.3 Remote API origin, CORS, platform docs and the markdown text renderer
+  - [x] 5.3 Remote API origin, CORS, platform docs and the markdown text renderer
     - Add client.apiOrigin support in client/context.ts and vite/entry-module.ts (baked for static builds) and server/middleware/cors.ts enabling CORS with credentials for config.security.origins; write docs/platforms.md for the node, edge, bun, deno and static targets with Electron, Tauri and Capacitor sections.
     - Add server/routes/pages-text.ts serving GET /rex/pages/<id>.md per [design] text_renderer and register it.
     - Write server/pages-text.test.ts and server/cors.test.ts.
