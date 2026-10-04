@@ -200,3 +200,51 @@ The manifest rule runs only once `.rex/` exists (after the first `rex manifest`)
 | `manifest/agents-stale` | warning | `AGENTS.md is stale: it differs from a fresh build of the declarations` |
 
 The hint for the missing and stale findings is "Run rex manifest to regenerate .rex/manifest.json and AGENTS.md, then commit both."
+
+### ui
+
+The ui rule reads `ui` from `rex.config.ts` statically and runs only when `ui.kit` is `designx` (`ui: "designx"` or `ui: { kit: "designx" }`). It reads regions, parts and overlays; views, states, components (including `app/components/ui`) and tests are not checked.
+
+| Rule id | Message |
+| --- | --- |
+| `ui/designx-primitive` | `<tag> in a <role> bypasses the DesignX <item> primitive` (or `createElement("<tag>")`) for a raw `button`, `input`, `select`, `textarea`, `table` or `dialog` element |
+| `ui/config` | `ui in rex.config.ts is not a static literal, so rex check cannot read ui.kit`, `ui.kit in rex.config.ts is not a static literal, so rex check cannot read it`, or `ui.kit "<kit>" in rex.config.ts is not one of designx, none` |
+
+The hint names the primitive the `rex/designx` map gives the surface and its file under `app/components/ui`, with the docs link for [REX509](errors.md#rex5xx-checker-and-manifest):
+
+| Raw element | Surface | DesignX primitive |
+| --- | --- | --- |
+| `<button>` | `button` | `button` |
+| `<input>` | `input` | `input`; `checkbox` for `type="checkbox"`, `radio-group` for `type="radio"`, `number-field` for `type="number"` |
+| `<select>` | `select` | `select` |
+| `<textarea>` | `textarea` | `textarea` |
+| `<table>` | `list` | `data-table` on tablet, desktop and wide, `card` on phone |
+| `<dialog>` | `sheet` | `dialog` in its dialog form, `sheet` in its bottom-sheet form |
+
+`<input type="hidden">` renders nothing and is not reported.
+
+### layout
+
+The layout rule holds parts to the screen-fit contract below.
+
+| Rule id | Scope | Message |
+| --- | --- | --- |
+| `layout/fixed-size` | parts | `inline style sets <key>: <value> in pixels on part <Name>`, `class sets "<class>" in pixels on part <Name>`, or `CSS module sets <property>: <value> in pixels on part <Name>` |
+| `layout/touch-target` | regions, parts, overlays | `<control> in a <role> declares <declaration> (<n> px), under the 44 px touch target` |
+
+`layout/fixed-size` reports a non-zero pixel `width`, `height`, `min-width` or `min-height` (and the logical `inline-size`, `block-size`, `min-inline-size`, `min-block-size`) declared on a part: a `style` property with a number or a `px` string, a Tailwind arbitrary value (`w-[320px]`, `h-[…]`, `min-w-[…]`, `min-h-[…]`, `size-[…]`, `[width:…]`), or a declaration in a CSS module the part imports, reported at its line in the `.module.css` file. `max-width`, percentages, `rem`, `ch`, `clamp()` and `var(--token)` values are fluid and not reported. The `width` and `height` attributes of `Img` are intrinsic sizes, not layout, and are not read. Hint: let the part size to its container with `Page.Stack` or `Page.Grid`, or use a fluid value such as a percentage, a `rem` or `ch` range in `clamp()`, `var(--rex-measure)` or `var(--rex-control-height)` ([REX510](errors.md#rex5xx-checker-and-manifest)).
+
+`layout/touch-target` reads the controls: `button`, `a` with `href`, `input` (except `type="hidden"`), `select`, `textarea`, `summary`, elements with an interactive `role` (button, link, checkbox, radio, switch, tab, menu items, option, combobox, slider, spinbutton, textbox, searchbox, treeitem) and the DesignX controls (`Button`, `Input`, `Textarea`, `SelectTrigger`, `SelectItem`, `Checkbox`, `Switch`, `RadioGroupItem`, the `NumberField` input and steppers, `TabsTrigger`, the pagination links, `CommandItem`, `ComboboxInput`, `DropdownMenuTrigger`, `DropdownMenuItem`, `BreadcrumbLink`, `SidebarMenuButton`). It reports a `height`, `min-height`, `block-size` or `min-block-size` under 44 px declared on the control by `style` (numbers and `px` or `rem` strings, with `1rem` = 16 px) or by Tailwind (`h-9` is 36 px on the 4 px spacing scale, `h-[32px]`, `size-8`), unless the control also declares a minimum that reaches the target on every coarse pointer: `min-h-11` or more, `min-h-(--rex-hit-target)`, `minHeight: "var(--rex-hit-target)"`, or the same under the `pointer-coarse:` variant. Heights under a `pointer-fine:` variant never apply to touch and are not reported. Hint: give the control `min-height: var(--rex-hit-target)` (`min-h-(--rex-hit-target)` or `pointer-coarse:min-h-11` in Tailwind), or keep the DesignX primitive's own size ([REX511](errors.md#rex5xx-checker-and-manifest)).
+
+Both rules, like `boundaries`, `naming`, `traps`, `tokens`, `a11y` and `media`, also run in the editor through the `rex/eslint` plugin (`LINT_RULE_IDS` in `packages/rex/src/eslint/index.ts`).
+
+## The screen-fit contract
+
+Rex sizes to the screen, not to the viewport width alone.
+
+- **Classification.** The runtime classifies the screen (`phone`, `tablet`, `desktop`, `wide`), the pointer (`coarse`, `fine`) and the density (`comfortable`, `compact`, `agent`) and writes them on the document root as `data-rex-screen`, `data-rex-pointer` and `data-rex-density`: on the server from the `Sec-CH-UA-Mobile` and `Sec-CH-Viewport-Width` client hints (Rex sends `Accept-CH`) with a user-agent fallback, on the client from `matchMedia` and `ResizeObserver`. `useScreen()` exposes all three and the sidecar carries them.
+- **Fluid tokens.** Type and space scales are `clamp()` ranges keyed by screen class and density; style with the tokens and the layout primitives rather than fixed lengths.
+- **Parts fit their region.** A part never fixes its own width or height in pixels: `Page.Grid` collapses by container width, `Page.Stack` spacing scales, and a part takes the width of the region it is placed in (`layout/fixed-size`).
+- **44 px targets on touch.** Every control reaches 44 px (`--rex-hit-target`) on a coarse pointer; a control may be shorter on a fine pointer only (`layout/touch-target`).
+- **Forms by screen.** Overlays are a dialog on tablet and larger and a bottom sheet on phone; navigation is a bar on tablet, a sidebar on desktop and wide and a dock on phone; lists are a data table on tablet and larger and a card list on phone.
+- **One vocabulary.** In an app whose `ui.kit` is `designx`, regions, parts and overlays render these forms with the DesignX primitives that `rex/designx` maps each surface to (`ui/designx-primitive`); see [the DesignX recipe](recipes/designx.md).

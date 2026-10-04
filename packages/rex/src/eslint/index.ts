@@ -8,7 +8,16 @@ import { createSourceLoader, type Finding, type Rule, type SourceLoader } from "
 import { defaultRules } from "../check/rules/index.ts";
 import { REX_VERSION } from "../index.ts";
 
-export const LINT_RULE_IDS = ["boundaries", "naming", "traps", "tokens", "a11y", "media"] as const;
+export const LINT_RULE_IDS = [
+  "boundaries",
+  "naming",
+  "traps",
+  "tokens",
+  "a11y",
+  "media",
+  "ui",
+  "layout",
+] as const;
 
 export type LintRuleId = (typeof LINT_RULE_IDS)[number];
 

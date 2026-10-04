@@ -1,3 +1,7 @@
 export default function Badge() {
-  return <span>Badge</span>;
+  return (
+    <button type="button" style={{ height: 32 }}>
+      Badge
+    </button>
+  );
 }

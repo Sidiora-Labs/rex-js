@@ -296,6 +296,15 @@ export const REX_ERROR_DOCS = {
   REX508: {
     hint: "Write the check field of rex.config.ts as a literal object so rex check can read it without running the config.",
   },
+  REX509: {
+    hint: "In an app whose ui.kit is designx, render buttons, inputs, selects, textareas, tables and dialogs in regions, parts and overlays with the DesignX primitive rex/designx maps the surface to (button, input, select, textarea, checkbox, radio-group, number-field, data-table or card, dialog or sheet), installed under app/components/ui.",
+  },
+  REX510: {
+    hint: "Let a part size to its container: drop pixel width, height, min-width and min-height and lay it out with Page.Stack or Page.Grid, or use a fluid value such as a percentage, a rem or ch range in clamp(), var(--rex-measure) or var(--rex-control-height).",
+  },
+  REX511: {
+    hint: "Give the control min-height: var(--rex-hit-target) (min-h-(--rex-hit-target) or pointer-coarse:min-h-11 in Tailwind), or keep the DesignX primitive's own size, so it reaches 44 px on coarse pointers.",
+  },
   REX600: {
     hint: "Declare each command, argument and option once with a --long option name, <required> or [optional] arguments in that order, and no value on a --no- flag.",
   },
