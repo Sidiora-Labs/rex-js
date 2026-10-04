@@ -1,4 +1,5 @@
-import { can, id, page, z } from "../../../index.ts";
+import { can, id, page } from "../../../index.ts";
+import { z } from "zod/mini";
 
 export default page("note", {
   route: "/notes/:noteId",

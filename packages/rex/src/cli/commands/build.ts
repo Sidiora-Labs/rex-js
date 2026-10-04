@@ -1,4 +1,4 @@
-import { rmSync } from "node:fs";
+import { rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RexCommand as Command } from "../args.ts";
@@ -21,6 +21,8 @@ import {
 } from "../../server/adapters/static-cache.ts";
 import type { RexDocumentAssets } from "../../server/ssr.ts";
 import { readSsrAssets } from "../../vite/ssr-css.ts";
+import { stableStringify } from "../../manifest/build.ts";
+import type { Manifest } from "../../manifest/types.ts";
 import {
   chunkTable,
   formatChunkTable,
@@ -39,6 +41,7 @@ import type { DeprecationWarn } from "../../core/deprecated.ts";
 export const DIST_DIR = "dist";
 export const CLIENT_DIR = "client";
 export const SERVER_FILE = "server.js";
+export const MANIFEST_OUTPUT = "manifest.json";
 export const DEFAULT_PORT = 3000;
 export const SERVER_ENTRY_ID = "rex:server";
 export const RESOLVED_SERVER_ENTRY_ID = "\0rex:server";
@@ -73,6 +76,7 @@ export function serverRuntimePaths(from: string = import.meta.url): ServerRuntim
 export interface ServerEntryOptions {
   readonly config: string;
   readonly runtime: ServerRuntimePaths;
+  readonly manifest: string;
 }
 
 export function generateServerEntry(options: ServerEntryOptions): string {
@@ -84,6 +88,7 @@ export function generateServerEntry(options: ServerEntryOptions): string {
     `import { configServer, readConfigExport } from ${JSON.stringify(runtime.config)};`,
     `import { anonymousActor } from ${JSON.stringify(runtime.actor)};`,
     `import exported from ${JSON.stringify(normalizePath(options.config))};`,
+    `import manifest from ${JSON.stringify(normalizePath(options.manifest))};`,
     `import rexApp from ${JSON.stringify(APP_MODULE_ID)};`,
     `import ${JSON.stringify(RENDER_MODULE_ID)};`,
     "",
@@ -93,6 +98,7 @@ export function generateServerEntry(options: ServerEntryOptions): string {
     "    ledger: memoryLedger(),",
     "    actor: () => anonymousActor,",
     "    app: app.name,",
+    "    manifest,",
     "  }),",
     ");",
     `const port = Number(process.env.PORT ?? ${JSON.stringify(String(DEFAULT_PORT))});`,
@@ -133,6 +139,7 @@ export interface BuildResult {
   readonly outDir: string;
   readonly clientDir: string;
   readonly serverFile: string;
+  readonly manifestFile: string;
   readonly chunks: readonly ChunkRow[];
   readonly prerendered: readonly StaticPageEntry[];
   readonly prerenderFile: string;
@@ -170,6 +177,22 @@ export async function prerenderBuild(
     },
   );
   return { list, file: writePrerenderList(options.outDir, list) };
+}
+
+export async function writeBuildManifest(
+  root: string,
+  outDir: string,
+  rex: RexPluginOptions,
+  logLevel?: LogLevel,
+): Promise<string> {
+  const manifest: Manifest = await withModuleLoader(
+    root,
+    async (loader) => (await loadAppBundle(loader)).manifest,
+    { rex, ...(logLevel === undefined ? {} : { logLevel }) },
+  );
+  const file = join(outDir, MANIFEST_OUTPUT);
+  writeFileSync(file, `${stableStringify(manifest)}\n`);
+  return file;
 }
 
 type BuildOutput = Awaited<ReturnType<typeof build>>;
@@ -214,6 +237,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
   });
   const chunks = chunkTable(outputItems(client), chunkBudgets(budgets));
   const assets = readSsrAssets(clientDir, { root: appRoot });
+  const manifestFile = await writeBuildManifest(appRoot, outDir, pluginOptions, logLevel);
 
   await build({
     root: appRoot,
@@ -222,7 +246,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     plugins: [
       renderModulePlugin(() => assets),
       ...rex(pluginOptions),
-      serverEntryPlugin({ config, runtime: serverRuntimePaths() }),
+      serverEntryPlugin({ config, runtime: serverRuntimePaths(), manifest: manifestFile }),
     ],
     ssr: { noExternal: true, target: "node" },
     build: {
@@ -250,6 +274,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     outDir,
     clientDir,
     serverFile: join(outDir, SERVER_FILE),
+    manifestFile,
     chunks,
     prerendered: prerendered.list.pages,
     prerenderFile: prerendered.file,
@@ -268,6 +293,7 @@ export function register(program: Command, io: RexCliIO): void {
       const result = await buildApp(io.cwd, { warn: cliWarn(io) });
       io.out(formatChunkTable(result.chunks));
       io.out(`rex build: wrote ${DIST_DIR}/${CLIENT_DIR}/ and ${DIST_DIR}/${SERVER_FILE}\n`);
+      io.out(`rex build: wrote ${DIST_DIR}/${MANIFEST_OUTPUT}\n`);
       io.out(
         formatPrerenderList(
           { version: PRERENDER_LIST_VERSION, pages: result.prerendered },

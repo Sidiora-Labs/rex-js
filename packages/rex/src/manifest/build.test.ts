@@ -6,7 +6,8 @@ import { entity } from "../core/entity.ts";
 import { page } from "../core/page.ts";
 import { always, policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { boolean, enumOf, id, integer, money, ref, text, timestamp, z } from "../core/schema.ts";
+import { boolean, enumOf, id, integer, money, ref, text, timestamp } from "../core/schema.ts";
+import { z } from "zod/mini";
 import { buildManifest, stableStringify, type ManifestSource } from "./build.ts";
 import {
   SIDECAR_ELEMENT_ID,

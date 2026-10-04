@@ -11,7 +11,8 @@ import { action } from "./action.ts";
 import { actor } from "./actor.ts";
 import { page } from "./page.ts";
 import { always } from "./policy.ts";
-import { text, z } from "./schema.ts";
+import { text } from "./schema.ts";
+import { z } from "zod/mini";
 import { escapeInlineJson } from "./serialize.ts";
 
 const UNSAFE_CHARACTERS = ["<", ">", "&", "\u2028", "\u2029"] as const;

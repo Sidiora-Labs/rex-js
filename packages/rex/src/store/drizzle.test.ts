@@ -2,7 +2,8 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { describe, expect, it } from "vitest";
 import { entity } from "../core/entity.ts";
-import { boolean, id, integer, json, real, text, z } from "../core/schema.ts";
+import { boolean, id, integer, json, real, text } from "../core/schema.ts";
+import { z } from "zod/mini";
 import { bind } from "../core/store.ts";
 import {
   conformanceEntity,

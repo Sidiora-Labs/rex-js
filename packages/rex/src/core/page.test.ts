@@ -13,7 +13,8 @@ import {
 } from "./page.ts";
 import { always, policy } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { integer, text, z } from "./schema.ts";
+import { integer, text } from "./schema.ts";
+import { z } from "zod/mini";
 import {
   REX_DATA_STATES,
   STATE_EXPORT_NAMES,

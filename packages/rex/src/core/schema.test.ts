@@ -20,9 +20,10 @@ import {
   text,
   timestamp,
   toJsonSchema,
-  z,
 } from "./schema.ts";
-import { fromStandard, isZodSchema, type StandardSchemaV1 } from "./standard.ts";
+import { z } from "zod/mini";
+import * as core from "../index.ts";
+import { fromStandard, isZodSchema, validateStandard, type StandardSchemaV1 } from "./standard.ts";
 
 const DRAFT = "https://json-schema.org/draft/2020-12/schema";
 
@@ -218,11 +219,26 @@ describe("toJsonSchema", () => {
 });
 
 describe("field helpers are built on zod/mini", () => {
-  it("exports zod/mini as the core z", () => {
-    expect(z.object).toBe(zm.object);
+  it("leaves zod out of the core entry, which exports the field helpers and validateStandard", () => {
+    const exported = core as Readonly<Record<string, unknown>>;
+    expect(Object.hasOwn(exported, "z")).toBe(false);
+    expect(Object.hasOwn(exported, "zm")).toBe(false);
+    for (const value of Object.values(exported)) expect(value).not.toBe(zm.object);
+    expect(core.validateStandard).toBe(validateStandard);
+    expect([
+      core.id,
+      core.text,
+      core.money,
+      core.integer,
+      core.real,
+      core.boolean,
+      core.enumOf,
+      core.ref,
+      core.timestamp,
+      core.json,
+    ]).toEqual([id, text, money, integer, real, boolean, enumOf, ref, timestamp, json]);
     expect(z.string()).toBeInstanceOf(zm.ZodMiniString);
     expect(z.string()).not.toBeInstanceOf(zc.ZodType);
-    expect(typeof (z.string() as unknown as { min?: unknown }).min).toBe("undefined");
   });
 
   it("returns zod/mini schemas, not classic zod schemas", () => {

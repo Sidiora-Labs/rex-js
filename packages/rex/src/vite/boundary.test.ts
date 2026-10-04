@@ -183,7 +183,8 @@ describe("vite/boundary helpers", () => {
 
   it("replaces handlers in action declarations and prunes what only they referenced", () => {
     const source = [
-      'import { action, z } from "@sidioralabs/rex";',
+      'import { action } from "@sidioralabs/rex";',
+      'import { z } from "zod/mini";',
       'import * as rex from "@sidioralabs/rex";',
       'import { query, pool, type Row } from "../server/db.ts";',
       'import { unused } from "./unused.ts";',
@@ -211,7 +212,8 @@ describe("vite/boundary helpers", () => {
 
   it("keeps imports still used outside the handler and leaves modules without actions alone", () => {
     const source = [
-      'import { action, z } from "@sidioralabs/rex";',
+      'import { action } from "@sidioralabs/rex";',
+      'import { z } from "zod/mini";',
       'import { query, LABEL } from "../lib/shared.ts";',
       "export const one = action(\"one\", { input: z.object({}), label: LABEL, handler: () => query() });",
     ].join("\n");

@@ -13,7 +13,8 @@ import { isRexError } from "../core/errors.ts";
 import { page, type AnyPage } from "../core/page.ts";
 import { always, can } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { text, z } from "../core/schema.ts";
+import { text } from "../core/schema.ts";
+import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { SIDECAR_MIME_TYPE } from "../manifest/sidecar.schema.ts";
 import {
@@ -79,7 +80,8 @@ const STATES = [
 
 const FIXTURE_FILES: Readonly<Record<string, string>> = {
   "app/actions/subscribe.ts": [
-    'import { action, always, text, z } from "@sidioralabs/rex";',
+    'import { action, always, text } from "@sidioralabs/rex";',
+    'import { z } from "zod/mini";',
     "",
     'export const subscribe = action("subscribe", {',
     "  input: z.object({ email: text({ min: 3, max: 120 }) }),",
@@ -128,7 +130,8 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     "",
   ].join("\n"),
   "app/pages/guide/page.ts": [
-    'import { page, text, z } from "@sidioralabs/rex";',
+    'import { page, text } from "@sidioralabs/rex";',
+    'import { z } from "zod/mini";',
     "",
     'export default page("guide", {',
     '  route: "/guides/:slug",',

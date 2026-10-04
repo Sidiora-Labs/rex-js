@@ -76,7 +76,8 @@ describe("render/static-needs-js", () => {
   it("reads the render mode through as const and quoted keys", async () => {
     const root = tempApp({
       "app/actions/ping.ts": [
-        'import { action, always, z } from "@sidioralabs/rex";',
+        'import { action, always } from "@sidioralabs/rex";',
+        'import { z } from "zod/mini";',
         "",
         'export const ping = action("ping", {',
         "  input: z.object({}),",

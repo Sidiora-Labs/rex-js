@@ -41,7 +41,8 @@ import { memoryJournal } from "./journal.ts";
 import { page, parseRoute } from "./page.ts";
 import { always } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { enumOf, id, text, z } from "./schema.ts";
+import { enumOf, id, text } from "./schema.ts";
+import { z } from "zod/mini";
 import { bind } from "./store.ts";
 import { memoryStore } from "./store.memory.ts";
 

@@ -12,7 +12,8 @@ import { actor } from "./actor.ts";
 import { RexDeclarationError } from "./entity.ts";
 import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
 import { always, policy } from "./policy.ts";
-import { boolean, money, ref, text, z } from "./schema.ts";
+import { boolean, money, ref, text } from "./schema.ts";
+import { z } from "zod/mini";
 import { isZodSchema, standardSource, type StandardSchemaV1 } from "./standard.ts";
 
 const wallet = policy("wallet", { permissions: ["send"], resolve: () => ["send"] });

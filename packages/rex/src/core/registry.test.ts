@@ -3,7 +3,8 @@ import { action, type AnyAction } from "./action.ts";
 import { RexDeclarationError, entity, type AnyEntity } from "./entity.ts";
 import { always, policy, type AnyPolicy } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { id, text, z } from "./schema.ts";
+import { id, text } from "./schema.ts";
+import { z } from "zod/mini";
 
 const makeAction = (name: string) =>
   action(name, {

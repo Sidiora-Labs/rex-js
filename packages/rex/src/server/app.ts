@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import type { AnyAction } from "../core/action.ts";
 import type { AnyFlow } from "../core/flow.ts";
 import { buildManifest, stableStringify, type ManifestSource } from "../manifest/build.ts";
+import { MANIFEST_VERSION, type Manifest } from "../manifest/types.ts";
 import type { Ledger } from "./audit.ts";
 import type { ActorResolver, RexContext } from "./context.ts";
 import { REX_MIDDLEWARE } from "./middleware.ts";
@@ -22,7 +23,12 @@ export interface RexServerOptions<A extends AnyAction> {
   readonly actor: ActorResolver;
   readonly app?: string;
   readonly confirmTtlMs?: number;
+  readonly manifest?: Manifest;
 }
+
+export type PrebuiltRexServerOptions<A extends AnyAction> = RexServerOptions<A> & {
+  readonly manifest: Manifest;
+};
 
 export type RexRouter<A extends AnyAction> = ActionRouter<A>;
 
@@ -54,9 +60,31 @@ export const REX_SERVER_COMPOSITION: RexServerComposition = {
   routes: REX_ROUTES,
 };
 
-export function createRexServer<A extends AnyAction>(options: RexServerOptions<A>): Hono {
+function assertActor(options: RexServerOptions<AnyAction>): void {
   if (typeof options.actor !== "function") {
     throw new TypeError("createRexServer: actor must be a function from request to actor");
+  }
+}
+
+export function createRexServer<A extends AnyAction>(options: RexServerOptions<A>): Hono {
+  assertActor(options);
+  const manifest =
+    options.manifest ??
+    buildManifest(options.registry, options.app === undefined ? {} : { app: options.app });
+  return mountRexServer({ ...options, manifest });
+}
+
+export function mountRexServer<A extends AnyAction>(options: PrebuiltRexServerOptions<A>): Hono {
+  assertActor(options);
+  const manifest: unknown = options.manifest;
+  if (
+    typeof manifest !== "object" ||
+    manifest === null ||
+    (manifest as { readonly version?: unknown }).version !== MANIFEST_VERSION
+  ) {
+    throw new TypeError(
+      `createRexServer: manifest must be a version ${MANIFEST_VERSION} Rex manifest as written by rex build`,
+    );
   }
   const router = buildActionRouter(
     options.registry,
@@ -67,9 +95,7 @@ export function createRexServer<A extends AnyAction>(options: RexServerOptions<A
   const setup: RexServerSetup = {
     options,
     handler: new RPCHandler(router),
-    manifestBody: stableStringify(
-      buildManifest(options.registry, options.app === undefined ? {} : { app: options.app }),
-    ),
+    manifestBody: stableStringify(options.manifest),
   };
   const app = new Hono();
   for (const install of REX_SERVER_COMPOSITION.middleware) install(app, setup);

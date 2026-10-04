@@ -4,7 +4,6 @@ import { RexError } from "./errors.ts";
 import { validateName } from "./ids.ts";
 import { standardSource } from "./standard.ts";
 
-export * as z from "zod/mini";
 
 export const FIELD_KIND_KEY = "x-rex-field";
 export const FIELD_REF_KEY = "x-rex-ref";

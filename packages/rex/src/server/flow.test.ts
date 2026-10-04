@@ -9,7 +9,8 @@ import { flow, type AnyFlow } from "../core/flow.ts";
 import { memoryJournal } from "../core/journal.ts";
 import { always, can } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { money, text, z } from "../core/schema.ts";
+import { money, text } from "../core/schema.ts";
+import { z } from "zod/mini";
 import { AUDIT_OK, DIGEST_PATTERN, digest, memoryLedger, type Ledger } from "./audit.ts";
 import { createRexServer } from "./app.ts";
 import {

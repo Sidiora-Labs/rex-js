@@ -10,7 +10,8 @@ import { action } from "../core/action.ts";
 import { actor, anonymousActor, type Actor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { always } from "../core/policy.ts";
-import { boolean, text, z } from "../core/schema.ts";
+import { boolean, text } from "../core/schema.ts";
+import { z } from "zod/mini";
 import { escapeInlineJson } from "../core/serialize.ts";
 import { CSP_NONCE_META_PROPERTY, nonceHook } from "../vite/nonce.ts";
 import {

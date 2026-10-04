@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import * as zm from "zod/mini";
-import { z } from "./schema.ts";
+import { z } from "zod/mini";
 import {
   StandardValidationError,
   formatIssues,

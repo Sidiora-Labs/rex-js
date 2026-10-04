@@ -1,4 +1,5 @@
-import { action, always, text, z } from "@sidioralabs/rex";
+import { action, always, text } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 
 export const addNote = action("add-note", {
   input: z.object({ title: text({ min: 1, max: 120 }) }),

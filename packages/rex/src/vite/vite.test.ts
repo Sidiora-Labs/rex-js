@@ -9,10 +9,20 @@ import { build, createServer, normalizePath, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { stateExportName } from "../core/states.ts";
 import { DENSITY_HEADER, isApiPath, rex } from "./index.ts";
-import { PAGE_BUDGET_KB, chunkTable, formatChunkTable, pageIdOfModule } from "./split.ts";
+import { loadRexConfig } from "../cli/config.ts";
+import { configPluginOptions } from "../cli/load.ts";
+import { chunkBudgets, resolveBudgets } from "./budgets.ts";
+import {
+  PAGE_BUDGET_KB,
+  chunkTable,
+  formatChunkTable,
+  pageChunkGroups,
+  pageIdOfModule,
+} from "./split.ts";
 import {
   APP_MODULE_ID,
   ENTRY_MODULE_ID,
+  PAGE_CHUNK_PREFIX,
   RESOLVED_APP_MODULE_ID,
   RESOLVED_ENTRY_MODULE_ID,
   RexAppScanError,
@@ -24,7 +34,9 @@ import {
 } from "./virtual.ts";
 
 const VITE_TEST_TIMEOUT_MS = 20_000;
+const DEMO_BUILD_TIMEOUT_MS = 240_000;
 const here = dirname(fileURLToPath(import.meta.url));
+const demoRoot = join(here, "..", "..", "..", "..", "examples", "demo");
 const fixtureRoot = join(here, "fixtures", "app");
 const coreEntry = join(here, "..", "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
@@ -226,6 +238,18 @@ describe("the client entry build", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
     expect(home?.moduleIds.map(normalizePath)).not.toContain(fixture("app/pages/home/page.ts"));
     expect(entry?.moduleIds.map(normalizePath)).not.toContain(fixture("app/pages/home/view.tsx"));
     expect(entry?.dynamicImports.length).toBeGreaterThanOrEqual(2);
+    for (const chunk of pageChunks) {
+      const pageId = chunk.name.slice(PAGE_CHUNK_PREFIX.length);
+      const outside = chunk.moduleIds
+        .map(normalizePath)
+        .filter((id) => pageIdOfModule(id, fixture("app")) !== pageId);
+      expect(outside, `${chunk.name} holds only modules under app/pages/${pageId}`).toEqual([]);
+    }
+    expect(modules).toContain(normalizePath(join(here, "..", "client", "shell.tsx")));
+    const shared = chunks.filter((chunk) => !chunk.name.startsWith(PAGE_CHUNK_PREFIX));
+    expect(
+      shared.flatMap((chunk) => chunk.moduleIds).some((id) => id.includes("/node_modules/react")),
+    ).toBe(true);
 
     const rows = chunkTable(items);
     const pageRows = rows.filter((row) => row.name.startsWith("page-"));
@@ -248,12 +272,61 @@ describe("the client entry build", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
 
   it("assigns page folder modules except page.ts to the page chunk", () => {
     const appPath = fixture("app");
+    const [group, ...rest] = pageChunkGroups(appPath);
+    expect(rest).toEqual([]);
+    expect(group?.includeDependenciesRecursively).toBe(false);
+    expect(group?.name(fixture("app/pages/home/view.tsx"))).toBe("page-home");
+    expect(group?.name(fixture("app/components/ui/button.tsx"))).toBeNull();
+    expect(group?.name(normalizePath(join(here, "..", "client", "shell.tsx")))).toBeNull();
     expect(pageIdOfModule(fixture("app/pages/home/view.tsx"), appPath)).toBe("home");
     expect(pageIdOfModule(fixture("app/pages/home/regions/list/parts/NoteRow.tsx"), appPath)).toBe(
       "home",
     );
     expect(pageIdOfModule(fixture("app/pages/home/page.ts"), appPath)).toBeNull();
     expect(pageIdOfModule(fixture("app/actions/add-note.ts"), appPath)).toBeNull();
+  });
+});
+
+describe("the demo client build", { timeout: DEMO_BUILD_TIMEOUT_MS }, () => {
+  it("keeps every demo page chunk to its page folder and under the page budget", async () => {
+    const loaded = await loadRexConfig(demoRoot);
+    const result = await build({
+      root: demoRoot,
+      configFile: false,
+      logLevel: "silent",
+      plugins: rex(configPluginOptions(loaded.read)),
+      build: { write: false, manifest: true },
+    });
+    const outputs = Array.isArray(result) ? result : [result];
+    const items = outputs.flatMap((output) => ("output" in output ? output.output : []));
+    const chunks = items.filter((item) => item.type === "chunk");
+    const appPath = normalizePath(join(demoRoot, "app"));
+    const pageChunks = chunks.filter((chunk) => chunk.name.startsWith(PAGE_CHUNK_PREFIX));
+    expect(pageChunks.map((chunk) => chunk.name).sort()).toEqual([
+      "page-portfolio",
+      "page-send",
+    ]);
+    for (const chunk of pageChunks) {
+      const pageId = chunk.name.slice(PAGE_CHUNK_PREFIX.length);
+      const outside = chunk.moduleIds
+        .map(normalizePath)
+        .filter((id) => pageIdOfModule(id, appPath) !== pageId);
+      expect(outside, `${chunk.name} holds only modules under app/pages/${pageId}`).toEqual([]);
+    }
+    const budgets = chunkBudgets(resolveBudgets(loaded.read));
+    const rows = chunkTable(items, budgets);
+    const pageRows = rows.filter((row) => row.name.startsWith(PAGE_CHUNK_PREFIX));
+    expect(pageRows.map((row) => [row.name, row.budget])).toEqual([
+      ["page-portfolio", budgets.page],
+      ["page-send", budgets.page],
+    ]);
+    for (const row of pageRows) {
+      expect(row.gzip, `${row.name}\n${formatChunkTable(rows)}`).toBeLessThanOrEqual(
+        budgets.page * 1024,
+      );
+      expect(row.over).toBe(false);
+    }
+    expect(rows.filter((row) => row.over)).toEqual([]);
   });
 });
 
@@ -465,7 +538,8 @@ describe("rex() with the Vite dev server", { timeout: VITE_TEST_TIMEOUT_MS }, ()
       await writeFile(
         extra,
         [
-          'import { action, always, z } from "@sidioralabs/rex";',
+          'import { action, always } from "@sidioralabs/rex";',
+          'import { z } from "zod/mini";',
           "",
           'export const archiveNote = action("archive-note", {',
           "  input: z.object({}),",
