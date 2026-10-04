@@ -1,4 +1,6 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
+
+const exclude = [...configDefaults.exclude, "src/**/fixtures/**"];
 
 export default defineConfig({
   test: {
@@ -8,6 +10,7 @@ export default defineConfig({
           name: "node",
           environment: "node",
           include: ["src/**/*.test.ts"],
+          exclude,
         },
       },
       {
@@ -15,6 +18,7 @@ export default defineConfig({
           name: "dom",
           environment: "happy-dom",
           include: ["src/**/*.test.tsx"],
+          exclude,
         },
       },
     ],

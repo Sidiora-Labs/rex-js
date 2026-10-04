@@ -10,7 +10,7 @@ import { boolean, text } from "../../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../../manifest/build.ts";
 import { memoryLedger, type Ledger } from "../../server/audit.ts";
-import { createRexServer } from "../../server/index.ts";
+import { createTestApp, testServer, type TestApp } from "../../testing/index.ts";
 import { useInvoke } from "../agent/confirm.tsx";
 import { readSidecar } from "../agent/sidecar.tsx";
 import type { RexFetch } from "../app.tsx";
@@ -99,10 +99,8 @@ function plainDocument(): Host {
   };
 }
 
-function serverFetch(ledger: Ledger): RexFetch {
-  const server = createRexServer({ registry, ledger, actor: () => owner });
-  return async (input, init) =>
-    server.fetch(input instanceof Request ? input : new Request(input, init));
+function testApp(ledger: Ledger): TestApp {
+  return createTestApp(bundle, { actor: owner, server: { ledger } });
 }
 
 const mounted: UnmountRexPage[] = [];
@@ -114,11 +112,13 @@ async function mountPage(
   params?: Readonly<Record<string, unknown>>,
 ): Promise<UnmountRexPage> {
   let unmount: UnmountRexPage = () => {};
+  const app = testApp(ledger);
+  const fetch: RexFetch = testServer(app).fetch;
   await act(async () => {
     unmount = mountRexPage(slot, bundle, pageId, {
       actor: owner,
-      fetch: serverFetch(ledger),
-      baseUrl: "http://rex.test",
+      fetch,
+      baseUrl: app.baseUrl,
       ...(params === undefined ? {} : { params }),
     });
   });
