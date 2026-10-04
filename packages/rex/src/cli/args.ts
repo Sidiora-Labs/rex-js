@@ -71,6 +71,49 @@ interface ArgumentSpec {
   readonly description: string;
 }
 
+export const HELP_JSON_FLAG = "--json";
+
+export interface OptionListing {
+  readonly flags: string;
+  readonly long: string;
+  readonly short: string | null;
+  readonly value: string | null;
+  readonly negate: boolean;
+  readonly required: boolean;
+  readonly description: string;
+  readonly default?: unknown;
+}
+
+export interface ArgumentListing {
+  readonly name: string;
+  readonly required: boolean;
+  readonly description: string;
+}
+
+export interface CommandListing {
+  readonly name: string;
+  readonly path: string;
+  readonly description: string;
+  readonly arguments: readonly ArgumentListing[];
+  readonly options: readonly OptionListing[];
+  readonly commands: readonly CommandListing[];
+}
+
+function optionListing(option: OptionSpec): OptionListing {
+  const listing: OptionListing = {
+    flags: option.flags,
+    long: `--${option.long}`,
+    short: option.short === null ? null : `-${option.short}`,
+    value: option.valueName,
+    negate: option.negate,
+    required: option.mandatory,
+    description: option.description,
+  };
+  return option.defaultValue === undefined || option.negate
+    ? listing
+    : { ...listing, default: option.defaultValue };
+}
+
 const LONG_FLAG = /^--([a-z][a-z0-9-]*)$/;
 const SHORT_FLAG = /^-([a-zA-Z])$/;
 const VALUE = /^<([a-z][a-zA-Z0-9-]*)(\.\.\.)?>$/;
@@ -105,7 +148,10 @@ function parseFlags(
       valueName = valueMatch[1] as string;
       repeat = valueMatch[2] !== undefined;
     } else {
-      throw new RexError("REX600", `option flags ${JSON.stringify(flags)} cannot be parsed at "${part}"`);
+      throw new RexError(
+        "REX600",
+        `option flags ${JSON.stringify(flags)} cannot be parsed at "${part}"`,
+      );
     }
   }
   if (long === null) {
@@ -300,7 +346,10 @@ export class RexCommand {
         ? option.description
         : `${option.description} (default: ${JSON.stringify(option.defaultValue)})`,
     ]);
-    options.push(["-h, --help", "display help for command"]);
+    options.push([
+      "-h, --help",
+      `display help for command (with ${HELP_JSON_FLAG}, the command tree as JSON)`,
+    ]);
     lines.push("", "Options:", ...pad(options));
     if (this.commands.length > 0) {
       lines.push(
@@ -320,6 +369,17 @@ export class RexCommand {
       );
     }
     return `${lines.join("\n")}\n`;
+  }
+
+  listing(): CommandListing {
+    return {
+      name: this.#name,
+      path: this.path(),
+      description: this.#description,
+      arguments: this.#arguments.map((argument) => ({ ...argument })),
+      options: this.#allOptions().map(optionListing),
+      commands: this.commands.map((command) => command.listing()),
+    };
   }
 
   async parseAsync(argv: readonly string[]): Promise<void> {
@@ -343,7 +403,11 @@ export class RexCommand {
         continue;
       }
       if (token === "-h" || token === "--help") {
-        this.#out().writeOut(this.helpText());
+        this.#out().writeOut(
+          argv.includes(HELP_JSON_FLAG)
+            ? `${JSON.stringify(this.listing(), null, 2)}\n`
+            : this.helpText(),
+        );
         return;
       }
       const version = this.#version;
@@ -371,10 +435,7 @@ export class RexCommand {
     }
     if (this.#action === null && this.commands.length > 0) {
       this.#out().writeErr(this.helpText());
-      throw new RexArgsError(
-        `error: ${this.path()} needs a command`,
-        ARGS_ERROR.missingCommand,
-      );
+      throw new RexArgsError(`error: ${this.path()} needs a command`, ARGS_ERROR.missingCommand);
     }
     for (const option of this.#options) {
       if (option.mandatory && options[option.key] === undefined) {
@@ -406,7 +467,12 @@ export class RexCommand {
     }
   }
 
-  #readOption(argv: readonly string[], index: number, token: string, options: OptionValues): number {
+  #readOption(
+    argv: readonly string[],
+    index: number,
+    token: string,
+    options: OptionValues,
+  ): number {
     const equals = token.indexOf("=");
     const flag = token.startsWith("--") && equals !== -1 ? token.slice(0, equals) : token;
     const inline = token.startsWith("--") && equals !== -1 ? token.slice(equals + 1) : undefined;

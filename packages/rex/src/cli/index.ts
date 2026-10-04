@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { RexErrorCode } from "../core/errors.ts";
 import { REX_VERSION } from "../index.ts";
-import { ARGS_USAGE_CODE, RexArgsError, RexCommand } from "./args.ts";
+import { ARGS_USAGE_CODE, RexArgsError, RexCommand, type CommandListing } from "./args.ts";
 import { MAKE_INVALID_CODE } from "./commands/make.ts";
 import { causeFrame, formatCliError } from "./frame.ts";
 
@@ -94,6 +94,13 @@ export async function createProgram(
     loaded.register(program, io);
   }
   return program;
+}
+
+export async function commandListing(
+  io: RexCliIO = { cwd: process.cwd(), out: () => undefined, err: () => undefined },
+  commandsDir: string = COMMANDS_DIR,
+): Promise<CommandListing> {
+  return (await createProgram(io, commandsDir)).listing();
 }
 
 export async function run(
