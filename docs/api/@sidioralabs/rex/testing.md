@@ -62,6 +62,14 @@ readonly optional density?: "default" | "agent";
 readonly optional locale?: string;
 ```
 
+<a id="pagetimeout"></a>
+
+##### pageTimeout?
+
+```ts
+readonly optional pageTimeout?: number;
+```
+
 <a id="params"></a>
 
 ##### params?
@@ -520,6 +528,16 @@ const ACCEPT_LANGUAGE_HEADER: "accept-language" = "accept-language";
 
 ***
 
+<a id="default_page_timeout"></a>
+
+### DEFAULT\_PAGE\_TIMEOUT
+
+```ts
+const DEFAULT_PAGE_TIMEOUT: 15000 = 15_000;
+```
+
+***
+
 <a id="test_base_url"></a>
 
 ### TEST\_BASE\_URL
@@ -749,6 +767,26 @@ function setupRexTesting(hooks): void;
 #### Returns
 
 `void`
+
+***
+
+<a id="testorigin"></a>
+
+### testOrigin()
+
+```ts
+function testOrigin(app): string;
+```
+
+#### Parameters
+
+##### app
+
+[`TestApp`](#testapp)
+
+#### Returns
+
+`string`
 
 ***
 

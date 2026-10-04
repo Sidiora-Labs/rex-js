@@ -10,7 +10,7 @@
 
 #### Extends
 
-- `Error`
+- [`RexError`](../rex.md#rexerror)
 
 #### Constructors
 
@@ -34,9 +34,200 @@ new RexAppScanError(message): RexAppScanError;
 
 ###### Overrides
 
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-4)
+
+#### Properties
+
+<a id="code"></a>
+
+##### code
+
 ```ts
-Error.constructor
+readonly code: 
+  | "REX100"
+  | "REX101"
+  | "REX102"
+  | "REX110"
+  | "REX111"
+  | "REX112"
+  | "REX113"
+  | "REX114"
+  | "REX115"
+  | "REX116"
+  | "REX117"
+  | "REX118"
+  | "REX119"
+  | "REX120"
+  | "REX121"
+  | "REX122"
+  | "REX123"
+  | "REX200"
+  | "REX201"
+  | "REX202"
+  | "REX203"
+  | "REX204"
+  | "REX205"
+  | "REX206"
+  | "REX207"
+  | "REX208"
+  | "REX209"
+  | "REX210"
+  | "REX211"
+  | "REX212"
+  | "REX213"
+  | "REX214"
+  | "REX215"
+  | "REX216"
+  | "REX217"
+  | "REX218"
+  | "REX219"
+  | "REX220"
+  | "REX221"
+  | "REX222"
+  | "REX223"
+  | "REX224"
+  | "REX300"
+  | "REX301"
+  | "REX302"
+  | "REX303"
+  | "REX304"
+  | "REX305"
+  | "REX306"
+  | "REX307"
+  | "REX308"
+  | "REX309"
+  | "REX310"
+  | "REX311"
+  | "REX312"
+  | "REX313"
+  | "REX314"
+  | "REX315"
+  | "REX316"
+  | "REX317"
+  | "REX318"
+  | "REX319"
+  | "REX320"
+  | "REX321"
+  | "REX322"
+  | "REX323"
+  | "REX324"
+  | "REX325"
+  | "REX326"
+  | "REX327"
+  | "REX328"
+  | "REX329"
+  | "REX330"
+  | "REX331"
+  | "REX400"
+  | "REX401"
+  | "REX402"
+  | "REX403"
+  | "REX404"
+  | "REX405"
+  | "REX406"
+  | "REX407"
+  | "REX408"
+  | "REX440"
+  | "REX441"
+  | "REX442"
+  | "REX450"
+  | "REX460"
+  | "REX461"
+  | "REX462"
+  | "REX463"
+  | "REX500"
+  | "REX501"
+  | "REX502"
+  | "REX503"
+  | "REX504"
+  | "REX505"
+  | "REX506"
+  | "REX507"
+  | "REX508"
+  | "REX600"
+  | "REX601"
+  | "REX602"
+  | "REX603"
+  | "REX610"
+  | "REX611"
+  | "REX612";
 ```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-4)
+
+<a id="column"></a>
+
+##### column
+
+```ts
+readonly column: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-3)
+
+<a id="detail"></a>
+
+##### detail
+
+```ts
+readonly detail: string;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-3)
+
+<a id="docs"></a>
+
+##### docs
+
+```ts
+readonly docs: string;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-3)
+
+<a id="file"></a>
+
+##### file
+
+```ts
+readonly file: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-3)
+
+<a id="hint"></a>
+
+##### hint
+
+```ts
+readonly hint: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-3)
+
+<a id="line"></a>
+
+##### line
+
+```ts
+readonly line: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-3)
 
 ## Interfaces
 
@@ -46,6 +237,22 @@ Error.constructor
 
 #### Properties
 
+<a id="client"></a>
+
+##### client
+
+```ts
+readonly client: string;
+```
+
+<a id="config"></a>
+
+##### config
+
+```ts
+readonly config: RexAppConfig;
+```
+
 <a id="core"></a>
 
 ##### core
@@ -54,12 +261,28 @@ Error.constructor
 readonly core: string;
 ```
 
+<a id="locales"></a>
+
+##### locales
+
+```ts
+readonly locales: readonly LocaleModule[];
+```
+
 <a id="name"></a>
 
 ##### name
 
 ```ts
 readonly name: string;
+```
+
+<a id="shellcomponents"></a>
+
+##### shellComponents
+
+```ts
+readonly shellComponents: string | null;
 ```
 
 ***
@@ -134,7 +357,7 @@ readonly root: string;
 
 #### Properties
 
-<a id="code"></a>
+<a id="code-1"></a>
 
 ##### code
 
@@ -182,7 +405,7 @@ readonly url: string;
 readonly optional apiOrigin?: string | null;
 ```
 
-<a id="client"></a>
+<a id="client-1"></a>
 
 ##### client
 
@@ -322,6 +545,30 @@ readonly registry: RegistrySnapshot;
 
 ***
 
+<a id="rexappconfig"></a>
+
+### RexAppConfig
+
+#### Properties
+
+<a id="fonts"></a>
+
+##### fonts
+
+```ts
+readonly fonts: readonly FontSpec[];
+```
+
+<a id="i18n"></a>
+
+##### i18n
+
+```ts
+readonly i18n: I18nConfig | null;
+```
+
+***
+
 <a id="rexfetchapp"></a>
 
 ### RexFetchApp
@@ -354,7 +601,7 @@ fetch(request): Response | Promise<Response>;
 
 #### Properties
 
-<a id="code-1"></a>
+<a id="code-2"></a>
 
 ##### code
 
@@ -362,7 +609,7 @@ fetch(request): Response | Promise<Response>;
 readonly code: "REX320";
 ```
 
-<a id="file"></a>
+<a id="file-1"></a>
 
 ##### file
 
@@ -550,6 +797,22 @@ readonly optional compiler?: boolean;
 readonly optional devtools?: boolean;
 ```
 
+<a id="fonts-1"></a>
+
+##### fonts?
+
+```ts
+readonly optional fonts?: readonly FontSpec[];
+```
+
+<a id="i18n-1"></a>
+
+##### i18n?
+
+```ts
+readonly optional i18n?: I18nConfig | null;
+```
+
 <a id="name-3"></a>
 
 ##### name?
@@ -572,6 +835,14 @@ readonly optional secretNames?: readonly string[];
 
 ```ts
 readonly optional server?: RexServerSource;
+```
+
+<a id="shellcomponents-1"></a>
+
+##### shellComponents?
+
+```ts
+readonly optional shellComponents?: string | null;
 ```
 
 <a id="tailwind"></a>
@@ -598,7 +869,7 @@ readonly optional ui?: "none" | "designx";
 
 #### Properties
 
-<a id="client-1"></a>
+<a id="client-2"></a>
 
 ##### client
 
@@ -622,7 +893,7 @@ readonly core: string;
 
 #### Properties
 
-<a id="file-1"></a>
+<a id="file-2"></a>
 
 ##### file
 
@@ -1080,6 +1351,16 @@ const RUNTIME_STYLESHEETS: readonly ["tokens.css", "agent/density.css"];
 
 ```ts
 const SECRET_LEAK_CODE: "REX441" = "REX441";
+```
+
+***
+
+<a id="server_only_handler_code"></a>
+
+### SERVER\_ONLY\_HANDLER\_CODE
+
+```ts
+const SERVER_ONLY_HANDLER_CODE: "REX442" = "REX442";
 ```
 
 ***
@@ -2057,6 +2338,26 @@ function serverOnlyModulePaths(core): string[];
 #### Returns
 
 `string`[]
+
+***
+
+<a id="shellcomponentshook"></a>
+
+### shellComponentsHook()
+
+```ts
+function shellComponentsHook(context): Plugin;
+```
+
+#### Parameters
+
+##### context
+
+[`RexHookContext`](#rexhookcontext)
+
+#### Returns
+
+`Plugin`
 
 ***
 

@@ -10,7 +10,7 @@
 
 #### Extends
 
-- `Error`
+- [`RexError`](../../rex.md#rexerror)
 
 #### Constructors
 
@@ -38,9 +38,7 @@ new RuntimeMissingError(runtime, entry): RuntimeMissingError;
 
 ###### Overrides
 
-```ts
-Error.constructor
-```
+[`RexError`](../../rex.md#rexerror).[`constructor`](../../rex.md#constructor-4)
 
 #### Properties
 
@@ -52,6 +50,34 @@ Error.constructor
 readonly code: "REX450" = RUNTIME_MISSING_CODE;
 ```
 
+###### Overrides
+
+[`RexError`](../../rex.md#rexerror).[`code`](../../rex.md#code-4)
+
+<a id="column"></a>
+
+##### column
+
+```ts
+readonly column: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](../../rex.md#rexerror).[`column`](../../rex.md#column-3)
+
+<a id="detail"></a>
+
+##### detail
+
+```ts
+readonly detail: string;
+```
+
+###### Inherited from
+
+[`RexError`](../../rex.md#rexerror).[`detail`](../../rex.md#detail-3)
+
 <a id="docs"></a>
 
 ##### docs
@@ -60,13 +86,45 @@ readonly code: "REX450" = RUNTIME_MISSING_CODE;
 readonly docs: string;
 ```
 
+###### Inherited from
+
+[`RexError`](../../rex.md#rexerror).[`docs`](../../rex.md#docs-3)
+
+<a id="file"></a>
+
+##### file
+
+```ts
+readonly file: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](../../rex.md#rexerror).[`file`](../../rex.md#file-3)
+
 <a id="hint"></a>
 
 ##### hint
 
 ```ts
-readonly hint: string;
+readonly hint: string | null;
 ```
+
+###### Inherited from
+
+[`RexError`](../../rex.md#rexerror).[`hint`](../../rex.md#hint-3)
+
+<a id="line"></a>
+
+##### line
+
+```ts
+readonly line: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](../../rex.md#rexerror).[`line`](../../rex.md#line-3)
 
 <a id="runtime"></a>
 

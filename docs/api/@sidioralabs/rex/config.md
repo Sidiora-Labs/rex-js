@@ -196,6 +196,14 @@ Re-exports [I18N_ROUTING](../rex.md#i18n_routing)
 
 ***
 
+<a id="i18ncheckconfig"></a>
+
+### I18nCheckConfig
+
+Re-exports [I18nCheckConfig](../rex.md#i18ncheckconfig)
+
+***
+
 <a id="i18nconfig"></a>
 
 ### I18nConfig
@@ -372,14 +380,6 @@ Re-exports [resolveOptions](../rex.md#resolveoptions)
 
 ***
 
-<a id="rex_error_areas"></a>
-
-### REX\_ERROR\_AREAS
-
-Re-exports [REX_ERROR_AREAS](../rex.md#rex_error_areas)
-
-***
-
 <a id="rex_error_catalog"></a>
 
 ### REX\_ERROR\_CATALOG
@@ -460,35 +460,11 @@ Re-exports [RexError](../rex.md#rexerror)
 
 ***
 
-<a id="rexerrorarea"></a>
-
-### RexErrorArea
-
-Re-exports [RexErrorArea](../rex.md#rexerrorarea)
-
-***
-
-<a id="rexerrorareainfo"></a>
-
-### RexErrorAreaInfo
-
-Re-exports [RexErrorAreaInfo](../rex.md#rexerrorareainfo)
-
-***
-
 <a id="rexerrorcode"></a>
 
 ### RexErrorCode
 
 Re-exports [RexErrorCode](../rex.md#rexerrorcode-1)
-
-***
-
-<a id="rexerrorentry"></a>
-
-### RexErrorEntry
-
-Re-exports [RexErrorEntry](../rex.md#rexerrorentry)
 
 ***
 
