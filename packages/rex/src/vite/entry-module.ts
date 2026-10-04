@@ -12,9 +12,16 @@ import {
   RUNTIME_STYLESHEETS,
 } from "./virtual.ts";
 
+declare module "./plugin.ts" {
+  interface RexPluginOptions {
+    readonly apiOrigin?: string | null;
+  }
+}
+
 export interface EntryModuleOptions {
   readonly client: string;
   readonly rootElement?: string;
+  readonly apiOrigin?: string | null;
 }
 
 export function runtimeStylesheets(client: string): readonly string[] {
@@ -24,6 +31,8 @@ export function runtimeStylesheets(client: string): readonly string[] {
 
 export function generateEntryModule(options: EntryModuleOptions): string {
   const rootElement = options.rootElement ?? ROOT_ELEMENT_ID;
+  const apiOrigin = options.apiOrigin ?? null;
+  const baseUrl = apiOrigin === null ? null : `baseUrl: ${JSON.stringify(apiOrigin)}`;
   return [
     ...runtimeStylesheets(options.client).map((file) => `import ${JSON.stringify(file)};`),
     'import { StrictMode, createElement } from "react";',
@@ -37,9 +46,9 @@ export function generateEntryModule(options: EntryModuleOptions): string {
     `  throw new Error(${JSON.stringify(`rex: index.html has no element with id "${rootElement}"`)});`,
     "}",
     `if (container.hasAttribute(${JSON.stringify(SSR_ATTRIBUTE)})) {`,
-    "  startRexEntry(container, app, { dev: import.meta.env.DEV });",
+    `  startRexEntry(container, app, { dev: import.meta.env.DEV${baseUrl === null ? "" : `, ${baseUrl}`} });`,
     "} else {",
-    "  const RexEntry = createRexEntry(app);",
+    `  const RexEntry = createRexEntry(app${baseUrl === null ? "" : `, { ${baseUrl} }`});`,
     "  createRoot(container).render(createElement(StrictMode, null, createElement(RexEntry)));",
     "}",
     "",
@@ -61,7 +70,7 @@ export function entryModuleHook(context: RexHookContext): Plugin {
         CLIENT_SPECIFIER,
         context.paths.client,
       );
-      return generateEntryModule({ client });
+      return generateEntryModule({ client, apiOrigin: context.options.apiOrigin ?? null });
     },
   };
 }
