@@ -161,7 +161,12 @@ describe("renderMarkdown", () => {
       for (const file of files) {
         const source = readFileSync(path.join(repositoryRoot(), file), "utf8");
         const rendered = await renderMarkdown(source, file);
-        expect(rendered.title, file).toBe(/^# (.+)$/m.exec(source)?.[1]?.replace(/`/g, ""));
+        expect(rendered.title, file).toBe(
+          /^# (.+)$/m
+            .exec(source)?.[1]
+            ?.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+            .replace(/`/g, ""),
+        );
         expect(ids(rendered.html), file).toEqual(
           expect.arrayContaining(rendered.headings.map((heading) => heading.id)),
         );

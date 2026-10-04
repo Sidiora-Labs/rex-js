@@ -44,7 +44,7 @@ export default function DocSearch({ entries, onOpen }: DocSearchProps) {
         data-site-search=""
         className="rounded-xl border border-outline-variant"
       >
-        <CommandInput placeholder="Search guides, recipes and their headings" />
+        <CommandInput placeholder="Search guides, recipes, errors and their headings" />
         <CommandList className="max-h-96">
           <CommandEmpty>No page matches the search.</CommandEmpty>
           {sections(entries).map(([section, items]) => (

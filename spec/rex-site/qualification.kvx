@@ -183,3 +183,19 @@ symbol = "IMPORT_TABLE.server targets, the errors reader's repository-path impor
 observed = "Every part of the 2.7 verify_cmd passes except its last command: typecheck exit 0, vitest src/vite/scan.test.ts src/check 14 files and 105 tests passed, rex check on examples/demo No findings; pnpm -C site check now reports exactly one finding where it reported naming/unclassified and import-table findings on every reader before: boundaries/import-table on app/server/content/errors.ts line 4, which imports ../../../../packages/rex/src/core/errors.docs.ts (a file outside app/), the repository-path workaround [qualification.235] records because no public entry exports REX_ERROR_DOCS, REX_ERROR_AREAS and errorArea; evidence: revision f1e70bc plus the 2.7 changes, command pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/scan.test.ts src/check && pnpm -C examples/demo exec rex check && pnpm -C site check, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.7-private/logs/2.7-verify.log."
 assumption = "The server role keeps the import table of the declaration roles (no file outside app/ by relative path; widening it to any target would admit the workaround instead of fixing it); once 3.3 exports the error docs catalog from a public entry per [qualification.235] and the 2.3 reader imports it from @sidioralabs/rex, the unchanged 2.7 verify_cmd passes; site/app/server/content/errors.ts and the package exports are outside the 2.7 touches."
 severity = "high"
+
+[qualification.225]
+task = "2.2"
+file = "site/app/server/content/errors.ts"
+symbol = "the errors reader's repository-path import of packages/rex/src/core/errors.docs.ts"
+observed = "With 2.7 merged, the 2.2 verify_cmd fails only on its first command: pnpm -C site check reports one finding, boundaries/import-table on site/app/server/content/errors.ts line 4 (task 2.3's file, the [qualification.272] and [qualification.235] workaround), and none on any 2.2 file; the vitest half run alone passes 8 files and 50 tests; evidence: revision aeb3c04 plus the 2.2 changes, command pnpm -C site check && pnpm -C site exec vitest run app/pages/docs app/pages/doc app/pages/recipe app/server/content, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.2-private/logs/2.2-verify-2.log; vitest log 2.2-tests-probe-2.log beside it."
+assumption = "Once 3.3 exports REX_ERROR_DOCS, REX_ERROR_AREAS and errorArea from a public entry and errors.ts imports them from @sidioralabs/rex, the unchanged 2.2 verify_cmd passes and cg spec done 2.2 closes the task; the 2.2 search index imports errorSearchEntries from errors.ts, server to server, which the checker allows."
+severity = "high"
+
+[qualification.226]
+task = "2.2"
+file = "docs/releasing.md"
+symbol = "the level-one heading"
+observed = "docs/releasing.md line 1 is \"# Releasing Rex The site at [rex.sidioralabs.com](https://rex.sidioralabs.com) has its own path, described at the end of this page.\": the site's sentence was joined to the title, so the /docs/releasing page and its search entry are titled with the whole sentence; read at revision aeb3c04, met by markdown.test.ts, which now compares titles as plain text with link labels kept."
+assumption = "The task owning docs/releasing.md (the site deployment documentation, 2.6, or the 3.3 documentation pass) splits the sentence into its own paragraph under the # Releasing Rex heading; docs/ is outside the 2.2 touches."
+severity = "low"

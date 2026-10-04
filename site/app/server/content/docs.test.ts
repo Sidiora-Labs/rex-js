@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { REX_ERROR_CATALOG } from "@sidioralabs/rex";
 import { describe, expect, it } from "vitest";
 import { docFiles, docSlugs, listDocs, readDoc, readingOrder, searchEntries } from "./docs.ts";
 import { REPOSITORY_URL, repositoryRoot } from "./markdown.ts";
@@ -35,7 +36,7 @@ describe("the docs reader", () => {
     expect([...recipes].sort()).toEqual(filesOn("docs/recipes"));
     expect(recipes[0]).toBe("docs/recipes/loader.md");
     const table = readFileSync(path.join(repositoryRoot(), "docs/recipes/README.md"), "utf8");
-    const linked = [...table.matchAll(/\]\(([a-z-]+\.md)\)/g)].map(
+    const linked = [...table.matchAll(/\]\(([a-z0-9-]+\.md)\)/g)].map(
       (match) => `docs/recipes/${match[1] as string}`,
     );
     expect(recipes.slice(0, linked.length)).toEqual(linked);
@@ -103,7 +104,7 @@ describe("the docs reader", () => {
 
 describe("the search index", () => {
   it(
-    "holds every guide and recipe with its section, headings and first paragraph",
+    "holds every guide, recipe and error code with its section, headings and summary",
     async () => {
       const expected = [
         ...filesOn("docs").map((file) => `/docs/${path.basename(file, ".md")}`),
@@ -119,6 +120,11 @@ describe("the search index", () => {
       expect(loader?.summary).toMatch(/^A page declares the data it needs/);
       const convention = index.find((entry) => entry.route === "/docs/convention");
       expect(convention?.section).toBe("Guides");
+      const errors = Object.keys(REX_ERROR_CATALOG).map((code) => `/errors/${code}`);
+      expect(index.map((entry) => entry.route).sort()).toEqual([...expected, ...errors].sort());
+      const rex209 = index.find((entry) => entry.route === "/errors/REX209");
+      expect(rex209?.section).toBe("Errors");
+      expect(rex209?.title.startsWith("REX209 ")).toBe(true);
     },
     RENDER_TIMEOUT,
   );

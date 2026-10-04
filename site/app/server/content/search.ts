@@ -1,4 +1,5 @@
 import { searchEntries as docEntries } from "./docs.ts";
+import { errorSearchEntries } from "./errors.ts";
 
 export interface SearchEntry {
   readonly section: string;
@@ -10,7 +11,13 @@ export interface SearchEntry {
 
 export type SearchSource = () => Promise<readonly SearchEntry[]>;
 
-export const SEARCH_SOURCES: readonly SearchSource[] = [docEntries];
+export const ERROR_SECTION = "Errors";
+
+async function errorEntries(): Promise<readonly SearchEntry[]> {
+  return errorSearchEntries().map((entry) => ({ section: ERROR_SECTION, ...entry }));
+}
+
+export const SEARCH_SOURCES: readonly SearchSource[] = [docEntries, errorEntries];
 
 export async function buildSearchIndex(): Promise<readonly SearchEntry[]> {
   const lists = await Promise.all(SEARCH_SOURCES.map((source) => source()));

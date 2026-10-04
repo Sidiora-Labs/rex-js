@@ -3,7 +3,7 @@ import path from "node:path";
 import { anonymousActor } from "@sidioralabs/rex";
 import { createTestApp, renderPage, setupRexTesting } from "@sidioralabs/rex/testing";
 import { waitFor, within } from "@testing-library/react";
-import app from "rex:app";
+import app, { manifest } from "rex:app";
 import { afterEach, describe, expect, it } from "vitest";
 import { readDoc } from "../../../server/content/docs.ts";
 import { repositoryRoot } from "../../../server/content/markdown.ts";
@@ -29,7 +29,11 @@ function slugsOn(dir: string): string[] {
 async function renderArticle() {
   await readDoc("recipe", SLUG);
   const view = await renderPage(siteApp(), "recipe", { params: { slug: SLUG } });
-  await waitFor(() => expect(view.sidecar().state).toBe("ready"), READY);
+  await waitFor(() => {
+    expect(view.sidecar().state).toBe("ready");
+    expect(view.container.querySelector('[data-rex-region="recipe/toc"]')).not.toBeNull();
+    expect(view.container.querySelector('[data-rex-region="recipe/article"]')).not.toBeNull();
+  }, READY);
   return view;
 }
 
@@ -100,7 +104,7 @@ describe("recipe page", () => {
   );
 
   it(
-    "publishes its sidecar with its params, its article loader and no actions",
+    "publishes its sidecar with its params and no actions and its article loader in the manifest",
     async () => {
       const view = await renderArticle();
       const sidecar = view.sidecar();
@@ -108,7 +112,9 @@ describe("recipe page", () => {
       expect(sidecar.params).toEqual({ slug: SLUG });
       expect(sidecar.actions).toEqual([]);
       expect(sidecar.overlays).toEqual([]);
-      expect(sidecar.loaders).toEqual([{ name: "article", action: "read-doc", invalidatedBy: [] }]);
+      expect(manifest.pages.find((entry) => entry.id === "recipe")?.loaders).toEqual([
+        { name: "article", action: "read-doc", input: "mapped", invalidatedBy: [] },
+      ]);
       expect(view.container.querySelector('main[data-rex-page="recipe"]')).not.toBeNull();
       expect(view.container.querySelector('[data-rex-nav="docs"]')).not.toBeNull();
     },
