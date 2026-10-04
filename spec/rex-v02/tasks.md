@@ -81,7 +81,7 @@
     - Add client/form.tsx exporting ActionForm (a real form posting to /rex/form/<action> with hidden _csrf and action fields, inputs derived from the input schema, field errors from the outcome) that intercepts submit through useAct when JavaScript runs; make client/agent/outcome.tsx show and clear a rex-outcome cookie outcome on the next render.
     - Write client/form.test.tsx (renders the real form markup, intercepts with JS through a real RPC handler, shows field errors from a cookie outcome).
     - _Requirements: 11.1, 11.4_
-  - [ ] 1.7 rex build targets for node, edge, bun, deno and static output
+  - [ ] 1.7 rex build targets for node, edge, bun, deno and static output — **Implemented - qualification pending**
     - Make rex build --target node|edge|bun|deno|static write the matching server entry and dist layout per [design] platform_output, baking client.apiOrigin into the entry for static; extend cli/commands.test.ts with a build per target asserting the entry and layout.
     - _Requirements: 12.3_
   - [x] 2.1 Error catalog with source locations in the Vite overlay and the CLI
