@@ -1,5 +1,6 @@
 export * from "./context.ts";
 export * from "./app.tsx";
+export { startRexEntry, type StartRexOptions, type StartedRex } from "./entry.tsx";
 export * from "./router.tsx";
 export * from "./nav.ts";
 export * from "./act.ts";

@@ -26,3 +26,13 @@ export {
 } from "./middleware/security.ts";
 export * from "./form.ts";
 export { FORM_ROUTE, installFormRoute } from "./routes/form.ts";
+export {
+  RENDER_STATUS,
+  installRenderRoute,
+  isDocumentPath,
+  pageRendererFor,
+  registerPageRenderer,
+  type RenderKind,
+  type RexPageRenderer,
+  type RexRenderResult,
+} from "./routes/render.ts";

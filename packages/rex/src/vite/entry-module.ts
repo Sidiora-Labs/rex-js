@@ -1,6 +1,7 @@
 import { dirname, join } from "node:path";
 import { normalizePath, type Plugin } from "vite";
 import type { RexHookContext } from "./hooks.ts";
+import { SSR_ATTRIBUTE } from "../client/hydrate.ts";
 import { resolveRuntimeEntry } from "./resolve.ts";
 import {
   APP_MODULE_ID,
@@ -28,14 +29,19 @@ export function generateEntryModule(options: EntryModuleOptions): string {
     'import { StrictMode, createElement } from "react";',
     'import { createRoot } from "react-dom/client";',
     `import { createRexEntry } from ${JSON.stringify(options.client)};`,
+    `import { startRexEntry } from ${JSON.stringify(options.client)};`,
     `import app from ${JSON.stringify(APP_MODULE_ID)};`,
     "",
     `const container = document.getElementById(${JSON.stringify(rootElement)});`,
     "if (container === null) {",
     `  throw new Error(${JSON.stringify(`rex: index.html has no element with id "${rootElement}"`)});`,
     "}",
-    "const RexEntry = createRexEntry(app);",
-    "createRoot(container).render(createElement(StrictMode, null, createElement(RexEntry)));",
+    `if (container.hasAttribute(${JSON.stringify(SSR_ATTRIBUTE)})) {`,
+    "  startRexEntry(container, app, { dev: import.meta.env.DEV });",
+    "} else {",
+    "  const RexEntry = createRexEntry(app);",
+    "  createRoot(container).render(createElement(StrictMode, null, createElement(RexEntry)));",
+    "}",
     "",
   ].join("\n");
 }

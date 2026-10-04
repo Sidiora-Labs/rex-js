@@ -1,0 +1,437 @@
+import { QueryClient, dehydrate } from "@tanstack/react-query";
+import { StrictMode, createElement, type ComponentType, type ReactNode } from "react";
+import { renderToReadableStream } from "react-dom/server";
+import { Router } from "wouter";
+import { createRexEntry, type RexEntryBundle } from "../client/entry.tsx";
+import {
+  CLIENT_RENDER_DIGEST,
+  REX_DATA_ELEMENT_ID,
+  REX_DATA_MIME_TYPE,
+  REX_DATA_VERSION,
+  SSR_ATTRIBUTE,
+  serializeRexData,
+  type RexDataPayload,
+} from "../client/hydrate.ts";
+import {
+  DefaultState,
+  definePageModules,
+  isLazyPageModules,
+  usePageRuntime,
+  type EagerPageModuleSet,
+  type LoadedPageModules,
+  type PageModuleSet,
+  type StateExportComponent,
+} from "../client/page.tsx";
+import { manifestParamsSchema, orderPages, resolvePage } from "../client/router.tsx";
+import { NOT_FOUND_TITLE } from "../client/shell.tsx";
+import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from "../core/page.ts";
+import { STATE_EXPORT_NAMES } from "../core/states.ts";
+import type { Manifest } from "../manifest/types.ts";
+import type { RexRequestContext } from "./context.ts";
+import type { RenderKind, RexPageRenderer, RexRenderResult } from "./routes/render.ts";
+
+export { registerPageRenderer } from "./routes/render.ts";
+
+export const DEFAULT_ROOT_ELEMENT = "root";
+export const DEFAULT_DOCUMENT_LANG = "en";
+export const RENDER_FAILURE_MESSAGE = "The page failed to render on the server";
+
+export interface RexPageAssets {
+  readonly stylesheets: readonly string[];
+  readonly preloads: readonly string[];
+}
+
+export interface RexDocumentAssets extends RexPageAssets {
+  readonly scripts: readonly string[];
+  readonly head?: string;
+  readonly pages: Readonly<Record<string, RexPageAssets>>;
+}
+
+export const EMPTY_DOCUMENT_ASSETS: RexDocumentAssets = Object.freeze({
+  scripts: Object.freeze([]),
+  stylesheets: Object.freeze([]),
+  preloads: Object.freeze([]),
+  pages: Object.freeze({}),
+});
+
+export interface RexRendererOptions {
+  readonly bundle: RexEntryBundle;
+  readonly assets?: RexDocumentAssets;
+  readonly rootElement?: string;
+  readonly lang?: string;
+}
+
+export interface PageMatch {
+  readonly page: AnyPage;
+  readonly routeParams: Readonly<Record<string, string>>;
+}
+
+export class RexClientRenderSignal extends Error {
+  readonly page: string;
+
+  constructor(page: string) {
+    super(`page "${page}" renders on the client (render: csr)`);
+    this.name = "RexClientRenderSignal";
+    this.page = page;
+  }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const routePatterns = new Map<string, { readonly pattern: RegExp; readonly params: readonly string[] }>();
+
+function routePattern(route: string) {
+  let compiled = routePatterns.get(route);
+  if (compiled === undefined) {
+    const parsed = parseRoute(route);
+    const body = parsed.segments
+      .map((segment) =>
+        segment.kind === "static" ? `/${escapeRegExp(segment.value)}` : "/([^/]+?)",
+      )
+      .join("");
+    compiled = { pattern: new RegExp(`^${body}/?$`, "i"), params: parsed.params };
+    routePatterns.set(route, compiled);
+  }
+  return compiled;
+}
+
+export function matchPage(pages: readonly AnyPage[], pathname: string): PageMatch | null {
+  for (const declared of orderPages(pages)) {
+    const { pattern, params } = routePattern(declared.route);
+    const found = pattern.exec(pathname);
+    if (found === null) continue;
+    const routeParams: Record<string, string> = {};
+    params.forEach((name, index) => {
+      routeParams[name] = found[index + 1] as string;
+    });
+    return { page: declared, routeParams: Object.freeze(routeParams) };
+  }
+  return null;
+}
+
+export function pageRenderMode(manifest: Manifest, declared: AnyPage): PageRender {
+  const listed = manifest.pages.find((entry) => entry.id === declared.id);
+  return listed?.render ?? declared.render ?? "ssr";
+}
+
+const HTML_ESCAPES: Readonly<Record<string, string>> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+export function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => HTML_ESCAPES[character] as string);
+}
+
+const INLINE_SCRIPT = /<script(?![^>]*\bnonce=)(?![^>]*\bsrc=)([^>]*)>/gi;
+
+export function nonceInlineScripts(html: string, nonce: string): string {
+  return html.replace(INLINE_SCRIPT, (_tag, attributes: string) => {
+    return `<script${attributes} nonce="${escapeHtml(nonce)}">`;
+  });
+}
+
+function unique(values: readonly string[]): string[] {
+  return [...new Set(values)];
+}
+
+export function pageAssets(assets: RexDocumentAssets, page: string | null): RexPageAssets {
+  const own = page === null ? undefined : assets.pages[page];
+  return {
+    stylesheets: unique([...assets.stylesheets, ...(own?.stylesheets ?? [])]),
+    preloads: unique([...assets.preloads, ...(own?.preloads ?? [])]),
+  };
+}
+
+interface DocumentParts {
+  readonly title: string;
+  readonly nonce: string;
+  readonly links: RexPageAssets;
+  readonly data: RexDataPayload;
+  readonly hydrate: boolean;
+}
+
+function documentHead(options: Required<Omit<RexRendererOptions, "bundle">>, parts: DocumentParts): string {
+  const nonce = escapeHtml(parts.nonce);
+  const stylesheets = parts.links.stylesheets.map(
+    (href) => `<link rel="stylesheet" href="${escapeHtml(href)}">`,
+  );
+  const preloads = parts.links.preloads.map(
+    (href) => `<link rel="modulepreload" href="${escapeHtml(href)}">`,
+  );
+  const root = parts.hydrate
+    ? `<div id="${escapeHtml(options.rootElement)}" ${SSR_ATTRIBUTE}="">`
+    : `<div id="${escapeHtml(options.rootElement)}">`;
+  return [
+    "<!doctype html>",
+    `<html lang="${escapeHtml(options.lang)}">`,
+    "<head>",
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    `<title>${escapeHtml(parts.title)}</title>`,
+    ...stylesheets,
+    ...preloads,
+    options.assets.head === undefined ? "" : nonceInlineScripts(options.assets.head, parts.nonce),
+    `<script type="${REX_DATA_MIME_TYPE}" id="${REX_DATA_ELEMENT_ID}" nonce="${nonce}">${serializeRexData(parts.data)}</script>`,
+    "</head>",
+    "<body>",
+    root,
+  ].join("");
+}
+
+function documentTail(options: Required<Omit<RexRendererOptions, "bundle">>, nonce: string): string {
+  const scripts = options.assets.scripts.map(
+    (src) => `<script type="module" src="${escapeHtml(src)}" nonce="${escapeHtml(nonce)}"></script>`,
+  );
+  return ["</div>", ...scripts, "</body>", "</html>"].join("");
+}
+
+export function documentStream(
+  head: string,
+  body: ReadableStream<Uint8Array>,
+  tail: string,
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const reader = body.getReader();
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(head));
+    },
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) {
+        controller.enqueue(encoder.encode(tail));
+        controller.close();
+        return;
+      }
+      controller.enqueue(value);
+    },
+    cancel(reason) {
+      return reader.cancel(reason);
+    },
+  });
+}
+
+function nextTask(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function actorData(context: RexRequestContext): RexDataPayload["actor"] {
+  const { id, roles, permissions, attributes } = context.actor;
+  return { id, roles, permissions, attributes };
+}
+
+function clientRenderedModules(declared: AnyPage): PageModuleSet {
+  const signal = new RexClientRenderSignal(declared.id);
+  const rejected = Promise.reject(signal);
+  rejected.catch(() => {});
+  return Object.freeze({ page: declared, load: () => rejected });
+}
+
+function failedView(declared: AnyPage, states: Readonly<Record<string, unknown>>): ComponentType {
+  const name = STATE_EXPORT_NAMES["recoverable-error"];
+  const Export = declared.states.includes("recoverable-error")
+    ? (states[name] as StateExportComponent | undefined)
+    : undefined;
+  const error = new Error(RENDER_FAILURE_MESSAGE);
+  const retry = () => {
+    globalThis.location?.reload();
+  };
+  function RexRenderFailure() {
+    const runtime = usePageRuntime();
+    return Export === undefined
+      ? createElement(DefaultState, {
+          state: "recoverable-error",
+          params: runtime.params,
+          retry,
+          error,
+        })
+      : createElement(Export, { params: runtime.params, retry, error });
+  }
+  RexRenderFailure.displayName = `RexRenderFailure(${declared.id})`;
+  return RexRenderFailure;
+}
+
+async function loadedModules(set: PageModuleSet): Promise<LoadedPageModules> {
+  return isLazyPageModules(set) ? set.load() : set;
+}
+
+export function createRexRenderer(options: RexRendererOptions): RexPageRenderer {
+  const bundle = options.bundle;
+  if (typeof bundle !== "object" || bundle === null || !Array.isArray(bundle.pages)) {
+    throw new TypeError("createRexRenderer: the rex:app bundle with registry and pages is required");
+  }
+  if (bundle.manifest === undefined) {
+    throw new TypeError("createRexRenderer: the bundle must carry its manifest");
+  }
+  const manifest: Manifest = bundle.manifest;
+  const resolved: Required<Omit<RexRendererOptions, "bundle">> = {
+    assets: options.assets ?? EMPTY_DOCUMENT_ASSETS,
+    rootElement: options.rootElement ?? DEFAULT_ROOT_ELEMENT,
+    lang: options.lang ?? DEFAULT_DOCUMENT_LANG,
+  };
+  const registry = bundle.registry;
+  const sets = new Map<string, PageModuleSet>();
+  for (const set of bundle.pages) sets.set(set.page.id, set);
+  const serverPages = bundle.pages.map((set) =>
+    pageRenderMode(manifest, set.page) === "csr" ? clientRenderedModules(set.page) : set,
+  );
+
+  function entryTree(
+    url: URL,
+    context: RexRequestContext,
+    pages: readonly PageModuleSet[],
+    queryClient: QueryClient,
+  ): ReactNode {
+    const RexEntry = createRexEntry(
+      { registry, manifest, pages },
+      { actor: context.actor, baseUrl: url.origin, queryClient },
+    );
+    return createElement(Router, {
+      ssrPath: url.pathname,
+      ssrSearch: url.search.replace(/^\?/, ""),
+      children: createElement(StrictMode, null, createElement(RexEntry)),
+    });
+  }
+
+  function parts(
+    match: PageMatch | null,
+    context: RexRequestContext,
+    queryClient: QueryClient,
+    hydrate: boolean,
+  ): DocumentParts {
+    const page = match === null ? null : match.page.id;
+    return {
+      title: match === null ? NOT_FOUND_TITLE : match.page.chrome.title,
+      nonce: context.nonce,
+      links: pageAssets(resolved.assets, page),
+      data: {
+        version: REX_DATA_VERSION,
+        page,
+        actor: actorData(context),
+        queries: dehydrate(queryClient),
+      },
+      hydrate,
+    };
+  }
+
+  async function staticFailure(
+    match: PageMatch | null,
+    context: RexRequestContext,
+  ): Promise<ReadableStream<Uint8Array>> {
+    const error = new Error(RENDER_FAILURE_MESSAGE);
+    const stream = await renderToReadableStream(
+      createElement(
+        "main",
+        { "data-rex-page": match?.page.id, "data-rex-app-state": "error" },
+        createElement(DefaultState, {
+          state: "recoverable-error",
+          params: {},
+          retry: () => {},
+          error,
+        }),
+      ),
+      { nonce: context.nonce },
+    );
+    await stream.allReady;
+    return stream;
+  }
+
+  async function failure(
+    url: URL,
+    match: PageMatch | null,
+    context: RexRequestContext,
+  ): Promise<RexRenderResult> {
+    const queryClient = new QueryClient();
+    const head = documentHead(resolved, parts(match, context, queryClient, false));
+    const tail = documentTail(resolved, context.nonce);
+    let body: ReadableStream<Uint8Array> | null = null;
+    if (match !== null) {
+      try {
+        const set = sets.get(match.page.id) as PageModuleSet;
+        const loaded = await loadedModules(set);
+        const states = loaded.states as Readonly<Record<string, unknown>>;
+        const eager: EagerPageModuleSet = definePageModules({
+          page: match.page,
+          view: failedView(match.page, states),
+          states: states as PageStatesModule<AnyPage>,
+          regions: (loaded.regions ?? {}) as Readonly<Record<string, ComponentType>>,
+          overlays: (loaded.overlays ?? {}) as Readonly<Record<string, ComponentType>>,
+        });
+        const pages = bundle.pages.map((entry) => (entry.page === match.page ? eager : entry));
+        const stream = await renderToReadableStream(entryTree(url, context, pages, queryClient), {
+          nonce: context.nonce,
+        });
+        await stream.allReady;
+        body = stream;
+      } catch {
+        body = null;
+      }
+    }
+    return {
+      kind: "failed",
+      page: match === null ? null : match.page.id,
+      body: documentStream(head, body ?? (await staticFailure(match, context)), tail),
+    };
+  }
+
+  async function render(request: Request, context: RexRequestContext): Promise<RexRenderResult> {
+    const url = new URL(request.url);
+    const match = matchPage(registry.pages, url.pathname);
+    let kind: RenderKind = "not-found";
+    if (match !== null) {
+      const resolution = resolvePage(
+        match.page,
+        match.routeParams,
+        url.search,
+        context.actor,
+        registry,
+        manifestParamsSchema(manifest, match.page),
+      );
+      kind = resolution.policy.allowed ? "page" : "denied";
+      if (pageRenderMode(manifest, match.page) !== "csr") {
+        try {
+          await loadedModules(sets.get(match.page.id) as PageModuleSet);
+        } catch {
+          return failure(url, match, context);
+        }
+      }
+    }
+    const queryClient = new QueryClient();
+    const errors: unknown[] = [];
+    let stream: Awaited<ReturnType<typeof renderToReadableStream>>;
+    try {
+      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient), {
+        nonce: context.nonce,
+        onError(error) {
+          if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
+          errors.push(error);
+          return undefined;
+        },
+      });
+    } catch {
+      return failure(url, match, context);
+    }
+    await Promise.race([stream.allReady.catch(() => {}), nextTask()]);
+    if (errors.length > 0) {
+      await stream.cancel();
+      return failure(url, match, context);
+    }
+    return {
+      kind,
+      page: match === null ? null : match.page.id,
+      body: documentStream(
+        documentHead(resolved, parts(match, context, queryClient, true)),
+        stream,
+        documentTail(resolved, context.nonce),
+      ),
+    };
+  }
+
+  return { render };
+}
