@@ -33,7 +33,7 @@
     - Implement src/core/registry.ts: createRegistry() collecting entities, actions, pages, policies and flows; register throws on duplicate id; freeze() returns an immutable snapshot with deterministic ordering by id.
     - Write src/core/action.test.ts and src/core/registry.test.ts covering type inference, invalid ids and shortcuts, duplicate detection and ordering.
     - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
-  - [ ] 0.6 Implement the Page declaration, data states and the states module contract
+  - [x] 0.6 Implement the Page declaration, data states and the states module contract
     - Implement src/core/page.ts: page(id, {route, params, policy, recovery, draft: route|session|none, actions, chrome: {header, nav, back, title}, regions, overlays, states}) returning a frozen PageDeclaration; validate region and overlay names, route syntax and that recovery names a page id.
     - Export the closed RexDataState union of the nine states, the StatesModule type that requires one export per declared state (ready excluded, provided by view.tsx), and the StateProps type (params, retry, error).
     - Export the OverlayDeclaration type (id, dismiss: escape|button|both, binding: region|url) with no React dependency.
