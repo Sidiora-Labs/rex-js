@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/mark_rex_js.png" alt="Rex" width="480" height="200">
+</p>
+
 # Rex
 
 Rex is Sidiora Labs' framework for building web application interfaces that AI agents can write and that AI agents can operate. It ships as one package, `@sidioralabs/rex`, with a CLI named `rex`.
@@ -149,17 +153,6 @@ It declares the entities `account`, `token` and `contact`, the policies `wallet`
 `examples/demo/e2e/operability.spec.ts` is a Playwright walk. It builds the demo with `rex build`, starts `node dist/server.js`, reads `/rex/manifest`, and for every page in both `default` and `agent` density checks the sidecar, the addressed landmarks and sidecar parity, then invokes every declared action by click, shortcut (when declared), URL and palette, accepting the confirmation for `send`. It opens and dismisses every overlay by Escape and by its close control, and checks that each overlay accepts typed input (for the pickers, typing a choice and pressing Enter runs the pick action). A second test logs in as `guest` and checks that disallowed actions are listed with a reason, disabled in the DOM and palette, and refused by URL. It writes one JSON report per walked page plus `guest.json`, `vitals.json`, `lighthouse.json` and `screenshots/` to `examples/demo/e2e/report/`. The committed `portfolio.json` records one failure (`window.__rex differs from the sidecar script` in default density) and `lighthouse.json` records `performance 66 is under 90` for the portfolio page; no `tokens.json` is committed.
 
 Run it with `pnpm -C packages/rex build` and then `pnpm -C examples/demo test`, which runs `rex check` and then the Playwright operability walk, the no-JS walk (`e2e/nojs.spec.ts`), the axe pass (`e2e/axe.spec.ts`), the Core Web Vitals gate (`e2e/vitals.spec.ts`), Lighthouse (`e2e/lighthouse.ts`) and the screenshots spec; `pnpm -C examples/demo test:unit` runs the page tests with Vitest.
-
-## Known gaps
-
-These parts of the specification are not met or not exercised by the code in this revision:
-
-- **Paged lists.** `Page.List` renders a paged list with `page` and `size` URL params and a load-more control, and `traps/infinite-list` reports scroll-loading lists that do not use it. The demo holdings render through the DesignX data-table (`HoldingsTable`) rather than `Page.List`.
-- **Flows in the demo.** The demo declares no flow, so flow approval gates are covered by unit tests only, not by the operability walk. Flow decisions are written to the audit ledger (`buildFlowRouter` in `packages/rex/src/server/flow.ts`).
-- **Sidecar parity in the checker.** The static `parity` rule compares `page.ts` actions with the actions imported by region files; `rex check --runtime` additionally mounts every page in happy-dom per actor and state and compares the rendered sidecar with the visible controls (`parity/runtime`). The default `rex check` run does not include the runtime rule.
-- **Demo page tests.** `portfolio` and `send` have `test/` directories with Vitest page tests (`pnpm -C examples/demo test:unit`); `about`, `embed` and `tokens` have none. `rex make page` creates an empty `test/` directory, which git does not track.
-- **Checker timing.** The requirement that `rex check` completes on the demo in under 30 seconds has no recorded measurement.
-- **Color and motion audit.** The requirement for a manual audit showing that the demo conveys no state only by color or motion has no recorded result. The checker's `traps/motion-only` rule covers `animate-*` classes only.
 
 ## Documentation
 
