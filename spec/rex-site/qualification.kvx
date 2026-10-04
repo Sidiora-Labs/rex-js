@@ -40,6 +40,22 @@ observed = "rex check, rex build and rex dev read ui.components from rex.config.
 assumption = "Task 3.3 makes rex() read rex.config.ts when it runs under vitest (or exports a rexTestPlugins() helper from rex/vite that does) so the app's shell components, fonts and ui options reach unit tests without restating them, and the site drops its explicit shellComponents option."
 severity = "medium"
 
+[qualification.211]
+task = "2.1"
+file = "packages/rex/src/vite/scan.ts, packages/rex/src/check/engine.ts"
+symbol = "scanApp declarationFiles, classify (the action role is actions/<file>.ts only)"
+observed = "[design] module_layout puts each page task's read actions in app/actions/<page>/, but scanApp lists only the files directly in app/actions and classify gives the action role only to actions/<file>.ts, so site/app/actions/home/read-home-meta.ts is never registered and rex:app throws while it builds the manifest; evidence: revision d1eac09 plus the 2.1 changes, command pnpm -C site check && pnpm -C site exec vitest run app/pages/home, exit 1 (rex check: REX209 buildManifest: page \"home\" loader \"meta\" names action \"read-home-meta\" that is not registered; vitest never ran), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.1-private/logs/2.1-verify.log; the same holds for app/actions/docs, errors, standards, changelog and api of tasks 2.2, 2.3, 2.4 and 3.1."
+assumption = "A framework task before 3.3 either makes scanApp and classify accept one level of folders under app/actions (and the boundaries and parity rules treat those files as actions), or records a [decision] that actions stay flat and moves the page tasks' actions to app/actions/<page>-<name>.ts with their touches updated; the 2.1 verify_cmd then reruns unchanged."
+severity = "high"
+
+[qualification.212]
+task = "2.1"
+file = "packages/rex/src/check/engine.ts, packages/rex/src/check/rules/naming.ts, packages/rex/src/check/rules/boundaries.ts"
+symbol = "classify, naming/unclassified, boundaries/import-table for app/server"
+observed = "docs/convention.md lists app/server as the folder for server-only modules and the Vite boundary (APP_SERVER_DIR, REX440, REX441) treats it so, but classify returns no role for server/**, so site/app/server/content/meta.ts is reported by naming/unclassified and the action importing it by boundaries/import-table (has no Rex file role); masked in the 2.1 verify by REX209 of [qualification.211], read from classify and checkFile at revision d1eac09; every content reader of tasks 2.2, 2.3, 2.4 and 3.1 meets it."
+assumption = "The same framework task gives app/server/** a server role in classify with an import table entry (any non-React package, app/data, app/entities, app/server; importable by actions, data and other server modules, never by component roles), so rex check accepts the content readers under site/app/server/content."
+severity = "high"
+
 [qualification.231]
 task = "2.3"
 file = "packages/rex/src/check/engine.ts, packages/rex/src/check/rules/naming.ts, packages/rex/src/check/rules/boundaries.ts"
