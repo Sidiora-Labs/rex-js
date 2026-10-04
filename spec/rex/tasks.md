@@ -53,27 +53,27 @@
 ## Wave 1
 
 - [ ] 1. Server runtime: audit, action router, Hono server, Drizzle store
-  - [ ] 1.1 Implement the audit ledger
+  - [x] 1.1 Implement the audit ledger
     - Implement src/server/audit.ts: AuditRecord (id, actor, actionId, inputDigest, outcome ok|error code, effect, durationMs, at), Ledger interface append and list with filters by actor, actionId, outcome and time range, and the in-memory ledger.
     - Implement digest(input) as sha-256 over canonical JSON (sorted keys) using the Web Crypto API so it runs in Node and browsers.
     - Write src/server/audit.test.ts covering filters, digest stability, and that raw input never appears in a record.
     - _Requirements: 16.1, 16.2, 16.3_
-  - [ ] 1.2 Build the oRPC action router with policy, confirmation and audit
+  - [x] 1.2 Build the oRPC action router with policy, confirmation and audit
     - Implement src/server/router.ts: buildActionRouter(registry, {ledger}) producing an oRPC router keyed by action id; each procedure uses os.$context<RexContext>() with actor and density, validates input and output with the declared schemas, evaluates the policy and throws ORPCError FORBIDDEN with the reason before the handler runs.
     - Implement confirmation for irreversible actions: the procedure requires a confirm token obtained from a confirm procedure that returns a short-lived token bound to the action id and input digest; a missing or mismatched token throws PRECONDITION_REQUIRED.
     - Append one audit record after every call including handler failures, with effect and duration.
     - Write src/server/router.test.ts using call() from @orpc/server covering allowed, forbidden, validation failure, confirmation flow and audit records for success and failure.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 15.1, 15.2, 15.3, 16.1, 16.2, 16.3_
-  - [ ] 1.3 Implement createRexServer on Hono
+  - [x] 1.3 Implement createRexServer on Hono
     - Implement src/server/index.ts: createRexServer({registry, ledger, actor(request) -> Actor}) returning a Hono app with RPCHandler mounted at /rex/rpc, GET /rex/manifest returning buildManifest(registry), GET /rex/health, and the x-rex-density header copied into context.
     - Export the RouterClient type for the built router so the client package can type the oRPC client from the app registry.
     - Write src/server/server.test.ts exercising the app with app.request for manifest, health, an allowed action, a forbidden action and the density header.
     - _Requirements: 11.1, 11.2, 11.3, 14.1, 14.2, 14.3, 15.1, 15.2, 15.3_
-  - [ ] 1.4 Implement the Node server entry and static serving for builds
+  - [x] 1.4 Implement the Node server entry and static serving for builds
     - Implement src/server/node.ts: startNodeServer(app, {port, clientDir}) using @hono/node-server, serving clientDir assets and index.html fallback for page routes while leaving /rex/* to the API.
     - Write src/server/node.test.ts starting the server on an ephemeral port against a temporary client directory and asserting asset, fallback and API responses.
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 1.5 Implement the Drizzle store adapter against libsql
+  - [x] 1.5 Implement the Drizzle store adapter against libsql
     - Implement src/store/drizzle.ts: drizzleStore(entity, db) mapping entity fields to a Drizzle sqlite table definition, with get, list (filter, page, size), put and delete.
     - Write src/store/drizzle.test.ts running runStoreConformance against an in-memory libsql database created with @libsql/client.
     - _Requirements: 21.1, 21.2, 21.3_
