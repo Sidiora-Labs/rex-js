@@ -8,17 +8,22 @@ This app is built with Rex. Read `.rex/manifest.json` for the full machine-reada
 
 | Page | Route | Title | Policy | Regions | Overlays | Actions | States |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| `about` | `/about` | msg:about.title | always | intro, feedback | - | send-feedback | 9 |
+| `embed` | `/embed` | msg:embed.title | always | widget, locale | - | - | 9 |
 | `portfolio` | `/` | Portfolio | viewer.can(viewer.read) | hero, actions, holdings | HoldingsFilterSheet (both) | toggle-hide-dust | 9 |
 | `send` | `/send` | Send | viewer.can(viewer.read) | form, confirm, success | ContactPickerSheet (both), TokenSelectorSheet (both) | pick-contact, pick-token, send | 9 |
+| `tokens` | `/tokens` | msg:tokens.title | always | prices | - | - | 9 |
 
 ## Actions
 
 | Action | Label | Effect | Shortcut | Policy | Invalidates |
 | --- | --- | --- | --- | --- | --- |
+| `list-tokens` | List tokens | read | - | always | - |
 | `load-wallet` | Load wallet | read | - | viewer.can(viewer.read) | - |
 | `pick-contact` | Pick contact | reversible | `shift+c` | wallet.can(wallet.manage) | wallet |
 | `pick-token` | Pick token | reversible | `shift+t` | wallet.can(wallet.manage) | wallet |
 | `send` | Send | irreversible | `mod+enter` | wallet.requires(unlocked, account, wallet.send) | wallet |
+| `send-feedback` | Send feedback | reversible | - | always | - |
 | `toggle-hide-dust` | Toggle hide dust | reversible | `shift+d` | wallet.can(wallet.manage) | wallet |
 
 Invoke an action by its control (`data-rex="<page>/<action>"`), its shortcut, the URL `<route>?act=<action>&input=<json>` or the command palette (mod+k). Irreversible actions ask for confirmation on every route.

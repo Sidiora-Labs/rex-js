@@ -8,7 +8,13 @@ export interface AmountFieldProps {
   readonly onAmount: (amount: string) => void;
 }
 
-export default function AmountField({ amount, valid, symbol, balance, onAmount }: AmountFieldProps) {
+export default function AmountField({
+  amount,
+  valid,
+  symbol,
+  balance,
+  onAmount,
+}: AmountFieldProps) {
   return (
     <Field
       label={symbol === "" ? "Amount" : `Amount in ${symbol}`}

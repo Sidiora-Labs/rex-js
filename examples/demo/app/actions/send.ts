@@ -19,6 +19,7 @@ export const send = action("send", {
   effect: "irreversible",
   label: "Send",
   shortcut: "mod+enter",
+  form: { redirect: "/send" },
   invalidates: ["wallet"],
   handler: async (input, ctx) => {
     const owner = await requireAccount(accountIdOf(ctx.actor.attributes));

@@ -1,5 +1,10 @@
 import { procedureOf } from "@sidioralabs/rex/client";
-import { readSidecar, renderPage, testServer, type RexRenderResult } from "@sidioralabs/rex/testing";
+import {
+  readSidecar,
+  renderPage,
+  testServer,
+  type RexRenderResult,
+} from "@sidioralabs/rex/testing";
 import { act, fireEvent, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { guest, owner } from "../../../../server.ts";
@@ -61,15 +66,14 @@ describe("portfolio page", () => {
     expect(
       payload.actions.map((entry) => [entry.id, entry.allowed, entry.reason, entry.effect]),
     ).toEqual([["toggle-hide-dust", true, null, "reversible"]]);
-    expect(payload.overlays).toEqual([
-      { id: "HoldingsFilterSheet", open: false, dismiss: "both" },
-    ]);
+    expect(payload.overlays).toEqual([{ id: "HoldingsFilterSheet", open: false, dismiss: "both" }]);
+    const defaultRegions = regions(view);
 
     const agent = await renderPage(app, "portfolio", { density: "agent" });
     await loaded(agent);
     expect(document.documentElement.getAttribute("data-rex-density")).toBe("agent");
     expect(agent.sidecar().actions.map((entry) => entry.id)).toEqual(["toggle-hide-dust"]);
-    expect(regions(agent)).toEqual(regions(view));
+    expect(regions(agent)).toEqual(defaultRegions);
   });
 
   it("lists the dust toggle as not allowed for the guest while showing the wallet", async () => {

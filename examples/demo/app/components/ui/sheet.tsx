@@ -21,7 +21,8 @@ const sideClasses = {
     "inset-y-2 right-2 w-[calc(100%-1rem)] sm:max-w-sm data-starting-style:translate-x-[105%] data-ending-style:translate-x-[105%]",
   left: "inset-y-2 left-2 w-[calc(100%-1rem)] sm:max-w-sm data-starting-style:-translate-x-[105%] data-ending-style:-translate-x-[105%]",
   top: "inset-x-2 top-2 h-auto data-starting-style:-translate-y-[105%] data-ending-style:-translate-y-[105%]",
-  bottom: "inset-x-2 bottom-2 h-auto data-starting-style:translate-y-[105%] data-ending-style:translate-y-[105%]",
+  bottom:
+    "inset-x-2 bottom-2 h-auto data-starting-style:translate-y-[105%] data-ending-style:translate-y-[105%]",
 };
 
 function SheetContent({
@@ -60,11 +61,23 @@ function SheetContent({
 }
 
 function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="sheet-header" className={cn("flex flex-col gap-1.5 p-6 pb-0", className)} {...props} />;
+  return (
+    <div
+      data-slot="sheet-header"
+      className={cn("flex flex-col gap-1.5 p-6 pb-0", className)}
+      {...props}
+    />
+  );
 }
 
 function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="sheet-footer" className={cn("mt-auto flex flex-col gap-2 p-6 pt-0", className)} {...props} />;
+  return (
+    <div
+      data-slot="sheet-footer"
+      className={cn("mt-auto flex flex-col gap-2 p-6 pt-0", className)}
+      {...props}
+    />
+  );
 }
 
 function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
@@ -78,7 +91,22 @@ function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
 }
 
 function SheetDescription({ className, ...props }: SheetPrimitive.Description.Props) {
-  return <SheetPrimitive.Description data-slot="sheet-description" className={cn("text-muted-foreground text-sm", className)} {...props} />;
+  return (
+    <SheetPrimitive.Description
+      data-slot="sheet-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props}
+    />
+  );
 }
 
-export { Sheet, SheetTrigger, SheetClose, SheetContent, SheetHeader, SheetFooter, SheetTitle, SheetDescription };
+export {
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+};

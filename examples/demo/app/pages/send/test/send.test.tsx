@@ -1,5 +1,10 @@
 import { CONFIRM_PROCEDURE, procedureOf } from "@sidioralabs/rex/client";
-import { readSidecar, renderPage, testServer, type RexRenderResult } from "@sidioralabs/rex/testing";
+import {
+  readSidecar,
+  renderPage,
+  testServer,
+  type RexRenderResult,
+} from "@sidioralabs/rex/testing";
 import { act, fireEvent, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { guest, owner } from "../../../../server.ts";
@@ -66,9 +71,7 @@ describe("send page", () => {
       ["pick-token", true, null, "reversible"],
       ["send", true, null, "irreversible"],
     ]);
-    expect(
-      [...payload.overlays].sort((left, right) => left.id.localeCompare(right.id)),
-    ).toEqual([
+    expect([...payload.overlays].sort((left, right) => left.id.localeCompare(right.id))).toEqual([
       { id: "ContactPickerSheet", open: false, dismiss: "both" },
       { id: "TokenSelectorSheet", open: false, dismiss: "both" },
     ]);
@@ -121,9 +124,7 @@ describe("send page", () => {
     expect(records.map((record) => [record.outcome, record.actor, record.effect])).toEqual([
       ["ok", "owner", "irreversible"],
     ]);
-    await waitFor(() =>
-      expect(view.sidecar().outcome).toMatchObject({ action: "send", ok: true }),
-    );
+    await waitFor(() => expect(view.sidecar().outcome).toMatchObject({ action: "send", ok: true }));
   });
 
   it("keeps the balance when the confirmation is cancelled", async () => {
@@ -158,7 +159,10 @@ describe("send server", () => {
     await expect(call({ amount: "1" })).rejects.toThrow(/irreversible/);
     expect(await tokenBalance("eth")).toBe("25");
 
-    const grant = (await procedureOf(server.client, CONFIRM_PROCEDURE)({
+    const grant = (await procedureOf(
+      server.client,
+      CONFIRM_PROCEDURE,
+    )({
       action: "send",
       input: { amount: "1" },
     })) as { readonly token: string };

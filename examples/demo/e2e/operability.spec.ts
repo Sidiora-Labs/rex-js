@@ -4,10 +4,16 @@ import {
   Recorder,
   STEP_TIMEOUT,
   buildDemo,
+  checkForms,
   checkHitTargets,
   checkParity,
+  checkStylesheetOrder,
+  checkTextRenderer,
+  checkZeroJs,
   committedManifest,
+  fetchDocument,
   invokeBy,
+  isStaticPage,
   outcomeMark,
   pageUrl,
   readSidecar,
@@ -15,6 +21,8 @@ import {
   waitForOutcome,
   waitForSidecar,
   walkOverlay,
+  watchCsp,
+  watchLoaderRequests,
   writeReport,
   type Density,
   type ManifestPage,
@@ -66,6 +74,8 @@ async function walkDensity(
   density: Density,
 ): Promise<Recorder> {
   const recorder = new Recorder();
+  const csp = watchCsp(page);
+  const loaderRequests = watchLoaderRequests(page, pageInfo);
   const loaded = await recorder.check("page renders one ready sidecar", async () => {
     await page.goto(pageUrl(base, pageInfo.route, { density }));
     const payload = await waitForSidecar(page, pageInfo.id);
@@ -75,7 +85,34 @@ async function walkDensity(
     }
     return `${payload.actions.length} actions, ${payload.overlays.length} overlays`;
   });
-  if (!loaded) return recorder;
+  const requested = loaderRequests.stop();
+  if (!loaded) {
+    csp.stop();
+    return recorder;
+  }
+
+  if (pageInfo.loaders.length > 0 && pageInfo.render !== "csr") {
+    await recorder.check("loaders hydrate from the server render without a request", async () => {
+      if (requested.length > 0)
+        throw new Error(`the first render requested ${requested.join(", ")}`);
+      const seeded = await page.evaluate(
+        () => document.querySelectorAll('script[type="application/rex+data"]').length,
+      );
+      if (seeded !== 1) throw new Error(`found ${seeded} dehydrated loader data scripts`);
+      return pageInfo.loaders.map((loader) => `${loader.name} (${loader.action})`).join(", ");
+    });
+  }
+  await recorder.check("stylesheet links precede the first body content", async () =>
+    checkStylesheetOrder(
+      await fetchDocument(page, base, pageUrl(base, pageInfo.route, { density })),
+    ),
+  );
+  await recorder.check("actions rendered as forms post to the form route", () =>
+    checkForms(page, pageInfo.id, pageInfo.actions, false),
+  );
+  await recorder.check("the text renderer lists every sidecar action", async () =>
+    checkTextRenderer(page, base, pageInfo.id, await readSidecar(page)),
+  );
 
   await recorder.check(`root density is ${density}`, async () => {
     const attribute = await page.evaluate(() =>
@@ -90,8 +127,9 @@ async function walkDensity(
         regions: [...document.querySelectorAll(`[data-rex-region^="${id}/"]`)].map(
           (element) => element.getAttribute("data-rex-region") ?? "",
         ),
-        outcome: document.querySelectorAll('[role="status"][aria-live="polite"][aria-label="Outcome"]')
-          .length,
+        outcome: document.querySelectorAll(
+          '[role="status"][aria-live="polite"][aria-label="Outcome"]',
+        ).length,
       };
     }, pageInfo.id);
     if (found.page !== 1) throw new Error(`found ${found.page} page roots`);
@@ -110,7 +148,11 @@ async function walkDensity(
   for (const actionId of pageInfo.actions) {
     const declared = manifest.actions.find((entry) => entry.id === actionId);
     if (declared === undefined) {
-      recorder.checks.push({ name: `action ${actionId}`, ok: false, detail: "not in the manifest" });
+      recorder.checks.push({
+        name: `action ${actionId}`,
+        ok: false,
+        detail: "not in the manifest",
+      });
       continue;
     }
     for (const route of ROUTES) {
@@ -126,6 +168,67 @@ async function walkDensity(
   }
 
   await recorder.check("sidecar parity holds after the walk", () => checkParity(page, pageInfo.id));
+  const violations = csp.stop();
+  await recorder.check("the console reports no Content Security Policy violation", async () => {
+    if (violations.length > 0) throw new Error(violations.join(" | "));
+  });
+  return recorder;
+}
+
+async function walkStaticDensity(
+  page: Page,
+  base: string,
+  pageInfo: ManifestPage,
+  density: Density,
+): Promise<Recorder> {
+  const recorder = new Recorder();
+  const csp = watchCsp(page);
+  const loaded = await recorder.check("page serves one ready static sidecar", async () => {
+    await page.goto(pageUrl(base, pageInfo.route, { density }));
+    const payload = await waitForSidecar(page, pageInfo.id, { mirror: false });
+    const listed = payload.actions.map((entry) => entry.id).sort();
+    if (JSON.stringify(listed) !== JSON.stringify([...pageInfo.actions].sort())) {
+      throw new Error(`sidecar actions [${listed.join(", ")}] differ from the manifest`);
+    }
+    return `${payload.actions.length} actions as static JSON`;
+  });
+  if (!loaded) {
+    csp.stop();
+    return recorder;
+  }
+  await recorder.check("the page ships zero JavaScript", () => checkZeroJs(page));
+  await recorder.check(`root density is ${density}`, async () => {
+    const attribute = await page.evaluate(() =>
+      document.documentElement.getAttribute("data-rex-density"),
+    );
+    if (attribute !== density) throw new Error(`data-rex-density is ${String(attribute)}`);
+  });
+  await recorder.check("stylesheet links precede the first body content", async () =>
+    checkStylesheetOrder(
+      await fetchDocument(page, base, pageUrl(base, pageInfo.route, { density })),
+    ),
+  );
+  await recorder.check("every action renders as a form posting to the form route", async () => {
+    const addresses = await checkForms(page, pageInfo.id, pageInfo.actions, true);
+    const posted = addresses === "" ? [] : addresses.split(", ").sort();
+    const expected = pageInfo.actions.map((id) => `${pageInfo.id}/${id}`).sort();
+    if (JSON.stringify(posted) !== JSON.stringify(expected)) {
+      throw new Error(
+        `forms [${posted.join(", ")}] differ from the actions [${expected.join(", ")}]`,
+      );
+    }
+    return addresses;
+  });
+  await recorder.check("sidecar lists exactly the present controls", () =>
+    checkParity(page, pageInfo.id, { mirror: false }),
+  );
+  await recorder.check("the text renderer lists every sidecar action", async () =>
+    checkTextRenderer(page, base, pageInfo.id, await readSidecar(page, { mirror: false })),
+  );
+  const violations = csp.stop();
+  await recorder.check("the console reports no Content Security Policy violation", async () => {
+    if (violations.length > 0) throw new Error(violations.join(" | "));
+  });
   return recorder;
 }
 
@@ -139,7 +242,9 @@ for (const listed of committed.pages) {
     const report: PageReport = { page: pageInfo.id, actor: "owner", densities: [], failures: [] };
     const failures: string[] = [];
     for (const density of DENSITIES) {
-      const recorder = await walkDensity(page, base, manifest, pageInfo, density);
+      const recorder = isStaticPage(pageInfo)
+        ? await walkStaticDensity(page, base, pageInfo, density)
+        : await walkDensity(page, base, manifest, pageInfo, density);
       report.densities.push({ density, checks: recorder.checks });
       failures.push(...recorder.failures(`[${density}]`));
     }
@@ -155,7 +260,9 @@ test("a disallowed action is listed with its reason and does not execute", async
   await context.addCookies([{ name: "demo-actor", value: "guest", url: base }]);
   const page = await context.newPage();
   const recorder = new Recorder();
-  const guarded = manifest.pages.filter((entry) => entry.actions.length > 0);
+  const guarded = manifest.pages.filter(
+    (entry) => entry.actions.length > 0 && !isStaticPage(entry),
+  );
   try {
     for (const pageInfo of guarded) {
       await page.goto(pageUrl(base, pageInfo.route, { density: "default" }));

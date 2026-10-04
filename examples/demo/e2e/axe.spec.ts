@@ -4,6 +4,7 @@ import {
   DENSITIES,
   buildDemo,
   committedManifest,
+  isStaticPage,
   openOverlay,
   pageUrl,
   startDemo,
@@ -57,8 +58,9 @@ async function auditDensity(
   density: Density,
 ): Promise<string[]> {
   const found: string[] = [];
+  const sidecar = { mirror: !isStaticPage(pageInfo) };
   await page.goto(pageUrl(base, pageInfo.route, { density }));
-  await waitForSidecar(page, pageInfo.id);
+  await waitForSidecar(page, pageInfo.id, sidecar);
   const attribute = await page.evaluate(() =>
     document.documentElement.getAttribute("data-rex-density"),
   );
@@ -69,9 +71,7 @@ async function auditDensity(
     await page.goto(pageUrl(base, pageInfo.route, { density }));
     await waitForSidecar(page, pageInfo.id);
     await openOverlay(page, pageInfo.id, overlay.id);
-    found.push(
-      ...(await blockingViolations(page, `[${density}] ${pageInfo.id}/${overlay.id}`)),
-    );
+    found.push(...(await blockingViolations(page, `[${density}] ${pageInfo.id}/${overlay.id}`)));
   }
   return found;
 }

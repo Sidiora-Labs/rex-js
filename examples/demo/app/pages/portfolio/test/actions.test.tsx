@@ -61,9 +61,7 @@ describe("portfolio actions region", () => {
     await act(async () => {
       fireEvent.change(field, { target: { value: "eth" } });
     });
-    await waitFor(() =>
-      expect(within(view.container).getByText('Filtered by "eth"')).toBeTruthy(),
-    );
+    await waitFor(() => expect(within(view.container).getByText('Filtered by "eth"')).toBeTruthy());
     expect(JSON.parse(search(view).get(DRAFT_QUERY_KEY) ?? "null")).toEqual({ query: "eth" });
 
     await click(within(sheet(view) as HTMLElement).getByRole("button", { name: "Apply filter" }));

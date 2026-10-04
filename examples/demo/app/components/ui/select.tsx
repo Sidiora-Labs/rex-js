@@ -6,14 +6,27 @@ import { cn } from "./utils.ts";
 const Select = SelectPrimitive.Root;
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
-  return <SelectPrimitive.Group data-slot="select-group" className={cn("py-1", className)} {...props} />;
+  return (
+    <SelectPrimitive.Group data-slot="select-group" className={cn("py-1", className)} {...props} />
+  );
 }
 
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
-  return <SelectPrimitive.Value data-slot="select-value" className={cn("flex-1 truncate text-left data-placeholder:text-muted-foreground", className)} {...props} />;
+  return (
+    <SelectPrimitive.Value
+      data-slot="select-value"
+      className={cn("flex-1 truncate text-left data-placeholder:text-muted-foreground", className)}
+      {...props}
+    />
+  );
 }
 
-function SelectTrigger({ className, size = "default", children, ...props }: SelectPrimitive.Trigger.Props & { size?: "sm" | "default" }) {
+function SelectTrigger({
+  className,
+  size = "default",
+  children,
+  ...props
+}: SelectPrimitive.Trigger.Props & { size?: "sm" | "default" }) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
@@ -40,7 +53,11 @@ function SelectContent({
   align = "center",
   alignItemWithTrigger = true,
   ...props
-}: SelectPrimitive.Popup.Props & Pick<SelectPrimitive.Positioner.Props, "align" | "side" | "sideOffset" | "alignItemWithTrigger">) {
+}: SelectPrimitive.Popup.Props &
+  Pick<
+    SelectPrimitive.Positioner.Props,
+    "align" | "side" | "sideOffset" | "alignItemWithTrigger"
+  >) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
@@ -72,7 +89,13 @@ function SelectContent({
 }
 
 function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) {
-  return <SelectPrimitive.GroupLabel data-slot="select-label" className={cn("px-2.5 pt-1 pb-1.5 text-xs font-medium text-muted-foreground", className)} {...props} />;
+  return (
+    <SelectPrimitive.GroupLabel
+      data-slot="select-label"
+      className={cn("px-2.5 pt-1 pb-1.5 text-xs font-medium text-muted-foreground", className)}
+      {...props}
+    />
+  );
 }
 
 function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Props) {
@@ -85,7 +108,9 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
       )}
       {...props}
     >
-      <SelectPrimitive.ItemText className="flex flex-1 items-center gap-2 truncate">{children}</SelectPrimitive.ItemText>
+      <SelectPrimitive.ItemText className="flex flex-1 items-center gap-2 truncate">
+        {children}
+      </SelectPrimitive.ItemText>
       <SelectPrimitive.ItemIndicator className="absolute right-2.5 flex size-4 items-center justify-center">
         <CheckIcon />
       </SelectPrimitive.ItemIndicator>
@@ -94,7 +119,22 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
 }
 
 function SelectSeparator({ className, ...props }: SelectPrimitive.Separator.Props) {
-  return <SelectPrimitive.Separator data-slot="select-separator" className={cn("-mx-1.5 my-1.5 h-px bg-outline-variant", className)} {...props} />;
+  return (
+    <SelectPrimitive.Separator
+      data-slot="select-separator"
+      className={cn("-mx-1.5 my-1.5 h-px bg-outline-variant", className)}
+      {...props}
+    />
+  );
 }
 
-export { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue };
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+};

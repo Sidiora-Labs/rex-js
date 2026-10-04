@@ -14,6 +14,7 @@ import {
   buildDemo,
   committedManifest,
   invokeBy,
+  isStaticPage,
   pageUrl,
   readSidecar,
   startDemo,
@@ -48,8 +49,14 @@ interface VitalsPageReport {
 }
 
 interface WebVitalsGlobal {
-  onLCP(report: (metric: LCPMetricWithAttribution) => void, opts: { reportAllChanges: boolean }): void;
-  onCLS(report: (metric: CLSMetricWithAttribution) => void, opts: { reportAllChanges: boolean }): void;
+  onLCP(
+    report: (metric: LCPMetricWithAttribution) => void,
+    opts: { reportAllChanges: boolean },
+  ): void;
+  onCLS(
+    report: (metric: CLSMetricWithAttribution) => void,
+    opts: { reportAllChanges: boolean },
+  ): void;
   onINP(
     report: (metric: INPMetricWithAttribution) => void,
     opts: { reportAllChanges: boolean; durationThreshold: number },
@@ -154,6 +161,13 @@ async function openAndClosePalette(page: Page): Promise<string> {
   return "opened and dismissed the palette";
 }
 
+async function typeIntoForm(page: Page): Promise<string> {
+  const field = page.locator("main form input:not([type=hidden]), main form textarea").first();
+  await field.click({ timeout: STEP_TIMEOUT });
+  await page.keyboard.type("ok");
+  return "typed into the first form field";
+}
+
 async function invokeReversible(
   page: Page,
   base: string,
@@ -161,7 +175,9 @@ async function invokeReversible(
   pageInfo: ManifestPage,
 ): Promise<string | null> {
   const payload = await readSidecar(page);
-  const allowed = new Set(payload.actions.filter((entry) => entry.allowed).map((entry) => entry.id));
+  const allowed = new Set(
+    payload.actions.filter((entry) => entry.allowed).map((entry) => entry.id),
+  );
   const declared = pageInfo.actions
     .map((id) => manifest.actions.find((entry) => entry.id === id))
     .find((entry) => entry !== undefined && entry.effect === "reversible" && allowed.has(entry.id));
@@ -227,6 +243,13 @@ async function measurePage(
       content: `${ATTRIBUTION_BUILD}\n;(${registerVitals.toString()})(${String(INP_DURATION_THRESHOLD)});`,
     });
     await page.goto(url);
+    if (isStaticPage(pageInfo)) {
+      await waitForSidecar(page, pageInfo.id, { mirror: false });
+      const interactions = [await typeIntoForm(page)];
+      await settleFrames(page);
+      const metrics = await finalizeVitals(page);
+      return { page: pageInfo.id, url, interactions, metrics, failures: judge(metrics) };
+    }
     await waitForSidecar(page, pageInfo.id);
     const interactions = [await openAndClosePalette(page)];
     const invoked = await invokeReversible(page, base, manifest, pageInfo);

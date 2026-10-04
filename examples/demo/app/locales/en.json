@@ -1,0 +1,13 @@
+{
+  "about.title": "About",
+  "about.heading": "Rex wallet demo",
+  "tokens.title": "Tokens",
+  "tokens.heading": "Token prices",
+  "tokens.watch": "Watch",
+  "tokens.watching": "{count, plural, =0 {No tokens watched} one {# token watched} other {# tokens watched}}",
+  "embed.title": "Embed",
+  "embed.heading": "Watched tokens as web components",
+  "locale.heading": "Language",
+  "locale.en": "English",
+  "locale.de": "Deutsch"
+}

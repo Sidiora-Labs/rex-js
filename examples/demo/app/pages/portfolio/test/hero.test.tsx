@@ -44,7 +44,10 @@ describe("portfolio hero region", () => {
     await waitFor(() => expect(total(view)).toBe("$76580.0002"));
     const server = testServer(app);
     const input = { amount: "1" };
-    const grant = (await procedureOf(server.client, CONFIRM_PROCEDURE)({
+    const grant = (await procedureOf(
+      server.client,
+      CONFIRM_PROCEDURE,
+    )({
       action: "send",
       input,
     })) as { readonly token: string };
