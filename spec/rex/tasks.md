@@ -64,7 +64,7 @@
     - Append one audit record after every call including handler failures, with effect and duration.
     - Write src/server/router.test.ts using call() from @orpc/server covering allowed, forbidden, validation failure, confirmation flow and audit records for success and failure.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 15.1, 15.2, 15.3, 16.1, 16.2, 16.3_
-  - [ ] 1.3 Implement createRexServer on Hono
+  - [x] 1.3 Implement createRexServer on Hono
     - Implement src/server/index.ts: createRexServer({registry, ledger, actor(request) -> Actor}) returning a Hono app with RPCHandler mounted at /rex/rpc, GET /rex/manifest returning buildManifest(registry), GET /rex/health, and the x-rex-density header copied into context.
     - Export the RouterClient type for the built router so the client package can type the oRPC client from the app registry.
     - Write src/server/server.test.ts exercising the app with app.request for manifest, health, an allowed action, a forbidden action and the density header.
