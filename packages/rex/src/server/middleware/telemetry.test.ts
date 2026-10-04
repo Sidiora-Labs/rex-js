@@ -280,7 +280,9 @@ describe("span", () => {
     }));
     expect(ids).toEqual({ traceId: null, spanId: null });
     await expect(
-      untraced.span(SPAN_LOADER, { [ATTR_PAGE_ID]: "home" }, () => Promise.reject(new Error("down"))),
+      untraced.span(SPAN_LOADER, { [ATTR_PAGE_ID]: "home" }, () =>
+        Promise.reject(new Error("down")),
+      ),
     ).rejects.toThrow("down");
     expect(lines).toEqual([
       {
@@ -395,7 +397,9 @@ describe("installTelemetry", () => {
     expect(form.status).toBe(503);
     const render = await app.request(`${ORIGIN}/items/42`, { method: "HEAD" });
     expect(render.status).toBe(404);
-    expect(exporter.getFinishedSpans().map((span) => [span.name, span.attributes, span.status])).toEqual([
+    expect(
+      exporter.getFinishedSpans().map((span) => [span.name, span.attributes, span.status]),
+    ).toEqual([
       [
         SPAN_FORM,
         { [ATTR_ACTION_ID]: "echo", [ATTR_OUTCOME]: "HTTP_503" },

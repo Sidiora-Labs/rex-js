@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -19,7 +20,7 @@ import { createElement } from "react";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SSR_ATTRIBUTE } from "../client/hydrate.ts";
 import { view, type LazyPageModuleSet, type LoadedPageModules } from "../client/page.tsx";
-import { action } from "../core/action.ts";
+import { action, type AnyAction } from "../core/action.ts";
 import { actor } from "../core/actor.ts";
 import { page, type AnyPage } from "../core/page.ts";
 import { always } from "../core/policy.ts";
@@ -32,13 +33,40 @@ import { SIDECAR_MIME_TYPE } from "../core/protocol.ts";
 import { buildApp, SERVER_FILE, SERVING_PREFIX } from "../cli/commands/build.ts";
 import { HOME_PAGE } from "../cli/commands/new.ts";
 import { EXIT_OK, run, type RexCliIO } from "../cli/index.ts";
-import { CSP_HEADER, createRexServer, memoryLedger, type RegistryRouterClient } from "./index.ts";
 import {
+  CSP_HEADER,
+  createRexServer,
+  memoryLedger,
+  type RegistryRouterClient,
+  type RexServerRegistry,
+} from "./index.ts";
+import * as nodeAdapter from "./adapters/node.ts";
+import {
+  createNodeApp,
   isApiPath,
   isPageRoutePath,
   startNodeServer,
   type RunningNodeServer,
 } from "./adapters/node.ts";
+import {
+  PRERENDER_LIST_FILE,
+  PRERENDER_LIST_VERSION,
+  RexStaticPageError,
+  STATIC_HEADER,
+  parsePrerenderList,
+  serializePrerenderList,
+  staticCacheFor,
+  type PrerenderList,
+  type StaticPageEntry,
+} from "./adapters/static-cache.ts";
+import * as nodeEntry from "./node.ts";
+import {
+  createPrerenderedNodeApp,
+  installNodeStaticPages,
+  nodeStaticStore,
+  readPrerenderList,
+  startPrerenderedNodeServer,
+} from "./node.ts";
 import { RENDER_KIND_HEADER, RENDER_PAGE_HEADER } from "./routes/render.ts";
 import { createRexRenderer, registerPageRenderer } from "./ssr.ts";
 
@@ -150,7 +178,9 @@ describe("startNodeServer", () => {
     expect(() => startNodeServer(app, { port: 0, clientDir: join(clientDir, "assets") })).toThrow(
       "has no index.html",
     );
-    expect(() => startNodeServer(app, { port: -1, clientDir })).toThrow(expect.objectContaining({ name: "RexError", code: "REX407" }));
+    expect(() => startNodeServer(app, { port: -1, clientDir })).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX407" }),
+    );
   });
 
   it("classifies API and page route paths", () => {
@@ -262,6 +292,294 @@ describe("startNodeServer with a registered page renderer", () => {
     expect((await fetch(`${running.url}/assets/missing.js`)).status).toBe(404);
     const health = await fetch(`${running.url}/rex/health`);
     expect(await health.json()).toEqual({ status: "ok" });
+  });
+});
+
+describe("node.ts re-exports", () => {
+  it("re-exports the node adapter unchanged and aliases createPrerenderedNodeApp to createNodeApp", () => {
+    for (const [name, value] of Object.entries(nodeAdapter)) {
+      expect(nodeEntry[name as keyof typeof nodeEntry], name).toBe(value);
+    }
+    expect(createPrerenderedNodeApp).toBe(createNodeApp);
+  });
+});
+
+describe("nodeStaticStore", () => {
+  it("reads null for a page that was never written and writes pages under the client directory", async () => {
+    const clientDir = mkdtempSync(join(tmpdir(), "rex-node-store-"));
+    try {
+      const store = nodeStaticStore(clientDir);
+      expect(Object.isFrozen(store)).toBe(true);
+      expect(await store.read("/")).toBeNull();
+      expect(await store.read("/guides/intro")).toBeNull();
+      await store.write("/guides/intro/", "<html>intro</html>");
+      expect(readFileSync(join(clientDir, "guides", "intro", "index.html"), "utf8")).toBe(
+        "<html>intro</html>",
+      );
+      expect(await store.read("/guides/intro")).toBe("<html>intro</html>");
+      expect(await store.read("/guides/intro/")).toBe("<html>intro</html>");
+      await store.write("/guides/intro", "<html>intro v2</html>");
+      expect(await store.read("/guides/intro")).toBe("<html>intro v2</html>");
+      expect(readdirSync(join(clientDir, "guides", "intro"))).toEqual(["index.html"]);
+      await store.write("/", "<html>home</html>");
+      expect(readFileSync(join(clientDir, "index.html"), "utf8")).toBe("<html>home</html>");
+      expect(await store.read("/")).toBe("<html>home</html>");
+    } finally {
+      rmSync(clientDir, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses unsafe page paths with REX404 and surfaces read failures other than a missing file", async () => {
+    const clientDir = mkdtempSync(join(tmpdir(), "rex-node-store-"));
+    try {
+      const store = nodeStaticStore(clientDir);
+      const unsafe = expect.objectContaining({ name: "RexError", code: "REX404" });
+      await expect(store.read("/notes/%2E%2E")).rejects.toThrow(unsafe);
+      await expect(store.write("/notes/a%2Fb", "<html></html>")).rejects.toThrow(unsafe);
+      await expect(store.read("notes")).rejects.toThrow(unsafe);
+      expect(existsSync(join(clientDir, "notes"))).toBe(false);
+      mkdirSync(join(clientDir, "blocked", "index.html"), { recursive: true });
+      await expect(store.read("/blocked")).rejects.toThrow(
+        expect.objectContaining({ code: "EISDIR" }),
+      );
+    } finally {
+      rmSync(clientDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("readPrerenderList", () => {
+  it("answers an empty list for a missing file, parses a written list and refuses a malformed one", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "rex-node-list-"));
+    try {
+      const file = join(dir, PRERENDER_LIST_FILE);
+      expect(await readPrerenderList(file)).toEqual({ version: PRERENDER_LIST_VERSION, pages: [] });
+      const landingEntry: StaticPageEntry = {
+        path: "/landing/",
+        page: "landing",
+        render: "static",
+        revalidate: null,
+        file: "landing/index.html",
+        generatedAt: 1_700_000_000_000,
+      };
+      const newsEntry: StaticPageEntry = {
+        path: "/news",
+        page: "news",
+        render: "ssg",
+        revalidate: 60,
+        file: "news/index.html",
+        generatedAt: 1_700_000_000_001,
+      };
+      const list: PrerenderList = {
+        version: PRERENDER_LIST_VERSION,
+        pages: [landingEntry, newsEntry],
+      };
+      writeFileSync(file, serializePrerenderList(list));
+      const read = await readPrerenderList(file);
+      expect(read).toEqual(parsePrerenderList(list));
+      expect(read.pages.map((entry) => entry.path)).toEqual(["/landing", "/news"]);
+      expect(Object.isFrozen(read)).toBe(true);
+      expect(Object.isFrozen(read.pages)).toBe(true);
+      const malformed = expect.objectContaining({ name: "RexError", code: "REX404" });
+      writeFileSync(file, JSON.stringify({ version: 2, pages: [] }));
+      await expect(readPrerenderList(file)).rejects.toThrow(malformed);
+      writeFileSync(
+        file,
+        JSON.stringify({ version: 1, pages: [{ ...landingEntry, file: "index.html" }] }),
+      );
+      await expect(readPrerenderList(file)).rejects.toThrow("file must be landing/index.html");
+      writeFileSync(file, "{not json");
+      await expect(readPrerenderList(file)).rejects.toThrow(SyntaxError);
+      await expect(readPrerenderList(dir)).rejects.toThrow(
+        expect.objectContaining({ code: "EISDIR" }),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("installNodeStaticPages", () => {
+  const LANDING_HTML =
+    '<!doctype html><html lang="en"><head><title>Landing</title></head><body><main data-rex-page="landing">Join the list</main></body></html>';
+  const NEWS_HTML =
+    '<!doctype html><html lang="en"><head><title>News</title></head><body><main data-rex-page="news">Morning edition</main></body></html>';
+  const landing = page("landing", {
+    route: "/landing",
+    render: "static",
+    chrome: { title: "Landing" },
+  });
+  const news = page("news", {
+    route: "/news",
+    render: "ssg",
+    revalidate: 1,
+    chrome: { title: "News" },
+  });
+  const live = page("live", { route: "/live", chrome: { title: "Live" } });
+  const landingEntry: StaticPageEntry = {
+    path: "/landing",
+    page: "landing",
+    render: "static",
+    revalidate: null,
+    file: "landing/index.html",
+    generatedAt: Date.now(),
+  };
+  const newsEntry: StaticPageEntry = {
+    path: "/news",
+    page: "news",
+    render: "ssg",
+    revalidate: 1,
+    file: "news/index.html",
+    generatedAt: Date.now() - 60_000,
+  };
+  let outDir: string;
+  let clientDir: string;
+  let listFile: string;
+
+  function serverFor(registry: RexServerRegistry<AnyAction>) {
+    return createRexServer({
+      registry,
+      ledger: memoryLedger(),
+      actor: () => actor({ id: "alice" }),
+      app: "node-static",
+    });
+  }
+
+  beforeAll(async () => {
+    outDir = mkdtempSync(join(tmpdir(), "rex-node-static-"));
+    clientDir = join(outDir, "client");
+    mkdirSync(clientDir);
+    writeFileSync(join(clientDir, "index.html"), INDEX_HTML);
+    const store = nodeStaticStore(clientDir);
+    await store.write(landingEntry.path, LANDING_HTML);
+    await store.write(newsEntry.path, NEWS_HTML);
+    listFile = join(outDir, PRERENDER_LIST_FILE);
+    writeFileSync(
+      listFile,
+      serializePrerenderList({ version: PRERENDER_LIST_VERSION, pages: [landingEntry, newsEntry] }),
+    );
+  });
+
+  afterAll(() => {
+    rmSync(outDir, { recursive: true, force: true });
+  });
+
+  it("reads the list from its file, binds the cache to the registry and serves the prerendered pages through the node server", async () => {
+    const registry = createRegistry().register(landing, news, live).freeze();
+    const failures: (readonly [unknown, StaticPageEntry])[] = [];
+    const cache = await installNodeStaticPages(registry, {
+      clientDir,
+      list: listFile,
+      onError: (error, entry) => {
+        failures.push([error, entry]);
+      },
+    });
+    expect(staticCacheFor(registry)).toBe(cache);
+    expect(cache.size).toBe(2);
+    expect(cache.entries().map((entry) => entry.path)).toEqual(["/landing", "/news"]);
+    expect(cache.has("/landing/")).toBe(true);
+    expect(cache.has("/live")).toBe(false);
+    const running = await startPrerenderedNodeServer(serverFor(registry), {
+      port: 0,
+      clientDir,
+      hostname: "127.0.0.1",
+      registry,
+    });
+    try {
+      expect(running.url).toBe(`http://127.0.0.1:${running.port}`);
+      const hit = await fetch(`${running.url}/landing`, { headers: { accept: "text/html" } });
+      expect(hit.status).toBe(200);
+      expect(hit.headers.get(STATIC_HEADER)).toBe("hit");
+      expect(hit.headers.get(RENDER_KIND_HEADER)).toBe("page");
+      expect(hit.headers.get(RENDER_PAGE_HEADER)).toBe("landing");
+      expect(hit.headers.get("content-type")).toContain("text/html");
+      const html = await hit.text();
+      expect(html).toContain('<main data-rex-page="landing">Join the list</main>');
+      expect(html).toContain('data-rex-screen="desktop"');
+      const stale = await fetch(`${running.url}/news/`, { headers: { accept: "text/html" } });
+      expect(stale.status).toBe(200);
+      expect(stale.headers.get(STATIC_HEADER)).toBe("stale");
+      expect(stale.headers.get(RENDER_PAGE_HEADER)).toBe("news");
+      expect(await stale.text()).toContain("Morning edition");
+      await cache.settled();
+      expect(failures).toHaveLength(1);
+      const [error, entry] = failures[0] as readonly [unknown, StaticPageEntry];
+      expect(error).toBeInstanceOf(RexStaticPageError);
+      expect((error as RexStaticPageError).code).toBe("REX405");
+      expect((error as RexStaticPageError).page).toBe("news");
+      expect((error as RexStaticPageError).message).toContain("no page renderer is registered");
+      expect(entry).toEqual(newsEntry);
+      expect(readFileSync(join(clientDir, "news", "index.html"), "utf8")).toBe(NEWS_HTML);
+      const spa = await fetch(`${running.url}/live`);
+      expect(spa.status).toBe(200);
+      expect(spa.headers.has(STATIC_HEADER)).toBe(false);
+      expect(await spa.text()).toBe(INDEX_HTML);
+      const health = await fetch(`${running.url}/rex/health`);
+      expect(await health.json()).toEqual({ status: "ok" });
+    } finally {
+      await running.close();
+    }
+  });
+
+  it("takes an inline list, answers a missing list file with no pages and refuses a malformed list with REX404", async () => {
+    const registry = createRegistry().register(landing, live).freeze();
+    const inline = await installNodeStaticPages(registry, {
+      clientDir,
+      list: { version: PRERENDER_LIST_VERSION, pages: [landingEntry] },
+    });
+    expect(staticCacheFor(registry)).toBe(inline);
+    expect(inline.entries()).toEqual([landingEntry]);
+    const outer = createPrerenderedNodeApp(serverFor(registry), clientDir, registry);
+    const hit = await outer.request("/landing", { headers: { accept: "text/html" } });
+    expect(hit.status).toBe(200);
+    expect(hit.headers.get(STATIC_HEADER)).toBe("hit");
+    expect(hit.headers.get(RENDER_PAGE_HEADER)).toBe("landing");
+    expect(await hit.text()).toContain("Join the list");
+    const spa = await outer.request("/live");
+    expect(spa.status).toBe(200);
+    expect(spa.headers.has(STATIC_HEADER)).toBe(false);
+    expect(await spa.text()).toBe(INDEX_HTML);
+    const bare = { entities: [], actions: [], pages: [], policies: [] };
+    const empty = await installNodeStaticPages(bare, {
+      clientDir,
+      list: join(outDir, "missing.json"),
+    });
+    expect(empty.size).toBe(0);
+    expect(empty.entries()).toEqual([]);
+    expect(staticCacheFor(bare)).toBe(empty);
+    const malformed = expect.objectContaining({ name: "RexError", code: "REX404" });
+    await expect(
+      installNodeStaticPages(bare, {
+        clientDir,
+        list: { version: PRERENDER_LIST_VERSION, pages: [{ ...landingEntry, file: "index.html" }] },
+      }),
+    ).rejects.toThrow(malformed);
+    writeFileSync(join(outDir, "broken.json"), JSON.stringify({ version: 0, pages: [] }));
+    await expect(
+      installNodeStaticPages(bare, { clientDir, list: join(outDir, "broken.json") }),
+    ).rejects.toThrow(malformed);
+    expect(staticCacheFor(bare)).toBe(empty);
+  });
+
+  it("starts on localhost without a hostname and refuses a bad port or client directory up front", async () => {
+    const registry = createRegistry().register(landing).freeze();
+    const app = serverFor(registry);
+    const running = await startPrerenderedNodeServer(app, { port: 0, clientDir, registry });
+    try {
+      expect(running.port).toBeGreaterThan(0);
+      expect(running.url).toBe(`http://localhost:${running.port}`);
+      const health = await fetch(`${running.url}/rex/health`);
+      expect(health.status).toBe(200);
+      expect(await health.json()).toEqual({ status: "ok" });
+    } finally {
+      await running.close();
+    }
+    expect(() =>
+      startPrerenderedNodeServer(app, { port: 0, clientDir: join(outDir, "nope"), registry }),
+    ).toThrow(expect.objectContaining({ name: "RexError", code: "REX406" }));
+    expect(() => startPrerenderedNodeServer(app, { port: 70_000, clientDir, registry })).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX407" }),
+    );
   });
 });
 

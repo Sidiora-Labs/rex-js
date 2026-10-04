@@ -196,7 +196,9 @@ describe("shortcut matching", () => {
     expect(
       matchesShortcut({ ...plain, key: "s", ctrlKey: true, shiftKey: true, altKey: true }, save),
     ).toBe(false);
-    expect(matchesShortcut({ ...plain, key: "d", ctrlKey: true, shiftKey: true }, save)).toBe(false);
+    expect(matchesShortcut({ ...plain, key: "d", ctrlKey: true, shiftKey: true }, save)).toBe(
+      false,
+    );
     expect(matchesShortcut({ ...plain, key: "/" }, parseShortcut("/"))).toBe(true);
     expect(isModShortcut({ ...plain, key: "k", ctrlKey: true }, "k")).toBe(true);
     expect(isModShortcut({ ...plain, key: "k", metaKey: true }, "k")).toBe(true);
@@ -222,7 +224,9 @@ describe("useShortcuts", () => {
     const { ledger, store } = mount("/");
     expect(await press(window, { key: "x", code: "KeyX", altKey: true })).toBe(true);
     expect(await press(window, { key: "h", code: "KeyH", altKey: true })).toBe(false);
-    await waitFor(() => expect(store.get("portfolio")).toMatchObject({ actionId: "hide-dust", ok: true }));
+    await waitFor(() =>
+      expect(store.get("portfolio")).toMatchObject({ actionId: "hide-dust", ok: true }),
+    );
     expect(await audited(ledger)).toEqual(["hide-dust:ok"]);
   });
 
@@ -252,7 +256,13 @@ describe("useShortcuts", () => {
     expect(await press(note, { key: "Enter", ctrlKey: true })).toBe(false);
     const dialog = await screen.findByRole("alertdialog", { name: "Confirm Send" });
     await click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(await press(screen.getByRole("button", { name: "Plain" }), { key: "h", code: "KeyH", altKey: true })).toBe(false);
+    expect(
+      await press(screen.getByRole("button", { name: "Plain" }), {
+        key: "h",
+        code: "KeyH",
+        altKey: true,
+      }),
+    ).toBe(false);
     await waitAudited(ledger, ["hide-dust:ok"]);
   });
 

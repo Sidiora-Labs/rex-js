@@ -226,7 +226,12 @@ afterEach(() => {
 describe("palette constants", () => {
   it("names the palette and its reserved chord the way the shell trigger uses them", () => {
     expect(PALETTE_LABEL).toBe("Command palette");
-    expect(parseShortcut(PALETTE_SHORTCUT)).toEqual({ mod: true, shift: false, alt: false, key: "k" });
+    expect(parseShortcut(PALETTE_SHORTCUT)).toEqual({
+      mod: true,
+      shift: false,
+      alt: false,
+      key: "k",
+    });
     expect(RESERVED_SHORTCUTS).toContain(PALETTE_SHORTCUT);
     expect(paletteTrigger()).toMatchObject({ label: PALETTE_LABEL, shortcut: PALETTE_SHORTCUT });
     expect(paletteValue("action", "send")).toBe("action:send");
