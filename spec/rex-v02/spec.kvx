@@ -1276,13 +1276,13 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.6.1]
 title = "Core Web Vitals and Lighthouse gate on the built demo"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 6
 requires = ["1.1", "5.2"]
 reqs = ["34.1", "34.2"]
 do_1 = "Add examples/demo/e2e/vitals.spec.ts measuring LCP, CLS and INP with the web-vitals attribution build on every page (including an interaction) with the thresholds in [design] vitals_gate, and e2e/lighthouse.ts running lighthouse programmatically per page with the score thresholds; both write JSON to e2e/report; add a test:vitals script and the dependencies."
-touches = ["examples/demo/e2e/vitals.spec.ts", "examples/demo/e2e/lighthouse.ts", "examples/demo/e2e/report", "examples/demo/playwright.config.ts"]
+touches = ["examples/demo/e2e/vitals.spec.ts", "examples/demo/e2e/lighthouse.ts", "examples/demo/playwright.config.ts"]
 verify_cmd = "pnpm -C examples/demo test:vitals"
 gate_kind = "planned"
 max_builds = 1
