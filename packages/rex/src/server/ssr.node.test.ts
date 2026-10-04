@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import { Suspense, createElement, use } from "react";
 import { describe, expect, it } from "vitest";
 import { z } from "zod/mini";
 import type { RexEntryBundle } from "../client/entry.tsx";
@@ -75,6 +75,62 @@ const signupBundle: RexEntryBundle = {
   ],
 };
 
+const waitlist = page("waitlist", {
+  route: "/waitlist",
+  actions: [subscribe],
+  chrome: { title: "Waitlist" },
+  regions: ["form"],
+});
+
+const SUSPENDED_MS = 40;
+let opening: Promise<void> | null = null;
+
+function waitlistOpens(): Promise<void> {
+  opening ??= new Promise<void>((resolve) => {
+    setTimeout(resolve, SUSPENDED_MS);
+  });
+  return opening;
+}
+
+const WAITLIST_SEATS = 400;
+
+function OpenedForm() {
+  use(waitlistOpens());
+  return createElement(
+    "div",
+    null,
+    createElement(
+      "ol",
+      { "data-waitlist-seats": "" },
+      Array.from({ length: WAITLIST_SEATS }, (_, seat) =>
+        createElement("li", { key: seat }, `Seat ${seat + 1} on the waitlist is still open`),
+      ),
+    ),
+    createElement(ActionForm, { action: subscribe }),
+  );
+}
+
+const WaitlistForm = region("form", () =>
+  createElement(
+    Suspense,
+    { fallback: createElement("p", { "data-waitlist-pending": "" }, "Opening the waitlist") },
+    createElement(OpenedForm),
+  ),
+);
+const waitlistRegistry = createRegistry().register(subscribe, waitlist).freeze();
+const waitlistBundle: RexEntryBundle = {
+  registry: waitlistRegistry,
+  manifest: buildManifest(waitlistRegistry, { app: "ssr-suspended" }),
+  pages: [
+    lazySet(waitlist, {
+      view: view(() => createElement(WaitlistForm)),
+      states: statesFor("Waitlist"),
+      regions: { form: WaitlistForm },
+      overlays: {},
+    }),
+  ],
+};
+
 const owner = actor({ id: "owner", roles: ["owner"], permissions: ["notes.write"] });
 
 function csrfFieldOf(html: string): string | null {
@@ -92,5 +148,36 @@ describe("the CSRF token in server-rendered forms without a DOM", () => {
     );
     expect(result.kind).toBe("page");
     expect(csrfFieldOf(await new Response(result.body).text())).toBe("");
+  });
+});
+
+describe("a suspended region in a server-rendered document", () => {
+  it("renders the form inline and visible once its Suspense boundary resolves", async () => {
+    const renderer = createRexRenderer({ bundle: waitlistBundle });
+    const result = await renderer.render(
+      new Request("http://localhost/waitlist", { headers: { accept: "text/html" } }),
+      { actor: owner, density: DEFAULT_DENSITY, nonce: "0123456789abcdef0123456789abcdef" },
+    );
+    expect(result.kind).toBe("page");
+    const html = await new Response(result.body).text();
+    expect(html).not.toContain("Opening the waitlist");
+    expect(html).not.toContain("data-waitlist-pending");
+    expect(html).not.toMatch(/<div hidden id="S:/);
+    expect(html).not.toContain("$RC");
+    expect(html).not.toContain("data-rex-page-loading");
+    expect(html).not.toContain("<!--$?-->");
+    expect(html).toContain(`Seat ${WAITLIST_SEATS} on the waitlist is still open`);
+    const regionAt = html.indexOf('data-rex-region="waitlist/form"');
+    const formTag = /<form\b[^>]*\bdata-rex-form="waitlist\/subscribe"[^>]*>/.exec(html);
+    expect(formTag?.[0]).toContain('method="post"');
+    expect(formTag?.[0]).toContain('action="/rex/form/subscribe"');
+    const formAt = formTag?.index ?? -1;
+    const submitAt = html.indexOf('<button type="submit"', formAt);
+    const sectionEnd = html.indexOf("</section>", regionAt);
+    expect(regionAt).toBeGreaterThan(-1);
+    expect(formAt).toBeGreaterThan(regionAt);
+    expect(submitAt).toBeGreaterThan(formAt);
+    expect(sectionEnd).toBeGreaterThan(submitAt);
+    expect(csrfFieldOf(html)).toBe("");
   });
 });

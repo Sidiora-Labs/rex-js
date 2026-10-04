@@ -27,10 +27,12 @@ function selectedToken(view: RexRenderResult): string | null {
   );
 }
 
-function sendButton(view: RexRenderResult): HTMLButtonElement {
-  const found = view.container.querySelector('main [data-rex="send/send"]');
-  expect(found).not.toBeNull();
-  return found as HTMLButtonElement;
+async function sendButton(view: RexRenderResult): Promise<HTMLButtonElement> {
+  return waitFor(() => {
+    const found = view.container.querySelector('main [data-rex="send/send"]');
+    expect(found).not.toBeNull();
+    return found as HTMLButtonElement;
+  });
 }
 
 function transfer(view: RexRenderResult): Element | null {
@@ -86,8 +88,8 @@ describe("send page", () => {
       expect(entry.allowed).toBe(false);
       expect(entry.reason).toEqual(expect.any(String));
     }
-    expect(sendButton(view).getAttribute("data-rex-allowed")).toBe("false");
-    expect(sendButton(view).disabled).toBe(true);
+    expect((await sendButton(view)).getAttribute("data-rex-allowed")).toBe("false");
+    expect((await sendButton(view)).disabled).toBe(true);
   });
 
   it("sends a typed amount after the irreversible confirmation", async () => {
@@ -105,7 +107,7 @@ describe("send page", () => {
       ),
     );
 
-    await click(sendButton(view));
+    await click(await sendButton(view));
     const dialog = await waitFor(() => {
       const found = view.container.querySelector('[data-rex-confirm="send/send"]');
       expect(found).not.toBeNull();
@@ -131,7 +133,7 @@ describe("send page", () => {
     const app = walletApp(owner);
     const view = await renderPage(app, "send");
     await waitFor(() => expect(selectedToken(view)).toBe("ETH"));
-    await click(sendButton(view));
+    await click(await sendButton(view));
     const cancel = await waitFor(() => {
       const found = view.container.querySelector('[data-rex-confirm-cancel="send/send"]');
       expect(found).not.toBeNull();

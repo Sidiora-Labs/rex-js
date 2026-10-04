@@ -1979,14 +1979,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.9.6]
 title = "The demo walks green end to end: no-JS forms visible without JavaScript, the sidecar mirror and hydration in step with the server, portfolio contrast, INP on SSR pages and the demo unit tests"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 9
 requires = ["9.5", "7.19", "7.21"]
 reqs = ["35.1", "37.4", "4.3"]
 do_1 = "The qualification.951 follow-ups: server/ssr.ts waits for allReady (or inlines completed boundaries) when the document is requested without JavaScript so a form inside a streamed Suspense boundary renders visible and the Send submit is reachable without JavaScript (ssr tests cover a suspended region); client/agent/sidecar.tsx writes window.__rex in the same commit as the rex-page script and on the development bundles that rex build shipped before 7.19 the first client render of the sidecar differed from the server script (React's hydration warning on /), while on production bundles the hydration render is byte-identical to the server script (measured on the lab build of 22ea8fe), so the mirror check runs on production bundles first and window.__rex is written in the same commit as the script only if it still lags, so the walk's mirror check and React's hydration both see one payload (a test renders the demo portfolio page on the server and hydrates it in happy-dom with no hydration warning); the demo's SSR vitals path records INP from first-input like the static path so embed no longer times out."
 do_2 = "The portfolio page passes Lighthouse color-contrast in both themes (theme.css tokens, not per-element overrides) and its performance score is re-measured on the production bundles of 7.19; the demo unit tests in portfolio/test and send/test pass on the redesign (qualification.734: the actions region waits for the page loaders, the contact picker shows its empty state); the serial demo suites walk every page including send and tokens; then the unchanged 6.4, 9.5 and 2.7 verify_cmds pass and qualification.641, 734, 951 close."
-touches = ["packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/ssr.node.test.ts", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/sidecar.test.tsx", "packages/rex/src/client/hydrate.ts", "packages/rex/src/client/screen.ts", "examples/demo"]
+touches = ["packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.node.test.ts", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/sidecar.test.tsx", "examples/demo"]
 verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server/ssr.test.tsx src/server/ssr.node.test.ts src/client && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check && pnpm -C examples/demo test:unit && pnpm -C examples/demo test"
 gate_kind = "planned"
 max_builds = 1

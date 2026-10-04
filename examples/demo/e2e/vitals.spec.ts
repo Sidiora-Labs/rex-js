@@ -69,10 +69,30 @@ const ATTRIBUTION_BUILD = readFileSync(
   "utf8",
 );
 
+interface FirstInputReading {
+  readonly duration: number;
+  readonly name: string;
+  readonly inputDelay: number;
+}
+
 function registerVitals(durationThreshold: number): void {
-  const scope = window as unknown as { webVitals: WebVitalsGlobal; __rexVitals: VitalStore };
+  const scope = window as unknown as {
+    webVitals: WebVitalsGlobal;
+    __rexVitals: VitalStore;
+    __rexFirstInput: FirstInputReading | null;
+  };
   const store: VitalStore = {};
   scope.__rexVitals = store;
+  scope.__rexFirstInput = null;
+  new PerformanceObserver((list) => {
+    for (const entry of list.getEntries() as (PerformanceEntry & { processingStart: number })[]) {
+      scope.__rexFirstInput ??= {
+        duration: entry.duration,
+        name: entry.name,
+        inputDelay: entry.processingStart - entry.startTime,
+      };
+    }
+  }).observe({ type: "first-input", buffered: true });
   const opts = { reportAllChanges: true };
   scope.webVitals.onLCP((metric) => {
     store.LCP = {
@@ -347,13 +367,39 @@ async function finalizeVitals(page: Page): Promise<VitalStore> {
   });
   await page.waitForFunction(
     () => {
-      const store = (window as unknown as { __rexVitals?: VitalStore }).__rexVitals;
-      return store?.LCP !== undefined && store.CLS !== undefined && store.INP !== undefined;
+      const scope = window as unknown as {
+        __rexVitals?: VitalStore;
+        __rexFirstInput?: FirstInputReading | null;
+      };
+      const store = scope.__rexVitals;
+      const interacted = store?.INP !== undefined || (scope.__rexFirstInput ?? null) !== null;
+      return store?.LCP !== undefined && store.CLS !== undefined && interacted;
     },
     undefined,
     { timeout: STEP_TIMEOUT },
   );
-  return page.evaluate(() => (window as unknown as { __rexVitals: VitalStore }).__rexVitals);
+  const read = await page.evaluate(() => {
+    const scope = window as unknown as {
+      __rexVitals: VitalStore;
+      __rexFirstInput: FirstInputReading | null;
+    };
+    return { metrics: scope.__rexVitals, firstInput: scope.__rexFirstInput };
+  });
+  const metrics: VitalStore = { ...read.metrics };
+  if (metrics.INP === undefined && read.firstInput !== null) {
+    const value = read.firstInput.duration;
+    metrics.INP = {
+      value,
+      rating: rated(value, 200, 500),
+      entries: 1,
+      attribution: {
+        interactionType: read.firstInput.name,
+        inputDelay: read.firstInput.inputDelay,
+        source: "first-input",
+      },
+    };
+  }
+  return metrics;
 }
 
 function judge(metrics: VitalStore): string[] {

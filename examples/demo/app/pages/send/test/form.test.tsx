@@ -112,24 +112,34 @@ describe("send form region", () => {
   it("picks a recipient by typing in the contact picker and submitting", async () => {
     const view = await renderRegion(walletApp(owner), "send", "form");
     await waitFor(() => expect(selected(view, "contact")).toBe("Alice"));
-    const dialog = await openSheet(view, CONTACT_SHEET);
-    const query = within(dialog).getByLabelText("Type a name or address, then press Enter");
+    await openSheet(view, CONTACT_SHEET);
+    const query = (): HTMLElement =>
+      within(sheet(view, CONTACT_SHEET) as HTMLElement).getByLabelText(
+        "Type a name or address, then press Enter",
+      );
+    await waitFor(() => expect(query().isConnected).toBe(true));
 
     await act(async () => {
-      fireEvent.change(query, { target: { value: "zzz" } });
+      fireEvent.change(query(), { target: { value: "zzz" } });
     });
-    expect(within(dialog).getByText('No contact matches "zzz"')).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        within(sheet(view, CONTACT_SHEET) as HTMLElement).getByText('No contact matches "zzz"'),
+      ).toBeTruthy(),
+    );
 
     await act(async () => {
-      fireEvent.change(query, { target: { value: "car" } });
+      fireEvent.change(query(), { target: { value: "car" } });
     });
-    expect(
-      [...dialog.querySelectorAll("[data-rex-choice]")].map((element) =>
-        element.getAttribute("data-rex-choice"),
-      ),
-    ).toEqual(["carol"]);
+    await waitFor(() =>
+      expect(
+        [...(sheet(view, CONTACT_SHEET)?.querySelectorAll("[data-rex-choice]") ?? [])].map(
+          (element) => element.getAttribute("data-rex-choice"),
+        ),
+      ).toEqual(["carol"]),
+    );
     await act(async () => {
-      fireEvent.submit(query.closest("form") as HTMLFormElement);
+      fireEvent.submit(query().closest("form") as HTMLFormElement);
     });
     await waitFor(() => expect(selected(view, "contact")).toBe("Carol"));
     await waitFor(() => expect(sheet(view, CONTACT_SHEET)).toBeNull());
