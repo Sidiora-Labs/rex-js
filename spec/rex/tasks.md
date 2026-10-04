@@ -23,7 +23,7 @@
     - Implement src/core/store.ts: Store interface with get(id), list({filter, page, size}), put(record), delete(id) and a bind(entity, store) helper; implement src/core/store.memory.ts as the in-memory adapter.
     - Implement src/core/store.conformance.ts exporting runStoreConformance(makeStore) used by every adapter test; write src/core/entity.test.ts and src/core/store.memory.test.ts that run the conformance suite against the memory store.
     - _Requirements: 1.1, 1.2, 1.3, 21.1, 21.2, 21.3_
-  - [ ] 0.4 Implement the Policy primitive and evaluation
+  - [x] 0.4 Implement the Policy primitive and evaluation
     - Implement src/core/policy.ts: policy(name, {permissions, resolve(actor) -> granted set}); predicates requires({unlocked, account, custody, permissions}), can(permission), allOf, anyOf, always, never; evaluate(predicate, actor) -> {allowed, reason} with a stable reason code per failing clause.
     - Define the Actor type (id, roles, permissions, attributes) and the anonymous actor; evaluation is pure and identical on server and client.
     - Write src/core/policy.test.ts covering every predicate, combination, reason codes and the anonymous actor.
