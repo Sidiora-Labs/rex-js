@@ -138,7 +138,11 @@ export interface ParityGap {
 export function compareRuntimeParity(
   pageId: string,
   sidecar: SidecarPayload,
-  controls: readonly { readonly address: string; readonly visible: boolean; readonly overlay: string | null }[],
+  controls: readonly {
+    readonly address: string;
+    readonly visible: boolean;
+    readonly overlay: string | null;
+  }[],
   requireControls: boolean,
 ): readonly ParityGap[] {
   const gaps: ParityGap[] = [];
@@ -151,7 +155,8 @@ export function compareRuntimeParity(
   if (requireControls) {
     for (const entry of sidecar.actions) {
       if (!entry.via.includes("click")) continue;
-      if (!shown.has(`${pageId}/${entry.id}`)) gaps.push({ kind: "missing-control", subject: entry.id });
+      if (!shown.has(`${pageId}/${entry.id}`))
+        gaps.push({ kind: "missing-control", subject: entry.id });
     }
   }
   const unlisted = new Set<string>();
@@ -159,7 +164,8 @@ export function compareRuntimeParity(
     if (!control.visible || listed.has(control.address)) continue;
     unlisted.add(control.address);
   }
-  for (const address of [...unlisted].sort()) gaps.push({ kind: "unlisted-control", subject: address });
+  for (const address of [...unlisted].sort())
+    gaps.push({ kind: "unlisted-control", subject: address });
   return gaps;
 }
 
@@ -332,7 +338,9 @@ async function mountPage(
       const request = input instanceof Request ? input : new Request(input, init);
       const response = await handler.fetch(request);
       if (!response.ok) {
-        traffic.failed.push(`${request.method} ${new URL(request.url).pathname} answered ${response.status}`);
+        traffic.failed.push(
+          `${request.method} ${new URL(request.url).pathname} answered ${response.status}`,
+        );
       }
       return response;
     } finally {
@@ -373,11 +381,11 @@ async function mountPage(
     } else {
       const exported = declared.states.includes(state)
         ? ((modules.states as Readonly<Record<string, unknown>>)[STATE_EXPORT_NAMES[state]] as
-            | ComponentType<{ params: unknown; retry: () => void; error: Error | null }>
-            | undefined)
+            ComponentType<{ params: unknown; retry: () => void; error: Error | null }> | undefined)
         : undefined;
       const props = { params: resolution.params, retry: () => {}, error: null };
-      body = exported === undefined ? h(client.DefaultState, { ...props, state }) : h(exported, props);
+      body =
+        exported === undefined ? h(client.DefaultState, { ...props, state }) : h(exported, props);
     }
     return h(
       client.PageStatesContext.Provider,
@@ -394,11 +402,7 @@ async function mountPage(
     return h(
       client.ActiveRouteContext.Provider,
       { value: resolution },
-      h(
-        client.PageRuntimeContext.Provider,
-        { value: runtimeValue },
-        h(ForcedShell),
-      ),
+      h(client.PageRuntimeContext.Provider, { value: runtimeValue }, h(ForcedShell)),
     );
   }
 
@@ -482,7 +486,11 @@ async function mountPage(
       actions: Object.freeze(sidecar === null ? [] : sidecar.actions.map((entry) => entry.id)),
       nav: Object.freeze(nav),
       controls: Object.freeze(
-        [...new Set(controls.filter((control) => control.visible).map((control) => control.address))].sort(),
+        [
+          ...new Set(
+            controls.filter((control) => control.visible).map((control) => control.address),
+          ),
+        ].sort(),
       ),
     }),
     sidecar,
@@ -498,7 +506,11 @@ interface Gathered {
   readonly location: Location;
   readonly message: (contexts: string) => string;
   readonly hint: string;
-  readonly contexts: { readonly actor: number; readonly actorId: string; readonly state: RexDataState }[];
+  readonly contexts: {
+    readonly actor: number;
+    readonly actorId: string;
+    readonly state: RexDataState;
+  }[];
 }
 
 function describeContexts(contexts: Gathered["contexts"]): string {
@@ -673,7 +685,8 @@ async function inspect(
               severity: "error",
               file,
               location: pageLocation(sources, appPage),
-              message: (contexts) => `page "${declared.id}" failed to mount (${contexts}): ${message}`,
+              message: (contexts) =>
+                `page "${declared.id}" failed to mount (${contexts}): ${message}`,
               hint: "Fix the error so the page renders in every declared state; rex check --runtime mounts it in happy-dom.",
             },
             context,
@@ -756,17 +769,16 @@ async function inspect(
   return Object.freeze({ ...summarize(findings), mounts: Object.freeze(mounts) });
 }
 
-async function loadExternal<T>(
-  loader: ModuleLoader,
-  specifier: string,
-  from: string,
-): Promise<T> {
+async function loadExternal<T>(loader: ModuleLoader, specifier: string, from: string): Promise<T> {
   const container = loader.vite.environments.ssr.pluginContainer;
   const importer = await container.resolveId(from, path.join(loader.root, "index.html"));
   if (importer === null) throw new RexError("REX507", `runRuntimeCheck: cannot resolve ${from}`);
   const resolved = await container.resolveId(specifier, importer.id);
   if (resolved === null || !path.isAbsolute(resolved.id)) {
-    throw new RexError("REX507", `runRuntimeCheck: cannot resolve ${specifier} from ${importer.id}`);
+    throw new RexError(
+      "REX507",
+      `runRuntimeCheck: cannot resolve ${specifier} from ${importer.id}`,
+    );
   }
   const loaded = (await import(pathToFileURL(resolved.id).href)) as T & { readonly default?: T };
   return loaded.default ?? loaded;
@@ -806,7 +818,10 @@ export async function runRuntimeCheck(
       throw new RexError("REX507", "runRuntimeCheck: at least one actor is required");
     }
     if (new Set(ids).size !== ids.length) {
-      throw new RexError("REX507", `runRuntimeCheck: actor ids must be unique, got ${ids.join(", ")}`);
+      throw new RexError(
+        "REX507",
+        `runRuntimeCheck: actor ids must be unique, got ${ids.join(", ")}`,
+      );
     }
     return await inspect(runtime, dom, actors);
   } finally {

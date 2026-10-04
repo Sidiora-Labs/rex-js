@@ -89,7 +89,8 @@ export interface FlowRunResult {
 export const FLOW_NO_PENDING_APPROVAL = "REX333";
 export const FLOW_DECISION_FORBIDDEN = "REX334";
 
-export type FlowDecisionErrorCode = typeof FLOW_NO_PENDING_APPROVAL | typeof FLOW_DECISION_FORBIDDEN;
+export type FlowDecisionErrorCode =
+  typeof FLOW_NO_PENDING_APPROVAL | typeof FLOW_DECISION_FORBIDDEN;
 
 export class FlowDecisionError extends RexError {
   override readonly code: FlowDecisionErrorCode;
@@ -267,7 +268,12 @@ export async function runFlow(
       failure = error instanceof Error ? error.message : String(error);
     }
     if (failure !== null) {
-      instance = await journal.record(instanceId, { type: "failed", index, error: failure, at: now() });
+      instance = await journal.record(instanceId, {
+        type: "failed",
+        index,
+        error: failure,
+        at: now(),
+      });
       return { status: "failed", instance, gate: null };
     }
   }
@@ -282,7 +288,10 @@ export async function decide(
   actor: Actor,
 ): Promise<FlowRunResult> {
   if (decision !== "approve" && decision !== "reject") {
-    throw new RexError("REX329", `decide: decision must be approve or reject, received ${String(decision)}`);
+    throw new RexError(
+      "REX329",
+      `decide: decision must be approve or reject, received ${String(decision)}`,
+    );
   }
   const instance = await declared.journal.load(instanceId);
   if (instance === undefined || instance.flowId !== declared.id) {

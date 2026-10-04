@@ -150,12 +150,16 @@ describe("naming, traps and tokens on the fail fixture", () => {
 });
 
 describe("token rule with CSS Modules, Tailwind and rex.config allow lists", () => {
-  it("passes rex check on the styling fixture that uses CSS Modules and Tailwind utilities", { timeout: CHECK_TIMEOUT_MS }, async () => {
-    const result = await runCheck(stylingPass);
-    expect(result.findings).toEqual([]);
-    expect(result.exitCode).toBe(0);
-    expect(result.output).toBe("No findings.\n");
-  });
+  it(
+    "passes rex check on the styling fixture that uses CSS Modules and Tailwind utilities",
+    { timeout: CHECK_TIMEOUT_MS },
+    async () => {
+      const result = await runCheck(stylingPass);
+      expect(result.findings).toEqual([]);
+      expect(result.exitCode).toBe(0);
+      expect(result.output).toBe("No findings.\n");
+    },
+  );
 
   it("resolves Tailwind utilities through the app @theme", () => {
     const theme = readTokenTheme(stylingPass);
@@ -173,19 +177,26 @@ describe("token rule with CSS Modules, Tailwind and rex.config allow lists", () 
       kind: "raw-color",
       value: "white",
     });
-    expect(classifyClassToken("bg-red-500", themed)).toEqual({ kind: "raw-color", value: "red-500" });
+    expect(classifyClassToken("bg-red-500", themed)).toEqual({
+      kind: "raw-color",
+      value: "red-500",
+    });
   });
 
   it("reads the allow lists from check.tokens in rex.config.ts", () => {
     const read = readTokenConfig(stylingPass, createSourceLoader());
     expect(read.findings).toEqual([]);
     expect(read.allow).toEqual({ colors: ["#1f2937"], spacing: ["1px"], classes: ["bg-black/50"] });
-    expect(classifyClassToken("bg-black/50", { ...DEFAULT_TOKEN_SETTINGS, allow: read.allow })).toBeNull();
+    expect(
+      classifyClassToken("bg-black/50", { ...DEFAULT_TOKEN_SETTINGS, allow: read.allow }),
+    ).toBeNull();
     expect(classifyClassToken("bg-black/50", DEFAULT_TOKEN_SETTINGS)).toEqual({
       kind: "raw-color",
       value: "black",
     });
-    expect(classifyClassToken("p-[1px]", { ...DEFAULT_TOKEN_SETTINGS, allow: read.allow })).toBeNull();
+    expect(
+      classifyClassToken("p-[1px]", { ...DEFAULT_TOKEN_SETTINGS, allow: read.allow }),
+    ).toBeNull();
     expect(classifyClassToken("p-[1px]", DEFAULT_TOKEN_SETTINGS)).toEqual({
       kind: "arbitrary-value",
       value: "1px",
@@ -199,7 +210,13 @@ describe("token rule with CSS Modules, Tailwind and rex.config allow lists", () 
   it("reports only raw color and spacing literals and a dynamic allow list", async () => {
     const result = await runRules(discoverApp(stylingFail), [tokensRule]);
     expect(
-      result.findings.map((entry) => [entry.file, entry.line, entry.column, entry.rule, entry.message]),
+      result.findings.map((entry) => [
+        entry.file,
+        entry.line,
+        entry.column,
+        entry.rule,
+        entry.message,
+      ]),
     ).toEqual([
       [
         "app/pages/home/regions/cards/region.tsx",

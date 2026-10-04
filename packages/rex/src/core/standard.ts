@@ -30,9 +30,7 @@ export interface StandardTypes<Input = unknown, Output = Input> {
 export interface StandardProps<Input = unknown, Output = Input> {
   readonly version: 1;
   readonly vendor: string;
-  readonly validate: (
-    value: unknown,
-  ) => StandardResult<Output> | Promise<StandardResult<Output>>;
+  readonly validate: (value: unknown) => StandardResult<Output> | Promise<StandardResult<Output>>;
   readonly types?: StandardTypes<Input, Output> | undefined;
 }
 

@@ -38,22 +38,22 @@ A page folder is named after its page id. `page.ts`, `view.tsx` and `states.tsx`
 
 The checker classifies every `.ts` and `.tsx` file under `app/` (skipping `.d.ts`, dot-folders and `node_modules`) into one of 14 roles (`FILE_ROLES`):
 
-| Role | Path pattern |
-| --- | --- |
-| `page` | `pages/<page>/page.ts` |
-| `view` | `pages/<page>/view.tsx` |
-| `states` | `pages/<page>/states.tsx` |
-| `hook` | `pages/<page>/hooks/<file>.ts` or `.tsx` (directly in `hooks/`) |
-| `region` | `pages/<page>/regions/<region>/region.tsx` |
-| `part` | `pages/<page>/regions/<region>/parts/<file>.tsx` |
-| `overlay` | `pages/<page>/overlays/<file>.tsx` |
-| `test` | anything under `pages/<page>/test/`, and any `*.test.ts` or `*.test.tsx` |
-| `action` | `actions/<file>.ts` |
-| `entity` | `entities/<file>.ts` |
-| `policy` | `policies/<file>.ts` |
-| `flow` | `flows/<file>.ts` |
-| `component` | anything under `components/` |
-| `data` | anything under `data/` |
+| Role        | Path pattern                                                             |
+| ----------- | ------------------------------------------------------------------------ |
+| `page`      | `pages/<page>/page.ts`                                                   |
+| `view`      | `pages/<page>/view.tsx`                                                  |
+| `states`    | `pages/<page>/states.tsx`                                                |
+| `hook`      | `pages/<page>/hooks/<file>.ts` or `.tsx` (directly in `hooks/`)          |
+| `region`    | `pages/<page>/regions/<region>/region.tsx`                               |
+| `part`      | `pages/<page>/regions/<region>/parts/<file>.tsx`                         |
+| `overlay`   | `pages/<page>/overlays/<file>.tsx`                                       |
+| `test`      | anything under `pages/<page>/test/`, and any `*.test.ts` or `*.test.tsx` |
+| `action`    | `actions/<file>.ts`                                                      |
+| `entity`    | `entities/<file>.ts`                                                     |
+| `policy`    | `policies/<file>.ts`                                                     |
+| `flow`      | `flows/<file>.ts`                                                        |
+| `component` | anything under `components/`                                             |
+| `data`      | anything under `data/`                                                   |
 
 A file that matches none of these is "unclassified" and is reported by `naming/unclassified`, `naming/barrel` or `naming/region-file`.
 
@@ -76,22 +76,22 @@ The component roles, which may not fetch data directly, are `view`, `states`, `r
 
 The `boundaries` rule enforces this table (`IMPORT_TABLE` in `packages/rex/src/check/rules/boundaries.ts`). The text in the right column is the hint the checker prints.
 
-| Role | Allowed imports |
-| --- | --- |
-| `page.ts` | page.ts may import app/entities, app/actions, app/policies, @sidioralabs/rex, @sidioralabs/rex/schema and zod, never React. |
-| `view.tsx` | view.tsx may import its page's regions, react types and the layout primitives from @sidioralabs/rex/client; hooks, data and parts belong in region.tsx. |
+| Role         | Allowed imports                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page.ts`    | page.ts may import app/entities, app/actions, app/policies, @sidioralabs/rex, @sidioralabs/rex/schema and zod, never React.                                                                                                                                                                                                                                                              |
+| `view.tsx`   | view.tsx may import its page's regions, react types and the layout primitives from @sidioralabs/rex/client; hooks, data and parts belong in region.tsx.                                                                                                                                                                                                                                  |
 | `region.tsx` | region.tsx may import its page's hooks, its own parts, its page's overlays, its own page.ts, app/actions, app/flows, app/components, react, @sidioralabs/rex and @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never other regions or pages. (Entity imports must be type-only.) |
-| part | parts may import app/components, sibling parts of their region, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n; fetching, actions and navigation belong in region.tsx. |
-| hook | hooks may import app/data, app/actions, app/entities, app/policies, app/flows, sibling hooks, their own page.ts, react, @tanstack/react-query, zod, @sidioralabs/rex, @sidioralabs/rex/schema and @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never components. |
-| overlay | overlays may import their page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never data fetching. |
-| `states.tsx` | states.tsx may import its page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never hooks. |
-| component | app/components may import other app/components, entity types and UI packages, never app data, actions or pages. |
-| data | app/data may import app/data, app/entities, app/actions, app/policies and packages. |
-| action | actions may import app/entities, app/policies, app/actions, app/data and non-React packages; declarations never import React. |
-| entity | entities may import other app/entities and non-React packages. |
-| policy | policies may import app/policies, app/entities and non-React packages. |
-| flow | flows may import app/actions, app/policies, app/flows, app/entities, app/data and non-React packages. |
-| test | tests may import anything within their own page and the shared app folders. |
+| part         | parts may import app/components, sibling parts of their region, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n; fetching, actions and navigation belong in region.tsx.                              |
+| hook         | hooks may import app/data, app/actions, app/entities, app/policies, app/flows, sibling hooks, their own page.ts, react, @tanstack/react-query, zod, @sidioralabs/rex, @sidioralabs/rex/schema and @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never components.                |
+| overlay      | overlays may import their page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never data fetching.                                                                        |
+| `states.tsx` | states.tsx may import its page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never hooks.                                                                                |
+| component    | app/components may import other app/components, entity types and UI packages, never app data, actions or pages.                                                                                                                                                                                                                                                                          |
+| data         | app/data may import app/data, app/entities, app/actions, app/policies and packages.                                                                                                                                                                                                                                                                                                      |
+| action       | actions may import app/entities, app/policies, app/actions, app/data and non-React packages; declarations never import React.                                                                                                                                                                                                                                                            |
+| entity       | entities may import other app/entities and non-React packages.                                                                                                                                                                                                                                                                                                                           |
+| policy       | policies may import app/policies, app/entities and non-React packages.                                                                                                                                                                                                                                                                                                                   |
+| flow         | flows may import app/actions, app/policies, app/flows, app/entities, app/data and non-React packages.                                                                                                                                                                                                                                                                                    |
+| test         | tests may import anything within their own page and the shared app folders.                                                                                                                                                                                                                                                                                                              |
 
 Further boundary rules:
 
@@ -116,69 +116,69 @@ Further boundary rules:
 
 ### typecheck
 
-| Rule id | Reports |
-| --- | --- |
+| Rule id              | Reports                                                                                                                                                                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `typecheck/ts<code>` | Every TypeScript diagnostic from a program built from the app's `tsconfig.json` (or Rex's default compiler options when there is none), as `TS<code>: <message>`. TypeScript warnings become `warning` findings. Hint: "Fix the type error; rex check type-checks the app with its tsconfig.json." |
 
 ### boundaries
 
-| Rule id | Message |
-| --- | --- |
-| `boundaries/unresolved` | `<file> imports "<specifier>", which does not resolve to a file` |
-| `boundaries/cross-page` | `<file> of page <a> imports "<specifier>" from page <b>` |
+| Rule id                   | Message                                                                                                                                                                                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `boundaries/unresolved`   | `<file> imports "<specifier>", which does not resolve to a file`                                                                                                                                                                                                              |
+| `boundaries/cross-page`   | `<file> of page <a> imports "<specifier>" from page <b>`                                                                                                                                                                                                                      |
 | `boundaries/import-table` | `<file> imports "<specifier>" (<target>)`, `<file> imports "<specifier>"; declarations never import React or the client runtime`, `<file> imports the package "<specifier>", which the import table does not allow`, or `<file> imports the hook "<name>" from "<specifier>"` |
-| `boundaries/no-fetch` | `<file> imports <what>; components never fetch or touch stores directly` or `<file> calls <call>; components never fetch directly` |
+| `boundaries/no-fetch`     | `<file> imports <what>; components never fetch or touch stores directly` or `<file> calls <call>; components never fetch directly`                                                                                                                                            |
 
 ### states
 
-| Rule id | Message |
-| --- | --- |
-| `states/view-default` | `view.tsx of page <page> has no default export` |
-| `states/unknown-state` | `page.ts of page <page> declares the unknown state "<state>"` |
-| `states/missing-export` | `states.tsx of page <page> does not export the <Name> component` |
-| `states/extra-export` | `states.tsx of page <page> has the extra export <name>` (or a re-export) |
+| Rule id                 | Message                                                                  |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `states/view-default`   | `view.tsx of page <page> has no default export`                          |
+| `states/unknown-state`  | `page.ts of page <page> declares the unknown state "<state>"`            |
+| `states/missing-export` | `states.tsx of page <page> does not export the <Name> component`         |
+| `states/extra-export`   | `states.tsx of page <page> has the extra export <name>` (or a re-export) |
 
 ### parity
 
-| Rule id | Message |
-| --- | --- |
-| `parity/missing-file` | `page <page> has no page.ts` (or `view.tsx`, `states.tsx`) |
-| `parity/unreadable` | `page.ts of page <page> does not export a page() declaration`, `page.ts <field> of page <page> is not a literal the checker can read`, or `page.ts action <local> of page <page> is not imported from app/actions` |
-| `parity/region-missing` | `region "<name>" is declared in page.ts but regions/<name>/region.tsx does not exist` (or the folder has no `region.tsx`) |
-| `parity/region-undeclared` | `regions/<name> exists but page.ts of page <page> does not declare region "<name>"` |
-| `parity/overlay-missing` | `overlay "<Id>" is declared in page.ts but overlays/<Id>.tsx does not exist` |
-| `parity/overlay-undeclared` | `overlays/<Id>.tsx exists but page.ts of page <page> does not declare overlay "<Id>"` |
-| `parity/action-undeclared` | `region "<region>" references action <id>, which page <page> does not declare` |
-| `parity/action-unreferenced` | `action <id> is declared on page <page> but no region references it` |
+| Rule id                      | Message                                                                                                                                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `parity/missing-file`        | `page <page> has no page.ts` (or `view.tsx`, `states.tsx`)                                                                                                                                                         |
+| `parity/unreadable`          | `page.ts of page <page> does not export a page() declaration`, `page.ts <field> of page <page> is not a literal the checker can read`, or `page.ts action <local> of page <page> is not imported from app/actions` |
+| `parity/region-missing`      | `region "<name>" is declared in page.ts but regions/<name>/region.tsx does not exist` (or the folder has no `region.tsx`)                                                                                          |
+| `parity/region-undeclared`   | `regions/<name> exists but page.ts of page <page> does not declare region "<name>"`                                                                                                                                |
+| `parity/overlay-missing`     | `overlay "<Id>" is declared in page.ts but overlays/<Id>.tsx does not exist`                                                                                                                                       |
+| `parity/overlay-undeclared`  | `overlays/<Id>.tsx exists but page.ts of page <page> does not declare overlay "<Id>"`                                                                                                                              |
+| `parity/action-undeclared`   | `region "<region>" references action <id>, which page <page> does not declare`                                                                                                                                     |
+| `parity/action-unreferenced` | `action <id> is declared on page <page> but no region references it`                                                                                                                                               |
 
 A region "references" an action when `region.tsx` imports it (non-type-only) from a file with the `action` role.
 
 ### naming
 
-| Rule id | Message |
-| --- | --- |
-| `naming/part-name` | `part file <name>.tsx is not PascalCase` |
-| `naming/part-exports` | `part <name>.tsx has no default export`, or `part <name>.tsx exports <name> besides its default export` |
-| `naming/hook-name` | `hook file <name> is not camelCase starting with use` |
-| `naming/hook-exports` | `hook <name> exports no function`, `hook <name> has a default export`, `hook <name> re-exports everything from "<module>"`, `hook <name> exports <x> instead of <name>`, or `hook <name> exports <x> in addition to its hook` |
-| `naming/overlay-name` | `overlay file <name>.tsx is not PascalCase` |
-| `naming/barrel` | `<file> is a barrel; app/pages has no index files` |
-| `naming/region-file` | `<file> is not a region file; regions/<region> holds region.tsx and parts/` |
-| `naming/unclassified` | `<file> does not match any Rex file role` |
-| `naming/page-folder` | `page folder <id> is not a valid page id` |
-| `naming/region-folder` | `region folder <name> of page <page> is not a valid region name` |
+| Rule id                | Message                                                                                                                                                                                                                       |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `naming/part-name`     | `part file <name>.tsx is not PascalCase`                                                                                                                                                                                      |
+| `naming/part-exports`  | `part <name>.tsx has no default export`, or `part <name>.tsx exports <name> besides its default export`                                                                                                                       |
+| `naming/hook-name`     | `hook file <name> is not camelCase starting with use`                                                                                                                                                                         |
+| `naming/hook-exports`  | `hook <name> exports no function`, `hook <name> has a default export`, `hook <name> re-exports everything from "<module>"`, `hook <name> exports <x> instead of <name>`, or `hook <name> exports <x> in addition to its hook` |
+| `naming/overlay-name`  | `overlay file <name>.tsx is not PascalCase`                                                                                                                                                                                   |
+| `naming/barrel`        | `<file> is a barrel; app/pages has no index files`                                                                                                                                                                            |
+| `naming/region-file`   | `<file> is not a region file; regions/<region> holds region.tsx and parts/`                                                                                                                                                   |
+| `naming/unclassified`  | `<file> does not match any Rex file role`                                                                                                                                                                                     |
+| `naming/page-folder`   | `page folder <id> is not a valid page id`                                                                                                                                                                                     |
+| `naming/region-folder` | `region folder <name> of page <page> is not a valid region name`                                                                                                                                                              |
 
 ### traps
 
-| Rule id | Message |
-| --- | --- |
-| `traps/hover-only` | `<tag> handles onMouseEnter without onFocus` (or `onMouseOver`) |
-| `traps/drag-only` | `draggable <tag> has no data-rex-alternative` (an element with `draggable` not set to false, or with `onDragStart`) |
-| `traps/canvas` | `<canvas> has no data-rex-alternative` |
-| `traps/motion-only` | `<tag> conveys state only through "<class>"`: an `animate-*` class (other than `animate-none`) on an element with no text content and no `aria-label`, `aria-labelledby` or `title` |
-| `traps/overlay-dismiss` | `overlay "<Id>" of page <page> declares no dismiss`, or declares an unknown dismiss |
-| `traps/custom-element` | `custom element <tag> has no tabIndex or data-rex-alternative` (a custom element tag in a part without `tabIndex` or a declared keyboard equivalent) |
-| `traps/infinite-list` | `<trigger> loads list items on scroll without Page.List` (the trigger is the scroll listener or observer that loads items; the hint points at `Page.List`) |
+| Rule id                 | Message                                                                                                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `traps/hover-only`      | `<tag> handles onMouseEnter without onFocus` (or `onMouseOver`)                                                                                                                     |
+| `traps/drag-only`       | `draggable <tag> has no data-rex-alternative` (an element with `draggable` not set to false, or with `onDragStart`)                                                                 |
+| `traps/canvas`          | `<canvas> has no data-rex-alternative`                                                                                                                                              |
+| `traps/motion-only`     | `<tag> conveys state only through "<class>"`: an `animate-*` class (other than `animate-none`) on an element with no text content and no `aria-label`, `aria-labelledby` or `title` |
+| `traps/overlay-dismiss` | `overlay "<Id>" of page <page> declares no dismiss`, or declares an unknown dismiss                                                                                                 |
+| `traps/custom-element`  | `custom element <tag> has no tabIndex or data-rex-alternative` (a custom element tag in a part without `tabIndex` or a declared keyboard equivalent)                                |
+| `traps/infinite-list`   | `<trigger> loads list items on scroll without Page.List` (the trigger is the scroll listener or observer that loads items; the hint points at `Page.List`)                          |
 
 The traps rule reads every `.tsx` file that is not a test. The declared alternative is the attribute `data-rex-alternative="<page>/<action>"`.
 
@@ -186,13 +186,13 @@ The traps rule reads every `.tsx` file that is not a test. The declared alternat
 
 The tokens rule reads every file except components and tests.
 
-| Rule id | Message |
-| --- | --- |
-| `tokens/raw-color` | `raw color utility "<class>" outside app/components` (Tailwind palette colors such as `bg-red-500`, `text-white`) |
-| `tokens/arbitrary-value` | `arbitrary value utility "<class>" outside app/components` (any class with `[...]`) |
-| `tokens/inline-color` | `inline style <key> is not a token reference` or `inline style <key> uses the raw value "<value>"` |
-| `tokens/inline-spacing` | `inline style <key> uses the raw value "<value>"` (a `padding`, `margin`, `inset`, `gap`, `rowGap`, `columnGap`, `top`, `right`, `bottom` or `left` key, with sides, whose value is a raw length rather than `var(--token)`) |
-| `tokens/config` | `check.tokens` in `rex.config.ts` is not a literal list |
+| Rule id                  | Message                                                                                                                                                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tokens/raw-color`       | `raw color utility "<class>" outside app/components` (Tailwind palette colors such as `bg-red-500`, `text-white`)                                                                                                            |
+| `tokens/arbitrary-value` | `arbitrary value utility "<class>" outside app/components` (any class with `[...]`)                                                                                                                                          |
+| `tokens/inline-color`    | `inline style <key> is not a token reference` or `inline style <key> uses the raw value "<value>"`                                                                                                                           |
+| `tokens/inline-spacing`  | `inline style <key> uses the raw value "<value>"` (a `padding`, `margin`, `inset`, `gap`, `rowGap`, `columnGap`, `top`, `right`, `bottom` or `left` key, with sides, whose value is a raw length rather than `var(--token)`) |
+| `tokens/config`          | `check.tokens` in `rex.config.ts` is not a literal list                                                                                                                                                                      |
 
 Color style keys (`color`, `backgroundColor`, any key ending in `color`, `background`, `fill`, `stroke`) must be `var(--token)` or a keyword (`inherit`, `initial`, `unset`, `revert`, `currentcolor`, `transparent`, `none`). Shorthand keys that may not contain raw colors are `border` and its sides, `outline`, `boxShadow`, `textShadow` and `textDecoration`. Values listed under `check.tokens.colors`, `check.tokens.spacing` and `check.tokens.classes` in `rex.config.ts` are allowed.
 
@@ -200,13 +200,13 @@ Color style keys (`color`, `backgroundColor`, any key ending in `color`, `backgr
 
 The manifest rule runs only once `.rex/` exists (after the first `rex manifest`). It builds a fresh manifest from the declarations and compares it with the committed files.
 
-| Rule id | Severity | Message |
-| --- | --- | --- |
-| `manifest/load-error` | error | `the declarations cannot be loaded to build a fresh manifest: <error>` |
-| `manifest/manifest-missing` | error | `.rex/manifest.json has not been generated` |
-| `manifest/manifest-stale` | error | `.rex/manifest.json is stale: it differs from a fresh build of the declarations` |
-| `manifest/agents-missing` | warning | `AGENTS.md has not been generated` |
-| `manifest/agents-stale` | warning | `AGENTS.md is stale: it differs from a fresh build of the declarations` |
+| Rule id                     | Severity | Message                                                                          |
+| --------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `manifest/load-error`       | error    | `the declarations cannot be loaded to build a fresh manifest: <error>`           |
+| `manifest/manifest-missing` | error    | `.rex/manifest.json has not been generated`                                      |
+| `manifest/manifest-stale`   | error    | `.rex/manifest.json is stale: it differs from a fresh build of the declarations` |
+| `manifest/agents-missing`   | warning  | `AGENTS.md has not been generated`                                               |
+| `manifest/agents-stale`     | warning  | `AGENTS.md is stale: it differs from a fresh build of the declarations`          |
 
 The hint for the missing and stale findings is "Run rex manifest to regenerate .rex/manifest.json and AGENTS.md, then commit both."
 
@@ -214,76 +214,76 @@ The hint for the missing and stale findings is "Run rex manifest to regenerate .
 
 The security rule reads every file except tests.
 
-| Rule id | Message |
-| --- | --- |
+| Rule id                | Message                                                                                                                                                                                                                     |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `security/unsafe-html` | `<tag> sets dangerouslySetInnerHTML outside unsafeHtml()`, or `dangerouslySetInnerHTML is set outside unsafeHtml()` when it is set outside a JSX attribute (an object property, a property access or `createElement` props) |
 
 ### a11y
 
 The a11y rule reads every `.tsx` file that is not a test.
 
-| Rule id | Message |
-| --- | --- |
-| `a11y/img-alt` | `<img> has no alt text` (also `<input type="image">` and `<area>` with `href`) |
-| `a11y/control-name` | `<control> has no accessible name` |
-| `a11y/label-for` | `<tag> has no label` for a field, or `<label> is not associated with a field` |
-| `a11y/heading-order` | `<hN> follows <hM> and skips <hM+1>` |
-| `a11y/no-positive-tabindex` | `<tag> sets tabIndex to <n>` |
-| `a11y/no-autofocus-outside-overlay` | `<tag> sets autoFocus in a <role> file` |
+| Rule id                             | Message                                                                        |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| `a11y/img-alt`                      | `<img> has no alt text` (also `<input type="image">` and `<area>` with `href`) |
+| `a11y/control-name`                 | `<control> has no accessible name`                                             |
+| `a11y/label-for`                    | `<tag> has no label` for a field, or `<label> is not associated with a field`  |
+| `a11y/heading-order`                | `<hN> follows <hM> and skips <hM+1>`                                           |
+| `a11y/no-positive-tabindex`         | `<tag> sets tabIndex to <n>`                                                   |
+| `a11y/no-autofocus-outside-overlay` | `<tag> sets autoFocus in a <role> file`                                        |
 
 ### render
 
-| Rule id | Message |
-| --- | --- |
+| Rule id                  | Message                                                                                                                                                                                                               |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `render/static-needs-js` | `static page "<page>" declares action "<id>" with shortcut "<shortcut>", which needs JavaScript (declared in <file>)` or `static page "<page>" declares overlay "<Id>" bound to region state, which needs JavaScript` |
 
 ### i18n
 
-| Rule id | Message |
-| --- | --- |
+| Rule id        | Message                                                                                                                            |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `i18n/literal` | `<site> "<text>" is a literal; with i18n configured, labels and titles are msg: keys` or `<site> "<text>" is not a valid msg: key` |
-| `i18n/config` | `check` or `check.i18n` in `rex.config.ts` is not a static object, or `check.i18n.allow` is not a literal list of strings |
+| `i18n/config`  | `check` or `check.i18n` in `rex.config.ts` is not a static object, or `check.i18n.allow` is not a literal list of strings          |
 
 ### media
 
 The media rule reads regions and parts.
 
-| Rule id | Message |
-| --- | --- |
+| Rule id            | Message                                                                             |
+| ------------------ | ----------------------------------------------------------------------------------- |
 | `media/no-raw-img` | `<img> in a <role> bypasses Img` or `createElement("img") in a <role> bypasses Img` |
 
 ### format
 
-| Rule id | Severity | Message |
-| --- | --- | --- |
-| `format/prettier` | warning | `<file> is not formatted: prettier --check would rewrite it from line <n>` |
-| `format/unavailable` | warning | `prettier is not installed, so rex check cannot verify formatting` |
+| Rule id              | Severity | Message                                                                    |
+| -------------------- | -------- | -------------------------------------------------------------------------- |
+| `format/prettier`    | warning  | `<file> is not formatted: prettier --check would rewrite it from line <n>` |
+| `format/unavailable` | warning  | `prettier is not installed, so rex check cannot verify formatting`         |
 
 ### runtime
 
-| Rule id | Reports |
-| --- | --- |
+| Rule id          | Reports                                                                                                          |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `parity/runtime` | only with `rex check --runtime`: a sidecar action without a visible control or a control without a sidecar entry |
 
 ### ui
 
 The ui rule reads `ui` from `rex.config.ts` statically and runs only when `ui.kit` is `designx` (`ui: "designx"` or `ui: { kit: "designx" }`). It reads regions, parts and overlays; views, states, components (including `app/components/ui`) and tests are not checked.
 
-| Rule id | Message |
-| --- | --- |
-| `ui/designx-primitive` | `<tag> in a <role> bypasses the DesignX <item> primitive` (or `createElement("<tag>")`) for a raw `button`, `input`, `select`, `textarea`, `table` or `dialog` element |
-| `ui/config` | `ui in rex.config.ts is not a static literal, so rex check cannot read ui.kit`, `ui.kit in rex.config.ts is not a static literal, so rex check cannot read it`, or `ui.kit "<kit>" in rex.config.ts is not one of designx, none` |
+| Rule id                | Message                                                                                                                                                                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ui/designx-primitive` | `<tag> in a <role> bypasses the DesignX <item> primitive` (or `createElement("<tag>")`) for a raw `button`, `input`, `select`, `textarea`, `table` or `dialog` element                                                           |
+| `ui/config`            | `ui in rex.config.ts is not a static literal, so rex check cannot read ui.kit`, `ui.kit in rex.config.ts is not a static literal, so rex check cannot read it`, or `ui.kit "<kit>" in rex.config.ts is not one of designx, none` |
 
 The hint names the primitive the `rex/designx` map gives the surface and its file under `app/components/ui`, with the docs link for [REX509](errors.md#rex5xx-checker-and-manifest):
 
-| Raw element | Surface | DesignX primitive |
-| --- | --- | --- |
-| `<button>` | `button` | `button` |
-| `<input>` | `input` | `input`; `checkbox` for `type="checkbox"`, `radio-group` for `type="radio"`, `number-field` for `type="number"` |
-| `<select>` | `select` | `select` |
-| `<textarea>` | `textarea` | `textarea` |
-| `<table>` | `list` | `data-table` on tablet, desktop and wide, `card` on phone |
-| `<dialog>` | `sheet` | `dialog` in its dialog form, `sheet` in its bottom-sheet form |
+| Raw element  | Surface    | DesignX primitive                                                                                               |
+| ------------ | ---------- | --------------------------------------------------------------------------------------------------------------- |
+| `<button>`   | `button`   | `button`                                                                                                        |
+| `<input>`    | `input`    | `input`; `checkbox` for `type="checkbox"`, `radio-group` for `type="radio"`, `number-field` for `type="number"` |
+| `<select>`   | `select`   | `select`                                                                                                        |
+| `<textarea>` | `textarea` | `textarea`                                                                                                      |
+| `<table>`    | `list`     | `data-table` on tablet, desktop and wide, `card` on phone                                                       |
+| `<dialog>`   | `sheet`    | `dialog` in its dialog form, `sheet` in its bottom-sheet form                                                   |
 
 `<input type="hidden">` renders nothing and is not reported.
 
@@ -291,10 +291,10 @@ The hint names the primitive the `rex/designx` map gives the surface and its fil
 
 The layout rule holds parts to the screen-fit contract below.
 
-| Rule id | Scope | Message |
-| --- | --- | --- |
-| `layout/fixed-size` | parts | `inline style sets <key>: <value> in pixels on part <Name>`, `class sets "<class>" in pixels on part <Name>`, or `CSS module sets <property>: <value> in pixels on part <Name>` |
-| `layout/touch-target` | regions, parts, overlays | `<control> in a <role> declares <declaration> (<n> px), under the 44 px touch target` |
+| Rule id               | Scope                    | Message                                                                                                                                                                         |
+| --------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout/fixed-size`   | parts                    | `inline style sets <key>: <value> in pixels on part <Name>`, `class sets "<class>" in pixels on part <Name>`, or `CSS module sets <property>: <value> in pixels on part <Name>` |
+| `layout/touch-target` | regions, parts, overlays | `<control> in a <role> declares <declaration> (<n> px), under the 44 px touch target`                                                                                           |
 
 `layout/fixed-size` reports a non-zero pixel `width`, `height`, `min-width` or `min-height` (and the logical `inline-size`, `block-size`, `min-inline-size`, `min-block-size`) declared on a part: a `style` property with a number or a `px` string, a Tailwind arbitrary value (`w-[320px]`, `h-[…]`, `min-w-[…]`, `min-h-[…]`, `size-[…]`, `[width:…]`), or a declaration in a CSS module the part imports, reported at its line in the `.module.css` file. `max-width`, percentages, `rem`, `ch`, `clamp()` and `var(--token)` values are fluid and not reported. The `width` and `height` attributes of `Img` are intrinsic sizes, not layout, and are not read. Hint: let the part size to its container with `Page.Stack` or `Page.Grid`, or use a fluid value such as a percentage, a `rem` or `ch` range in `clamp()`, `var(--rex-measure)` or `var(--rex-control-height)` ([REX510](errors.md#rex5xx-checker-and-manifest)).
 

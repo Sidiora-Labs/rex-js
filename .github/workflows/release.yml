@@ -13,44 +13,292 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
-    name: Publish @sidioralabs/rex with provenance
+  prepare:
+    name: Tag, version and changelog section
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    environment: npm
-    permissions:
-      contents: read
-      id-token: write
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: pnpm
-          registry-url: https://registry.npmjs.org
-      - name: Use an npm with trusted publishing
-        run: npm install -g npm@latest
-      - name: Install
-        run: pnpm install --frozen-lockfile
       - name: Tag matches the package version
+        id: version
         run: |
           version="$(node -p "require('./packages/rex/package.json').version")"
           if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
             echo "tag ${GITHUB_REF_NAME} does not match packages/rex version ${version}" >&2
             exit 1
           fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+      - name: Extract the CHANGELOG section of this version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/notes"
+          awk -v version="$VERSION" '
+            BEGIN {
+              gsub(/\./, "\\.", version)
+              heading = "^## \\[?v?" version "([^0-9A-Za-z.-]|$)"
+            }
+            /^## / { if (inside) exit; inside = ($0 ~ heading); next }
+            inside { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/notes/release.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notes/release.md"; then
+            echo "CHANGELOG.md has no section headed ## [${VERSION}]" >&2
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/notes/release.md"
+      - name: Upload the release notes
+        uses: actions/upload-artifact@v5
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/notes/release.md
+          if-no-files-found: error
+
+  verify:
+    name: Typecheck and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: prepare
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
       - name: Typecheck
         run: pnpm -r typecheck
       - name: Test
         run: pnpm -C packages/rex test
+
+  lint:
+    name: Lint and format check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: prepare
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint the demo
+        run: pnpm -C examples/demo lint
+      - name: Lint with the root config, or every other package config until one exists
+        run: |
+          if [ -f eslint.config.js ]; then
+            pnpm exec eslint .
+          else
+            for config in packages/*/eslint.config.js examples/*/eslint.config.js; do
+              [ -f "$config" ] || continue
+              dir="$(dirname "$config")"
+              [ "$dir" = examples/demo ] && continue
+              pnpm -C "$dir" exec eslint .
+            done
+          fi
+      - name: Format check of packages/rex/src with the rex preset
+        run: pnpm -C packages/rex exec prettier --config src/prettier.ts --check src
+      - name: Format check of examples/demo with the rex preset
+        run: pnpm -C examples/demo exec prettier --config ../../packages/rex/src/prettier.ts --check .
+
+  coverage:
+    name: Coverage thresholds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: prepare
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Test with coverage
+        run: pnpm -C packages/rex exec vitest run --coverage
+      - name: Upload the coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage
+          path: packages/rex/coverage
+
+  demo:
+    name: Check, walk and vitals
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: prepare
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - name: Unit
+        run: pnpm -C examples/demo test:unit
+      - name: Install browsers
+        run: pnpm -C examples/demo exec playwright install --with-deps chromium
+      - name: Check and walk (operability, no-JS, axe, vitals, lighthouse, screenshots)
+        run: pnpm -C examples/demo test
+
+  docs:
+    name: Docs and freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: prepare
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Links and API pages
+        run: pnpm docs:check
+      - name: Freshness (generated pointer files are checked where cg is installed)
+        run: node tools/freshness.mjs --check --skip pointers
+
+  supply-chain:
+    name: Audit and license review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: prepare
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
       - name: Audit
         run: pnpm audit --prod
       - name: License review
         run: node tools/license-review.mjs
-      - name: Build
+
+  package:
+    name: Pack and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: prepare
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
         run: pnpm -C packages/rex build
       - name: Pack
         run: pnpm -C packages/rex pack --pack-destination "$RUNNER_TEMP/package"
+      - name: publint on the tarball
+        run: pnpm dlx publint "$RUNNER_TEMP"/package/*.tgz
+      - name: Are the types wrong on the tarball
+        run: pnpm dlx @arethetypeswrong/cli --profile esm-only "$RUNNER_TEMP"/package/*.tgz
+      - name: Smoke test the tarball in a fresh app
+        run: |
+          set -- "$RUNNER_TEMP"/package/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "expected exactly one tarball in $RUNNER_TEMP/package" >&2
+            exit 1
+          fi
+          sh tools/smoke-package.sh "$1"
+      - name: Upload the tarball that passed
+        uses: actions/upload-artifact@v5
+        with:
+          name: package
+          path: ${{ runner.temp }}/package/*.tgz
+          if-no-files-found: error
+
+  publish:
+    name: Publish @sidioralabs/rex to npm with provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [prepare, verify, lint, coverage, demo, docs, supply-chain, package]
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@sidioralabs/rex/v/${{ needs.prepare.outputs.version }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+      - name: Use an npm with trusted publishing (11.5.1 or later)
+        run: npm install -g npm@latest && npm --version
+      - name: Download the tarball the smoke test passed
+        uses: actions/download-artifact@v5
+        with:
+          name: package
+          path: ${{ runner.temp }}/package
       - name: Publish with provenance through OIDC
-        run: npm publish "$RUNNER_TEMP"/package/*.tgz --provenance --access public
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -- "$RUNNER_TEMP"/package/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "expected exactly one tarball in $RUNNER_TEMP/package" >&2
+            exit 1
+          fi
+          case "$VERSION" in
+            *-*) dist_tag="next" ;;
+            *) dist_tag="latest" ;;
+          esac
+          npm publish "$1" --provenance --access public --tag "$dist_tag"
+
+  release:
+    name: GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [prepare, publish]
+    permissions:
+      contents: write
+    steps:
+      - name: Download the release notes
+        uses: actions/download-artifact@v5
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/notes
+      - name: Download the published tarball
+        uses: actions/download-artifact@v5
+        with:
+          name: package
+          path: ${{ runner.temp }}/package
+      - name: Create the release with the CHANGELOG section as its body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -- "$RUNNER_TEMP"/package/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "expected exactly one tarball in $RUNNER_TEMP/package" >&2
+            exit 1
+          fi
+          case "$VERSION" in
+            *-*) prerelease="--prerelease" ;;
+            *) prerelease="" ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" "$1" --verify-tag $prerelease \
+            --title "@sidioralabs/rex ${VERSION}" \
+            --notes-file "$RUNNER_TEMP/notes/release.md"

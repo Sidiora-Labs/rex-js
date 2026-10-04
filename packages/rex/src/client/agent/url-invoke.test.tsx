@@ -151,7 +151,9 @@ describe("URL invocation parsing", () => {
 
 describe("useUrlInvoke", () => {
   it("invokes with the parsed input once and rewrites the URL keeping the other params", async () => {
-    const { store, ledger, memory } = mount(`/?tab=all&act=hide-dust&input=${json({ hide: false })}`);
+    const { store, ledger, memory } = mount(
+      `/?tab=all&act=hide-dust&input=${json({ hide: false })}`,
+    );
     await waitOutcome(store, "hide-dust", true);
     expect(store.get("portfolio")?.message).toBe("Hide dust succeeded");
     expect(await audited(ledger)).toEqual(["hide-dust:ok"]);

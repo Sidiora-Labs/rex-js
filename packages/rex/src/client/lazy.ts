@@ -5,8 +5,7 @@ import { useActivePage } from "./router.tsx";
 export const LAZY_FAILURE_CODE = "REX326";
 
 export type LazyResult<T> =
-  | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly error: Error };
+  { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: Error };
 
 export interface LazyModule<T> {
   readonly id: string;
@@ -15,7 +14,11 @@ export interface LazyModule<T> {
   load(): Promise<LazyResult<T>>;
 }
 
-export function lazyModule<T>(id: string, label: string, importer: () => Promise<T>): LazyModule<T> {
+export function lazyModule<T>(
+  id: string,
+  label: string,
+  importer: () => Promise<T>,
+): LazyModule<T> {
   let result: LazyResult<T> | null = null;
   let pending: Promise<LazyResult<T>> | null = null;
   return {
@@ -70,7 +73,10 @@ export interface LazyModuleOptions {
   readonly onFailure?: (error: Error) => void;
 }
 
-export function useLazyModule<T>(module: LazyModule<T>, options: LazyModuleOptions = {}): LazyResult<T> | null {
+export function useLazyModule<T>(
+  module: LazyModule<T>,
+  options: LazyModuleOptions = {},
+): LazyResult<T> | null {
   const { active = true, suspend = "hydration", outcome = null, onFailure } = options;
   const outcomes = useOutcomeStore();
   const page = useActivePage();
@@ -78,7 +84,11 @@ export function useLazyModule<T>(module: LazyModule<T>, options: LazyModuleOptio
   const hydrating = useSyncExternalStore(subscribeNothing, clientRendering, serverOrHydrating);
   const [, setSettled] = useState<LazyResult<T> | null>(null);
   let result = module.peek();
-  if (result === null && active && (suspend === "always" || (suspend === "hydration" && hydrating))) {
+  if (
+    result === null &&
+    active &&
+    (suspend === "always" || (suspend === "hydration" && hydrating))
+  ) {
     result = use(module.load());
   }
 

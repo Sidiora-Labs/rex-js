@@ -64,7 +64,11 @@ export interface PrerenderOptions {
   readonly ledger?: Ledger;
 }
 
-export function prerenderMode(ssr: PrerenderRuntime, manifest: Manifest, declared: AnyPage): PrerenderMode | null {
+export function prerenderMode(
+  ssr: PrerenderRuntime,
+  manifest: Manifest,
+  declared: AnyPage,
+): PrerenderMode | null {
   const mode = ssr.pageRenderMode(manifest, declared);
   return isPrerenderMode(mode) ? mode : null;
 }
@@ -85,7 +89,10 @@ export function routePath(declared: AnyPage, params: unknown): string {
     }
     const text = String(value);
     if (text === "" || text === "." || text === ".." || /[/\\\0]/.test(text)) {
-      throw pathsError(declared, `returned "${segment.name}" ${JSON.stringify(text)}, which is not one path segment`);
+      throw pathsError(
+        declared,
+        `returned "${segment.name}" ${JSON.stringify(text)}, which is not one path segment`,
+      );
     }
     return encodeURIComponent(text);
   });
@@ -167,7 +174,9 @@ export async function prerenderPages(
   const zeroJs =
     eager.size === 0
       ? hydrating
-      : ssr.createRexRenderer(rendererOptions(bundle.pages.map((set) => eager.get(set.page.id) ?? set)));
+      : ssr.createRexRenderer(
+          rendererOptions(bundle.pages.map((set) => eager.get(set.page.id) ?? set)),
+        );
 
   const pages: StaticPageEntry[] = [];
   const seen = new Set<string>();

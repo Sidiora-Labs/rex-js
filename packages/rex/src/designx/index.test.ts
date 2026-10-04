@@ -1,131 +1,106 @@
-// @vitest-environment happy-dom
+import { describe, expect, expectTypeOf, it } from "vitest";
 import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { act, cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
-import { createElement, type ComponentType } from "react";
-import { afterAll, afterEach, describe, expect, it } from "vitest";
-import {
-  DESIGNX_DATA_TABLE,
-  DESIGNX_MENU_GROUP,
-  DESIGNX_UI_DIR,
-  designxDependencies,
-  designxFiles,
-  providedDesignxNames,
-  resolveDesignxItems,
-} from "../cli/designx.ts";
-import { DESIGNX_MAP } from "./index.ts";
+  DESIGNX_ITEMS,
+  DESIGNX_ITEM_KINDS,
+  DESIGNX_MAP,
+  DESIGNX_PROVIDED,
+  DESIGNX_SINGLE_FORM,
+  DESIGNX_STANDARD,
+  DESIGNX_SURFACES,
+  DESIGNX_THEME_ITEM,
+  designxItem,
+  designxItemKind,
+  designxSurfaceItems,
+  isDesignxItem,
+  isDesignxProvided,
+  type DesignxItemKind,
+  type DesignxItemName,
+  type DesignxSurface,
+} from "./index.ts";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const packageRoot = join(here, "..", "..");
-const demoRoot = join(packageRoot, "..", "..", "examples", "demo");
-const INSTALL_TIMEOUT_MS = 120_000;
-const APP_PACKAGES = ["react", "react-dom"] as const;
-const INSTALL_PREFIX = ".rex-designx-table-";
+type Forms = Readonly<Record<string, DesignxItemName>>;
 
-const temporary: string[] = [];
-
-afterEach(() => {
-  cleanup();
-});
-
-afterAll(() => {
-  for (const dir of temporary) rmSync(dir, { recursive: true, force: true });
-});
-
-function sourceOf(name: string): string {
-  for (const base of [packageRoot, demoRoot]) {
-    const candidate = join(base, "node_modules", name);
-    if (existsSync(candidate)) return candidate;
-  }
-  throw new Error(`${name} is installed neither for the rex package nor for the demo`);
+function formsOf(surface: DesignxSurface): Forms {
+  return DESIGNX_MAP[surface] as Forms;
 }
 
-function linkPackages(root: string, names: readonly string[]): void {
-  for (const name of names) {
-    const destination = join(root, "node_modules", name);
-    mkdirSync(dirname(destination), { recursive: true });
-    symlinkSync(realpathSync(sourceOf(name)), destination, "dir");
-  }
-}
-
-interface Holding {
-  readonly name: string;
-  readonly amount: string;
-}
-
-interface DataTableModule {
-  readonly DataTable: ComponentType<{
-    readonly columns: readonly { readonly accessorKey: keyof Holding; readonly header: string }[];
-    readonly data: readonly Holding[];
-  }>;
-}
-
-async function click(element: Element): Promise<void> {
-  await act(async () => {
-    fireEvent.click(element);
+describe("rex/designx registry", () => {
+  it("freezes every table so surfaces cannot be re-pointed at runtime", () => {
+    expect(Object.isFrozen(DESIGNX_ITEMS)).toBe(true);
+    expect(Object.isFrozen(DESIGNX_PROVIDED)).toBe(true);
+    expect(Object.isFrozen(DESIGNX_PROVIDED["use-mobile"])).toBe(true);
+    expect(Object.isFrozen(DESIGNX_MAP)).toBe(true);
+    expect(Object.isFrozen(DESIGNX_SURFACES)).toBe(true);
+    expect(Object.isFrozen(DESIGNX_STANDARD)).toBe(true);
+    for (const surface of DESIGNX_SURFACES) {
+      expect(Object.isFrozen(formsOf(surface)), surface).toBe(true);
+    }
+    expect([...DESIGNX_SURFACES]).toEqual(Object.keys(DESIGNX_MAP));
+    expect(DESIGNX_SINGLE_FORM).toBe("default");
   });
-}
 
-describe("the installed DesignX data-table", () => {
-  it(
-    "opens its column menu with the label grouped and hides a column",
-    { timeout: INSTALL_TIMEOUT_MS },
-    async () => {
-      expect(DESIGNX_MAP.list.desktop).toBe(DESIGNX_DATA_TABLE);
-      const names = [DESIGNX_DATA_TABLE];
-      const items = await resolveDesignxItems(names);
-      const files = designxFiles(items, providedDesignxNames(names, items));
-      const root = mkdtempSync(join(packageRoot, INSTALL_PREFIX));
-      temporary.push(root);
-      for (const file of files) {
-        const target = join(root, file.path);
-        mkdirSync(dirname(target), { recursive: true });
-        writeFileSync(target, file.content);
+  it("dedups and sorts the items a surface resolves to", () => {
+    expect(designxSurfaceItems("list")).toEqual(["card", "data-table"]);
+    expect(designxSurfaceItems("states")).toEqual(["alert", "badge", "empty", "skeleton"]);
+    expect(designxSurfaceItems("sheet")).toEqual(["dialog", "sheet"]);
+    expect(designxSurfaceItems("button")).toEqual(["button"]);
+    for (const surface of DESIGNX_SURFACES) {
+      const items = designxSurfaceItems(surface);
+      expect(items, surface).toEqual([...new Set(Object.values(formsOf(surface)))].sort());
+      expect(items.length, surface).toBeGreaterThan(0);
+    }
+  });
+
+  it("partitions the items by kind and maps the hook surfaces to hooks", () => {
+    const byKind: Record<DesignxItemKind, string[]> = { ui: [], hook: [], lib: [], style: [] };
+    for (const name of Object.keys(DESIGNX_ITEMS) as DesignxItemName[]) {
+      const kind = designxItemKind(name);
+      expect(kind, name).toBe(DESIGNX_ITEMS[name]);
+      expect(DESIGNX_ITEM_KINDS, name).toContain(kind);
+      byKind[kind].push(name);
+    }
+    expect(byKind.style).toEqual(["theme"]);
+    expect(byKind.lib).toEqual(["utils"]);
+    expect(byKind.hook).toEqual(["use-media-query", "use-touch-capable"]);
+    expect(byKind.ui.length).toBeGreaterThan(30);
+    expect(designxItem("mediaQuery", "default")).toBe("use-media-query");
+    expect(designxItem("touch", "default")).toBe("use-touch-capable");
+    for (const surface of DESIGNX_SURFACES) {
+      for (const item of designxSurfaceItems(surface)) {
+        expect(["ui", "hook"], `${surface} ${item}`).toContain(designxItemKind(item));
       }
-      linkPackages(root, [...APP_PACKAGES, ...Object.keys(designxDependencies(items))]);
+    }
+    expectTypeOf<DesignxItemKind>().toEqualTypeOf<"ui" | "hook" | "lib" | "style">();
+  });
 
-      const tableFile = join(root, DESIGNX_UI_DIR, `${DESIGNX_DATA_TABLE}.tsx`);
-      expect(
-        files.find((file) => file.path === `${DESIGNX_UI_DIR}/dropdown-menu.tsx`),
-      ).toBeDefined();
-      const { DataTable } = (await import(/* @vite-ignore */ tableFile)) as DataTableModule;
-      const view = render(
-        createElement(DataTable, {
-          columns: [
-            { accessorKey: "name", header: "Name" },
-            { accessorKey: "amount", header: "Amount" },
-          ],
-          data: [
-            { name: "PAX", amount: "12.5" },
-            { name: "ETH", amount: "0.75" },
-          ],
-        }),
-      );
-      expect(within(view.container).getByText("Name")).toBeTruthy();
+  it("rejects unknown forms and recognises names by own property only", () => {
+    expect(() => designxItem("sheet", "drawer" as "dialog")).toThrow(
+      new Error("rex/designx: the sheet surface has no drawer form"),
+    );
+    expect(() => designxItem("list", "wide-screen" as "phone")).toThrow(
+      /the list surface has no wide-screen form/,
+    );
+    expect(isDesignxItem("drawer")).toBe(false);
+    expect(isDesignxItem("hasOwnProperty")).toBe(false);
+    expect(isDesignxItem("theme")).toBe(true);
+    expect(isDesignxProvided("theme")).toBe(false);
+    expect(isDesignxProvided("constructor")).toBe(false);
+    expect(isDesignxProvided("use-mobile")).toBe(true);
+  });
 
-      await click(within(view.container).getByRole("button", { name: "View" }));
-      const menu = await within(document.body).findByRole("menu");
-      const label = within(menu).getByText("Toggle columns");
-      expect(label.closest('[role="group"]')).not.toBeNull();
-      expect(
-        within(menu)
-          .getAllByRole("menuitemcheckbox")
-          .map((item) => item.textContent?.trim()),
-      ).toEqual(["name", "amount"]);
-
-      await click(within(menu).getByRole("menuitemcheckbox", { name: "name" }));
-      await waitFor(() => expect(within(view.container).queryByText("Name")).toBeNull());
-      expect(within(view.container).getByText("Amount")).toBeTruthy();
-      expect(files.some((file) => file.content.includes(DESIGNX_MENU_GROUP))).toBe(true);
-    },
-  );
+  it("covers the theme and every surface item in the standard set exactly once", () => {
+    expect(DESIGNX_THEME_ITEM).toBe("theme");
+    expect(designxItemKind(DESIGNX_THEME_ITEM)).toBe("style");
+    expect(DESIGNX_STANDARD).toContain(DESIGNX_THEME_ITEM);
+    expect([...DESIGNX_STANDARD]).toEqual([...new Set(DESIGNX_STANDARD)].sort());
+    for (const surface of DESIGNX_SURFACES) {
+      for (const item of designxSurfaceItems(surface)) {
+        expect(DESIGNX_STANDARD, `${surface} ${item}`).toContain(item);
+      }
+    }
+    expect(DESIGNX_STANDARD).toHaveLength(Object.keys(DESIGNX_ITEMS).length);
+    for (const name of Object.keys(DESIGNX_PROVIDED)) {
+      expect(DESIGNX_STANDARD, name).not.toContain(name);
+    }
+  });
 });

@@ -25,6 +25,10 @@ export const i18nGenerator: RexNewGenerator = {
   id: "i18n",
   contribute: (plan, context): readonly PlannedEntry[] => [
     ...plan,
-    { kind: "file", path: localeFilePath(DEFAULT_APP_LOCALE), content: localeMessagesTemplate(context) },
+    {
+      kind: "file",
+      path: localeFilePath(DEFAULT_APP_LOCALE),
+      content: localeMessagesTemplate(context),
+    },
   ],
 };

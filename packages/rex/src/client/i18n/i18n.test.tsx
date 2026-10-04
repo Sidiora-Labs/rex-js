@@ -205,7 +205,8 @@ describe("message formatter", () => {
     expect(formatMessage(polish, { n: 1 }, "pl")).toBe("1 plik");
     expect(formatMessage(polish, { n: 3 }, "pl")).toBe("3 pliki");
     expect(formatMessage(polish, { n: 5 }, "pl")).toBe("5 plików");
-    const guests = "{n, plural, offset:1 =0 {nobody} =1 {{host}} one {{host} and # other} other {{host} and # others}}";
+    const guests =
+      "{n, plural, offset:1 =0 {nobody} =1 {{host}} one {{host} and # other} other {{host} and # others}}";
     expect(formatMessage(guests, { n: 1, host: "Ana" }, "en")).toBe("Ana");
     expect(formatMessage(guests, { n: 2, host: "Ana" }, "en")).toBe("Ana and 1 other");
     expect(formatMessage(guests, { n: 4, host: "Ana" }, "en")).toBe("Ana and 3 others");
@@ -220,7 +221,8 @@ describe("message formatter", () => {
   });
 
   it("selects branches, nests arguments and honours apostrophe quoting", () => {
-    const pronoun = "{who, select, she {She has {count, plural, one {# file} other {# files}}} other {They have #}}";
+    const pronoun =
+      "{who, select, she {She has {count, plural, one {# file} other {# files}}} other {They have #}}";
     expect(formatMessage(pronoun, { who: "she", count: 2 }, "en")).toBe("She has 2 files");
     expect(formatMessage(pronoun, { who: "x", count: 2 }, "en")).toBe("They have #");
     expect(formatMessage("It''s '{literal}' {v}", { v: 1 }, "en")).toBe("It's {literal} 1");
@@ -240,9 +242,14 @@ describe("msg: keys and catalogs", () => {
     expect(t("home.title")).toBe(`${MSG_PREFIX}home.title`);
     const ref = t("send.done", { name: "Ana Lu", amount: 5 });
     expect(ref).toBe("msg:send.done?amount=5&name=Ana+Lu");
-    expect(parseMessageRef(ref)).toEqual({ key: "send.done", values: { amount: 5, name: "Ana Lu" } });
+    expect(parseMessageRef(ref)).toEqual({
+      key: "send.done",
+      values: { amount: 5, name: "Ana Lu" },
+    });
     expect(parseMessageRef("Send")).toBeNull();
-    expect(() => t("bad key")).toThrow(expect.objectContaining({ name: "RexError", code: "REX316" }));
+    expect(() => t("bad key")).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX316" }),
+    );
   });
 
   it("resolves through the locale, its base language, then the default, then the key", () => {
@@ -294,7 +301,9 @@ describe("locale resolution", () => {
       locale: "pt-BR",
       source: "cookie",
     });
-    expect(resolveLocale(settings, { pathname: "/x", cookie: "fr", languages: ["de", "pt"] })).toEqual({
+    expect(
+      resolveLocale(settings, { pathname: "/x", cookie: "fr", languages: ["de", "pt"] }),
+    ).toEqual({
       locale: "pt-BR",
       source: "accept-language",
     });
@@ -302,7 +311,10 @@ describe("locale resolution", () => {
       locale: "en",
       source: "default",
     });
-    expect(resolveLocale({ ...settings, routing: "none" }, all)).toEqual({ locale: "en", source: "cookie" });
+    expect(resolveLocale({ ...settings, routing: "none" }, all)).toEqual({
+      locale: "en",
+      source: "cookie",
+    });
   });
 
   it("parses Accept-Language by quality and resolves requests on the server", async () => {
@@ -313,7 +325,9 @@ describe("locale resolution", () => {
     ]);
     const request = (path: string, headers: Record<string, string> = {}) =>
       serverRequest(`http://rex.test${path}`, headers);
-    expect(resolveRequestLocale(request("/pt-BR/detail/7", { cookie: "rex-locale=en" }), PREFIX)).toEqual({
+    expect(
+      resolveRequestLocale(request("/pt-BR/detail/7", { cookie: "rex-locale=en" }), PREFIX),
+    ).toEqual({
       locale: "pt-BR",
       source: "prefix",
     });

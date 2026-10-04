@@ -144,7 +144,13 @@ describe("parseConfig", () => {
         images: { sizes: [1200, 640, 640], formats: ["webp"] },
         fonts: [
           { family: "Inter", src: "/fonts/inter.woff2", weight: "100 900" },
-          { family: "Mono", src: "https://cdn.example.com/mono.woff2", weight: 400, style: "italic", preload: false },
+          {
+            family: "Mono",
+            src: "https://cdn.example.com/mono.woff2",
+            weight: 400,
+            style: "italic",
+            preload: false,
+          },
         ],
         telemetry: { tracer, logger },
         ui: "designx",
@@ -152,7 +158,10 @@ describe("parseConfig", () => {
         compiler: false,
         devtools: false,
         tailwind: true,
-        check: { tokens: { colors: ["transparent"], classes: ["bg-*"] }, i18n: { allow: ["Rex", "USD"] } },
+        check: {
+          tokens: { colors: ["transparent"], classes: ["bg-*"] },
+          i18n: { allow: ["Rex", "USD"] },
+        },
       }),
     );
     expect(resolved.server).toBe(serverFor);
@@ -167,7 +176,13 @@ describe("parseConfig", () => {
     expect(resolved.i18n).toEqual({ locales: ["en", "pt-BR"], default: "en", routing: "prefix" });
     expect(resolved.images).toEqual({ sizes: [640, 1200], formats: ["webp"] });
     expect(resolved.fonts).toEqual([
-      { family: "Inter", src: "/fonts/inter.woff2", weight: "100 900", style: "normal", preload: true },
+      {
+        family: "Inter",
+        src: "/fonts/inter.woff2",
+        weight: "100 900",
+        style: "normal",
+        preload: true,
+      },
       {
         family: "Mono",
         src: "https://cdn.example.com/mono.woff2",
@@ -181,14 +196,21 @@ describe("parseConfig", () => {
     expect(resolved.ui).toBe("designx");
     expect(resolved.client.apiOrigin).toBe("https://api.example.com");
     expect([resolved.compiler, resolved.devtools, resolved.tailwind]).toEqual([false, false, true]);
-    expect(resolved.check.tokens).toEqual({ colors: ["transparent"], spacing: [], classes: ["bg-*"] });
+    expect(resolved.check.tokens).toEqual({
+      colors: ["transparent"],
+      spacing: [],
+      classes: ["bg-*"],
+    });
     expect(resolved.check.i18n).toEqual({ allow: ["Rex", "USD"] });
     expect(resolved.i18n?.routing).toBe("prefix");
     expect(resolveOptions({ i18n: { locales: ["en"], default: "en" } }).i18n?.routing).toBe("none");
   });
 
   it("resolves ui as a kit name or as { kit, components } naming the app-wide shell components module", () => {
-    expect(resolveOptions({ ui: "designx" })).toMatchObject({ ui: "designx", shellComponents: null });
+    expect(resolveOptions({ ui: "designx" })).toMatchObject({
+      ui: "designx",
+      shellComponents: null,
+    });
     expect(
       resolveOptions({ ui: { kit: "designx", components: "app/components/shell.tsx" } }),
     ).toMatchObject({ ui: "designx", shellComponents: "app/components/shell.tsx" });
@@ -209,24 +231,40 @@ describe("parseConfig", () => {
     [{ app, budgets: { core: 0 } }, "REX114", "budgets.core"],
     [{ app, budgets: { page: "50" } }, "REX114", "budgets.page"],
     [{ app, security: { csp: "loose" } }, "REX115", "security.csp"],
-    [{ app, security: { origins: ["https://a.example.com/path"] } }, "REX115", "security.origins.0"],
+    [
+      { app, security: { origins: ["https://a.example.com/path"] } },
+      "REX115",
+      "security.origins.0",
+    ],
     [{ app, security: { origins: ["ftp://a.example.com"] } }, "REX115", "security.origins.0"],
     [{ app, security: { origins: ["ws://a.example.com"] } }, "REX115", "security.origins.0"],
     [{ app, security: { origins: ["tauri://localhost/"] } }, "REX115", "security.origins.0"],
     [{ app, security: { origins: ["tauri:localhost"] } }, "REX115", "security.origins.0"],
     [{ app, security: { origins: ["javascript:alert(1)"] } }, "REX115", "security.origins.0"],
     [{ app, client: { apiOrigin: "tauri://localhost" } }, "REX121", "client.apiOrigin"],
-    [{ app, security: { headers: { "bad header": "x" } } }, "REX115", "security.headers.bad header"],
+    [
+      { app, security: { headers: { "bad header": "x" } } },
+      "REX115",
+      "security.headers.bad header",
+    ],
     [{ app, security: { secretNames: ["not-a-name"] } }, "REX115", "security.secretNames.0"],
     [{ app, i18n: { locales: [], default: "en" } }, "REX116", "i18n.locales"],
     [{ app, i18n: { locales: ["en"], default: "fr" } }, "REX116", "i18n.default"],
     [{ app, i18n: { locales: ["English"], default: "English" } }, "REX116", "i18n.locales.0"],
-    [{ app, i18n: { locales: ["en"], default: "en", routing: "domain" } }, "REX116", "i18n.routing"],
+    [
+      { app, i18n: { locales: ["en"], default: "en", routing: "domain" } },
+      "REX116",
+      "i18n.routing",
+    ],
     [{ app, images: { sizes: [0] } }, "REX117", "images.sizes.0"],
     [{ app, images: { formats: ["gif"] } }, "REX117", "images.formats.0"],
     [{ app, fonts: [{ family: "Inter" }] }, "REX118", "fonts.0.src"],
     [{ app, fonts: [{ family: "Inter", src: "fonts/inter.woff2" }] }, "REX118", "fonts.0.src"],
-    [{ app, fonts: [{ family: "Inter", src: "/i.woff2", weight: "bold" }] }, "REX118", "fonts.0.weight"],
+    [
+      { app, fonts: [{ family: "Inter", src: "/i.woff2", weight: "bold" }] },
+      "REX118",
+      "fonts.0.weight",
+    ],
     [{ app, telemetry: { tracer: {} } }, "REX119", "telemetry.tracer"],
     [{ app, telemetry: { logger: { info: () => undefined } } }, "REX119", "telemetry.logger.debug"],
     [{ app, ui: "material" }, "REX120", "ui"],
@@ -313,7 +351,12 @@ describe("readConfigExport and configServer", () => {
       defineConfig({ app, security, client: { apiOrigin: "https://api.example.com" } }),
     );
     expect(configServerOptions(remote)).toEqual({
-      security: { csp: "strict", origins: ["tauri://localhost"], headers: {}, secretNames: ["API_KEY"] },
+      security: {
+        csp: "strict",
+        origins: ["tauri://localhost"],
+        headers: {},
+        secretNames: ["API_KEY"],
+      },
       client: { apiOrigin: "https://api.example.com" },
     });
     const local = configServerOptions(readConfigExport(defineConfig({ app })));

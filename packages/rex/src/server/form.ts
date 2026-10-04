@@ -1,7 +1,4 @@
-import {
-  parse as parseCookieHeader,
-  serialize as serializeCookie,
-} from "hono/utils/cookie";
+import { parse as parseCookieHeader, serialize as serializeCookie } from "hono/utils/cookie";
 import { RexError } from "../core/errors.ts";
 import type { JsonSchema } from "../core/schema.ts";
 import { issuePath, type StandardIssue } from "../core/standard.ts";
@@ -13,11 +10,7 @@ export const CSRF_FIELD = "_csrf";
 export const CONFIRM_FIELD = "_confirm";
 export const ACTION_FIELD = "_action";
 export const LEGACY_ACTION_FIELD = "action";
-export const FORM_RESERVED_FIELDS = [
-  CSRF_FIELD,
-  CONFIRM_FIELD,
-  ACTION_FIELD,
-] as const;
+export const FORM_RESERVED_FIELDS = [CSRF_FIELD, CONFIRM_FIELD, ACTION_FIELD] as const;
 export const OUTCOME_COOKIE_MAX_AGE = 60;
 export const FORM_ERRORS_KEY = "_form";
 
@@ -57,9 +50,7 @@ function schemaTypes(schema: JsonSchema): readonly string[] {
   for (const key of ["anyOf", "oneOf"] as const) {
     const options = schema[key];
     if (Array.isArray(options)) {
-      return options.flatMap((option) =>
-        isRecord(option) ? schemaTypes(option) : [],
-      );
+      return options.flatMap((option) => (isRecord(option) ? schemaTypes(option) : []));
     }
   }
   return [];
@@ -79,8 +70,7 @@ function objectBranch(schema: JsonSchema): JsonSchema {
     const options = schema[key];
     if (Array.isArray(options)) {
       const found = options.find(
-        (option): option is JsonSchema =>
-          isRecord(option) && primaryType(option) === "object",
+        (option): option is JsonSchema => isRecord(option) && primaryType(option) === "object",
       );
       if (found !== undefined) return found;
     }
@@ -101,9 +91,7 @@ function itemBranch(schema: JsonSchema): JsonSchema {
   return {};
 }
 
-function propertiesOf(
-  schema: JsonSchema,
-): Readonly<Record<string, JsonSchema>> {
+function propertiesOf(schema: JsonSchema): Readonly<Record<string, JsonSchema>> {
   const properties = objectBranch(schema).properties;
   if (!isRecord(properties)) return {};
   const result: Record<string, JsonSchema> = {};
@@ -116,9 +104,7 @@ function propertiesOf(
 function requiredOf(schema: JsonSchema): ReadonlySet<string> {
   const required = objectBranch(schema).required;
   return new Set(
-    Array.isArray(required)
-      ? required.filter((item) => typeof item === "string")
-      : [],
+    Array.isArray(required) ? required.filter((item) => typeof item === "string") : [],
   );
 }
 
@@ -175,52 +161,34 @@ function insert(root: FormNode, name: string, value: FormValue): void {
 
 const ABSENT = Symbol("absent");
 
-function coerceNode(
-  node: FormNode | undefined,
-  schema: JsonSchema,
-  required: boolean,
-): unknown {
+function coerceNode(node: FormNode | undefined, schema: JsonSchema, required: boolean): unknown {
   const type = primaryType(schema);
   if (type === "array") {
     if (node === undefined || node.values.length === 0) return [];
     const items = itemBranch(schema);
     return node.values.map((value) => coerceScalar(value, items));
   }
-  if (
-    type === "object" ||
-    (type === null && node !== undefined && node.children.size > 0)
-  ) {
+  if (type === "object" || (type === null && node !== undefined && node.children.size > 0)) {
     if (node === undefined || node.children.size === 0) {
-      return required && type === "object"
-        ? coerceObject(emptyNode(), schema)
-        : ABSENT;
+      return required && type === "object" ? coerceObject(emptyNode(), schema) : ABSENT;
     }
     return coerceObject(node, schema);
   }
-  if (type === "boolean" && (node === undefined || node.values.length === 0))
-    return false;
+  if (type === "boolean" && (node === undefined || node.values.length === 0)) return false;
   if (node === undefined || node.values.length === 0) return ABSENT;
   const values = node.values;
   const last = values[values.length - 1] as FormValue;
   if (!required && last === "" && !isNullable(schema)) return ABSENT;
-  if (values.length > 1 && type === null)
-    return values.map((value) => coerceScalar(value, schema));
+  if (values.length > 1 && type === null) return values.map((value) => coerceScalar(value, schema));
   return coerceScalar(last, schema);
 }
 
-function coerceObject(
-  node: FormNode,
-  schema: JsonSchema,
-): Record<string, unknown> {
+function coerceObject(node: FormNode, schema: JsonSchema): Record<string, unknown> {
   const properties = propertiesOf(schema);
   const required = requiredOf(schema);
   const result: Record<string, unknown> = {};
   for (const [name, property] of Object.entries(properties)) {
-    const value = coerceNode(
-      node.children.get(name),
-      property,
-      required.has(name),
-    );
+    const value = coerceNode(node.children.get(name), property, required.has(name));
     if (value !== ABSENT) result[name] = value;
   }
   for (const [name, child] of node.children) {
@@ -231,10 +199,7 @@ function coerceObject(
   return result;
 }
 
-export function formEntries(
-  form: FormData,
-  schema: JsonSchema,
-): [string, FormValue][] {
+export function formEntries(form: FormData, schema: JsonSchema): [string, FormValue][] {
   const keepLegacyAction = schemaDeclaresField(schema, LEGACY_ACTION_FIELD);
   const entries: [string, FormValue][] = [];
   for (const [name, value] of form.entries()) {
@@ -245,20 +210,13 @@ export function formEntries(
   return entries;
 }
 
-export function coerceFormData(
-  form: FormData,
-  schema: JsonSchema,
-): Record<string, unknown> {
+export function coerceFormData(form: FormData, schema: JsonSchema): Record<string, unknown> {
   const root = emptyNode();
-  for (const [name, value] of formEntries(form, schema))
-    insert(root, name, value);
+  for (const [name, value] of formEntries(form, schema)) insert(root, name, value);
   return coerceObject(root, schema);
 }
 
-export function submittedActionId(
-  form: FormData,
-  schema: JsonSchema,
-): string | null {
+export function submittedActionId(form: FormData, schema: JsonSchema): string | null {
   const explicit = form.get(ACTION_FIELD);
   if (typeof explicit === "string") return explicit;
   if (schemaDeclaresField(schema, LEGACY_ACTION_FIELD)) return null;
@@ -274,9 +232,7 @@ export function readCookie(request: Request, name: string): string | null {
 
 export function createCsrfToken(): string {
   const bytes = globalThis.crypto.getRandomValues(new Uint8Array(32));
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
-    "",
-  );
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export function isCsrfToken(value: unknown): value is string {
@@ -318,10 +274,7 @@ const csrfGrants = new WeakMap<Request, CsrfGrant>();
 
 export function bindCsrfGrant(request: Request, grant: CsrfGrant): void {
   if (!isCsrfToken(grant.token))
-    throw new RexError(
-      "REX400",
-      "bindCsrfGrant: token must be 64 hex characters",
-    );
+    throw new RexError("REX400", "bindCsrfGrant: token must be 64 hex characters");
   csrfGrants.set(request, grant);
 }
 
@@ -329,16 +282,8 @@ export function csrfGrantFor(request: Request): CsrfGrant | undefined {
   return csrfGrants.get(request);
 }
 
-export function verifyCsrf(
-  cookieToken: string | null,
-  fieldToken: unknown,
-): boolean {
-  if (
-    cookieToken === null ||
-    !isCsrfToken(cookieToken) ||
-    !isCsrfToken(fieldToken)
-  )
-    return false;
+export function verifyCsrf(cookieToken: string | null, fieldToken: unknown): boolean {
+  if (cookieToken === null || !isCsrfToken(cookieToken) || !isCsrfToken(fieldToken)) return false;
   let difference = 0;
   for (let index = 0; index < cookieToken.length; index++) {
     difference |= cookieToken.charCodeAt(index) ^ fieldToken.charCodeAt(index);
@@ -363,16 +308,11 @@ export function refererPath(request: Request): string | null {
   return `${url.pathname}${url.search}`;
 }
 
-export function formRedirectTarget(
-  request: Request,
-  redirect: string | null,
-): string {
+export function formRedirectTarget(request: Request, redirect: string | null): string {
   return redirect ?? refererPath(request) ?? "/";
 }
 
-export function fieldErrors(
-  issues: readonly StandardIssue[],
-): Record<string, string[]> {
+export function fieldErrors(issues: readonly StandardIssue[]): Record<string, string[]> {
   const fields: Record<string, string[]> = {};
   for (const issue of issues) {
     const name = issuePath(issue) || FORM_ERRORS_KEY;
@@ -397,15 +337,12 @@ function isFieldMap(value: unknown): value is Record<string, string[]> {
     isRecord(value) &&
     Object.values(value).every(
       (messages) =>
-        Array.isArray(messages) &&
-        messages.every((message) => typeof message === "string"),
+        Array.isArray(messages) && messages.every((message) => typeof message === "string"),
     )
   );
 }
 
-export function decodeFormOutcome(
-  value: string | null | undefined,
-): FormOutcome | null {
+export function decodeFormOutcome(value: string | null | undefined): FormOutcome | null {
   if (value === null || value === undefined || value === "") return null;
   let parsed: unknown;
   try {
@@ -461,10 +398,7 @@ const HTML_ESCAPES: Readonly<Record<string, string>> = {
 };
 
 export function escapeHtml(value: string): string {
-  return value.replace(
-    /[&<>"']/g,
-    (character) => HTML_ESCAPES[character] as string,
-  );
+  return value.replace(/[&<>"']/g, (character) => HTML_ESCAPES[character] as string);
 }
 
 function displayValue(value: unknown): string {
@@ -474,17 +408,13 @@ function displayValue(value: unknown): string {
 }
 
 export function flattenInput(value: unknown, prefix = ""): [string, string][] {
-  if (
-    isRecord(value) &&
-    !(typeof File !== "undefined" && value instanceof File)
-  ) {
+  if (isRecord(value) && !(typeof File !== "undefined" && value instanceof File)) {
     const rows = Object.entries(value).flatMap(([key, child]) =>
       flattenInput(child, prefix === "" ? key : `${prefix}.${key}`),
     );
     return rows.length === 0 && prefix !== "" ? [[prefix, "{}"]] : rows;
   }
-  if (Array.isArray(value))
-    return [[prefix, value.map(displayValue).join(", ")]];
+  if (Array.isArray(value)) return [[prefix, value.map(displayValue).join(", ")]];
   return [[prefix, displayValue(value)]];
 }
 
@@ -511,10 +441,7 @@ export function renderConfirmPage(options: ConfirmPageOptions): string {
     )
     .join("");
   const hidden = options.entries
-    .filter(
-      (entry): entry is readonly [string, string] =>
-        typeof entry[1] === "string",
-    )
+    .filter((entry): entry is readonly [string, string] => typeof entry[1] === "string")
     .map(
       ([name, value]) =>
         `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(value)}">`,

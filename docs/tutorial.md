@@ -8,10 +8,10 @@ You need Node 22.19 or later and pnpm. Inside this repository the `rex` bin is b
 
 ## What you will build
 
-| Page | Route | Regions | Overlays | Actions |
-| --- | --- | --- | --- | --- |
-| `portfolio` | `/` | `hero`, `actions`, `holdings` | `HoldingsFilterSheet` (URL bound) | `toggle-hide-dust` |
-| `send` | `/send` | `form`, `confirm`, `success` | `TokenSelectorSheet`, `ContactPickerSheet` | `send`, `pick-token`, `pick-contact` |
+| Page        | Route   | Regions                       | Overlays                                   | Actions                              |
+| ----------- | ------- | ----------------------------- | ------------------------------------------ | ------------------------------------ |
+| `portfolio` | `/`     | `hero`, `actions`, `holdings` | `HoldingsFilterSheet` (URL bound)          | `toggle-hide-dust`                   |
+| `send`      | `/send` | `form`, `confirm`, `success`  | `TokenSelectorSheet`, `ContactPickerSheet` | `send`, `pick-token`, `pick-contact` |
 
 Three entities (`account`, `token`, `contact`), two policies (`viewer`, `wallet`), one read action (`load-wallet`) and four mutating actions, with data in seeded in-memory stores.
 
@@ -24,19 +24,19 @@ cd wallet
 
 `rex new` writes a complete app, fetches the DesignX UI components (the default `--ui designx`; `--ui none` skips them) and runs the package manager install (`--no-install` skips it). It prints one `wrote wallet/<path>` line per file:
 
-| Path | Content |
-| --- | --- |
-| `package.json` | scripts `dev`, `build`, `check`, `manifest`, `start`, `lint`, `format`; `@sidioralabs/rex` and its peers; DesignX and Tailwind packages; TypeScript, ESLint and Prettier dev dependencies |
-| `tsconfig.json` | strict compiler options; `include` covers `app`, `rex.config.ts` and the `rex:app` typings of the package |
-| `index.html` | `<div id="root">`, the `/app/theme.css` stylesheet and `<script type="module" src="/@rex/entry">` |
-| `rex.config.ts` | `defineConfig({ app, ui: { kit: "designx", components: "app/components/Shell.tsx" }, server })` with `createRexServer` |
-| `app/entities/note.ts`, `app/policies/viewer.ts`, `app/actions/ping.ts`, `app/data/notes.ts` | a starter entity, policy, action and store |
-| `app/components/Button.tsx` | a button over the DesignX `Button` |
-| `app/components/Shell.tsx` | the shell overrides `Button`, `Sheet`, `PaletteItem`, `Outcome` and `Nav` on the DesignX primitives, registered through `ui.components` |
-| `app/components/ui/`, `app/theme.css`, `dx.json` | the DesignX theme and the standard set from `@sidioralabs/rex/designx` (`DESIGNX_STANDARD`: the 15 base items plus alert, avatar, breadcrumb, checkbox, data-table, form, navigation-menu, number-field, pagination, progress, radio-group, scroll-area, separator, sidebar, spinner, switch, textarea, toolbar, typography and the use-media-query and use-touch-capable hooks), `ui/utils.ts` and `ui/use-screen.ts` over `useScreen` |
-| `app/pages/home/...` | a `home` page at `/` with `page.ts`, `view.tsx`, `states.tsx`, `hooks/useNotes.ts`, the `welcome` region with its `Welcome` part, and `test/` |
-| `app/locales/en.json` | the default locale's messages |
-| `eslint.config.js`, `.prettierrc`, `.prettierignore` | the Rex ESLint and Prettier presets |
+| Path                                                                                         | Content                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`                                                                               | scripts `dev`, `build`, `check`, `manifest`, `start`, `lint`, `format`; `@sidioralabs/rex` and its peers; DesignX and Tailwind packages; TypeScript, ESLint and Prettier dev dependencies                                                                                                                                                                                                                                               |
+| `tsconfig.json`                                                                              | strict compiler options; `include` covers `app`, `rex.config.ts` and the `rex:app` typings of the package                                                                                                                                                                                                                                                                                                                               |
+| `index.html`                                                                                 | `<div id="root">`, the `/app/theme.css` stylesheet and `<script type="module" src="/@rex/entry">`                                                                                                                                                                                                                                                                                                                                       |
+| `rex.config.ts`                                                                              | `defineConfig({ app, ui: { kit: "designx", components: "app/components/Shell.tsx" }, server })` with `createRexServer`                                                                                                                                                                                                                                                                                                                  |
+| `app/entities/note.ts`, `app/policies/viewer.ts`, `app/actions/ping.ts`, `app/data/notes.ts` | a starter entity, policy, action and store                                                                                                                                                                                                                                                                                                                                                                                              |
+| `app/components/Button.tsx`                                                                  | a button over the DesignX `Button`                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `app/components/Shell.tsx`                                                                   | the shell overrides `Button`, `Sheet`, `PaletteItem`, `Outcome` and `Nav` on the DesignX primitives, registered through `ui.components`                                                                                                                                                                                                                                                                                                 |
+| `app/components/ui/`, `app/theme.css`, `dx.json`                                             | the DesignX theme and the standard set from `@sidioralabs/rex/designx` (`DESIGNX_STANDARD`: the 15 base items plus alert, avatar, breadcrumb, checkbox, data-table, form, navigation-menu, number-field, pagination, progress, radio-group, scroll-area, separator, sidebar, spinner, switch, textarea, toolbar, typography and the use-media-query and use-touch-capable hooks), `ui/utils.ts` and `ui/use-screen.ts` over `useScreen` |
+| `app/pages/home/...`                                                                         | a `home` page at `/` with `page.ts`, `view.tsx`, `states.tsx`, `hooks/useNotes.ts`, the `welcome` region with its `Welcome` part, and `test/`                                                                                                                                                                                                                                                                                           |
+| `app/locales/en.json`                                                                        | the default locale's messages                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `eslint.config.js`, `.prettierrc`, `.prettierignore`                                         | the Rex ESLint and Prettier presets                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 Start it to see the starter page:
 
@@ -310,7 +310,8 @@ export const pickToken = action("pick-token", {
     const owner = await requireAccount(accountIdOf(ctx.actor.attributes));
     const held = (await tokens.list()).items;
     const chosen =
-      input.token ?? nextId(
+      input.token ??
+      nextId(
         held.map((entry) => entry.id),
         owner.sendToken,
       );
@@ -434,7 +435,14 @@ export default defineConfig({
   app,
   ui: { kit: "designx", components: "app/components/Shell.tsx" },
   i18n: { locales: ["en", "de"], default: "en", routing: "none" },
-  fonts: [{ family: "Liberation Mono", src: "/fonts/LiberationMono-Regular.ttf", weight: 400, preload: true }],
+  fonts: [
+    {
+      family: "Liberation Mono",
+      src: "/fonts/LiberationMono-Regular.ttf",
+      weight: 400,
+      preload: true,
+    },
+  ],
   check: { i18n: { allow: [/* the untranslated labels, see examples/demo/rex.config.ts */] } },
   server: (bundle) => createDemoServer(bundle),
 });
@@ -470,14 +478,14 @@ export default function Button({ tone = "quiet", type = "button", ...props }: Bu
 
 Add five more and replace the generated shell overrides:
 
-| File | Role |
-| --- | --- |
-| [app/components/Card.tsx](../examples/demo/app/components/Card.tsx) | a titled card over DesignX `Card` |
-| [app/components/Field.tsx](../examples/demo/app/components/Field.tsx) | a labelled input with hint and error, wired with `aria-describedby` and `aria-invalid` |
-| [app/components/Sheet.tsx](../examples/demo/app/components/Sheet.tsx) | the body of the wallet's sheets, with an optional description |
-| [app/components/BalanceCard.tsx](../examples/demo/app/components/BalanceCard.tsx) | the balance card: name, token count, the total formatted as USD, the 24h change and the address (with `AnimatedNumber.tsx` and `ChangeBadge.tsx`) |
-| [app/components/HoldingsTable.tsx](../examples/demo/app/components/HoldingsTable.tsx) | the `Holding` type and the holdings rows in a DesignX `DataTable` with a search field (with `TokenAvatar.tsx`) |
-| [app/components/Shell.tsx](../examples/demo/app/components/Shell.tsx) | `Button`, `Sheet`, `PaletteItem`, `Outcome`, `Nav` and `Frame` overrides for the Rex shell (a DesignX sidebar frame with breadcrumb, palette trigger and theme toggle), typed with `ShellButtonProps`, `ShellSheetProps`, `ShellPaletteItemProps`, `ShellOutcomeProps`, `ShellNavProps` and `ShellFrameProps` |
+| File                                                                                  | Role                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [app/components/Card.tsx](../examples/demo/app/components/Card.tsx)                   | a titled card over DesignX `Card`                                                                                                                                                                                                                                                                             |
+| [app/components/Field.tsx](../examples/demo/app/components/Field.tsx)                 | a labelled input with hint and error, wired with `aria-describedby` and `aria-invalid`                                                                                                                                                                                                                        |
+| [app/components/Sheet.tsx](../examples/demo/app/components/Sheet.tsx)                 | the body of the wallet's sheets, with an optional description                                                                                                                                                                                                                                                 |
+| [app/components/BalanceCard.tsx](../examples/demo/app/components/BalanceCard.tsx)     | the balance card: name, token count, the total formatted as USD, the 24h change and the address (with `AnimatedNumber.tsx` and `ChangeBadge.tsx`)                                                                                                                                                             |
+| [app/components/HoldingsTable.tsx](../examples/demo/app/components/HoldingsTable.tsx) | the `Holding` type and the holdings rows in a DesignX `DataTable` with a search field (with `TokenAvatar.tsx`)                                                                                                                                                                                                |
+| [app/components/Shell.tsx](../examples/demo/app/components/Shell.tsx)                 | `Button`, `Sheet`, `PaletteItem`, `Outcome`, `Nav` and `Frame` overrides for the Rex shell (a DesignX sidebar frame with breadcrumb, palette trigger and theme toggle), typed with `ShellButtonProps`, `ShellSheetProps`, `ShellPaletteItemProps`, `ShellOutcomeProps`, `ShellNavProps` and `ShellFrameProps` |
 
 ## 9. The portfolio page
 
@@ -986,13 +994,13 @@ export default function TransferReceipt({ transfer }: TransferReceiptProps) {
 
 The `form` region binds `pick-token` and `pick-contact`, opens the two pickers and edits the amount draft. Copy it and its parts from the demo:
 
-| File | Role |
-| --- | --- |
-| [regions/form/region.tsx](../examples/demo/app/pages/send/regions/form/region.tsx) | binds both pick actions and both sheets, provides the sheet contents, renders the three fields |
-| [parts/TokenField.tsx](../examples/demo/app/pages/send/regions/form/parts/TokenField.tsx), [parts/ContactField.tsx](../examples/demo/app/pages/send/regions/form/parts/ContactField.tsx) | the selected token or contact, a Choose button that opens the sheet and a Next button bound to the pick action |
-| [parts/TokenOptions.tsx](../examples/demo/app/pages/send/regions/form/parts/TokenOptions.tsx), [parts/ContactOptions.tsx](../examples/demo/app/pages/send/regions/form/parts/ContactOptions.tsx) | the sheet bodies: a search field that picks on Enter and one bound button per choice |
-| [parts/AmountField.tsx](../examples/demo/app/pages/send/regions/form/parts/AmountField.tsx) | the amount input with balance hint and validation message |
-| [overlays/TokenSelectorSheet.tsx](../examples/demo/app/pages/send/overlays/TokenSelectorSheet.tsx), [overlays/ContactPickerSheet.tsx](../examples/demo/app/pages/send/overlays/ContactPickerSheet.tsx) | the two region-bound sheets, each exporting the context its region fills |
+| File                                                                                                                                                                                                   | Role                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| [regions/form/region.tsx](../examples/demo/app/pages/send/regions/form/region.tsx)                                                                                                                     | binds both pick actions and both sheets, provides the sheet contents, renders the three fields                 |
+| [parts/TokenField.tsx](../examples/demo/app/pages/send/regions/form/parts/TokenField.tsx), [parts/ContactField.tsx](../examples/demo/app/pages/send/regions/form/parts/ContactField.tsx)               | the selected token or contact, a Choose button that opens the sheet and a Next button bound to the pick action |
+| [parts/TokenOptions.tsx](../examples/demo/app/pages/send/regions/form/parts/TokenOptions.tsx), [parts/ContactOptions.tsx](../examples/demo/app/pages/send/regions/form/parts/ContactOptions.tsx)       | the sheet bodies: a search field that picks on Enter and one bound button per choice                           |
+| [parts/AmountField.tsx](../examples/demo/app/pages/send/regions/form/parts/AmountField.tsx)                                                                                                            | the amount input with balance hint and validation message                                                      |
+| [overlays/TokenSelectorSheet.tsx](../examples/demo/app/pages/send/overlays/TokenSelectorSheet.tsx), [overlays/ContactPickerSheet.tsx](../examples/demo/app/pages/send/overlays/ContactPickerSheet.tsx) | the two region-bound sheets, each exporting the context its region fills                                       |
 
 ## 11. Check and publish the manifest
 

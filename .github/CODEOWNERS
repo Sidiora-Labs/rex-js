@@ -1,0 +1,22 @@
+# Code owners for Rex. Owners are the active maintainers in MAINTAINERS.md; what an owner may do
+# is defined in GOVERNANCE.md. The last matching pattern wins, so the catch-all comes first and the
+# areas MAINTAINERS.md names follow it.
+
+*                     @dev-paxeer
+
+# The package, the demo and the docs
+/packages/rex/        @dev-paxeer
+/examples/demo/       @dev-paxeer
+/docs/                @dev-paxeer
+
+# The spec is the record: spec changes follow the spec change process in GOVERNANCE.md
+/spec/                @dev-paxeer
+
+# CI, the release workflow, this file and the templates
+/.github/             @dev-paxeer
+
+# Governance documents need the longer review in GOVERNANCE.md
+/GOVERNANCE.md        @dev-paxeer
+/MAINTAINERS.md       @dev-paxeer
+/SECURITY.md          @dev-paxeer
+/CODE_OF_CONDUCT.md   @dev-paxeer

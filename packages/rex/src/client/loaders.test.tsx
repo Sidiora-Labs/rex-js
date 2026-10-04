@@ -152,7 +152,12 @@ const freshPage = page("fresh", {
 const notePage = page("note", {
   route: "/notes/:id",
   params: z.object({ id: text({ min: 1 }) }),
-  load: { note: { action: readNote, input: (params: Readonly<Record<string, unknown>>) => ({ id: String(params.id) }) } },
+  load: {
+    note: {
+      action: readNote,
+      input: (params: Readonly<Record<string, unknown>>) => ({ id: String(params.id) }),
+    },
+  },
   chrome: { title: "Note" },
 });
 
@@ -397,7 +402,9 @@ async function mount(path: string, queryClient: QueryClient): Promise<HTMLElemen
   const container = document.createElement("div");
   document.body.appendChild(container);
   await act(async () => {
-    started.push(startRexEntry(container, bundle, { actor: owner, fetch: serverFetch, queryClient }));
+    started.push(
+      startRexEntry(container, bundle, { actor: owner, fetch: serverFetch, queryClient }),
+    );
   });
   return container;
 }
@@ -475,7 +482,9 @@ describe("page loaders", () => {
     const queryClient = quietClient();
     const container = await mount("/notes/n2", queryClient);
     await waitFor(() =>
-      expect(container.querySelector('[data-testid="note-title"]')?.textContent).toBe("Second note"),
+      expect(container.querySelector('[data-testid="note-title"]')?.textContent).toBe(
+        "Second note",
+      ),
     );
     const key = loaderQueryKey("note", "note", { id: "n2" });
     expect(key[0]).toBe(LOADER_QUERY_SCOPE);
@@ -504,12 +513,16 @@ describe("page loaders", () => {
     const queryClient = quietClient();
     let container = await mount("/fresh", queryClient);
     await waitFor(() =>
-      expect(container.querySelector('[data-testid="fresh-count"]')?.textContent).toBe("2 fresh notes"),
+      expect(container.querySelector('[data-testid="fresh-count"]')?.textContent).toBe(
+        "2 fresh notes",
+      ),
     );
     expect(calls.listNotes).toBe(1);
     await unmountAll();
     container = await mount("/fresh", queryClient);
-    expect(container.querySelector('[data-testid="fresh-count"]')?.textContent).toBe("2 fresh notes");
+    expect(container.querySelector('[data-testid="fresh-count"]')?.textContent).toBe(
+      "2 fresh notes",
+    );
     await settle();
     expect(calls.listNotes).toBe(1);
     await unmountAll();

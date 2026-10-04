@@ -80,7 +80,10 @@ function ConfiguredI18n({ source, formatter: formatterModule, children }: Config
   const setLocale = useCallback(
     (next: string) => {
       if (!settings.locales.includes(next)) {
-        throw new RexError("REX316", `rex: locale "${next}" is not one of ${settings.locales.join(", ")}`);
+        throw new RexError(
+          "REX316",
+          `rex: locale "${next}" is not one of ${settings.locales.join(", ")}`,
+        );
       }
       if (globalThis.document !== undefined) globalThis.document.cookie = localeCookie(next);
       setChosen(next);

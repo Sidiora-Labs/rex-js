@@ -261,7 +261,9 @@ describe("page mount wait", () => {
     const started = Date.now();
     const detail = await renderPage(app, "note", { params: { noteId: "n2" } });
     expect(Date.now() - started).toBeGreaterThan(1_000);
-    expect(detail.container.querySelector('[data-rex-page="note"]:not([data-rex-page-loading])')).not.toBeNull();
+    expect(
+      detail.container.querySelector('[data-rex-page="note"]:not([data-rex-page-loading])'),
+    ).not.toBeNull();
     await waitFor(() =>
       expect(detail.container.querySelector('[data-note-detail="n2"]')?.textContent).toBe(
         "Call Ada",
@@ -277,9 +279,9 @@ describe("page mount wait", () => {
     await expect(renderPage(app, "notes", { pageTimeout: 0 })).rejects.toThrow(
       /pageTimeout must be a positive number of milliseconds/,
     );
-    await expect(renderRegion(app, "notes", "list", {}, { pageTimeout: Number.NaN })).rejects.toThrow(
-      RexTestingError,
-    );
+    await expect(
+      renderRegion(app, "notes", "list", {}, { pageTimeout: Number.NaN }),
+    ).rejects.toThrow(RexTestingError);
   });
 });
 
@@ -305,9 +307,7 @@ describe("renderRegion", () => {
     const app = createTestApp(notesApp, { actor: reader });
     const view = await renderRegion(app, "note", "detail", {}, { params: { noteId: "n1" } });
     await waitFor(() =>
-      expect(view.container.querySelector('[data-note-detail="n1"]')?.textContent).toBe(
-        "Buy milk",
-      ),
+      expect(view.container.querySelector('[data-note-detail="n1"]')?.textContent).toBe("Buy milk"),
     );
     expect(view.sidecar().page).toBe("note");
     await expect(renderRegion(app, "note", "missing")).rejects.toThrow(

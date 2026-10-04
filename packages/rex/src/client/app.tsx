@@ -11,7 +11,12 @@ import {
   type ReactNode,
 } from "react";
 import { matchRoute, useLocation, useRouter, useSearch } from "wouter";
-import { actor as createActor, anonymousActor, type Actor, type ActorInput } from "../core/actor.ts";
+import {
+  actor as createActor,
+  anonymousActor,
+  type Actor,
+  type ActorInput,
+} from "../core/actor.ts";
 import { isPlainObject } from "../core/entity.ts";
 import { RexError, type RexErrorCode } from "../core/errors.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
@@ -159,7 +164,10 @@ export function checkManifest(manifest: Manifest, registry: RegistrySnapshot): M
 function resolveBase(baseUrl: string | undefined): string {
   const base = baseUrl ?? globalThis.location?.origin;
   if (typeof base !== "string" || !/^https?:\/\//.test(base)) {
-    throw new RexStartupError("baseUrl must be an http(s) origin when the page has no location", "REX323");
+    throw new RexStartupError(
+      "baseUrl must be an http(s) origin when the page has no location",
+      "REX323",
+    );
   }
   return base;
 }
@@ -369,8 +377,4 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
   return RexApp;
 }
 
-export {
-  createRexEntry,
-  type RexEntryBundle,
-  type RexEntryOptions,
-} from "./entry.tsx";
+export { createRexEntry, type RexEntryBundle, type RexEntryOptions } from "./entry.tsx";

@@ -81,7 +81,11 @@ const renderer = createRexRenderer({
         view: view(() => createElement("h1", null, "Join the list")),
         states: {},
       }),
-      definePageModules({ page: live, view: view(() => createElement("p", null, "Live")), states: {} }),
+      definePageModules({
+        page: live,
+        view: view(() => createElement("p", null, "Live")),
+        states: {},
+      }),
     ],
   },
 });
@@ -160,8 +164,22 @@ describe("parsePrerenderList", () => {
   const written = {
     version: 1,
     pages: [
-      { path: "/news/", page: "news", render: "ssg", revalidate: 60, file: "news/index.html", generatedAt: 1700000000000 },
-      { path: "/landing", page: "landing", render: "static", revalidate: null, file: "landing/index.html", generatedAt: 1700000000001 },
+      {
+        path: "/news/",
+        page: "news",
+        render: "ssg",
+        revalidate: 60,
+        file: "news/index.html",
+        generatedAt: 1700000000000,
+      },
+      {
+        path: "/landing",
+        page: "landing",
+        render: "static",
+        revalidate: null,
+        file: "landing/index.html",
+        generatedAt: 1700000000001,
+      },
     ],
   };
 
@@ -170,8 +188,22 @@ describe("parsePrerenderList", () => {
     expect(list).toEqual({
       version: PRERENDER_LIST_VERSION,
       pages: [
-        { path: "/news", page: "news", render: "ssg", revalidate: 60, file: "news/index.html", generatedAt: 1700000000000 },
-        { path: "/landing", page: "landing", render: "static", revalidate: null, file: "landing/index.html", generatedAt: 1700000000001 },
+        {
+          path: "/news",
+          page: "news",
+          render: "ssg",
+          revalidate: 60,
+          file: "news/index.html",
+          generatedAt: 1700000000000,
+        },
+        {
+          path: "/landing",
+          page: "landing",
+          render: "static",
+          revalidate: null,
+          file: "landing/index.html",
+          generatedAt: 1700000000001,
+        },
       ],
     });
     expect(Object.isFrozen(list)).toBe(true);
@@ -181,28 +213,47 @@ describe("parsePrerenderList", () => {
 
   it("rejects a malformed list with REX404 naming the problem", () => {
     const first = written.pages[0] as Record<string, unknown>;
-    const withEntry = (patch: Record<string, unknown>) => ({ version: 1, pages: [{ ...first, ...patch }] });
-    expect(() => parsePrerenderList("nope")).toThrow(rexError("REX404", `${PRERENDER_LIST_FILE} must be a JSON object`));
-    expect(() => parsePrerenderList({ version: 2, pages: [] })).toThrow(rexError("REX404", "version 2 is not 1"));
-    expect(() => parsePrerenderList({ version: 1, pages: {} })).toThrow(rexError("REX404", "pages must be a list"));
-    expect(() => parsePrerenderList({ version: 1, pages: ["news"] })).toThrow(rexError("REX404", "pages.0 must be an object"));
-    expect(() => parsePrerenderList(withEntry({ path: "news" }))).toThrow(rexError("REX404", "pages.0 path must start with /"));
-    expect(() => parsePrerenderList(withEntry({ page: "" }))).toThrow(rexError("REX404", "page must be a page id"));
-    expect(() => parsePrerenderList(withEntry({ render: "ssr" }))).toThrow(rexError("REX404", "render must be one of ssg, static"));
+    const withEntry = (patch: Record<string, unknown>) => ({
+      version: 1,
+      pages: [{ ...first, ...patch }],
+    });
+    expect(() => parsePrerenderList("nope")).toThrow(
+      rexError("REX404", `${PRERENDER_LIST_FILE} must be a JSON object`),
+    );
+    expect(() => parsePrerenderList({ version: 2, pages: [] })).toThrow(
+      rexError("REX404", "version 2 is not 1"),
+    );
+    expect(() => parsePrerenderList({ version: 1, pages: {} })).toThrow(
+      rexError("REX404", "pages must be a list"),
+    );
+    expect(() => parsePrerenderList({ version: 1, pages: ["news"] })).toThrow(
+      rexError("REX404", "pages.0 must be an object"),
+    );
+    expect(() => parsePrerenderList(withEntry({ path: "news" }))).toThrow(
+      rexError("REX404", "pages.0 path must start with /"),
+    );
+    expect(() => parsePrerenderList(withEntry({ page: "" }))).toThrow(
+      rexError("REX404", "page must be a page id"),
+    );
+    expect(() => parsePrerenderList(withEntry({ render: "ssr" }))).toThrow(
+      rexError("REX404", "render must be one of ssg, static"),
+    );
     for (const revalidate of [0, 1.5, -1, "60"]) {
       expect(() => parsePrerenderList(withEntry({ revalidate })), String(revalidate)).toThrow(
         rexError("REX404", "revalidate must be null or a positive whole number of seconds"),
       );
     }
-    expect(() => parsePrerenderList(withEntry({ file: "news.html" }))).toThrow(rexError("REX404", "file must be news/index.html"));
+    expect(() => parsePrerenderList(withEntry({ file: "news.html" }))).toThrow(
+      rexError("REX404", "file must be news/index.html"),
+    );
     for (const generatedAt of ["now", Number.POSITIVE_INFINITY, null]) {
       expect(() => parsePrerenderList(withEntry({ generatedAt })), String(generatedAt)).toThrow(
         rexError("REX404", "generatedAt must be a timestamp in milliseconds"),
       );
     }
-    expect(() => parsePrerenderList({ version: 1, pages: [first, { ...first, path: "/news/" }] })).toThrow(
-      rexError("REX404", "repeats path /news"),
-    );
+    expect(() =>
+      parsePrerenderList({ version: 1, pages: [first, { ...first, path: "/news/" }] }),
+    ).toThrow(rexError("REX404", "repeats path /news"));
   });
 
   it("serializes a list as indented JSON with a trailing newline that parses back", () => {
@@ -211,9 +262,9 @@ describe("parsePrerenderList", () => {
     expect(text.endsWith("\n")).toBe(true);
     expect(text).toBe(`${JSON.stringify(list, null, 2)}\n`);
     expect(parsePrerenderList(JSON.parse(text))).toEqual(list);
-    expect(() => serializePrerenderList({ version: 1, pages: [{ ...list.pages[0], render: "csr" }] } as never)).toThrow(
-      rexError("REX404"),
-    );
+    expect(() =>
+      serializePrerenderList({ version: 1, pages: [{ ...list.pages[0], render: "csr" }] } as never),
+    ).toThrow(rexError("REX404"));
   });
 });
 
@@ -248,7 +299,9 @@ describe("html rewriting", () => {
       `<input name="${CSRF_FIELD}" type="hidden" value="${token}"><input type="hidden" name="${CSRF_FIELD}" value="${token}"/>`,
     );
     expect(csrfValues(fillCsrfToken(`${existing}${existing}`, token))).toEqual([token, token]);
-    expect(() => fillCsrfToken(existing, "not-hex")).toThrow(rexError("REX400", "token must be hexadecimal"));
+    expect(() => fillCsrfToken(existing, "not-hex")).toThrow(
+      rexError("REX400", "token must be hexadecimal"),
+    );
   });
 
   it("replaces the build nonce everywhere and escapes the request nonce", () => {
@@ -272,13 +325,21 @@ describe("html rewriting", () => {
     expect(rootTag(applyScreenAttributes(written, phone))).toBe(
       '<html lang="en" data-rex-screen="phone" data-rex-pointer="coarse" data-rex-density="agent">',
     );
-    const payload = { version: 1, page: "news", screen: "desktop", pointer: "fine", density: "comfortable" };
+    const payload = {
+      version: 1,
+      page: "news",
+      screen: "desktop",
+      pointer: "fine",
+      density: "comfortable",
+    };
     const sidecar = `<script type="${SIDECAR_MIME_TYPE}" id="${SIDECAR_ELEMENT_ID}">${escapeInlineJson(payload)}</script>`;
     const rewritten = applyScreenAttributes(bare.replace("</body>", `${sidecar}</body>`), phone);
     expect(rewritten).toContain(escapeInlineJson({ ...payload, ...phone }));
     expect(rewritten).not.toContain(escapeInlineJson(payload));
     const broken = `<script type="${SIDECAR_MIME_TYPE}" id="${SIDECAR_ELEMENT_ID}">{not json</script>`;
-    expect(applyScreenAttributes(bare.replace("</body>", `${broken}</body>`), phone)).toContain(broken);
+    expect(applyScreenAttributes(bare.replace("</body>", `${broken}</body>`), phone)).toContain(
+      broken,
+    );
     expect(() => applyScreenAttributes("<main>Hi</main>", phone)).toThrow(
       rexError("REX400", "has no html element"),
     );
@@ -302,7 +363,9 @@ describe("isStale", () => {
     const timed = entry("/news", "news", "ssg", 60, 1_000_000);
     expect(isStale(timed, 1_000_000 + 59_999)).toBe(false);
     expect(isStale(timed, 1_000_000 + 60_000)).toBe(true);
-    expect(isStale(entry("/landing", "landing", "static", null, 0), Number.MAX_SAFE_INTEGER)).toBe(false);
+    expect(isStale(entry("/landing", "landing", "static", null, 0), Number.MAX_SAFE_INTEGER)).toBe(
+      false,
+    );
   });
 });
 
@@ -311,8 +374,15 @@ describe("createStaticCache", () => {
     expect(() => createStaticCache({ pages: [], store: memoryStaticStore() } as never)).toThrow(
       rexError("REX400", "screen must classify each request"),
     );
-    const listed = [entry("/news/", "news", "ssg", 60), entry("/landing", "landing", "static", null)];
-    const cache = createStaticCache({ pages: listed, store: memoryStaticStore(), screen: screenFromRequest });
+    const listed = [
+      entry("/news/", "news", "ssg", 60),
+      entry("/landing", "landing", "static", null),
+    ];
+    const cache = createStaticCache({
+      pages: listed,
+      store: memoryStaticStore(),
+      screen: screenFromRequest,
+    });
     expect(cache.size).toBe(2);
     expect(cache.has("/news")).toBe(true);
     expect(cache.has("/news/")).toBe(true);
@@ -322,9 +392,13 @@ describe("createStaticCache", () => {
     expect(cache.entry("/nowhere")).toBeUndefined();
     expect(cache.entries().map((item) => item.path)).toEqual(["/news", "/landing"]);
     expect(Object.isFrozen(cache.entries())).toBe(true);
-    expect(() => createStaticCache({ pages: [...listed, listed[0] as StaticPageEntry], store: memoryStaticStore(), screen: screenFromRequest })).toThrow(
-      rexError("REX404", "repeats path /news"),
-    );
+    expect(() =>
+      createStaticCache({
+        pages: [...listed, listed[0] as StaticPageEntry],
+        store: memoryStaticStore(),
+        screen: screenFromRequest,
+      }),
+    ).toThrow(rexError("REX404", "repeats path /news"));
   });
 
   it("serves a cached page with the request nonce, the request screen and a csrf grant", async () => {
@@ -381,8 +455,12 @@ describe("createStaticCache", () => {
       store: memoryStaticStore(),
       screen: screenFromRequest,
     });
-    await expect(cache.serve(new Request(`${ORIGIN}/live`), renderer, context())).resolves.toBeNull();
-    await expect(cache.serve(new Request(`${ORIGIN}/news.html`), renderer, context())).resolves.toBeNull();
+    await expect(
+      cache.serve(new Request(`${ORIGIN}/live`), renderer, context()),
+    ).resolves.toBeNull();
+    await expect(
+      cache.serve(new Request(`${ORIGIN}/news.html`), renderer, context()),
+    ).resolves.toBeNull();
   });
 
   it("generates a missing ssg page through the renderer and stores it with the build nonce", async () => {
@@ -457,7 +535,8 @@ describe("createStaticCache", () => {
       code: "REX405",
       page: "(none)",
       path: "/missing",
-      message: 'REX405 page "(none)" at /missing cannot be prerendered: the render ended as not-found',
+      message:
+        'REX405 page "(none)" at /missing cannot be prerendered: the render ended as not-found',
     });
     expect(failed).toEqual(listed);
     expect(await store.read("/missing")).toBe(OLD_HTML);
@@ -466,14 +545,13 @@ describe("createStaticCache", () => {
 
   it("refuses to regenerate static pages, unlisted paths, pages without a renderer and pages that moved", async () => {
     const cache = createStaticCache({
-      pages: [
-        entry("/landing", "landing", "static", null),
-        entry("/news", "landing", "ssg", 60),
-      ],
+      pages: [entry("/landing", "landing", "static", null), entry("/news", "landing", "ssg", 60)],
       store: memoryStaticStore(),
       screen: screenFromRequest,
     });
-    await expect(cache.regenerate("/landing", ORIGIN, renderer)).rejects.toThrow(RexStaticPageError);
+    await expect(cache.regenerate("/landing", ORIGIN, renderer)).rejects.toThrow(
+      RexStaticPageError,
+    );
     await expect(cache.regenerate("/landing", ORIGIN, renderer)).rejects.toMatchObject({
       code: "REX405",
       page: "landing",
@@ -530,7 +608,9 @@ describe("renderPrerenderedHtml", () => {
   });
 
   it("refuses a path that does not render a page", async () => {
-    await expect(renderPrerenderedHtml(renderer, new URL("/missing", ORIGIN))).rejects.toMatchObject({
+    await expect(
+      renderPrerenderedHtml(renderer, new URL("/missing", ORIGIN)),
+    ).rejects.toMatchObject({
       name: "RexStaticPageError",
       code: "REX405",
       page: "(none)",
@@ -542,8 +622,16 @@ describe("renderPrerenderedHtml", () => {
 
 describe("registerStaticCache", () => {
   it("binds a cache to a registry object and unbinds only the same cache", () => {
-    const first = createStaticCache({ pages: [], store: memoryStaticStore(), screen: screenFromRequest });
-    const second = createStaticCache({ pages: [], store: memoryStaticStore(), screen: screenFromRequest });
+    const first = createStaticCache({
+      pages: [],
+      store: memoryStaticStore(),
+      screen: screenFromRequest,
+    });
+    const second = createStaticCache({
+      pages: [],
+      store: memoryStaticStore(),
+      screen: screenFromRequest,
+    });
     const key = {};
     expect(staticCacheFor(key)).toBeUndefined();
     expect(() => registerStaticCache("registry" as never, first)).toThrow(
@@ -569,7 +657,11 @@ describe("prerender list type", () => {
       version: PRERENDER_LIST_VERSION,
       pages: [entry("/news", "news", "ssg", 60, 5)],
     });
-    const cache = createStaticCache({ pages: list.pages, store: memoryStaticStore(), screen: screenFromRequest });
+    const cache = createStaticCache({
+      pages: list.pages,
+      store: memoryStaticStore(),
+      screen: screenFromRequest,
+    });
     expect(cache.entries()).toEqual(list.pages);
   });
 });

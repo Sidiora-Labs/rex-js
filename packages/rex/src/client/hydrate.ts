@@ -34,7 +34,9 @@ export function serializeRexData(payload: RexDataPayload): string {
 }
 
 function stringList(value: unknown): boolean {
-  return value === undefined || (Array.isArray(value) && value.every((item) => typeof item === "string"));
+  return (
+    value === undefined || (Array.isArray(value) && value.every((item) => typeof item === "string"))
+  );
 }
 
 export function parseRexData(value: unknown): RexDataPayload {
@@ -56,7 +58,11 @@ export function parseRexData(value: unknown): RexDataPayload {
     throw new RexDataError("actor must be an actor object");
   }
   const queries = value.queries;
-  if (!isPlainObject(queries) || !Array.isArray(queries.queries) || !Array.isArray(queries.mutations)) {
+  if (
+    !isPlainObject(queries) ||
+    !Array.isArray(queries.queries) ||
+    !Array.isArray(queries.mutations)
+  ) {
     throw new RexDataError("queries must be a dehydrated TanStack Query state");
   }
   return value as unknown as RexDataPayload;
@@ -106,12 +112,15 @@ export function reportToConsole(mismatch: HydrationMismatch): void {
 }
 
 function digestOf(error: unknown): unknown {
-  return typeof error === "object" && error !== null ? (error as { digest?: unknown }).digest : undefined;
+  return typeof error === "object" && error !== null
+    ? (error as { digest?: unknown }).digest
+    : undefined;
 }
 
 export function isClientRenderHandoff(error: unknown): boolean {
   if (digestOf(error) === CLIENT_RENDER_DIGEST) return true;
-  const cause = typeof error === "object" && error !== null ? (error as { cause?: unknown }).cause : undefined;
+  const cause =
+    typeof error === "object" && error !== null ? (error as { cause?: unknown }).cause : undefined;
   return cause !== undefined && digestOf(cause) === CLIENT_RENDER_DIGEST;
 }
 

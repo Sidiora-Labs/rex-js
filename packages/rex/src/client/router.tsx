@@ -115,7 +115,8 @@ function admitsString(schema: JsonSchema): boolean {
     const branches = schema[key];
     if (Array.isArray(branches)) {
       return branches.some(
-        (branch) => typeof branch === "object" && branch !== null && admitsString(branch as JsonSchema),
+        (branch) =>
+          typeof branch === "object" && branch !== null && admitsString(branch as JsonSchema),
       );
     }
   }
@@ -292,7 +293,9 @@ function PageRoute({ page: declared, routeParams, render }: PageRouteProps) {
     [declared, key, search, subject, registry, manifest],
   );
   return (
-    <ActiveRouteContext.Provider value={resolution}>{render(resolution)}</ActiveRouteContext.Provider>
+    <ActiveRouteContext.Provider value={resolution}>
+      {render(resolution)}
+    </ActiveRouteContext.Provider>
   );
 }
 
@@ -303,7 +306,9 @@ function NotFoundRoute({ render }: { readonly render: RouteRender }) {
     [path],
   );
   return (
-    <ActiveRouteContext.Provider value={resolution}>{render(resolution)}</ActiveRouteContext.Provider>
+    <ActiveRouteContext.Provider value={resolution}>
+      {render(resolution)}
+    </ActiveRouteContext.Provider>
   );
 }
 
@@ -327,7 +332,11 @@ export function runRouteChange(
   update();
 }
 
-export type RouteChange = (target: AnyPage, href: string, options: { readonly replace: boolean }) => void;
+export type RouteChange = (
+  target: AnyPage,
+  href: string,
+  options: { readonly replace: boolean },
+) => void;
 
 export const RouteChangeContext = createContext<RouteChange | null>(null);
 RouteChangeContext.displayName = "RexRouteChange";
@@ -336,7 +345,8 @@ export function useRouteChange(): RouteChange {
   const routes = useContext(RouteChangeContext);
   const [, navigate] = useLocation();
   const own = useCallback<RouteChange>(
-    (target, href, { replace }) => runRouteChange(target.transition, () => navigate(href, { replace })),
+    (target, href, { replace }) =>
+      runRouteChange(target.transition, () => navigate(href, { replace })),
     [navigate],
   );
   return routes ?? own;
@@ -345,10 +355,10 @@ export function useRouteChange(): RouteChange {
 export function useLocaleHref(): (href: string) => string {
   const { source, locale } = useI18n();
   const prefixed = source !== null && source.settings.routing === "prefix";
-  return useCallback((href: string) => (prefixed ? localizeHref(href, locale) : href), [
-    prefixed,
-    locale,
-  ]);
+  return useCallback(
+    (href: string) => (prefixed ? localizeHref(href, locale) : href),
+    [prefixed, locale],
+  );
 }
 
 export const ROUTE_FOCUS_SELECTORS = ["[data-rex-shell] h1", "main h1", "h1", "main"] as const;
@@ -457,7 +467,8 @@ export function RexRoutes({ render }: RexRoutesProps) {
   const [path] = useLocation();
   const change = useRouteChange();
   const { source, locale } = useI18n();
-  const locales = source !== null && source.settings.routing === "prefix" ? source.settings.locales : null;
+  const locales =
+    source !== null && source.settings.routing === "prefix" ? source.settings.locales : null;
   const pages = useMemo(() => orderPages(registry.pages), [registry]);
   const [committed, setCommitted] = useState({ path, changes: 0 });
   const changes = committed.path === path ? committed.changes : committed.changes + 1;

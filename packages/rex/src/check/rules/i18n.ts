@@ -8,7 +8,11 @@ import { defineRule, finding, type Finding, type SourceLoader } from "../rule.ts
 import { jsxAttributes, jsxElements } from "./tokens.ts";
 
 export const I18N_TEXT_PROPERTIES: readonly string[] = Object.freeze(["label", "title"]);
-export const I18N_TEXT_ATTRIBUTES: readonly string[] = Object.freeze(["label", "title", "aria-label"]);
+export const I18N_TEXT_ATTRIBUTES: readonly string[] = Object.freeze([
+  "label",
+  "title",
+  "aria-label",
+]);
 
 export interface I18nCheckSettings {
   readonly configured: boolean;
@@ -42,13 +46,19 @@ function unwrap(node: ts.Expression): ts.Expression {
 }
 
 function keyOf(name: ts.PropertyName): string | null {
-  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)) {
+  if (
+    ts.isIdentifier(name) ||
+    ts.isStringLiteral(name) ||
+    ts.isNoSubstitutionTemplateLiteral(name)
+  ) {
     return name.text;
   }
   return null;
 }
 
-function stringLiteral(node: ts.Node | undefined): ts.StringLiteral | ts.NoSubstitutionTemplateLiteral | null {
+function stringLiteral(
+  node: ts.Node | undefined,
+): ts.StringLiteral | ts.NoSubstitutionTemplateLiteral | null {
   if (node === undefined) return null;
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node;
   return null;
@@ -116,7 +126,10 @@ export function readI18nConfig(root: string, sources: SourceLoader): I18nConfigR
   const check = property(config, "check");
   if (check === undefined) return { configured, allow: Object.freeze([]), findings: [] };
   if (!ts.isPropertyAssignment(check) || !ts.isObjectLiteralExpression(unwrap(check.initializer))) {
-    return report(check, "check in rex.config.ts is not a static object, so rex check cannot read check.i18n");
+    return report(
+      check,
+      "check in rex.config.ts is not a static object, so rex check cannot read check.i18n",
+    );
   }
   const i18n = property(unwrap(check.initializer) as ts.ObjectLiteralExpression, "i18n");
   if (i18n === undefined) return { configured, allow: Object.freeze([]), findings: [] };
@@ -134,7 +147,10 @@ export function readI18nConfig(root: string, sources: SourceLoader): I18nConfigR
   if (allowProperty === undefined) return { configured, allow: Object.freeze([]), findings: [] };
   const list = ts.isPropertyAssignment(allowProperty) ? unwrap(allowProperty.initializer) : null;
   if (list === null || !ts.isArrayLiteralExpression(list)) {
-    return report(allowProperty, "check.i18n.allow in rex.config.ts must be a literal list of strings");
+    return report(
+      allowProperty,
+      "check.i18n.allow in rex.config.ts must be a literal list of strings",
+    );
   }
   const allow: string[] = [];
   for (const element of list.elements) {

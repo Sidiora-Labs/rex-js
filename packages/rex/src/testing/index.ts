@@ -126,7 +126,9 @@ export function cleanupRex(): void {
 
 export function setupRexTesting(hooks: RexTestHooks): void {
   if (typeof hooks !== "object" || hooks === null || typeof hooks.afterEach !== "function") {
-    throw new RexTestingError("setupRexTesting needs the test runner's afterEach, e.g. { afterEach } from vitest");
+    throw new RexTestingError(
+      "setupRexTesting needs the test runner's afterEach, e.g. { afterEach } from vitest",
+    );
   }
   hooks.afterEach(cleanupRex);
 }
@@ -147,7 +149,9 @@ export function createTestApp(source: TestAppSource, options: TestAppOptions): T
     ledger,
     actor: () => subject,
     ...(appName === undefined ? {} : { app: appName }),
-    ...(serverOptions.confirmTtlMs === undefined ? {} : { confirmTtlMs: serverOptions.confirmTtlMs }),
+    ...(serverOptions.confirmTtlMs === undefined
+      ? {}
+      : { confirmTtlMs: serverOptions.confirmTtlMs }),
   });
   const registry = source.registry;
   return Object.freeze({
@@ -302,7 +306,13 @@ function prepare(app: TestApp, pageId: string, options: RenderPageOptions): Rend
   };
 }
 
-function Isolated({ outcomes, children }: { readonly outcomes: OutcomeStore; readonly children: ReactNode }) {
+function Isolated({
+  outcomes,
+  children,
+}: {
+  readonly outcomes: OutcomeStore;
+  readonly children: ReactNode;
+}) {
   return createElement(
     OutcomeProvider,
     { store: outcomes },
@@ -394,7 +404,11 @@ export async function renderPage(
 ): Promise<RexRenderResult> {
   const setup = prepare(app, pageId, options);
   const RexEntry = createRexEntry(
-    { registry: app.registry, pages: app.pages, ...(app.source.manifest === undefined ? {} : { manifest: app.source.manifest }) },
+    {
+      registry: app.registry,
+      pages: app.pages,
+      ...(app.source.manifest === undefined ? {} : { manifest: app.source.manifest }),
+    },
     { fetch: setup.fetch, baseUrl: app.baseUrl, queryClient: setup.queryClient },
   );
   return mount(app, setup, createElement(RexEntry));

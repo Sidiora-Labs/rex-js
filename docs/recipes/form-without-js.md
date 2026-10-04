@@ -45,13 +45,13 @@ export default region("form", () => (
 
 Props:
 
-| Prop | Meaning |
-| --- | --- |
-| `action` | the action declaration |
-| `defaultValues` | initial values of the generated inputs |
-| `submitLabel` | the submit button text; the action label by default |
-| `children` | your own inputs instead of the generated ones; name them by the input field paths |
-| `onResult` | called with the `ActResult` after a JavaScript submit |
+| Prop            | Meaning                                                                           |
+| --------------- | --------------------------------------------------------------------------------- |
+| `action`        | the action declaration                                                            |
+| `defaultValues` | initial values of the generated inputs                                            |
+| `submitLabel`   | the submit button text; the action label by default                               |
+| `children`      | your own inputs instead of the generated ones; name them by the input field paths |
+| `onResult`      | called with the `ActResult` after a JavaScript submit                             |
 
 The rendered markup is a real form:
 

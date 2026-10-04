@@ -247,6 +247,7 @@ export function locateRexError(error: RexError, location: RexErrorLocation): Rex
   const target = error as { -readonly [K in "file" | "line" | "column"]: RexError[K] };
   target.file = location.file ?? null;
   target.line = location.file === undefined ? null : (location.line ?? null);
-  target.column = location.file === undefined || location.line === undefined ? null : (location.column ?? null);
+  target.column =
+    location.file === undefined || location.line === undefined ? null : (location.column ?? null);
   return error;
 }

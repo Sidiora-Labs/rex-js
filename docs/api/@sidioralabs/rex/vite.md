@@ -861,6 +861,14 @@ readonly optional server?: RexServerSource;
 readonly optional shellComponents?: string | null;
 ```
 
+<a id="statichost"></a>
+
+##### staticHost?
+
+```ts
+readonly optional staticHost?: boolean;
+```
+
 <a id="tailwind"></a>
 
 ##### tailwind?
