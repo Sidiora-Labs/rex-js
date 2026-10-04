@@ -26,6 +26,7 @@ export {
   type ListWindow,
 } from "./list.tsx";
 export * from "./shell.tsx";
+export * from "./shell/components.ts";
 export * from "./providers.ts";
 export * from "./reset.ts";
 export * from "./store.ts";

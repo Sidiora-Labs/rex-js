@@ -176,7 +176,7 @@ describe("buildManifest", () => {
       loaders: [],
       cache: null,
       transition: "none",
-      chrome: { header: true, nav: false, back: "portfolio", title: "Send", components: [] },
+      chrome: { header: true, nav: false, back: "portfolio", title: "Send" },
       regions: ["form", "confirm", "success"],
       overlays: [
         { id: "ContactPickerSheet", dismiss: "escape", binding: "region" },
@@ -321,9 +321,6 @@ describe("0.2 manifest options", () => {
     form: { redirect: "/", confirmTitle: "Send funds?" },
     handler: () => ({ txId: "tx" }),
   });
-  function Button() {
-    return null;
-  }
   const statement = page("statement", {
     route: "/statement/:account",
     params: z.object({ account: text() }),
@@ -334,7 +331,6 @@ describe("0.2 manifest options", () => {
     cache: { staleTime: 5_000 },
     transition: "view",
     actions: [sendForm],
-    chrome: { components: { Outcome: Button, Button } },
   });
   const plain = page("plain", { route: "/" });
 
@@ -347,7 +343,7 @@ describe("0.2 manifest options", () => {
     };
   }
 
-  it("records render, revalidate, paths, loaders, cache, transition and chrome components", () => {
+  it("records render, revalidate, paths, loaders, cache, transition and chrome", () => {
     const manifest = buildManifest(source([statement, plain]));
     const described = manifest.pages.find((item) => item.id === "statement");
     expect(described).toMatchObject({
@@ -365,10 +361,9 @@ describe("0.2 manifest options", () => {
         nav: true,
         back: null,
         title: "Statement",
-        components: ["Button", "Outcome"],
       },
     });
-    expect(stableStringify(manifest)).toContain('"components"');
+    expect(described?.chrome).toEqual({ header: true, nav: true, back: null, title: "Statement" });
   });
 
   it("uses the configured default render mode for pages that declare none", () => {

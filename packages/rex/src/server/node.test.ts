@@ -3,15 +3,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
+import { createElement } from "react";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { SSR_ATTRIBUTE } from "../client/hydrate.ts";
+import { view, type LazyPageModuleSet, type LoadedPageModules } from "../client/page.tsx";
 import { action } from "../core/action.ts";
 import { actor } from "../core/actor.ts";
-import { page } from "../core/page.ts";
+import { page, type AnyPage } from "../core/page.ts";
 import { always } from "../core/policy.ts";
+import { createRegistry } from "../core/registry.ts";
 import { boolean, z } from "../core/schema.ts";
+import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import { buildManifest, stableStringify } from "../manifest/build.ts";
 import { createRexServer, memoryLedger, type RegistryRouterClient } from "./index.ts";
 import { isApiPath, isPageRoutePath, startNodeServer, type RunningNodeServer } from "./adapters/node.ts";
+import { RENDER_KIND_HEADER, RENDER_PAGE_HEADER } from "./routes/render.ts";
+import { createRexRenderer, registerPageRenderer } from "./ssr.ts";
 
 const INDEX_HTML = '<!doctype html><html><body><div id="root"></div></body></html>';
 const APP_JS = 'console.log("rex");';
@@ -99,7 +106,7 @@ describe("startNodeServer", () => {
 
   it("runs actions over RPC through the node server", async () => {
     const client: RegistryRouterClient<typeof source> = createORPCClient(
-      new RPCLink({ url: `${running.url}/rex/rpc` }),
+      new RPCLink({ url: `${running.url}/rex/rpc`, headers: { origin: running.url } }),
     );
     await expect(client["toggle-dust"]({ hide: true })).resolves.toEqual({ hide: true });
   });
@@ -147,5 +154,91 @@ describe("startNodeServer close", () => {
     await server.close();
     await expect(fetch(`${server.url}/rex/health`)).rejects.toThrow();
     rmSync(clientDir, { recursive: true, force: true });
+  });
+});
+
+function statesFor(label: string): Readonly<Record<string, unknown>> {
+  return Object.fromEntries(
+    Object.values(STATE_EXPORT_NAMES).map((name) => [
+      name,
+      () => createElement("p", null, `${label}: ${name}`),
+    ]),
+  );
+}
+
+function lazySet(declared: AnyPage, loaded: LoadedPageModules): LazyPageModuleSet {
+  return Object.freeze({
+    page: declared,
+    chunk: `page-${declared.id}`,
+    load: () => Promise.resolve(loaded),
+  });
+}
+
+describe("startNodeServer with a registered page renderer", () => {
+  const ledger = memoryLedger();
+  const registry = createRegistry().register(toggleDust, portfolio).freeze();
+  const PortfolioView = view<{ account: string }>(({ params }) =>
+    createElement("p", null, `Holdings of ${params.account}`),
+  );
+  let clientDir: string;
+  let running: RunningNodeServer;
+
+  beforeAll(async () => {
+    clientDir = mkdtempSync(join(tmpdir(), "rex-node-ssr-"));
+    mkdirSync(join(clientDir, "assets"));
+    writeFileSync(join(clientDir, "index.html"), INDEX_HTML);
+    writeFileSync(join(clientDir, "assets", "app.js"), APP_JS);
+    registerPageRenderer(
+      registry,
+      createRexRenderer({
+        bundle: {
+          registry,
+          manifest: buildManifest(registry, { app: "node-ssr" }),
+          pages: [lazySet(portfolio, { view: PortfolioView, states: statesFor("Portfolio") })],
+        },
+      }),
+    );
+    const app = createRexServer({
+      registry,
+      ledger,
+      actor: () => actor({ id: "alice" }),
+      app: "node-ssr",
+    });
+    running = await startNodeServer(app, { port: 0, clientDir, hostname: "127.0.0.1" });
+  });
+
+  afterAll(async () => {
+    await running.close();
+    rmSync(clientDir, { recursive: true, force: true });
+  });
+
+  it("renders page routes on the server instead of serving index.html", async () => {
+    const response = await fetch(`${running.url}/portfolio/acc-1`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    expect(response.headers.get(RENDER_KIND_HEADER)).toBe("page");
+    expect(response.headers.get(RENDER_PAGE_HEADER)).toBe("portfolio");
+    const html = await response.text();
+    expect(html).not.toBe(INDEX_HTML);
+    expect(html).toContain(SSR_ATTRIBUTE);
+    expect(html).toContain("Holdings of acc-1");
+  });
+
+  it("answers an unknown page route with the server-rendered 404 and no index.html fallback", async () => {
+    for (const path of ["/", "/nowhere"]) {
+      const response = await fetch(`${running.url}${path}`);
+      expect(response.status, path).toBe(404);
+      expect(response.headers.get(RENDER_KIND_HEADER), path).toBe("not-found");
+      expect(await response.text(), path).not.toBe(INDEX_HTML);
+    }
+  });
+
+  it("still serves client assets first and leaves /rex/* to the API", async () => {
+    const asset = await fetch(`${running.url}/assets/app.js`);
+    expect(asset.status).toBe(200);
+    expect(await asset.text()).toBe(APP_JS);
+    expect((await fetch(`${running.url}/assets/missing.js`)).status).toBe(404);
+    const health = await fetch(`${running.url}/rex/health`);
+    expect(await health.json()).toEqual({ status: "ok" });
   });
 });

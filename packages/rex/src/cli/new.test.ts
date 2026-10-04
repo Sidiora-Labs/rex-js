@@ -18,6 +18,14 @@ import { boundariesRule } from "../check/rules/boundaries.ts";
 import { REX_VERSION } from "../index.ts";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, run, type RexCliIO } from "./index.ts";
 import { APP_PEERS, appModuleTypesPath } from "./commands/new.ts";
+import {
+  DESIGNX_BASE,
+  DESIGNX_CONFIG_FILE,
+  DESIGNX_STYLESHEET_HREF,
+  DESIGNX_THEME_FILE,
+  DESIGNX_UI_DIR,
+  TAILWIND_PACKAGES,
+} from "./designx.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
@@ -28,6 +36,7 @@ const APP_FILES = [
   "app/components/Button.tsx",
   "app/data/notes.ts",
   "app/entities/note.ts",
+  "app/locales/en.json",
   "app/pages/home/hooks/useNotes.ts",
   "app/pages/home/page.ts",
   "app/pages/home/regions/welcome/parts/Welcome.tsx",
@@ -108,7 +117,7 @@ function installDependencies(root: string): void {
 async function generate(name: string): Promise<{ cwd: string; root: string; out: string }> {
   const cwd = tempDir();
   const captured = captureIO(cwd);
-  expect(await run(["new", name], captured.io)).toBe(EXIT_OK);
+  expect(await run(["new", name, "--ui", "none"], captured.io)).toBe(EXIT_OK);
   expect(captured.err()).toBe("");
   return { cwd, root: join(cwd, name), out: captured.out() };
 }
@@ -176,8 +185,33 @@ describe("rex new", { timeout: NEW_TEST_TIMEOUT_MS }, () => {
 
     mkdirSync(join(cwd, "empty"));
     const empty = captureIO(cwd);
-    expect(await run(["new", "empty"], empty.io)).toBe(EXIT_OK);
+    expect(await run(["new", "empty", "--ui", "none"], empty.io)).toBe(EXIT_OK);
     expect(listFiles(join(cwd, "empty"))).toEqual(APP_FILES);
+  });
+
+  it("installs the DesignX theme and base set from the registry by default", async () => {
+    const cwd = tempDir();
+    const captured = captureIO(cwd);
+    expect(await run(["new", "dx-app", "--no-install"], captured.io)).toBe(EXIT_OK);
+    expect(captured.err()).toBe("");
+    const root = join(cwd, "dx-app");
+    const files = listFiles(root);
+    for (const name of DESIGNX_BASE) expect(files).toContain(`${DESIGNX_UI_DIR}/${name}.tsx`);
+    expect(files).toContain(DESIGNX_THEME_FILE);
+    expect(files).toContain(DESIGNX_CONFIG_FILE);
+    expect(captured.out()).toContain(`wrote dx-app/${DESIGNX_UI_DIR}/button.tsx\n`);
+    expect(readFileSync(join(root, "rex.config.ts"), "utf8")).toContain('ui: "designx"');
+    expect(readFileSync(join(root, "index.html"), "utf8")).toContain(
+      `<link rel="stylesheet" href="${DESIGNX_STYLESHEET_HREF}" />`,
+    );
+    expect(readFileSync(join(root, "app/components/Button.tsx"), "utf8")).toContain(
+      'from "./ui/button.tsx"',
+    );
+    const manifest = readJson<GeneratedPackage>(join(root, "package.json"));
+    const declared = { ...manifest.dependencies, ...manifest.devDependencies };
+    for (const name of TAILWIND_PACKAGES) expect(declared[name], name).toBeDefined();
+    expect(manifest.dependencies["@sidioralabs/rex"]).toBe(`^${REX_VERSION}`);
+    expect(existsSync(join(root, "node_modules"))).toBe(false);
   });
 });
 

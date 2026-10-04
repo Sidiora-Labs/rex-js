@@ -1,7 +1,6 @@
 import type { ActionEffect, ActionForm } from "../core/action.ts";
 import type { OverlayBinding, OverlayDismiss } from "../core/overlay.ts";
 import type {
-  ChromeComponentName,
   PageCacheConfig,
   PageDraft,
   PageRender,
@@ -54,7 +53,6 @@ export interface ManifestChrome {
   readonly nav: boolean;
   readonly back: string | null;
   readonly title: string;
-  readonly components: readonly ChromeComponentName[];
 }
 
 export interface ManifestLoader {

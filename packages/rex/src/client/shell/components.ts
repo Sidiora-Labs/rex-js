@@ -3,21 +3,19 @@ import {
   createContext,
   createElement,
   use,
-  useMemo,
   type ButtonHTMLAttributes,
   type ComponentType,
   type ReactNode,
 } from "react";
-import {
-  CHROME_COMPONENT_NAMES,
-  type AnyPage,
-  type ChromeComponentName,
-} from "../../core/page.ts";
-import { useText } from "../i18n/context.ts";
+import { RexError } from "../../core/errors.ts";
 import { Page } from "../layout.tsx";
 import { useOutcome } from "../outcome.ts";
 import type { OutcomeSlotProps } from "./outcome-slot.tsx";
 import type { ShellSlotProps } from "./slots.ts";
+
+export const SHELL_COMPONENT_NAMES = ["Button", "Sheet", "PaletteItem", "Outcome"] as const;
+
+export type ShellComponentName = (typeof SHELL_COMPONENT_NAMES)[number];
 
 export type ShellButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
@@ -47,6 +45,8 @@ export interface ShellComponents {
   readonly Outcome: ComponentType<ShellOutcomeProps>;
 }
 
+export type ShellComponentsModule = Readonly<Partial<ShellComponents>>;
+
 export function TokenButton(props: ShellButtonProps) {
   return createElement("button", { type: "button", ...props });
 }
@@ -69,11 +69,10 @@ export function TokenPaletteItem({ label, detail, shortcut, allowed, reason }: S
 
 export function TokenOutcome({ page }: ShellOutcomeProps) {
   const outcome = useOutcome(page);
-  const text = useText();
   return createElement(
     Page.Outcome,
     null,
-    outcome === null ? null : createElement("p", null, text(outcome.message)),
+    outcome === null ? null : createElement("p", null, outcome.message),
   );
 }
 
@@ -84,49 +83,89 @@ export const DEFAULT_SHELL_COMPONENTS: ShellComponents = Object.freeze({
   Outcome: TokenOutcome,
 });
 
+function isComponent(value: unknown): boolean {
+  if (typeof value === "function") return true;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { $$typeof?: unknown }).$$typeof === "symbol"
+  );
+}
+
 export function resolveShellComponents(
-  page: AnyPage | null,
+  module: unknown,
   base: ShellComponents = DEFAULT_SHELL_COMPONENTS,
 ): ShellComponents {
-  const overrides = page?.chrome.components;
-  if (overrides === undefined) return base;
-  const resolved: Record<ChromeComponentName, unknown> = { ...base };
-  for (const name of CHROME_COMPONENT_NAMES) {
-    const override = overrides[name];
-    if (override !== undefined) resolved[name] = override;
+  if ((typeof module !== "object" && typeof module !== "function") || module === null) {
+    throw new RexError(
+      "REX120",
+      `rex.config.ts: field "ui.components" must name a module exporting ${SHELL_COMPONENT_NAMES.join(", ")}`,
+    );
+  }
+  const exported = module as Readonly<Record<string, unknown>>;
+  const resolved: Record<ShellComponentName, unknown> = { ...base };
+  let found = 0;
+  for (const name of SHELL_COMPONENT_NAMES) {
+    const component = exported[name];
+    if (component === undefined) continue;
+    if (!isComponent(component)) {
+      throw new RexError(
+        "REX120",
+        `rex.config.ts: field "ui.components" module export ${name} must be a component`,
+      );
+    }
+    resolved[name] = component;
+    found += 1;
+  }
+  if (found === 0) {
+    throw new RexError(
+      "REX120",
+      `rex.config.ts: field "ui.components" module exports none of ${SHELL_COMPONENT_NAMES.join(", ")}`,
+    );
   }
   return Object.freeze(resolved) as unknown as ShellComponents;
 }
 
-export const ShellComponentsContext = createContext<ShellComponents>(DEFAULT_SHELL_COMPONENTS);
+let appShellComponents: ShellComponents = DEFAULT_SHELL_COMPONENTS;
 
-export function useShellComponents(): ShellComponents {
-  return use(ShellComponentsContext);
+export function registerShellComponents(module: unknown): () => void {
+  const resolved = resolveShellComponents(module);
+  appShellComponents = resolved;
+  return () => {
+    if (appShellComponents === resolved) appShellComponents = DEFAULT_SHELL_COMPONENTS;
+  };
 }
 
-export function useShellComponent<Name extends ChromeComponentName>(
+export const ShellComponentsContext = createContext<ShellComponents | null>(null);
+
+export function useShellComponents(): ShellComponents {
+  return use(ShellComponentsContext) ?? appShellComponents;
+}
+
+export function useShellComponent<Name extends ShellComponentName>(
   name: Name,
 ): ShellComponents[Name] {
   return useShellComponents()[name];
 }
 
+export function isDefaultShellComponent<Name extends ShellComponentName>(
+  name: Name,
+  component: ShellComponents[Name],
+): boolean {
+  return DEFAULT_SHELL_COMPONENTS[name] === component;
+}
+
 export interface ShellComponentsProviderProps {
-  readonly page: AnyPage | null;
+  readonly components: ShellComponents;
   readonly children?: ReactNode;
 }
 
-export function ShellComponentsProvider({ page, children }: ShellComponentsProviderProps) {
-  const base = use(ShellComponentsContext);
-  const value = useMemo(() => resolveShellComponents(page, base), [page, base]);
-  return createElement(ShellComponentsContext, { value }, children);
+export function ShellComponentsProvider({ components, children }: ShellComponentsProviderProps) {
+  return createElement(ShellComponentsContext, { value: components }, children);
 }
 
 export function withShellComponents(
   Slot: ComponentType<ShellSlotProps>,
 ): ComponentType<ShellSlotProps> {
-  function ShellComponentsSlot(props: ShellSlotProps) {
-    return createElement(ShellComponentsProvider, { page: props.active }, createElement(Slot, props));
-  }
-  ShellComponentsSlot.displayName = `ShellComponents(${Slot.displayName ?? Slot.name})`;
-  return ShellComponentsSlot;
+  return Slot;
 }

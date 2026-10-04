@@ -5,6 +5,7 @@ import { useRegistry } from "../context.ts";
 import { useText } from "../i18n/context.ts";
 import { Page } from "../layout.tsx";
 import { useOutcome, useOutcomeStore, type Outcome } from "../outcome.ts";
+import { isDefaultShellComponent, useShellComponents } from "../shell/components.ts";
 
 export interface OutcomeRegionProps {
   readonly page: string;
@@ -101,6 +102,7 @@ export function OutcomeRegion({ page }: OutcomeRegionProps) {
   const outcome = useOutcome(page);
   const label = useOutcomeLabel(outcome);
   const text = useText();
+  const { Outcome: ShellOutcome, Button } = useShellComponents();
   useEffect(() => {
     const posted = takeOutcomeCookie();
     if (posted !== null) store.set(page, posted);
@@ -115,18 +117,24 @@ export function OutcomeRegion({ page }: OutcomeRegionProps) {
           data-rex-outcome-ok={outcome.ok ? "true" : "false"}
           data-rex-outcome-at={outcome.at}
         >
-          <p>
-            <strong>{label}</strong>: {outcomeStatusText(outcome)}
-          </p>
-          <p>{text(outcome.message)}</p>
-          <button
+          {isDefaultShellComponent("Outcome", ShellOutcome) ? (
+            <>
+              <p>
+                <strong>{label}</strong>: {outcomeStatusText(outcome)}
+              </p>
+              <p>{text(outcome.message)}</p>
+            </>
+          ) : (
+            <ShellOutcome page={page} />
+          )}
+          <Button
             type="button"
             data-rex-outcome-dismiss={page}
             aria-label={`Dismiss the ${label} outcome`}
             onClick={() => store.clear(page)}
           >
             Dismiss
-          </button>
+          </Button>
         </div>
       )}
     </Page.Outcome>

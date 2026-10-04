@@ -17,9 +17,13 @@ import type { Finding } from "../check/index.ts";
 import { resetDeprecations } from "../core/deprecated.ts";
 import { AGENTS_FILE, MANIFEST_FILE } from "../manifest/scan.ts";
 import type { Manifest } from "../manifest/types.ts";
+import { SSR_ATTRIBUTE } from "../client/hydrate.ts";
+import { RENDER_KIND_HEADER } from "../server/routes/render.ts";
 import { DIST_DIR, SERVER_FILE, SERVING_PREFIX, buildApp } from "./commands/build.ts";
 import { devUrls, startDev } from "./commands/dev.ts";
+import { loadRexConfig } from "./config.ts";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, run, type RexCliIO } from "./index.ts";
+import { configPluginOptions } from "./load.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
@@ -108,7 +112,7 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     const cwd = mkdtempSync(join(tmpdir(), "rex-commands-"));
     temporary.push(cwd);
     const created = captureIO(cwd);
-    expect(await run(["new", APP_NAME], created.io)).toBe(EXIT_OK);
+    expect(await run(["new", APP_NAME, "--ui", "none"], created.io)).toBe(EXIT_OK);
     root = join(cwd, APP_NAME);
     installDependencies(root);
   }, COMMANDS_TEST_TIMEOUT_MS);
@@ -179,11 +183,14 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
 
     const page = await fetch(`${url}/`);
     expect(page.status).toBe(200);
-    expect(await page.text()).toBe(html);
+    expect(page.headers.get(RENDER_KIND_HEADER)).toBe("page");
+    const rendered = await page.text();
+    expect(rendered).not.toBe(html);
+    expect(rendered).toContain(SSR_ATTRIBUTE);
 
     const ping = await fetch(`${url}/rex/rpc/ping`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", origin: url },
       body: JSON.stringify({ json: {} }),
     });
     expect(ping.status).toBe(200);
@@ -209,7 +216,7 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
 
       const agent = await fetch(`${base}/rex/rpc/ping?density=agent`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", origin: base },
         body: JSON.stringify({ json: {} }),
       });
       expect(agent.status).toBe(200);
@@ -355,6 +362,43 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
       expect(over.out).toMatch(/^page-home\s+[\d.]+ KB\s+[\d.]+ KB\s+0\.01 KB OVER$/m);
       expect(over.err).toContain("rex build: page-home (");
       expect(over.err).toContain("budget 0.01 KB) over budget");
+    } finally {
+      writeFileSync(configFile, generated);
+    }
+  });
+
+  it("passes compiler, devtools, tailwind, ui and security.secretNames from rex.config.ts into rex()", async () => {
+    expect(configPluginOptions((await loadRexConfig(root)).read)).toEqual({
+      compiler: true,
+      devtools: true,
+      tailwind: false,
+      ui: "none",
+      secretNames: [],
+    });
+    const configFile = join(root, "rex.config.ts");
+    const generated = readFileSync(configFile, "utf8");
+    try {
+      writeFileSync(
+        configFile,
+        generated.replace(
+          "  app,",
+          [
+            "  app,",
+            "  compiler: false,",
+            "  devtools: false,",
+            "  tailwind: true,",
+            '  ui: { kit: "designx", components: "app/components/Button.tsx" },',
+            '  security: { secretNames: ["STRIPE_KEY"] },',
+          ].join("\n"),
+        ),
+      );
+      expect(configPluginOptions((await loadRexConfig(root)).read)).toEqual({
+        compiler: false,
+        devtools: false,
+        tailwind: true,
+        ui: "designx",
+        secretNames: ["STRIPE_KEY"],
+      });
     } finally {
       writeFileSync(configFile, generated);
     }

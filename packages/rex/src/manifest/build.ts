@@ -2,12 +2,7 @@ import type { AnyAction } from "../core/action.ts";
 import type { AnyEntity } from "../core/entity.ts";
 import { RexError } from "../core/errors.ts";
 import { isValidName } from "../core/ids.ts";
-import {
-  CHROME_COMPONENT_NAMES,
-  type AnyPage,
-  type ChromeComponentName,
-  type PageRender,
-} from "../core/page.ts";
+import type { AnyPage, PageRender } from "../core/page.ts";
 import { predicateToJson, type AnyPolicy } from "../core/policy.ts";
 import { compareIds } from "../core/registry.ts";
 import {
@@ -130,11 +125,6 @@ function actionManifest(declared: AnyAction): ManifestAction {
   };
 }
 
-function chromeComponents(declared: AnyPage): ChromeComponentName[] {
-  const components = declared.chrome.components ?? {};
-  return CHROME_COMPONENT_NAMES.filter((name) => components[name] !== undefined);
-}
-
 function pageManifest(declared: AnyPage, render: PageRender): ManifestPage {
   return {
     id: declared.id,
@@ -161,7 +151,6 @@ function pageManifest(declared: AnyPage, render: PageRender): ManifestPage {
       nav: declared.chrome.nav,
       back: declared.chrome.back,
       title: declared.chrome.title,
-      components: chromeComponents(declared),
     },
     regions: [...declared.regions],
     overlays: sortById(declared.overlays).map((overlay) => ({

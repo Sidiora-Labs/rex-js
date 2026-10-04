@@ -21,7 +21,8 @@ export interface ModuleLoader {
 }
 
 export function configPluginOptions(read: RexConfigExport): RexPluginOptions {
-  return { compiler: read.options.compiler };
+  const { compiler, devtools, tailwind, ui, security } = read.options;
+  return { compiler, devtools, tailwind, ui, secretNames: security.secretNames };
 }
 
 async function pluginOptionsFor(

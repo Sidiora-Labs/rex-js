@@ -155,6 +155,7 @@ describe("DensityProvider", () => {
       const request = input instanceof Request ? input : new Request(input, init);
       const headers = new Headers(request.headers);
       headers.set(REX_DENSITY_HEADER, "agent");
+      if (request.method !== "GET") headers.set("origin", new URL(request.url).origin);
       return server.fetch(new Request(request.url, { method: request.method, headers }));
     };
     function Density({ children }: { readonly children: React.ReactNode }) {

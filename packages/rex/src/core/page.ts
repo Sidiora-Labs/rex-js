@@ -35,18 +35,11 @@ export const PAGE_TRANSITIONS = ["view", "none"] as const;
 
 export type PageTransition = (typeof PAGE_TRANSITIONS)[number];
 
-export const CHROME_COMPONENT_NAMES = ["Button", "Sheet", "PaletteItem", "Outcome"] as const;
-
-export type ChromeComponentName = (typeof CHROME_COMPONENT_NAMES)[number];
-
-export type PageChromeComponents = Readonly<Partial<Record<ChromeComponentName, unknown>>>;
-
 export interface PageChromeConfig {
   readonly header?: boolean;
   readonly nav?: boolean;
   readonly back?: string | null;
   readonly title?: string;
-  readonly components?: PageChromeComponents;
 }
 
 export interface PageChrome {
@@ -54,7 +47,6 @@ export interface PageChrome {
   readonly nav: boolean;
   readonly back: string | null;
   readonly title: string;
-  readonly components?: PageChromeComponents;
 }
 
 export interface PageLoaderInput<Act extends AnyAction = AnyAction> {
@@ -243,21 +235,12 @@ const PAGE_KEYS = new Set([
   "cache",
   "transition",
 ]);
-const CHROME_KEYS = new Set(["header", "nav", "back", "title", "components"]);
+const CHROME_KEYS = new Set(["header", "nav", "back", "title"]);
 const LOADER_INPUT_KEYS = new Set(["action", "input"]);
 
 function isActionDeclaration(value: unknown): value is AnyAction {
   return (
     typeof value === "object" && value !== null && (value as { kind?: unknown }).kind === "action"
-  );
-}
-
-function isComponentLike(value: unknown): boolean {
-  if (typeof value === "function") return true;
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as { $$typeof?: unknown }).$$typeof === "symbol"
   );
 }
 
@@ -392,38 +375,12 @@ export function page<
   ) {
     fail("chrome.title", "must be a non-empty string");
   }
-  let components: PageChromeComponents | undefined;
-  if (chromeConfig.components !== undefined) {
-    if (!isPlainObject(chromeConfig.components as unknown)) {
-      reject("REX206", "chrome.components", "must map shell component names to components");
-    }
-    const entries: [string, unknown][] = [];
-    for (const [componentName, component] of Object.entries(
-      chromeConfig.components as Record<string, unknown>,
-    )) {
-      if (!(CHROME_COMPONENT_NAMES as readonly string[]).includes(componentName)) {
-        reject(
-          "REX206",
-          `chrome.components.${componentName}`,
-          `is not one of ${CHROME_COMPONENT_NAMES.join(", ")}`,
-        );
-      }
-      if (!isComponentLike(component)) {
-        reject("REX206", `chrome.components.${componentName}`, "must be a component");
-      }
-      entries.push([componentName, component]);
-    }
-    components = Object.freeze(Object.fromEntries(entries)) as PageChromeComponents;
-  }
-  const chromeBase = {
+  const chrome: PageChrome = Object.freeze({
     header: chromeConfig.header ?? true,
     nav: chromeConfig.nav ?? true,
     back,
     title: chromeConfig.title ?? titleFromId(id),
-  };
-  const chrome: PageChrome = Object.freeze(
-    components === undefined ? chromeBase : { ...chromeBase, components },
-  );
+  });
 
   const regions = config.regions ?? [];
   if (!Array.isArray(regions)) fail("regions", "must be a list of region names");

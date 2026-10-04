@@ -208,7 +208,7 @@
   - [ ] 6.3 Release 0.2.0
     - Set version 0.2.0, write the CHANGELOG 0.2.0 entry from the git log grouped by area, add the standards table to README.md with every [standard.*] item and its status, regenerate docs/api and docs/errors, and verify the pack test and the link check.
     - _Requirements: 35.2, 4.3_
-  - [ ] 7.1 Integration repair: green typecheck, one Origin rule, shared nonce, config flags wired, SSR from the node entry
+  - [ ] 7.1 Integration repair: green typecheck, one Origin rule, shared nonce, config flags wired, SSR from the node entry — **Implemented - qualification pending**
     - Close qualification.082, .083, .311, .581 and .411: cast through ZodSchemaLike in manifest/build.ts, assert a zod/mini object in core/entity.test.ts, make the two demo hooks import z from zod/mini and use z.string().check(z.maxLength(n)), pass a manifest built with buildManifest into the buildSidecarPayload call in core/serialize.test.ts, and add security to the default rule order in check/check.test.ts; pnpm -r typecheck must exit 0.
     - Close qualification.421: seed RequestContext.nonce from requestNonce(request) in server/context.ts so the CSP header, SSR and the sidecar share one per-request nonce, make server/ssr.ts use it, and send an Origin header in every existing test that POSTs to /rex/* from Node (server, node, runtime, act, agent, flow and CLI tests); the Origin rule is not relaxed.
     - Close qualification.141: the form route checks Origin through the security middleware helper with resolveSecurityPolicy(options).security.origins; remove the duplicate helper so rex/server exports one isAllowedOrigin.

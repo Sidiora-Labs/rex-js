@@ -119,8 +119,13 @@ function mount(subject: Actor, instance: string): Mounted {
   const ledger = memoryLedger();
   const server = createRexServer({ registry, ledger, actor: () => subject });
   mountFlows(server, { flows: [payout], actor: () => subject, ledger });
-  const fetch: RexFetch = async (input, init) =>
-    server.fetch(input instanceof Request ? input : new Request(input, init));
+  const fetch: RexFetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    if (request.method !== "GET" && !request.headers.has("origin")) {
+      request.headers.set("origin", new URL(request.url).origin);
+    }
+    return server.fetch(request);
+  };
   const client = createFlowClient({ baseUrl: "http://rex.test", fetch });
   const RexApp = createRexApp({
     registry,

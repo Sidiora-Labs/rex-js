@@ -1,5 +1,5 @@
 import { useDraft } from "@sidioralabs/rex/client";
-import { z } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 
 const holdingsFilter = z.object({ query: z.string().check(z.maxLength(40)) });
 

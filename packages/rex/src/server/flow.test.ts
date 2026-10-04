@@ -78,7 +78,7 @@ function client(app: Hono, name: string): RouterClient<FlowRouter> {
   return createORPCClient(
     new RPCLink({
       url: `http://rex.test${FLOW_RPC_PREFIX}`,
-      headers: { authorization: `Bearer ${name}` },
+      headers: { authorization: `Bearer ${name}`, origin: "http://rex.test" },
       fetch: async (request) => app.fetch(request),
     }),
   );
