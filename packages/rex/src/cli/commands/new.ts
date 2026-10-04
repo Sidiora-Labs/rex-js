@@ -32,7 +32,13 @@ import {
   type DesignxInstall,
   type DesignxOptions,
 } from "../designx.ts";
-import { DEFAULT_UI, isUiKit, type DesignxNewContext } from "../gen/designx.ts";
+import {
+  DEFAULT_UI,
+  formatDesignxTemplates,
+  isUiKit,
+  type DesignxHome,
+  type DesignxNewContext,
+} from "../gen/designx.ts";
 
 export { SERVER_IMPORT, configTemplate };
 export const REX_PACKAGE = "@sidioralabs/rex";
@@ -281,9 +287,15 @@ export function newAppPlan(
   ui: UiKit = "none",
   designx: DesignxInstall | null = null,
 ): readonly PlannedEntry[] {
-  const context: DesignxNewContext = { name, ui, designx };
+  const context: DesignxNewContext = { name, ui, designx, home: NEW_APP_HOME };
   return runGenerators(context);
 }
+
+export const NEW_APP_HOME: DesignxHome = Object.freeze({
+  page: HOME_PAGE,
+  region: HOME_REGION,
+  part: HOME_PART,
+});
 
 export function baseAppPlan(name: string): readonly PlannedEntry[] {
   const page = HOME_PAGE;
@@ -299,7 +311,12 @@ export function baseAppPlan(name: string): readonly PlannedEntry[] {
     file(`app/components/${APP_COMPONENT}.tsx`, componentTemplate()),
     file(
       appPaths.page(page),
-      pageTemplate({ id: page, route: "/", actions: [APP_ACTION], regions: [HOME_REGION] }),
+      pageTemplate({
+        id: page,
+        route: "/",
+        actions: [APP_ACTION],
+        regions: [HOME_REGION],
+      }),
     ),
     file(appPaths.view(page), viewTemplate({ page, regions: [HOME_REGION] })),
     file(appPaths.states(page), statesTemplate({ page })),
@@ -341,9 +358,11 @@ export async function newApp(
   }
   const ui = options.ui ?? DEFAULT_UI;
   const designx = ui === "designx" ? await fetchDesignx(undefined, options) : null;
-  const written = writePlan(root, newAppPlan(appName, ui, designx)).map(
-    (path) => `${appName}/${path}`,
-  );
+  const plan = newAppPlan(appName, ui, designx);
+  const written = writePlan(
+    root,
+    designx === null ? plan : await formatDesignxTemplates(plan, NEW_APP_HOME),
+  ).map((path) => `${appName}/${path}`);
   if (designx !== null && options.install !== false) installPackages(root);
   return written;
 }
@@ -365,7 +384,10 @@ export function register(program: Command, io: RexCliIO): void {
     .action(async (name: string, options: { ui: UiKit; install: boolean }) => {
       let written: string[];
       try {
-        written = await newApp(io.cwd, name, { ui: options.ui, install: options.install });
+        written = await newApp(io.cwd, name, {
+          ui: options.ui,
+          install: options.install,
+        });
       } catch (error) {
         if (error instanceof MakeError) {
           command.error(`rex new: ${error.detail}`, {
