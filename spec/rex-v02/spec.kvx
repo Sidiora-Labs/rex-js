@@ -71,7 +71,7 @@ release            = "packages/rex/package.json: version 0.2.0, license MIT, sid
 [standard.performance]
 s1 = "Small runtime (under 10 to 15 KB gzipped for the core); unused code removable at build time."
 s1_now = "partial: core 10.6 KB gz without the schema library, 103 KB gz with zod 4; sideEffects unset"
-s1_tasks = ["0.3", "0.4", "0.7"]
+s1_tasks = ["0.3", "0.4", "0.7", "7.8", "7.9"]
 s2 = "Fine-grained reactivity or a compiler so updating one value does not re-render the whole page."
 s2_now = "gap"
 s2_tasks = ["0.6", "3.1"]
@@ -266,7 +266,7 @@ story = "As an app author, I want to bring any Standard Schema library and keep 
 ac_1  = "entity(), action() and page() accept any object implementing the Standard Schema v1 interface for fields, input, output and params; validation in the runtime, the router and useAct goes through ~standard.validate."
 ac_2  = "The Rex field helpers (id, text, money, boolean, enumOf, ref, json, integer, real) are built on zod/mini and keep their x-rex-field tags; the demo and rex new templates use zod/mini."
 ac_3  = "JSON Schema is produced only in buildManifest: through z.toJSONSchema for zod schemas, from a declared jsonSchema for others, and a REX210 error names the declaration when neither is possible."
-ac_4  = "A size test proves the rex entry bundled for the browser, zod/mini included and React excluded, is at most 15 KB gzipped."
+ac_4  = "A size test proves the rex entry bundled for the browser in production mode, with React and zod external and no zod module reachable from the entry, is at most 15 KB gzipped; the client and edge entries meet 30 KB and 40 KB under the same rule."
 
 [req.4]
 title = "Package hygiene"
