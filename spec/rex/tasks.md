@@ -101,7 +101,7 @@
     - Implement useDataState(pageQueries) that observes TanStack query states and navigator.onLine.
     - Write src/client/states.test.ts covering every state and every precedence pair.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
-  - [ ] 2.5 Implement view, region, Region and the page host
+  - [x] 2.5 Implement view, region, Region and the page host
     - Implement src/client/page.tsx: view(render) and region(name, render) wrappers; the Region component that renders the named region as a landmark section with data-rex-region; PageHost that loads the page module set (page.ts, view.tsx, states.tsx, regions, overlays), resolves the data state and renders the matching states export or the view.
     - Provide region render context {act, nav, params, state} so regions never receive callbacks from the view.
     - Write src/client/page.test.tsx with a fixture page covering ready rendering, each non-ready state rendering its export, and the region landmark attributes.
