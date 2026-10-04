@@ -1,25 +1,82 @@
 import { Hono } from "hono";
+import { dirname, join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_BUDGETS, defineConfig, readConfigExport } from "../core/config.ts";
 import { resetDeprecations } from "../core/deprecated.ts";
 import { createRegistry } from "../core/registry.ts";
 import {
+  CLIENT_EXPORT_SURFACE,
   CLIENT_EXTERNALS,
+  CLIENT_RUNTIME_SOURCE,
   EDGE_BUDGET_KB,
   LAZY_CHUNK_BUDGET_KB,
   REACT_EXTERNALS,
   SCHEMA_EXTERNALS,
+  bundleBudgetEntry,
   chunkBudgets,
   isBudgetExternal,
   entryBudgets,
   measureBudgetChunks,
   resolveBudgets,
   withinBudget,
+  type EntryBudget,
 } from "./budgets.ts";
 import { chunkTable, type OutputChunkLike } from "./split.ts";
 
 const app = { name: "budget-app", registry: createRegistry().freeze() };
+
+const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+const TREE_SHAKE_TIMEOUT_MS = 120_000;
+
+const ENTRY_ONLY_APP = "src/client/fixtures/budget-app/app.ts";
+
+const EXPORTED_ONLY_SURFACES: Readonly<Record<string, readonly string[]>> = {
+  overlay: ["src/client/overlay.tsx", "src/client/overlay-surface.tsx"],
+  flow: ["src/client/agent/flow.tsx", "src/client/agent/flow-gate.ts"],
+  address: ["src/client/agent/address.tsx"],
+  store: ["src/client/store.ts"],
+  boundary: ["src/client/boundary.tsx"],
+  form: ["src/client/form.tsx", "src/client/form-view.tsx"],
+  list: ["src/client/layout.tsx", "src/client/list.tsx", "src/client/list-view.tsx"],
+  "i18n formatting": ["src/client/i18n/formatter.ts", "src/client/i18n/format.ts"],
+};
+
+const OPTIONAL_ENTRY_SURFACES: Readonly<Record<string, readonly string[]>> = {
+  interop: [
+    "src/client/interop/index.ts",
+    "src/client/interop/define-element.tsx",
+    "src/client/interop/mount.tsx",
+    "src/client/interop/native.tsx",
+  ],
+  media: ["src/client/media/index.ts", "src/client/media.tsx"],
+};
+
+const STARTED_RUNTIME = [
+  CLIENT_RUNTIME_SOURCE,
+  "src/client/app.tsx",
+  "src/client/page.tsx",
+  "src/client/page-outcome.tsx",
+  "src/client/shell.tsx",
+  "src/client/agent/sidecar.tsx",
+  "src/client/store-registry.ts",
+  "src/client/i18n/context.ts",
+  "src/client/i18n/provider.tsx",
+];
+
+async function shippedModules(source: string): Promise<ReadonlySet<string>> {
+  const runtime = entryBudgets().find((target) => target.entry === "client");
+  expect(runtime).toBeDefined();
+  const target: EntryBudget = { ...(runtime as EntryBudget), source };
+  const chunks = await bundleBudgetEntry(packageRoot, target);
+  return new Set(
+    chunks.flatMap((chunk) =>
+      chunk.moduleIds.map((id) => relative(packageRoot, id).split(sep).join("/")),
+    ),
+  );
+}
 
 function chunk(name: string, code: string): OutputChunkLike {
   return { type: "chunk", name, fileName: `assets/${name}.js`, code, isEntry: false };
@@ -37,7 +94,7 @@ describe("budgets", () => {
       },
       {
         entry: "client",
-        source: "src/client/index.ts",
+        source: "src/client/entry.tsx",
         budget: 30,
         externals: [...CLIENT_EXTERNALS, ...SCHEMA_EXTERNALS],
       },
@@ -196,4 +253,27 @@ describe("budgets", () => {
       },
     ]);
   });
+
+  it(
+    "ships none of the exported-only rex/client surfaces to an app that imports only createRexEntry and startRexEntry",
+    { timeout: TREE_SHAKE_TIMEOUT_MS },
+    async () => {
+      const shipped = await shippedModules(ENTRY_ONLY_APP);
+      for (const file of [ENTRY_ONLY_APP, ...STARTED_RUNTIME]) {
+        expect(shipped.has(file), `${file} ships with startRexEntry`).toBe(true);
+      }
+      const surfaces = { ...EXPORTED_ONLY_SURFACES, ...OPTIONAL_ENTRY_SURFACES };
+      for (const [surface, files] of Object.entries(surfaces)) {
+        for (const file of files) {
+          expect(shipped.has(file), `${surface}: ${file} must tree-shake away`).toBe(false);
+        }
+      }
+      const surface = await shippedModules(CLIENT_EXPORT_SURFACE);
+      for (const [name, files] of Object.entries(EXPORTED_ONLY_SURFACES)) {
+        for (const file of files) {
+          expect(surface.has(file), `${name}: ${file} ships with the export surface`).toBe(true);
+        }
+      }
+    },
+  );
 });

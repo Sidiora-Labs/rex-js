@@ -2,6 +2,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  CLIENT_EXPORT_SURFACE,
   LAZY_CHUNK_BUDGET_KB,
   bundleBudgetEntry,
   entryBudgets,
@@ -32,6 +33,12 @@ function report(target: EntryBudget, label: string, size: ChunkSize, budget: num
   );
 }
 
+function inform(target: EntryBudget, label: string, size: ChunkSize): void {
+  console.log(
+    `rex size: ${target.entry} export surface ${label} ${kb(size.raw)} KB raw, ${kb(size.gzip)} KB gzip (for information)`,
+  );
+}
+
 describe("entry size budgets", { timeout: SIZE_TEST_TIMEOUT_MS }, () => {
   it.each(entryBudgets())(
     "keeps the $entry entry chunk within $budget KB gzipped and each lazy chunk within 10 KB",
@@ -51,4 +58,19 @@ describe("entry size budgets", { timeout: SIZE_TEST_TIMEOUT_MS }, () => {
       }
     },
   );
+
+  it("prints the whole rex/client export surface for information without budgeting it", async () => {
+    const runtime = entryBudgets().find((target) => target.entry === "client");
+    expect(runtime).toBeDefined();
+    const surface: EntryBudget = { ...(runtime as EntryBudget), source: CLIENT_EXPORT_SURFACE };
+    const size = await measuredSize(surface);
+    for (const chunk of size.firstPaint) {
+      inform(surface, `first-paint chunk ${chunk.fileName}`, chunk);
+    }
+    inform(surface, `${surface.source} first paint`, size.entry);
+    for (const lazy of size.lazy) {
+      inform(surface, `lazy chunk ${lazy.fileName}`, lazy);
+    }
+    expect(size.firstPaint.length).toBeGreaterThan(0);
+  });
 });

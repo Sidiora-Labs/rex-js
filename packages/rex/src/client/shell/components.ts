@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { RexError } from "../../core/errors.ts";
-import { Page } from "../layout.tsx";
+import { PageOutcome } from "../page-outcome.tsx";
 import { useOutcome } from "../outcome.ts";
 import type { OutcomeSlotProps } from "./outcome-slot.tsx";
 import type { ShellSlotProps } from "./slots.ts";
@@ -137,7 +137,7 @@ export function TokenPaletteItem({
 export function TokenOutcome({ page }: ShellOutcomeProps) {
   const outcome = useOutcome(page);
   return createElement(
-    Page.Outcome,
+    PageOutcome,
     null,
     outcome === null ? null : createElement("p", null, outcome.message),
   );

@@ -26,6 +26,10 @@ export const CLIENT_EXTERNALS = [
   "@orpc/client",
 ] as const;
 
+export const CLIENT_RUNTIME_SOURCE = "src/client/entry.tsx";
+
+export const CLIENT_EXPORT_SURFACE = "src/client/index.ts";
+
 export interface EntryBudget {
   readonly entry: "core" | "client" | "edge";
   readonly source: string;
@@ -55,7 +59,7 @@ export function entryBudgets(budgets: ResolvedBudgets = DEFAULT_BUDGETS): readon
     },
     {
       entry: "client",
-      source: "src/client/index.ts",
+      source: CLIENT_RUNTIME_SOURCE,
       budget: budgets.client,
       externals: [...CLIENT_EXTERNALS, ...SCHEMA_EXTERNALS],
     },

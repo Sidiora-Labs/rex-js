@@ -1756,7 +1756,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.21]
 title = "The client budget measured on the runtime an app ships: startRexEntry plus its static imports, with every exported-only rex/client surface proven tree-shakeable"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = ["7.20"]

@@ -3,7 +3,7 @@ import { isPlainObject } from "../../core/entity.ts";
 import { actionLabel } from "../act.ts";
 import { useRegistry } from "../context.ts";
 import { useText } from "../i18n/context.ts";
-import { Page } from "../layout.tsx";
+import { PageOutcome } from "../page-outcome.tsx";
 import { useOutcome, useOutcomeStore, type Outcome } from "../outcome.ts";
 import { isDefaultShellComponent, useShellComponents } from "../shell/components.ts";
 
@@ -108,7 +108,7 @@ export function OutcomeRegion({ page }: OutcomeRegionProps) {
     if (posted !== null) store.set(page, posted);
   }, [page, store]);
   return (
-    <Page.Outcome>
+    <PageOutcome>
       {outcome === null ? (
         <p data-rex-outcome="none">{OUTCOME_EMPTY_TEXT}</p>
       ) : (
@@ -137,6 +137,6 @@ export function OutcomeRegion({ page }: OutcomeRegionProps) {
           </Button>
         </div>
       )}
-    </Page.Outcome>
+    </PageOutcome>
   );
 }
