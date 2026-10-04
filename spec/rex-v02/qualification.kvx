@@ -222,3 +222,11 @@ symbol = "rex build page budget, buildDemo"
 observed = "Neither vitals.spec.ts nor lighthouse.ts reaches a page because buildDemo's rex build exits 1 with page-portfolio at 91.69 KB gzip over the 50 KB page budget (already recorded as qualification.371); the first run also failed in rex check on manifest/build.ts z.ZodType until task 2.1 merged; evidence: revision 7032c93601b3a551e26b74d3951eeca85a662c07 plus the uncommitted 6.1 files, command pnpm -C examples/demo test:vitals, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-6.1-private/logs/6.1-verify.log."
 assumption = "Once the portfolio page chunk fits its budget the unchanged test:vitals builds the demo, measures LCP, CLS and INP and the Lighthouse desktop scores on every page and writes e2e/report/vitals.json and lighthouse.json; no threshold was relaxed and --no-check was not used."
 severity = "blocker"
+
+[qualification.271]
+task = "2.7"
+file = "packages/rex/src/testing/index.ts, packages/rex/src/server/middleware/security.ts"
+symbol = "serverFetch (renderPage, renderRegion, testServer), installSecurityMiddleware"
+observed = "rex/testing builds its requests without an Origin header, so after the 4.2 security middleware every POST it sends to /rex/rpc (load-wallet, the pick and toggle actions, the confirm procedure and send) is refused with 403 Forbidden; every demo page renders its terminal-error state and 34 of the 40 demo tests fail on that one cause, as would the 2.4 testing.test.tsx; evidence: revision 3309c0efe60d726bd44e536d8e32909843b2db7e, command pnpm -C examples/demo test:unit, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.7-private/logs/2.7-verify.log."
+assumption = "The owner of packages/rex/src/testing/index.ts makes serverFetch set Origin to the test app's baseUrl origin when the request has none, as a browser does (qualification on 4.2 already expects test owners to send Origin); the Origin rule and the demo tests were not relaxed, and the unchanged verify_cmd can then qualify 2.7."
+severity = "blocker"
