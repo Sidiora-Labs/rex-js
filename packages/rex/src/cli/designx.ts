@@ -298,6 +298,46 @@ export function rewriteImports(
 
 const THEME_PRELUDE = ['@import "tailwindcss";', '@import "tw-animate-css";', ""].join("\n");
 
+export const DESIGNX_DATA_TABLE = "data-table";
+export const DESIGNX_MENU_GROUP = "DropdownMenuGroup";
+
+const DATA_TABLE_UNGROUPED_MENU =
+  /(<DropdownMenuContent\b[^>]*>)\s*(<DropdownMenuLabel>Toggle columns<\/DropdownMenuLabel>[\s\S]*?)\s*(<\/DropdownMenuContent>)/;
+const DROPDOWN_MENU_IMPORT = /import\s*\{([^}]*)\}\s*from\s*(["'][^"']*dropdown-menu[^"']*["'])/;
+
+function withImportedName(names: string, name: string): string {
+  const listed = names
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+  const at = listed.findIndex((entry) => entry.localeCompare(name) > 0);
+  listed.splice(at === -1 ? listed.length : at, 0, name);
+  return listed.join(", ");
+}
+
+export function groupDataTableMenu(content: string): string {
+  if (content.includes(DESIGNX_MENU_GROUP) || !DATA_TABLE_UNGROUPED_MENU.test(content)) {
+    return content;
+  }
+  const imported = DROPDOWN_MENU_IMPORT.exec(content);
+  if (imported === null) {
+    throw new DesignxError(
+      `the DesignX ${DESIGNX_DATA_TABLE} item renders its column menu label outside a ${DESIGNX_MENU_GROUP} but imports no dropdown-menu to take it from`,
+    );
+  }
+  const [statement, names = "", from = ""] = imported;
+  return content
+    .replace(statement, `import { ${withImportedName(names, DESIGNX_MENU_GROUP)} } from ${from}`)
+    .replace(
+      DATA_TABLE_UNGROUPED_MENU,
+      `$1\n<${DESIGNX_MENU_GROUP}>\n$2\n</${DESIGNX_MENU_GROUP}>\n$3`,
+    );
+}
+
+function patchedDesignxSource(item: DesignxItem, content: string): string {
+  return item.name === DESIGNX_DATA_TABLE ? groupDataTableMenu(content) : content;
+}
+
 export function designxFiles(
   items: readonly DesignxItem[],
   provided: readonly DesignxProvidedName[] = [],
@@ -305,23 +345,27 @@ export function designxFiles(
   const aliases = new Map<string, string>(
     provided.map((name) => [DESIGNX_PROVIDED[name].alias, providedDesignxPath(name)]),
   );
-  const placed: { readonly path: string; readonly file: DesignxFile }[] = [];
+  const placed: {
+    readonly path: string;
+    readonly item: DesignxItem;
+    readonly file: DesignxFile;
+  }[] = [];
   for (const item of items) {
     for (const file of item.files) {
       const path = designxTarget(item, file);
       const alias = aliasOf(file);
       if (alias !== null) aliases.set(alias, path);
-      placed.push({ path, file });
+      placed.push({ path, item, file });
     }
   }
   const seen = new Set<string>();
   const planned: PlannedFile[] = [];
-  for (const { path, file } of placed) {
+  for (const { path, item, file } of placed) {
     if (seen.has(path)) throw new DesignxError(`two DesignX files would be written to ${path}`);
     seen.add(path);
     const content = path.endsWith(".css")
       ? `${THEME_PRELUDE}${file.content.trimEnd()}\n`
-      : `${rewriteImports(file.content, path, aliases).trimEnd()}\n`;
+      : `${patchedDesignxSource(item, rewriteImports(file.content, path, aliases)).trimEnd()}\n`;
     planned.push({ kind: "file", path, content });
   }
   for (const name of provided) {

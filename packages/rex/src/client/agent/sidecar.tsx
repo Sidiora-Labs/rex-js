@@ -5,6 +5,7 @@ import {
   useId,
   useLayoutEffect,
   useMemo,
+  useRef,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -512,6 +513,7 @@ function ActiveSidecar({ resolution }: { readonly resolution: PageResolution }) 
   const owner = useId();
   const payload = useSidecarPayload(resolution);
   const serialized = useMemo(() => serializeSidecar(payload), [payload]);
+  const script = useRef<HTMLScriptElement>(null);
 
   useLayoutEffect(() => {
     if (sidecarOwner !== null && sidecarOwner !== owner) {
@@ -527,16 +529,19 @@ function ActiveSidecar({ resolution }: { readonly resolution: PageResolution }) 
   }, [owner]);
 
   useLayoutEffect(() => {
+    const element = script.current;
+    if (element !== null && element.textContent !== serialized) element.textContent = serialized;
     const target = globalThis.window;
     if (target === undefined) return;
     target.__rex = payload;
     return () => {
       if (target.__rex === payload) delete target.__rex;
     };
-  }, [payload]);
+  }, [payload, serialized]);
 
   return (
     <script
+      ref={script}
       type={SIDECAR_MIME_TYPE}
       id={SIDECAR_ELEMENT_ID}
       data-rex-sidecar={payload.page}

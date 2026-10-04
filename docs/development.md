@@ -4,7 +4,7 @@ This page is for people and agents working on Rex itself. For building apps with
 
 ## Workspace layout
 
-The repository is a pnpm workspace (`pnpm-workspace.yaml`: `packages/*` and `examples/*`). Node 22 or later is required (`engines` in `package.json`); pnpm is pinned to `10.27.0`.
+The repository is a pnpm workspace (`pnpm-workspace.yaml`: `packages/*` and `examples/*`). Node 22.19 or later is required (`engines` in `package.json`); pnpm is pinned to `10.27.0`.
 
 ```
 packages/rex/            the @sidioralabs/rex package

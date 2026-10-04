@@ -9,7 +9,7 @@ import {
   checkSpace,
   spaceClass,
   type Space,
-} from "./page-outcome.tsx";
+} from "./outcome-frame.tsx";
 import { TokenOutcome } from "./shell/components.ts";
 
 function status(): HTMLElement {

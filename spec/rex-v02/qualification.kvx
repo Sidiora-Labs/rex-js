@@ -710,3 +710,51 @@ symbol = "scripts.test"
 observed = "req 39 ac_2 says the demo test script runs tools/freshness.mjs --check; on 20603147229e022295683fd044413bc5db5a64bd the demo test script is rex check && playwright test ..., and changing it is an edit of an existing script, which [design] shared_lists does not allow (append only) and the 8.5 touches do not cover."
 assumption = "A follow-up owning examples/demo/package.json prefixes the test script with node ../../tools/freshness.mjs --check &&; the root freshness script, src/freshness.test.ts and the CI docs job already run the gate."
 severity = "minor"
+
+[qualification.841]
+task = "8.4"
+file = "spec/workflow.kvx ([loop] step_1, step_5, step_4, [phase.task_qualification] forbidden, [hard_rules] time_limit, [render] adapter_lead), AGENTS.md, CLAUDE.md, .github/copilot-instructions.md, .cursor/rules/spec-workflow.mdc, CONTRIBUTING.md:9"
+symbol = "freshness stale.182 to stale.191 (spec/rex/spec.kvx and spec/rex/qualification.kvx in the loop, the 30-minute strings against max_task_minutes 45, the spec/specgen banner) and the CONTRIBUTING.md half of stale.185"
+observed = "The session permission classifier refused the workflow.kvx edit plus cg spec render as self-modification of agent instruction files, and the 'run spec/specgen' banner is a literal in the cg binary (strings /usr/local/bin/cg), so these entries stay open and CONTRIBUTING.md:9 keeps '30 minutes' to agree with the rendered rule files; evidence: revision 20603147229e022295683fd044413bc5db5a64bd, command pnpm install --frozen-lockfile && pnpm -r typecheck && cg spec render --check && node tools/check-links.mjs (first 8.4 verify_cmd run), exit 1 on the docs/tutorial.md:718 link that 8.7 removed, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-8.4-private/logs/8.4-verify.log."
+assumption = "A maintainer with permission applies the recorded step_1, step_5 and time-limit strings in spec/workflow.kvx and runs cg spec render, the Codify owner changes the renderer banner to cg spec render, and CONTRIBUTING.md:9 then names the task time_limit_minutes (45 by default); no check was relaxed."
+severity = "assumption"
+
+[qualification.842]
+task = "8.4"
+file = "spec/rex-v02/spec.kvx [decision] designx_standard (line 38), packages/rex/src/designx/index.ts"
+symbol = "freshness stale.194: DESIGNX_STANDARD against the decision's kit set (theme-provider, theme-toggle) and its bottom-sheet, dock and swipeable-list forms"
+observed = "The decision names registry:component items that DESIGNX_ITEMS, DESIGNX_STANDARD, task 9.2, docs/recipes/designx.md and rex new do not install, and the freshness fix prefers amending the decision, which is outside the 8.4 touches, so index.ts is unchanged and stale.194 stays open; evidence: revision 723acc7a68fe3206876a03139d3455e7898930ab plus the 8.4 changes, command pnpm -C packages/rex exec vitest run src/cli/designx.test.ts src/designx && pnpm -C packages/rex build && ls packages/rex/README.md packages/rex/LICENSE, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-8.4-private/logs/8.4-verify-4.log."
+assumption = "The spec owner amends designx_standard to end the kit set at typography with the three hooks and to name theme-provider, theme-toggle, bottom-sheet, dock and swipeable-list as registry:component source to adapt outside the standard set; no code change follows."
+severity = "suspect"
+
+[qualification.843]
+task = "8.4"
+file = "packages/rex/src/cli/pack.test.ts, docs/development.md:7, docs/tutorial.md:7, docs/migration.md:78, spec/rex-v02/qualification.kvx [qualification.642] assumption"
+symbol = "freshness stale.27, stale.28, stale.180, stale.193 and stale.196 follow-ups outside the 8.4 touches, and the owner of the standard data-table menu grouping"
+observed = "8.4 commits packages/rex/README.md and packages/rex/LICENSE (npm adds both from the package root), sets repository, homepage and bugs, raises engines to >=22.12 (package) and ^22.19.0 || ^24.11.0 || >=26.0.0 (workspace), and groups the registry data-table column menu in designxFiles (groupDataTableMenu) with a happy-dom test that opens the View menu, but pack.test.ts and the guides that quote 'Node 22 or later' are outside its touches; evidence: revision 723acc7a68fe3206876a03139d3455e7898930ab plus the 8.4 changes, command pnpm -C packages/rex exec vitest run src/cli/designx.test.ts src/designx && pnpm -C packages/rex build && ls packages/rex/README.md packages/rex/LICENSE, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-8.4-private/logs/8.4-verify-4.log."
+assumption = "The pack test owner asserts README.md, LICENSE and repository.url in the tarball, the docs owner quotes the new Node floors in docs/development.md, docs/tutorial.md and docs/migration.md, and the qualification.642 assumption that 9.3 groups the standard data-table label reads as closed by 8.4; no check was relaxed."
+severity = "note"
+
+[qualification.961]
+task = "9.6"
+file = "examples/demo/app/pages/send/test/form.test.tsx, examples/demo/app/pages/send/regions/form/region.tsx, examples/demo/app/pages/send/overlays/ContactPickerSheet.tsx"
+symbol = "send form region > picks a recipient by typing in the contact picker and submitting"
+observed = "After two repair cycles every other step passes (typecheck exit 0, rex vitest 363 of 363 with the suspended-region and sidecar hydration cases, package build, rex check, demo unit 41 of 42 including the new portfolio hydration test); the one failure is this case: the form region re-renders with contactQuery \"zzz\" (traced with a temporary log) but the region-bound ContactPickerSheet keeps rendering the input with value \"\" and the full contact list, so No contact matches \"zzz\" never appears; the demo e2e walk did not run behind it; evidence: revision 723acc7a68fe3206876a03139d3455e7898930ab plus the 9.6 changes, command pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server/ssr.test.tsx src/server/ssr.node.test.ts src/client && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check && pnpm -C examples/demo test:unit && pnpm -C examples/demo test, exit 1 (1 failed of 42 in test:unit), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-9.6-private/logs/9.6-verify-3.log."
+assumption = "The region-bound overlay does not receive the updated ContactPickerContent context value on re-render (suspected in the overlay rendering path of packages/rex/src/client/overlay.tsx or the compiled overlay callback, both outside the 9.6 touches); a follow-up owning overlay.tsx checks context propagation into open region-bound overlays, then the unchanged 9.6 verify_cmd runs the demo walk; no assertion was relaxed."
+severity = "high"
+
+[qualification.7181]
+task = "7.18"
+file = "spec/rex-v02/spec.kvx (the 23 tasks with status implemented: 0.7, 0.8, 2.7, 3.7, 6.1, 6.2, 6.4, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.9, 7.11, 7.12, 7.13, 7.15, 7.16, 7.20, 9.1, 9.5, 9.6)"
+symbol = "do_1 second half: rerun each implemented task's unchanged verify_cmd and cg spec done <id>"
+observed = "The package suite is green after the 7.18 repairs: revision 6679eb5 (4b2a82f178e0d13f040070055c248230f4328efb plus the 7.18 changes), command pnpm -r typecheck && pnpm -C packages/rex test && pnpm -C examples/demo exec rex check && pnpm -C examples/demo test:unit, exit 0 (1610 of 1610 package tests, 42 of 42 demo unit tests), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.18-private/logs/7.18-verify.log; the per-task requalification did not run because the session permission classifier refused both cg spec done on another task's id (modify shared resources) and the sequential run of the 23 verify_cmds (interfere with workloads)."
+assumption = "An operator with that permission runs the 23 unchanged verify_cmds in id order on this revision and marks the passing tasks done; the four package failures recorded at revision c047b8f3 (qualification.738 to qualification.7318) no longer reproduce in the full package suite, and the vite.test.ts 20000 ms bound held in this run."
+severity = "blocker"
+
+[qualification.7182]
+task = "7.18"
+file = "docs/architecture.md:40"
+symbol = "the Page.Outcome frame in page-outcome.tsx"
+observed = "7.18 renamed packages/rex/src/client/page-outcome.tsx to outcome-frame.tsx because Rolldown named its shared chunk page-outcome, which the page chunk prefix rule (split.ts chunkTable, ssr-css.ts) read as a page chunk and the demo client build test rejected; evidence: revision 4b2a82f178e0d13f040070055c248230f4328efb, command pnpm -C packages/rex test, exit 1 (vite.test.ts expected five page chunks, received page-outcome as a sixth), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.18-private/logs/rextest0.log."
+assumption = "The docs owner changes page-outcome.tsx to outcome-frame.tsx in docs/architecture.md:40, outside the 7.18 touches; any app module whose file name starts with page- can meet the same collision, which a follow-up owning split.ts may close by classifying page chunks by their page group rather than by name prefix."
+severity = "minor"

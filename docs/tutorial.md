@@ -4,7 +4,7 @@ This tutorial builds the portfolio and send pages of the wallet demo in [`exampl
 
 Every file of the finished app is in `examples/demo`. Where this page does not print a file in full, it links to it.
 
-You need Node 22 or later and pnpm. Inside this repository the `rex` bin is built from the package first (`pnpm install && pnpm -C packages/rex build`); in your own project it comes with `@sidioralabs/rex`.
+You need Node 22.19 or later and pnpm. Inside this repository the `rex` bin is built from the package first (`pnpm install && pnpm -C packages/rex build`); in your own project it comes with `@sidioralabs/rex`.
 
 ## What you will build
 
