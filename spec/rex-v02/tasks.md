@@ -148,7 +148,7 @@
     - Add client/unsafe-html.tsx exporting unsafeHtml(html) as the only sanctioned raw HTML path; add check/rules/security.ts reporting dangerouslySetInnerHTML outside it (security/unsafe-html) with fixtures.
     - Write check/rules/security.test.ts and core/serialize.test.ts cases proving every inline serialisation escapes <, >, & and U+2028 and U+2029.
     - _Requirements: 25.1_
-  - [ ] 4.2 Origin checks, CSP nonces and security headers
+  - [x] 4.2 Origin checks, CSP nonces and security headers
     - Add server/middleware/security.ts implementing [design] security_impl: Origin check for POST on /rex/*, CSP built from config.security with the per-request nonce from RexContext, X-Content-Type-Options, Referrer-Policy and Permissions-Policy defaults, header overrides; register it in server/middleware.ts; add vite/nonce.ts applying the nonce to inline scripts in the dev HTML transform.
     - Write server/security.test.ts: 403 without or with a foreign Origin, allowed origins, CSP header shape in strict and report modes, nonce present on every inline script in an SSR response.
     - _Requirements: 25.2, 25.3_

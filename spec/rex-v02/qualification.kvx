@@ -39,3 +39,11 @@ symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowSt
 observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
 assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
 severity = "blocker"
+
+[qualification.421]
+task = "4.2"
+file = "packages/rex/src/server/server.test.ts, server/node.test.ts, client/runtime.test.tsx, client/act.test.tsx, client/agent/*.test.tsx, cli/commands.test.ts, server/context.ts, server/ssr.ts"
+symbol = "installSecurityMiddleware, requestNonce, createRexContext, RequestContext.nonce"
+observed = "req 25 ac_2 makes every non-GET request to /rex/* without an allowed Origin a 403, and the middleware is registered for every createRexServer, so existing tests outside the 4.2 touches that POST to /rex/rpc or /rex/flow from Node without an Origin header now receive 403; RexContext.nonce is generated lazily in context.ts while the CSP header uses requestNonce(request), so SSR (1.1) must take its nonce from requestNonce; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/server/security.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.2-private/logs/4.2-verify.log."
+assumption = "Owners of those tests send Origin: <their base URL> on RPC and flow posts (browsers always send it, so the client code needs no change), and the owner of context.ts seeds RequestContext.nonce from requestNonce(request) so RexContext and the CSP header share one per-request nonce; the Origin rule was not relaxed."
+severity = "blocker"
