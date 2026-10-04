@@ -1,8 +1,9 @@
 import { region } from "@sidioralabs/rex/client";
-import { Typography } from "../../../../components/ui/typography.tsx";
+import { useHomeMeta } from "../../hooks/useHomeMeta.ts";
+import Primitives from "./parts/Primitives.tsx";
 
-export default region("primitives", () => (
-  <Typography variant="h2" as="h2">
-    Five declarations and the manifest
-  </Typography>
-));
+export default region("primitives", () => {
+  const meta = useHomeMeta();
+  if (meta.data === undefined) return null;
+  return <Primitives kinds={meta.data.declarationKinds} />;
+});

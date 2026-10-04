@@ -105,7 +105,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.1]
 title = "The home page: hero, the four rules, features, install, the live sidecar and the footer"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 1
 requires = ["1.1"]
@@ -160,14 +160,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.4]
 title = "The standards, changelog and about pages"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 1
 requires = ["1.1"]
 reqs = ["2.3", "1.2"]
 do_1 = "app/server/content/standards.ts parses spec/rex-v02/spec.kvx [standard.*] sections and the [task.*] statuses they map to; app/server/content/changelog.ts reads CHANGELOG.md and splits it into releases; page standards (/standards, static) with the Table region (DesignX table on desktop, card list on phone, one row per item with its status badge and owning tasks); page changelog (/changelog, static) with the Releases region rendered through the Prose part; page about (/about, static) with the Sidiora, License, Governance, Contributing and Security regions linking the repository files; the read actions live in app/actions/standards and app/actions/changelog."
 do_2 = "Tests asserting every [standard.*] item is a row, the statuses equal the spec, every release heading of CHANGELOG.md is rendered, the about links resolve to files that exist in the repository, and the sidecar of each page."
-touches = ["site/app/pages/standards", "site/app/pages/changelog", "site/app/pages/about", "site/app/server/content/standards.ts", "site/app/server/content/changelog.ts", "site/app/server/content/standards.test.ts", "site/app/server/content/changelog.test.ts", "site/app/actions/standards", "site/app/actions/changelog"]
+touches = ["site/app/pages/standards", "site/app/pages/changelog", "site/app/pages/about", "site/app/server/content/standards.ts", "site/app/server/content/changelog.ts", "site/app/server/content/standards.test.ts", "site/app/server/content/changelog.test.ts"]
 verify_cmd = "pnpm -C site check && pnpm -C site exec vitest run app/pages/standards app/pages/changelog app/pages/about app/server/content/standards.test.ts app/server/content/changelog.test.ts"
 gate_kind = "planned"
 max_builds = 1

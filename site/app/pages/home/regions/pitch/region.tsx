@@ -1,8 +1,9 @@
 import { region } from "@sidioralabs/rex/client";
-import { Typography } from "../../../../components/ui/typography.tsx";
+import { useHomeMeta } from "../../hooks/useHomeMeta.ts";
+import Rules from "./parts/Rules.tsx";
 
-export default region("pitch", () => (
-  <Typography variant="h2" as="h2">
-    One way to build it, one DOM to operate it
-  </Typography>
-));
+export default region("pitch", () => {
+  const meta = useHomeMeta();
+  if (meta.data === undefined) return null;
+  return <Rules checkerRules={meta.data.checkerRules} />;
+});

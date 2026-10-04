@@ -1,8 +1,9 @@
 import { region } from "@sidioralabs/rex/client";
-import { Typography } from "../../../../components/ui/typography.tsx";
+import { useHomeMeta } from "../../hooks/useHomeMeta.ts";
+import Hero from "./parts/Hero.tsx";
 
-export default region("hero", () => (
-  <Typography variant="display" as="h1">
-    The UI framework agents can operate
-  </Typography>
-));
+export default region("hero", () => {
+  const meta = useHomeMeta();
+  if (meta.data === undefined) return null;
+  return <Hero version={meta.data.version} />;
+});
