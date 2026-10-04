@@ -155,6 +155,13 @@ describe("rex new", { timeout: NEW_TEST_TIMEOUT_MS }, () => {
 
     const config = readFileSync(join(root, "rex.config.ts"), "utf8");
     expect(config).toContain('import app from "rex:app";');
+    expect(config).toContain('import { defineConfig } from "@sidioralabs/rex/config";');
+    const entityFile = readFileSync(join(root, "app/entities/note.ts"), "utf8");
+    expect(entityFile).toContain('import { entity } from "@sidioralabs/rex";');
+    expect(entityFile).toContain('import { id, text } from "@sidioralabs/rex/schema";');
+    const actionFile = readFileSync(join(root, "app/actions/ping.ts"), "utf8");
+    expect(actionFile).toContain('import { boolean } from "@sidioralabs/rex/schema";');
+    expect(actionFile).toContain('import { z } from "zod/mini";');
     expect(readFileSync(join(root, "index.html"), "utf8")).toContain(
       '<script type="module" src="/@rex/entry"></script>',
     );

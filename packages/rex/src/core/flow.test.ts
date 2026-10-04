@@ -7,7 +7,7 @@ import { FlowDecisionError, decide, flow, runFlow } from "./flow.ts";
 import { memoryJournal, statusOf, type Journal } from "./journal.ts";
 import { always, policy } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { integer, text } from "./schema.ts";
+import { integer, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 
 const treasury = policy("treasury", {
@@ -342,7 +342,7 @@ describe("approval gates", () => {
     await decide(payout, "p-3", "reject", treasurer);
     await expect(decide(payout, "p-3", "approve", treasurer)).rejects.toMatchObject({
       name: "FlowDecisionError",
-      code: "NO_PENDING_APPROVAL",
+      code: "REX333",
     });
     await expect(decide(payout, "p-3", "reject", treasurer)).rejects.toBeInstanceOf(
       FlowDecisionError,
@@ -355,7 +355,7 @@ describe("approval gates", () => {
     const payout = makePayout(journal);
     await runFlow(payout, "p-4", { actor: clerk, input: { amount: 100, memo: "x" } });
     await expect(decide(payout, "p-4", "approve", clerk)).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "REX334",
       reason: "missing-permission:approve",
     });
     expect((await journal.load("p-4"))?.status).toBe("paused");
@@ -364,17 +364,19 @@ describe("approval gates", () => {
   it("refuses decisions for unknown or running instances", async () => {
     const payout = makePayout(journal);
     await expect(decide(payout, "missing", "approve", treasurer)).rejects.toMatchObject({
-      code: "NO_PENDING_APPROVAL",
+      code: "REX333",
     });
     const direct = makeDirect(journal);
     await runFlow(direct, "d-1", { actor: treasurer });
     await expect(decide(direct, "d-1", "approve", treasurer)).rejects.toMatchObject({
-      code: "NO_PENDING_APPROVAL",
+      code: "REX333",
     });
     await expect(decide(payout, "d-1", "approve", treasurer)).rejects.toBeInstanceOf(
       FlowDecisionError,
     );
-    await expect(decide(payout, "p-x", "maybe" as never, treasurer)).rejects.toThrow(TypeError);
+    await expect(decide(payout, "p-x", "maybe" as never, treasurer)).rejects.toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX329" }),
+    );
   });
 });
 

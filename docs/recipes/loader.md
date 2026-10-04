@@ -7,7 +7,8 @@ A page declares the data it needs in `page.ts` with `load`, and its components r
 A loader references an action whose `effect` is `"read"`. The demo's `load-wallet` action (`examples/demo/app/actions/load-wallet.ts`) is one:
 
 ```ts
-import { action, boolean, money } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { boolean, money } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { accountIdOf, walletOverview } from "../data/wallet.ts";
 import { account } from "../entities/account.ts";
@@ -18,9 +19,9 @@ import { viewer } from "../policies/viewer.ts";
 export const loadWallet = action("load-wallet", {
   input: z.object({}),
   output: z.object({
-    account: account.schema,
-    tokens: z.array(z.object({ ...token.schema.shape, valueUsd: money(), dust: boolean() })),
-    contacts: z.array(contact.schema),
+    account: z.object(account.fields),
+    tokens: z.array(z.object({ ...token.fields, valueUsd: money(), dust: boolean() })),
+    contacts: z.array(z.object(contact.fields)),
     totalUsd: money(),
   }),
   policy: viewer.can("viewer.read"),
@@ -35,7 +36,8 @@ export const loadWallet = action("load-wallet", {
 `load` maps camelCase loader names to read actions. When the action needs input from the route params, give `{ action, input }`, where `input` maps the validated params to the action input:
 
 ```ts
-import { id, page } from "@sidioralabs/rex";
+import { page } from "@sidioralabs/rex";
+import { id } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { loadWallet } from "../../actions/load-wallet.ts";
 import { readToken } from "../../actions/read-token.ts";
@@ -104,6 +106,5 @@ export const send = action("send", {
 ## Checks
 
 - `page()` rejects malformed `load` and `cache` values when the declaration loads, so `rex dev`, `rex build` and `rex manifest` stop with the `REX203` or `REX204` message and the field name.
-- The import table of 0.2.0 does not list `page.ts` among the files a page hook or region may import, so `rex check` reports the `import tokenPage from "../page.ts"` line above as a `boundaries/import-table` error. Until the table admits that import, read the same read action through TanStack Query in a page hook, as the demo's `useWallet` hook does (`examples/demo/app/pages/portfolio/hooks/useWallet.ts` with `examples/demo/app/data/wallet-query.ts`); the action still runs through the router with its policy and audit.
 
 Related: [primitives.md](../primitives.md#page), [Ship a static page](static-page.md) for loaders at build time.

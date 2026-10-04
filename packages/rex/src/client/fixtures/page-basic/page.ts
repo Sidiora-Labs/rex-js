@@ -1,4 +1,5 @@
-import { action, boolean, can, never, page, text } from "../../../index.ts";
+import { action, can, never, page } from "../../../index.ts";
+import { boolean, text } from "../../../schema/index.ts";
 import { z } from "zod/mini";
 
 export const greet = action("greet", {

@@ -12,6 +12,7 @@ import {
 } from "../rule.ts";
 
 export const REX_CORE = "@sidioralabs/rex";
+export const REX_SCHEMA = "@sidioralabs/rex/schema";
 export const REX_CLIENT = "@sidioralabs/rex/client";
 export const REX_SERVER = "@sidioralabs/rex/server";
 
@@ -42,6 +43,7 @@ interface RoleBoundary {
 
 const react: PackageRule = { specifier: "react" };
 const core: PackageRule = { specifier: REX_CORE, exact: true };
+const schema: PackageRule = { specifier: REX_SCHEMA, exact: true };
 const client: PackageRule = { specifier: REX_CLIENT, exact: true };
 const clientNoHooks: PackageRule = { specifier: REX_CLIENT, exact: true, noHooks: true };
 const DECLARATION_FORBIDDEN = ["react", "react-dom", REX_CLIENT];
@@ -52,9 +54,9 @@ export const IMPORT_TABLE: Readonly<Record<FileRole, RoleBoundary>> = {
   page: {
     label: () => "page.ts",
     targets: [{ role: "entity" }, { role: "action" }, { role: "policy" }],
-    packages: [core, { specifier: "zod" }],
+    packages: [core, schema, { specifier: "zod" }],
     allowed:
-      "page.ts may import app/entities, app/actions, app/policies, @sidioralabs/rex and zod, never React.",
+      "page.ts may import app/entities, app/actions, app/policies, @sidioralabs/rex, @sidioralabs/rex/schema and zod, never React.",
   },
   view: {
     label: () => "view.tsx",
@@ -70,13 +72,15 @@ export const IMPORT_TABLE: Readonly<Record<FileRole, RoleBoundary>> = {
       { role: "hook", samePage: true },
       { role: "part", samePage: true, sameRegion: true },
       { role: "overlay", samePage: true },
+      { role: "page", samePage: true },
       { role: "action" },
+      { role: "flow" },
       { role: "component" },
       { role: "entity", typeOnly: true },
     ],
     packages: [react, core, client],
     allowed:
-      "region.tsx may import its page's hooks, its own parts, its page's overlays, app/actions, app/components, react, @sidioralabs/rex and @sidioralabs/rex/client, never other regions or pages.",
+      "region.tsx may import its page's hooks, its own parts, its page's overlays, its own page.ts, app/actions, app/flows, app/components, react, @sidioralabs/rex and @sidioralabs/rex/client, never other regions or pages.",
   },
   part: {
     label: (file) => `part ${fileLabel(file)}`,
@@ -97,11 +101,20 @@ export const IMPORT_TABLE: Readonly<Record<FileRole, RoleBoundary>> = {
       { role: "action" },
       { role: "entity" },
       { role: "policy" },
+      { role: "flow" },
       { role: "hook", samePage: true },
+      { role: "page", samePage: true },
     ],
-    packages: [react, core, client, { specifier: "@tanstack/react-query" }, { specifier: "zod" }],
+    packages: [
+      react,
+      core,
+      schema,
+      client,
+      { specifier: "@tanstack/react-query" },
+      { specifier: "zod" },
+    ],
     allowed:
-      "hooks may import app/data, app/actions, app/entities, app/policies, sibling hooks, react, @tanstack/react-query, zod, @sidioralabs/rex and @sidioralabs/rex/client, never components.",
+      "hooks may import app/data, app/actions, app/entities, app/policies, app/flows, sibling hooks, their own page.ts, react, @tanstack/react-query, zod, @sidioralabs/rex, @sidioralabs/rex/schema and @sidioralabs/rex/client, never components.",
   },
   overlay: {
     label: (file) => `overlay ${fileLabel(file)}`,

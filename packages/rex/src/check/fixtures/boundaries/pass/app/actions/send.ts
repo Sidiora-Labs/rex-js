@@ -1,4 +1,5 @@
-import { action, money, text } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { money, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { tokenStore } from "../data/tokens.ts";
 import { wallet } from "../policies/wallet.ts";

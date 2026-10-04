@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { withModuleLoader, type ModuleLoader } from "../cli/load.ts";
+import { RexError } from "../core/errors.ts";
 import type { AnyFlow } from "../core/flow.ts";
 import {
   DECLARATION_KINDS,
@@ -19,11 +20,15 @@ export const AGENTS_FILE = "AGENTS.md";
 
 const DECLARATION_DIRS = ["entities", "policies", "actions", "flows"] as const;
 
-export class ManifestScanError extends Error {
+export class ManifestScanError extends RexError {
   readonly appRoot: string;
 
-  constructor(appRoot: string, message: string) {
-    super(`manifest scan of ${appRoot} failed: ${message}`);
+  constructor(appRoot: string, message: string, cause?: unknown) {
+    super(
+      "REX500",
+      `manifest scan of ${appRoot} failed: ${message}`,
+      cause === undefined ? {} : { cause },
+    );
     this.name = "ManifestScanError";
     this.appRoot = appRoot;
   }
@@ -100,7 +105,12 @@ export function appName(appRoot: string): string {
   return path.basename(path.resolve(appRoot));
 }
 
-type AppCore = Pick<typeof import("../index.ts"), "buildManifest" | "createRegistry">;
+type AppCore = Pick<typeof import("../index.ts"), "createRegistry"> &
+  Pick<typeof import("./index.ts"), "buildManifest">;
+
+export function manifestEntryOf(core: string): string {
+  return core.replace(/index(\.[cm]?[jt]s)$/, "manifest/index$1");
+}
 
 async function loadAppCore(loader: ModuleLoader): Promise<AppCore> {
   const resolved = await loader.vite.environments.ssr.pluginContainer.resolveId(
@@ -111,7 +121,11 @@ async function loadAppCore(loader: ModuleLoader): Promise<AppCore> {
     resolved === null || resolved.external || !path.isAbsolute(resolved.id)
       ? runtimePaths().core
       : resolved.id;
-  return loader.load<AppCore>(core);
+  const { createRegistry } = await loader.load<Pick<AppCore, "createRegistry">>(core);
+  const { buildManifest } = await loader.load<Pick<AppCore, "buildManifest">>(
+    manifestEntryOf(core),
+  );
+  return { createRegistry, buildManifest };
 }
 
 async function loadDeclarations(
@@ -128,6 +142,7 @@ async function loadDeclarations(
       throw new ManifestScanError(
         root,
         `cannot import ${path.relative(root, file)}: ${(error as Error).message}`,
+        error,
       );
     }
     for (const key of Object.keys(loaded).sort()) {
@@ -162,7 +177,11 @@ export async function scanManifest(appRoot: string): Promise<Manifest> {
     return await buildAppManifest(root);
   } catch (error) {
     if (error instanceof ManifestScanError) throw error;
-    throw new ManifestScanError(root, error instanceof Error ? error.message : String(error));
+    throw new ManifestScanError(
+      root,
+      error instanceof Error ? error.message : String(error),
+      error,
+    );
   }
 }
 

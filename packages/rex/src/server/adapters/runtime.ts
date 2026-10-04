@@ -16,9 +16,6 @@ export class RuntimeMissingError extends RexError {
     super(
       RUNTIME_MISSING_CODE,
       `${entry}: the ${runtime} runtime global is absent, so there is no ${runtime}.serve to hand the fetch handler to`,
-      {
-        hint: `Run this server entry with ${runtime.toLowerCase()}, or use startNodeServer from rex/server/node or createEdgeHandler from rex/server/edge on other runtimes.`,
-      },
     );
     this.name = "RuntimeMissingError";
     this.runtime = runtime;

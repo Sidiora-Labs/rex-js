@@ -3,6 +3,70 @@
     {
       "effect": "read",
       "form": null,
+      "id": "list-tokens",
+      "input": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {},
+        "type": "object"
+      },
+      "invalidates": [],
+      "label": "List tokens",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "tokens": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                  "type": "string",
+                  "x-rex-field": "id"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string",
+                  "x-rex-field": "text"
+                },
+                "priceUsd": {
+                  "format": "decimal",
+                  "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+                  "type": "string",
+                  "x-rex-field": "money"
+                },
+                "symbol": {
+                  "minLength": 1,
+                  "type": "string",
+                  "x-rex-field": "text"
+                }
+              },
+              "required": [
+                "id",
+                "symbol",
+                "name",
+                "priceUsd"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "tokens"
+        ],
+        "type": "object"
+      },
+      "policy": {
+        "kind": "always"
+      },
+      "shortcut": null
+    },
+    {
+      "effect": "read",
+      "form": null,
       "id": "load-wallet",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -292,7 +356,10 @@
     },
     {
       "effect": "irreversible",
-      "form": null,
+      "form": {
+        "confirmTitle": null,
+        "redirect": "/send"
+      },
       "id": "send",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -344,6 +411,50 @@
         "unlocked": true
       },
       "shortcut": "mod+enter"
+    },
+    {
+      "effect": "reversible",
+      "form": {
+        "confirmTitle": null,
+        "redirect": "/about"
+      },
+      "id": "send-feedback",
+      "input": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "message": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "invalidates": [],
+      "label": "Send feedback",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "received": {
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          }
+        },
+        "required": [
+          "received"
+        ],
+        "type": "object"
+      },
+      "policy": {
+        "kind": "always"
+      },
+      "shortcut": null
     },
     {
       "effect": "reversible",
@@ -638,6 +749,102 @@
   "pages": [
     {
       "actions": [
+        "send-feedback"
+      ],
+      "cache": null,
+      "chrome": {
+        "back": "portfolio",
+        "header": true,
+        "nav": true,
+        "title": "msg:about.title"
+      },
+      "draft": "none",
+      "id": "about",
+      "loaders": [],
+      "overlays": [],
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {},
+        "type": "object"
+      },
+      "paths": false,
+      "policy": {
+        "kind": "always"
+      },
+      "recovery": null,
+      "regions": [
+        "intro",
+        "feedback"
+      ],
+      "render": "static",
+      "revalidate": null,
+      "route": "/about",
+      "routeParams": [],
+      "states": [
+        "loading",
+        "empty",
+        "stale",
+        "partial",
+        "offline",
+        "permission-denied",
+        "recoverable-error",
+        "terminal-error",
+        "ready"
+      ],
+      "transition": "none"
+    },
+    {
+      "actions": [],
+      "cache": null,
+      "chrome": {
+        "back": "portfolio",
+        "header": true,
+        "nav": true,
+        "title": "msg:embed.title"
+      },
+      "draft": "none",
+      "id": "embed",
+      "loaders": [
+        {
+          "action": "list-tokens",
+          "input": "params",
+          "name": "tokens"
+        }
+      ],
+      "overlays": [],
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {},
+        "type": "object"
+      },
+      "paths": false,
+      "policy": {
+        "kind": "always"
+      },
+      "recovery": null,
+      "regions": [
+        "widget",
+        "locale"
+      ],
+      "render": "ssr",
+      "revalidate": null,
+      "route": "/embed",
+      "routeParams": [],
+      "states": [
+        "loading",
+        "empty",
+        "stale",
+        "partial",
+        "offline",
+        "permission-denied",
+        "recoverable-error",
+        "terminal-error",
+        "ready"
+      ],
+      "transition": "none"
+    },
+    {
+      "actions": [
         "toggle-hide-dust"
       ],
       "cache": null,
@@ -649,7 +856,13 @@
       },
       "draft": "route",
       "id": "portfolio",
-      "loaders": [],
+      "loaders": [
+        {
+          "action": "load-wallet",
+          "input": "params",
+          "name": "wallet"
+        }
+      ],
       "overlays": [
         {
           "binding": "url",
@@ -706,7 +919,13 @@
       },
       "draft": "route",
       "id": "send",
-      "loaders": [],
+      "loaders": [
+        {
+          "action": "load-wallet",
+          "input": "params",
+          "name": "wallet"
+        }
+      ],
       "overlays": [
         {
           "binding": "region",
@@ -739,6 +958,49 @@
       "render": "ssr",
       "revalidate": null,
       "route": "/send",
+      "routeParams": [],
+      "states": [
+        "loading",
+        "empty",
+        "stale",
+        "partial",
+        "offline",
+        "permission-denied",
+        "recoverable-error",
+        "terminal-error",
+        "ready"
+      ],
+      "transition": "none"
+    },
+    {
+      "actions": [],
+      "cache": null,
+      "chrome": {
+        "back": "portfolio",
+        "header": true,
+        "nav": true,
+        "title": "msg:tokens.title"
+      },
+      "draft": "none",
+      "id": "tokens",
+      "loaders": [],
+      "overlays": [],
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {},
+        "type": "object"
+      },
+      "paths": false,
+      "policy": {
+        "kind": "always"
+      },
+      "recovery": null,
+      "regions": [
+        "prices"
+      ],
+      "render": "ssg",
+      "revalidate": 60,
+      "route": "/tokens",
       "routeParams": [],
       "states": [
         "loading",

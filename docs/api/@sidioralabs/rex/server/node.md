@@ -194,6 +194,34 @@ const API_PREFIX: "/rex" = "/rex";
 
 ***
 
+<a id="createprerenderednodeapp"></a>
+
+### createPrerenderedNodeApp
+
+```ts
+const createPrerenderedNodeApp: (app, clientDir, registry?) => Hono = createNodeApp;
+```
+
+#### Parameters
+
+##### app
+
+[`NodeFetchApp`](#nodefetchapp)
+
+##### clientDir
+
+`string`
+
+##### registry?
+
+`object`
+
+#### Returns
+
+`Hono`
+
+***
+
 <a id="index_file"></a>
 
 ### INDEX\_FILE
@@ -221,38 +249,6 @@ function createNodeApp(app, clientDir): Hono;
 ##### clientDir
 
 `string`
-
-#### Returns
-
-`Hono`
-
-***
-
-<a id="createprerenderednodeapp"></a>
-
-### createPrerenderedNodeApp()
-
-```ts
-function createPrerenderedNodeApp(
-   app, 
-   clientDir, 
-   registry
-): Hono;
-```
-
-#### Parameters
-
-##### app
-
-[`FetchApp`](bun.md#fetchapp)
-
-##### clientDir
-
-`string`
-
-##### registry
-
-`object`
 
 #### Returns
 

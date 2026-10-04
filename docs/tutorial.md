@@ -70,7 +70,8 @@ Each command writes `app/entities/<name>.ts` with `id` and `name` fields. Fill t
 `app/entities/account.ts`:
 
 ```ts
-import { boolean, entity, id, ref, text } from "@sidioralabs/rex";
+import { entity } from "@sidioralabs/rex";
+import { boolean, id, ref, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 
 export const account = entity("account", {
@@ -90,7 +91,8 @@ export const account = entity("account", {
 `app/entities/token.ts`:
 
 ```ts
-import { entity, id, money, text } from "@sidioralabs/rex";
+import { entity } from "@sidioralabs/rex";
+import { id, money, text } from "@sidioralabs/rex/schema";
 
 export const token = entity("token", {
   fields: {
@@ -107,7 +109,8 @@ export const token = entity("token", {
 `app/entities/contact.ts`:
 
 ```ts
-import { entity, id, text } from "@sidioralabs/rex";
+import { entity } from "@sidioralabs/rex";
+import { id, text } from "@sidioralabs/rex/schema";
 
 export const contact = entity("contact", {
   fields: { id: id(), name: text({ min: 1 }), address: text({ min: 1 }) },
@@ -227,7 +230,8 @@ Each starts as a reversible action with `policy: always()`. Replace them.
 `app/actions/load-wallet.ts`, the read action the pages load data through:
 
 ```ts
-import { action, boolean, money } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { boolean, money } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { accountIdOf, walletOverview } from "../data/wallet.ts";
 import { account } from "../entities/account.ts";
@@ -238,9 +242,9 @@ import { viewer } from "../policies/viewer.ts";
 export const loadWallet = action("load-wallet", {
   input: z.object({}),
   output: z.object({
-    account: account.schema,
-    tokens: z.array(z.object({ ...token.schema.shape, valueUsd: money(), dust: boolean() })),
-    contacts: z.array(contact.schema),
+    account: z.object(account.fields),
+    tokens: z.array(z.object({ ...token.fields, valueUsd: money(), dust: boolean() })),
+    contacts: z.array(z.object(contact.fields)),
     totalUsd: money(),
   }),
   policy: viewer.can("viewer.read"),
@@ -253,7 +257,8 @@ export const loadWallet = action("load-wallet", {
 `app/actions/toggle-hide-dust.ts`:
 
 ```ts
-import { action, boolean } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { boolean } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { accountIdOf, accounts, requireAccount } from "../data/wallet.ts";
 import { wallet } from "../policies/wallet.ts";
@@ -278,7 +283,8 @@ export const toggleHideDust = action("toggle-hide-dust", {
 `app/actions/pick-token.ts` (`pick-contact.ts` is the same shape over `contacts`, field `contact`, shortcut `shift+c`; see [examples/demo/app/actions/pick-contact.ts](../examples/demo/app/actions/pick-contact.ts)):
 
 ```ts
-import { action, id, text } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { id, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { accountIdOf, accounts, nextId, requireAccount, tokens } from "../data/wallet.ts";
 import { wallet } from "../policies/wallet.ts";
@@ -310,7 +316,8 @@ export const pickToken = action("pick-token", {
 `app/actions/send.ts`, the irreversible one:
 
 ```ts
-import { action, money, text } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { money, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import {
   DEFAULT_SEND_AMOUNT,
@@ -424,7 +431,7 @@ export function createDemoServer(app: DemoApp, ledger: Ledger = memoryLedger()) 
 Then point `rex.config.ts` at it. The wallet also overrides the Rex shell components (sheet frame, palette item, outcome) with DesignX ones from `app/components/Shell.tsx`:
 
 ```ts
-import { defineConfig } from "@sidioralabs/rex";
+import { defineConfig } from "@sidioralabs/rex/config";
 import app from "rex:app";
 import { createDemoServer } from "./server.ts";
 
@@ -792,7 +799,7 @@ export default page("send", {
 
 ```ts
 import { useDraft } from "@sidioralabs/rex/client";
-import { MONEY_PATTERN } from "@sidioralabs/rex";
+import { MONEY_PATTERN } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 
 const sendDraft = z.object({ amount: z.string().check(z.maxLength(32)) });

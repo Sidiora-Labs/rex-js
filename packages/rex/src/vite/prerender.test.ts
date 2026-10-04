@@ -1,4 +1,12 @@
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,7 +21,7 @@ import { isRexError } from "../core/errors.ts";
 import { page, type AnyPage } from "../core/page.ts";
 import { always, can } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { SIDECAR_MIME_TYPE } from "../manifest/sidecar.schema.ts";
@@ -80,7 +88,8 @@ const STATES = [
 
 const FIXTURE_FILES: Readonly<Record<string, string>> = {
   "app/actions/subscribe.ts": [
-    'import { action, always, text } from "@sidioralabs/rex";',
+    'import { action, always } from "@sidioralabs/rex";',
+    'import { text } from "@sidioralabs/rex/schema";',
     'import { z } from "zod/mini";',
     "",
     'export const subscribe = action("subscribe", {',
@@ -130,7 +139,8 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     "",
   ].join("\n"),
   "app/pages/guide/page.ts": [
-    'import { page, text } from "@sidioralabs/rex";',
+    'import { page } from "@sidioralabs/rex";',
+    'import { text } from "@sidioralabs/rex/schema";',
     'import { z } from "zod/mini";',
     "",
     'export default page("guide", {',
@@ -459,5 +469,50 @@ describe("prerender guards", () => {
         { clientDir: tempClientDir() },
       ),
     ).rejects.toThrow("render ended as denied");
+  });
+
+  it("carries the configured font preloads and the font-display swap block into ssg and static pages", async () => {
+    const leaflet = page("leaflet", { route: "/leaflet", render: "static", chrome: { title: "Leaflet" } });
+    const digest = page("digest", { route: "/digest", render: "ssg", chrome: { title: "Digest" } });
+    const registry = createRegistry().register(leaflet, digest).freeze();
+    const bundle: RexEntryBundle = {
+      registry,
+      manifest: buildManifest(registry, { app: "fonts" }),
+      pages: [
+        { page: leaflet, view: view(() => createElement("p", null, "Leaflet")), states, regions: {}, overlays: {} },
+        { page: digest, view: view(() => createElement("p", null, "Digest")), states, regions: {}, overlays: {} },
+      ],
+    };
+    const clientDir = tempClientDir();
+    const list = await prerenderPages(
+      {
+        bundle,
+        ssr: { createRexRenderer, pageRenderMode },
+        assets: EMPTY_DOCUMENT_ASSETS,
+        fonts: [
+          { family: "Inter", src: "/fonts/inter.woff2", weight: "100 900" },
+          { family: "Mono", src: "/fonts/mono.ttf", preload: false },
+        ],
+      },
+      { clientDir },
+    );
+    expect(list.pages.map((entry) => [entry.path, entry.render])).toEqual([
+      ["/digest", "ssg"],
+      ["/leaflet", "static"],
+    ]);
+    for (const file of ["digest/index.html", "leaflet/index.html"]) {
+      const html = readFileSync(join(clientDir, file), "utf8");
+      const head = html.slice(0, html.indexOf("</head>"));
+      expect(head).toContain(
+        '<link rel="preload" as="font" href="/fonts/inter.woff2" type="font/woff2" crossorigin="">',
+      );
+      expect(head).not.toContain('as="font" href="/fonts/mono.ttf"');
+      expect(head).toContain(
+        '<style data-rex-fonts="">' +
+          '@font-face{font-family:"Inter";src:url("/fonts/inter.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}' +
+          '@font-face{font-family:"Mono";src:url("/fonts/mono.ttf") format("truetype");font-style:normal;font-display:swap}' +
+          "</style>",
+      );
+    }
   });
 });

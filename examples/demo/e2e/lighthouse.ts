@@ -84,7 +84,12 @@ function running(): { readonly base: string; readonly manifest: WalkManifest } {
 
 function writeLighthouse(): void {
   mkdirSync(REPORT_DIR, { recursive: true });
-  const report = { thresholds: THRESHOLDS, formFactor: "desktop", density: DENSITY, pages: reports };
+  const report = {
+    thresholds: THRESHOLDS,
+    formFactor: "desktop",
+    density: DENSITY,
+    pages: reports,
+  };
   writeFileSync(join(REPORT_DIR, "lighthouse.json"), `${JSON.stringify(report, null, 2)}\n`);
 }
 

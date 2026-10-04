@@ -8,7 +8,7 @@ import { action } from "../core/action.ts";
 import { actor, anonymousActor, type Actor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { always } from "../core/policy.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { API_FETCH_EXPORT, generateEntryModule } from "../vite/entry-module.ts";
 import {
   CORS_ALLOW_HEADERS,
@@ -17,11 +17,20 @@ import {
   createRexServer,
   memoryLedger,
 } from "./index.ts";
-import type { SecurityConfig } from "../core/config.ts";
+import {
+  configServer,
+  configServerOptions,
+  defineConfig,
+  readConfigExport,
+  type SecurityConfig,
+} from "../core/config.ts";
+import { createRegistry } from "../core/registry.ts";
 
 const STATIC_ORIGIN = "http://app.rex.test";
 const DESKTOP_ORIGIN = "http://tauri.localhost";
 const FOREIGN_ORIGIN = "http://evil.rex.test";
+const TAURI_ORIGIN = "tauri://localhost";
+const CAPACITOR_ORIGIN = "capacitor://localhost";
 const SESSION_COOKIE = "rex-session";
 
 const rename = action("rename", {
@@ -181,6 +190,66 @@ describe("CORS for security.origins", () => {
     });
     expect(response.status).toBe(200);
     expect(response.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("answers the app-scheme origins of Tauri and Capacitor webviews with credentials", async () => {
+    const shells = serverWith({ origins: [TAURI_ORIGIN, CAPACITOR_ORIGIN] });
+    const preflight = await shells.request("http://api.rex.test/rex/rpc/rename", {
+      method: "OPTIONS",
+      headers: { origin: TAURI_ORIGIN, "access-control-request-method": "POST" },
+    });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("access-control-allow-origin")).toBe(TAURI_ORIGIN);
+    expect(preflight.headers.get("access-control-allow-credentials")).toBe("true");
+    const read = await shells.request("http://api.rex.test/rex/manifest", {
+      headers: { origin: CAPACITOR_ORIGIN, cookie: `${SESSION_COOKIE}=alice` },
+    });
+    expect(read.headers.get("access-control-allow-origin")).toBe(CAPACITOR_ORIGIN);
+    expect(decodedActor(read)).toBe("alice");
+    const posted = await shells.request("http://api.rex.test/rex/rpc/rename", {
+      method: "POST",
+      headers: {
+        origin: CAPACITOR_ORIGIN,
+        "content-type": "application/json",
+        cookie: `${SESSION_COOKIE}=alice`,
+      },
+      body: rpcBody,
+    });
+    expect(posted.status).toBe(200);
+    expect(posted.headers.get("access-control-allow-origin")).toBe(CAPACITOR_ORIGIN);
+    const unlisted = await shells.request("http://api.rex.test/rex/manifest", {
+      headers: { origin: "ionic://localhost" },
+    });
+    expect(unlisted.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("applies to the default server built from rex.config.ts without a server factory", async () => {
+    const config = readConfigExport(
+      defineConfig({
+        app: { name: "remote", registry: createRegistry().register(rename, home).freeze() },
+        security: { origins: [STATIC_ORIGIN, TAURI_ORIGIN] },
+      }),
+    );
+    const fallback = configServer(config, (bundle) =>
+      createRexServer({
+        registry: bundle.registry,
+        ledger: memoryLedger(),
+        actor: resolveActor,
+        app: bundle.name,
+        ...configServerOptions(config),
+      }),
+    );
+    for (const origin of [STATIC_ORIGIN, TAURI_ORIGIN]) {
+      const response = await fallback.fetch(
+        new Request("http://api.rex.test/rex/manifest", { headers: { origin } }),
+      );
+      expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+      expect(response.headers.get("access-control-allow-credentials")).toBe("true");
+    }
+    const foreign = await fallback.fetch(
+      new Request("http://api.rex.test/rex/manifest", { headers: { origin: FOREIGN_ORIGIN } }),
+    );
+    expect(foreign.headers.get("access-control-allow-origin")).toBeNull();
   });
 
   it("is not installed when security.origins is empty", async () => {

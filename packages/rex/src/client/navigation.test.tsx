@@ -6,7 +6,7 @@ import { memoryLocation } from "wouter/memory-location";
 import { actor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { createRegistry } from "../core/registry.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { createRexApp } from "./app.tsx";

@@ -1,4 +1,5 @@
-import { can, id, page } from "../../../index.ts";
+import { can, page } from "../../../index.ts";
+import { id } from "../../../schema/index.ts";
 import { z } from "zod/mini";
 
 export default page("note", {

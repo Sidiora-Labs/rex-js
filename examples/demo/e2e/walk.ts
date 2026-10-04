@@ -2,7 +2,7 @@ import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Page } from "@playwright/test";
+import type { ConsoleMessage, Page } from "@playwright/test";
 
 export const DEMO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 export const REPORT_DIR = join(DEMO_ROOT, "e2e", "report");
@@ -10,6 +10,10 @@ export const SIDECAR_SELECTOR = 'script[type="application/rex+json"]#rex-page';
 export const DENSITIES = ["default", "agent"] as const;
 export const STEP_TIMEOUT = 15_000;
 export const MIN_AGENT_HIT_TARGET = 44;
+export const RPC_PREFIX = "/rex/rpc/";
+export const FORM_PREFIX = "/rex/form/";
+export const TEXT_PREFIX = "/rex/pages/";
+export const DEV_AUDIT_PATH = "/rex/dev/audit";
 
 export type Density = (typeof DENSITIES)[number];
 export type Route = "click" | "key" | "url" | "palette";
@@ -27,9 +31,18 @@ export interface ManifestOverlay {
   readonly binding: "region" | "url";
 }
 
+export type RenderMode = "ssr" | "csr" | "ssg" | "static";
+
+export interface ManifestLoader {
+  readonly name: string;
+  readonly action: string;
+}
+
 export interface ManifestPage {
   readonly id: string;
   readonly route: string;
+  readonly render: RenderMode;
+  readonly loaders: readonly ManifestLoader[];
   readonly actions: readonly string[];
   readonly overlays: readonly ManifestOverlay[];
 }
@@ -53,8 +66,17 @@ export interface SidecarPayload {
   readonly page: string;
   readonly state: string;
   readonly actions: readonly SidecarAction[];
-  readonly overlays: readonly { readonly id: string; readonly open: boolean; readonly dismiss: string }[];
-  readonly outcome: { readonly action: string; readonly ok: boolean; readonly message: string; readonly at: string } | null;
+  readonly overlays: readonly {
+    readonly id: string;
+    readonly open: boolean;
+    readonly dismiss: string;
+  }[];
+  readonly outcome: {
+    readonly action: string;
+    readonly ok: boolean;
+    readonly message: string;
+    readonly at: string;
+  } | null;
 }
 
 export interface Check {
@@ -83,14 +105,16 @@ export function buildDemo(): void {
   const rex = join(DEMO_ROOT, "node_modules", ".bin", "rex");
   const result = spawnSync(rex, ["build"], { cwd: DEMO_ROOT, encoding: "utf8" });
   if (result.status !== 0) {
-    throw new Error(`rex build exited with ${String(result.status)}: ${result.stderr}${result.stdout}`);
+    throw new Error(
+      `rex build exited with ${String(result.status)}: ${result.stderr}${result.stdout}`,
+    );
   }
 }
 
-export function startDemo(): Promise<RunningDemo> {
+export function startDemo(env: Readonly<Record<string, string>> = {}): Promise<RunningDemo> {
   const child: ChildProcess = spawn(process.execPath, ["dist/server.js"], {
     cwd: DEMO_ROOT,
-    env: { ...process.env, PORT: "0", HOST: "127.0.0.1" },
+    env: { ...process.env, ...env, PORT: "0", HOST: "127.0.0.1" },
     stdio: ["ignore", "pipe", "pipe"],
   });
   const stop = () =>
@@ -161,7 +185,7 @@ export class Recorder {
       this.checks.push({ name, ok: true, detail: detail ?? "" });
       return true;
     } catch (error) {
-      const message = error instanceof Error ? error.message.split("\n")[0] ?? "" : String(error);
+      const message = error instanceof Error ? (error.message.split("\n")[0] ?? "") : String(error);
       this.checks.push({ name, ok: false, detail: message });
       return false;
     }
@@ -178,13 +202,28 @@ function fail(message: string): never {
   throw new Error(message);
 }
 
-export async function waitForSidecar(page: Page, pageId: string): Promise<SidecarPayload> {
+export interface SidecarReadOptions {
+  readonly mirror?: boolean;
+}
+
+export function isStaticPage(pageInfo: ManifestPage): boolean {
+  return pageInfo.render === "static";
+}
+
+export async function waitForSidecar(
+  page: Page,
+  pageId: string,
+  options: SidecarReadOptions = {},
+): Promise<SidecarPayload> {
   await page.waitForFunction(
     ([selector, id]) => {
       const found = document.querySelectorAll(selector);
       if (found.length !== 1) return false;
       try {
-        const payload = JSON.parse(found[0]?.textContent ?? "") as { page?: string; state?: string };
+        const payload = JSON.parse(found[0]?.textContent ?? "") as {
+          page?: string;
+          state?: string;
+        };
         return payload.page === id && payload.state === "ready";
       } catch {
         return false;
@@ -193,10 +232,13 @@ export async function waitForSidecar(page: Page, pageId: string): Promise<Sideca
     [SIDECAR_SELECTOR, pageId] as const,
     { timeout: STEP_TIMEOUT },
   );
-  return readSidecar(page);
+  return readSidecar(page, options);
 }
 
-export async function readSidecar(page: Page): Promise<SidecarPayload> {
+export async function readSidecar(
+  page: Page,
+  options: SidecarReadOptions = {},
+): Promise<SidecarPayload> {
   const read = await page.evaluate((selector) => {
     const found = document.querySelectorAll(selector);
     return {
@@ -207,6 +249,10 @@ export async function readSidecar(page: Page): Promise<SidecarPayload> {
   }, SIDECAR_SELECTOR);
   if (read.count !== 1) fail(`expected exactly one sidecar, found ${read.count}`);
   const payload = JSON.parse(read.text) as SidecarPayload;
+  if (options.mirror === false) {
+    if (read.mirror !== "null") fail("a zero-JavaScript page set window.__rex");
+    return payload;
+  }
   if (JSON.stringify(payload) !== read.mirror) fail("window.__rex differs from the sidecar script");
   return payload;
 }
@@ -224,8 +270,12 @@ export async function presentControls(page: Page, pageId: string): Promise<strin
   }, `${pageId}/`);
 }
 
-export async function checkParity(page: Page, pageId: string): Promise<string> {
-  const payload = await readSidecar(page);
+export async function checkParity(
+  page: Page,
+  pageId: string,
+  options: SidecarReadOptions = {},
+): Promise<string> {
+  const payload = await readSidecar(page, options);
   const listed = payload.actions.map((entry) => `${pageId}/${entry.id}`).sort();
   const present = await presentControls(page, pageId);
   if (JSON.stringify(listed) !== JSON.stringify(present)) {
@@ -275,8 +325,9 @@ export async function waitForOutcome(
   if (result.ok !== String(ok)) fail(`outcome ok is ${String(result.ok)}: ${result.text}`);
   await page.waitForFunction(
     ([id, at]) => {
-      const mirror = (window as unknown as { __rex?: { outcome?: { action?: string; at?: string } | null } })
-        .__rex;
+      const mirror = (
+        window as unknown as { __rex?: { outcome?: { action?: string; at?: string } | null } }
+      ).__rex;
       return mirror?.outcome?.action === id && mirror.outcome.at === at;
     },
     [actionId, result.at] as const,
@@ -336,7 +387,8 @@ export async function invokeBy(
     await palette.waitFor({ state: "visible", timeout: STEP_TIMEOUT });
     await palette.locator("input").fill(declared.label ?? declared.id);
     const item = page.locator(`[data-rex-palette-item="${address}"]`);
-    if ((await item.getAttribute("data-rex-allowed")) !== "true") fail("the palette entry is not allowed");
+    if ((await item.getAttribute("data-rex-allowed")) !== "true")
+      fail("the palette entry is not allowed");
     await item.click({ timeout: STEP_TIMEOUT });
     await palette.waitFor({ state: "detached", timeout: STEP_TIMEOUT });
   }
@@ -354,7 +406,9 @@ export async function overlayOpen(page: Page, overlayId: string): Promise<boolea
 async function waitOverlayState(page: Page, overlayId: string, open: boolean): Promise<void> {
   await page.waitForFunction(
     ([id, wanted]) => {
-      const mirror = (window as unknown as { __rex?: { overlays?: { id: string; open: boolean }[] } }).__rex;
+      const mirror = (
+        window as unknown as { __rex?: { overlays?: { id: string; open: boolean }[] } }
+      ).__rex;
       return mirror?.overlays?.some((entry) => entry.id === id && entry.open === wanted) === true;
     },
     [overlayId, open] as const,
@@ -365,13 +419,21 @@ async function waitOverlayState(page: Page, overlayId: string, open: boolean): P
 export async function openOverlay(page: Page, pageId: string, overlayId: string): Promise<void> {
   const address = `${pageId}/${overlayId}`;
   await page.locator(`[data-rex-overlay-trigger="${address}"]`).click({ timeout: STEP_TIMEOUT });
-  await page.locator(`[data-rex-overlay="${address}"]`).waitFor({ state: "visible", timeout: STEP_TIMEOUT });
+  await page
+    .locator(`[data-rex-overlay="${address}"]`)
+    .waitFor({ state: "visible", timeout: STEP_TIMEOUT });
   await waitOverlayState(page, overlayId, true);
 }
 
-export async function closedWithFocusBack(page: Page, pageId: string, overlayId: string): Promise<void> {
+export async function closedWithFocusBack(
+  page: Page,
+  pageId: string,
+  overlayId: string,
+): Promise<void> {
   const address = `${pageId}/${overlayId}`;
-  await page.locator(`[data-rex-overlay="${address}"]`).waitFor({ state: "detached", timeout: STEP_TIMEOUT });
+  await page
+    .locator(`[data-rex-overlay="${address}"]`)
+    .waitFor({ state: "detached", timeout: STEP_TIMEOUT });
   await waitOverlayState(page, overlayId, false);
   const focused = await page.evaluate(
     () => document.activeElement?.getAttribute("data-rex-overlay-trigger") ?? null,
@@ -414,7 +476,9 @@ export async function walkOverlay(
       if (inputs === 0) fail("the overlay has neither choices nor a typed input");
       await page.keyboard.press("Escape");
       if (overlay.dismiss === "button") {
-        await page.locator(`[data-rex-overlay-close="${address}"]`).click({ timeout: STEP_TIMEOUT });
+        await page
+          .locator(`[data-rex-overlay-close="${address}"]`)
+          .click({ timeout: STEP_TIMEOUT });
       }
       await closedWithFocusBack(page, pageId, overlay.id);
       return "no choices; typed input present";
@@ -427,7 +491,9 @@ export async function walkOverlay(
     await surface.locator("input").first().fill(target.choice);
     await surface.locator("input").first().press("Enter");
     await waitForOutcome(page, actionId, before, true);
-    await page.locator(`[data-rex-overlay="${address}"]`).waitFor({ state: "detached", timeout: STEP_TIMEOUT });
+    await page
+      .locator(`[data-rex-overlay="${address}"]`)
+      .waitFor({ state: "detached", timeout: STEP_TIMEOUT });
     await waitOverlayState(page, overlay.id, false);
     return `typed ${target.choice} ran ${actionId}`;
   });
@@ -437,14 +503,160 @@ export async function checkHitTargets(page: Page, pageId: string): Promise<strin
   const sizes = await page.evaluate((prefix) => {
     return [...document.querySelectorAll(`main [data-rex^="${prefix}"]`)].map((element) => {
       const rect = element.getBoundingClientRect();
-      return { address: element.getAttribute("data-rex") ?? "", width: rect.width, height: rect.height };
+      return {
+        address: element.getAttribute("data-rex") ?? "",
+        width: rect.width,
+        height: rect.height,
+      };
     });
   }, `${pageId}/`);
   const small = sizes.filter(
     (entry) => entry.width < MIN_AGENT_HIT_TARGET || entry.height < MIN_AGENT_HIT_TARGET,
   );
   if (small.length > 0) {
-    fail(`controls under 44px: ${small.map((entry) => `${entry.address} ${entry.width}x${entry.height}`).join(", ")}`);
+    fail(
+      `controls under 44px: ${small.map((entry) => `${entry.address} ${entry.width}x${entry.height}`).join(", ")}`,
+    );
   }
   return `${sizes.length} controls at least 44px`;
+}
+
+export interface CspWatch {
+  stop(): readonly string[];
+}
+
+export function watchCsp(page: Page): CspWatch {
+  const violations: string[] = [];
+  const onConsole = (message: ConsoleMessage) => {
+    const text = message.text();
+    if (/Content[- ]Security[- ]Policy/i.test(text)) violations.push(text);
+  };
+  page.on("console", onConsole);
+  return {
+    stop() {
+      page.off("console", onConsole);
+      return violations;
+    },
+  };
+}
+
+export async function fetchDocument(page: Page, base: string, route: string): Promise<string> {
+  const response = await page.request.get(new URL(route, base).toString());
+  if (!response.ok()) fail(`GET ${route} answered ${response.status()}`);
+  return response.text();
+}
+
+export function checkStylesheetOrder(html: string): string {
+  const body = html.search(/<body[\s>]/);
+  if (body < 0) fail("the document has no body");
+  const links = [...html.matchAll(/<link\b[^>]*\brel="stylesheet"[^>]*>/g)];
+  if (links.length === 0) fail("the document links no stylesheet");
+  const late = links.filter((match) => (match.index ?? 0) > body);
+  if (late.length > 0) {
+    fail(
+      `${late.length} stylesheet links follow the start of the body: ${late.map((match) => match[0]).join(" ")}`,
+    );
+  }
+  return `${links.length} stylesheet links precede the body`;
+}
+
+export async function checkZeroJs(page: Page): Promise<string> {
+  const found = await page.evaluate(() => ({
+    modules: document.querySelectorAll('script[type="module"]').length,
+    preloads: document.querySelectorAll('link[rel="modulepreload"]').length,
+    data: document.querySelectorAll('script[type="application/rex+data"]').length,
+    hydration: document.querySelectorAll("[data-rex-ssr]").length,
+    scripts: [...document.querySelectorAll("script")]
+      .map((element) => element.getAttribute("type") ?? "text/javascript")
+      .filter((type) => type !== "application/rex+json"),
+  }));
+  if (found.modules > 0) fail(`found ${found.modules} module scripts`);
+  if (found.preloads > 0) fail(`found ${found.preloads} module preloads`);
+  if (found.data > 0) fail("found the dehydrated loader data script");
+  if (found.hydration > 0) fail("found the data-rex-ssr hydration marker");
+  if (found.scripts.length > 0) fail(`found scripts of type ${found.scripts.join(", ")}`);
+  return "no page chunk, hydration or data script";
+}
+
+export async function checkForms(
+  page: Page,
+  pageId: string,
+  actionIds: readonly string[],
+  requireToken: boolean,
+): Promise<string> {
+  const forms = await page.evaluate((prefix) => {
+    return [...document.querySelectorAll("main form[data-rex-form]")].map((form) => ({
+      address: form.getAttribute("data-rex-form") ?? "",
+      method: (form.getAttribute("method") ?? "").toLowerCase(),
+      action: form.getAttribute("action") ?? "",
+      csrf:
+        (form.querySelector('input[type="hidden"][name="_csrf"]') as HTMLInputElement | null)
+          ?.value ?? null,
+      named:
+        (form.querySelector('input[type="hidden"][name="_action"]') as HTMLInputElement | null)
+          ?.value ?? null,
+      submit:
+        form
+          .querySelector(`button[type="submit"][data-rex^="${prefix}"]`)
+          ?.getAttribute("data-rex") ?? null,
+    }));
+  }, `${pageId}/`);
+  for (const form of forms) {
+    const actionId = form.address.slice(pageId.length + 1);
+    if (!form.address.startsWith(`${pageId}/`))
+      fail(`form ${form.address} is not addressed under ${pageId}`);
+    if (!actionIds.includes(actionId))
+      fail(`form ${form.address} posts an action the page does not declare`);
+    if (form.method !== "post") fail(`form ${form.address} uses method ${form.method}`);
+    if (form.action !== `${FORM_PREFIX}${actionId}`)
+      fail(`form ${form.address} posts to ${form.action}`);
+    if (form.named !== actionId) fail(`form ${form.address} names action ${String(form.named)}`);
+    if (form.csrf === null) fail(`form ${form.address} has no CSRF field`);
+    if (requireToken && form.csrf === "") fail(`form ${form.address} carries an empty CSRF token`);
+    if (form.submit !== form.address) fail(`form ${form.address} has no addressed submit control`);
+  }
+  return forms.map((form) => form.address).join(", ");
+}
+
+export async function checkTextRenderer(
+  page: Page,
+  base: string,
+  pageId: string,
+  payload: SidecarPayload,
+): Promise<string> {
+  const response = await page.request.get(new URL(`${TEXT_PREFIX}${pageId}.md`, base).toString());
+  if (!response.ok()) fail(`the text renderer answered ${response.status()}`);
+  const markdown = await response.text();
+  if (!markdown.includes("## Actions")) fail("the markdown has no Actions section");
+  const missing = payload.actions.filter(
+    (entry) =>
+      !markdown.includes(`| \`${entry.id}\` |`) ||
+      !markdown.includes(`[data-rex="${pageId}/${entry.id}"]`) ||
+      !markdown.includes(`POST ${FORM_PREFIX}${entry.id}`),
+  );
+  if (missing.length > 0) {
+    fail(`the markdown does not list ${missing.map((entry) => entry.id).join(", ")}`);
+  }
+  return `${payload.actions.length} actions listed`;
+}
+
+export interface LoaderRequests {
+  stop(): readonly string[];
+}
+
+export function watchLoaderRequests(page: Page, pageInfo: ManifestPage): LoaderRequests {
+  const actions = new Set(pageInfo.loaders.map((loader) => loader.action));
+  const seen: string[] = [];
+  const onRequest = (request: { url(): string }) => {
+    const path = new URL(request.url()).pathname;
+    if (!path.startsWith(RPC_PREFIX)) return;
+    if (actions.has(path.slice(RPC_PREFIX.length))) seen.push(path);
+  };
+  page.on("request", onRequest);
+  return {
+    stop() {
+      page.off("request", onRequest);
+      return seen;
+    },
+  };
 }

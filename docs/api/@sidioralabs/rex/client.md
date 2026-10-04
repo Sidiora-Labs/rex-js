@@ -46,7 +46,7 @@ new MessageFormatError(
 
 ###### Overrides
 
-[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-4)
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
 
@@ -130,6 +130,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -160,6 +163,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -167,7 +172,7 @@ readonly code:
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-4)
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
 
 <a id="column"></a>
 
@@ -377,7 +382,7 @@ new RexPageModuleError(page, problem): RexPageModuleError;
 
 ###### Overrides
 
-[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-4)
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
 
@@ -461,6 +466,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -491,6 +499,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -498,7 +508,7 @@ readonly code:
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-4)
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
 
 <a id="column-1"></a>
 
@@ -682,6 +692,9 @@ new RexStartupError(message, code?): RexStartupError;
   \| `"REX329"`
   \| `"REX330"`
   \| `"REX331"`
+  \| `"REX332"`
+  \| `"REX333"`
+  \| `"REX334"`
   \| `"REX400"`
   \| `"REX401"`
   \| `"REX402"`
@@ -712,6 +725,8 @@ new RexStartupError(message, code?): RexStartupError;
   \| `"REX601"`
   \| `"REX602"`
   \| `"REX603"`
+  \| `"REX604"`
+  \| `"REX605"`
   \| `"REX610"`
   \| `"REX611"`
   \| `"REX612"`
@@ -722,7 +737,7 @@ new RexStartupError(message, code?): RexStartupError;
 
 ###### Overrides
 
-[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-4)
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
 
@@ -806,6 +821,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -836,6 +854,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -843,7 +863,7 @@ readonly code:
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-4)
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
 
 <a id="column-2"></a>
 
@@ -8963,6 +8983,12 @@ function buildSidecarPayload(source): object;
 actions: object[];
 ```
 
+##### loaders?
+
+```ts
+optional loaders?: object[];
+```
+
 ##### outcome
 
 ```ts
@@ -9102,7 +9128,7 @@ function coerceParam(schema, raw): unknown;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3) \| `undefined`
+[`JsonSchema`](schema.md#jsonschema) \| `undefined`
 
 ##### raw
 
@@ -9920,7 +9946,7 @@ function fieldLabel(name, schema): string;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -10224,7 +10250,7 @@ function formFields(schema, prefix?): readonly FormField[];
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 ##### prefix?
 
@@ -10248,7 +10274,7 @@ function formInput(schema, data): Record<string, unknown>;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 ##### data
 
@@ -10986,7 +11012,7 @@ function localeSettings(config): LocaleSettings;
 
 ##### config
 
-[`I18nConfig`](../rex.md#i18nconfig)
+[`I18nConfig`](config.md#i18nconfig)
 
 #### Returns
 
@@ -11038,7 +11064,7 @@ function manifestInputSchema(manifest, declared): JsonSchema;
 
 #### Returns
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 ***
 
@@ -11062,7 +11088,7 @@ function manifestParamsSchema(manifest, declared): JsonSchema;
 
 #### Returns
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 ***
 
@@ -11603,9 +11629,9 @@ function PageHost(__namedParameters): Element;
 ```ts
 function pageHref(
    declared, 
-   params?, 
-   extra?, 
-   paramsSchema?
+   params, 
+   extra, 
+   paramsSchema
 ): HrefResult;
 ```
 
@@ -11615,17 +11641,17 @@ function pageHref(
 
 [`AnyPage`](../rex.md#anypage)
 
-##### params?
+##### params
 
-`unknown` = `{}`
+`unknown`
 
-##### extra?
+##### extra
 
-`Readonly`\<`Record`\<`string`, `string`\>\> = `{}`
+`Readonly`\<`Record`\<`string`, `string`\>\>
 
-##### paramsSchema?
+##### paramsSchema
 
-[`JsonSchema`](../rex.md#jsonschema-3) = `declared.paramsJsonSchema`
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -11789,7 +11815,7 @@ function paramKeyAccepted(schema, key): boolean;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 ##### key
 
@@ -11890,7 +11916,7 @@ function parsePageParams(
    declared, 
    routeParams, 
    search, 
-   paramsSchema?
+   paramsSchema
 ): ParamsResult;
 ```
 
@@ -11908,9 +11934,9 @@ function parsePageParams(
 
 `string`
 
-##### paramsSchema?
+##### paramsSchema
 
-[`JsonSchema`](../rex.md#jsonschema-3) = `declared.paramsJsonSchema`
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -12389,7 +12415,7 @@ function resolvePage(
    search, 
    subject, 
    registry, 
-   paramsSchema?
+   paramsSchema
 ): PageResolution;
 ```
 
@@ -12415,9 +12441,9 @@ function resolvePage(
 
 [`RegistrySnapshot`](../rex.md#registrysnapshot)
 
-##### paramsSchema?
+##### paramsSchema
 
-[`JsonSchema`](../rex.md#jsonschema-3) = `declared.paramsJsonSchema`
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -12699,6 +12725,10 @@ function serializeSidecar(payload): string;
 
 `object`[] = `...`
 
+###### loaders?
+
+`object`[] = `...`
+
 ###### outcome
 
   \| \{
@@ -12880,7 +12910,7 @@ function sidecarAction(
 
 ##### input
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 ##### text?
 
@@ -13559,7 +13589,7 @@ function useDraft<S>(schema): Draft<StandardInferOutput<S>>;
 
 #### Returns
 
-[`Draft`](#draft)\<`StandardInferOutput`\<`S`\>\>
+[`Draft`](#draft)\<[`StandardInferOutput`](../rex.md#standardinferoutput)\<`S`\>\>
 
 ***
 
@@ -14300,6 +14330,12 @@ function useSidecarPayload(resolution): object;
 
 ```ts
 actions: object[];
+```
+
+##### loaders?
+
+```ts
+optional loaders?: object[];
 ```
 
 ##### outcome

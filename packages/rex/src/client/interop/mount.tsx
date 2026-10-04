@@ -3,7 +3,7 @@ import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { RexError } from "../../core/errors.ts";
 import { createRexEntry, type RexEntryBundle, type RexEntryOptions } from "../entry.tsx";
-import { pageHref } from "../router.tsx";
+import { manifestParamsSchema, pageHref } from "../router.tsx";
 
 export interface MountRexPageOptions extends RexEntryOptions {
   readonly params?: Readonly<Record<string, unknown>>;
@@ -21,10 +21,15 @@ export function mountRexPage(
   if (Host === undefined || !(element instanceof Host)) {
     throw new RexError("REX329", "mountRexPage: element must be a DOM element");
   }
-  if (typeof app !== "object" || app === null || app.registry === undefined) {
+  if (
+    typeof app !== "object" ||
+    app === null ||
+    app.registry === undefined ||
+    app.manifest === undefined
+  ) {
     throw new RexError(
       "REX313",
-      "mountRexPage: the rex:app bundle with registry and pages is required",
+      "mountRexPage: the rex:app bundle with registry, manifest and pages is required",
     );
   }
   const declared = app.registry.find("page", pageId);
@@ -32,7 +37,7 @@ export function mountRexPage(
     throw new RexError("REX301", `mountRexPage: page "${pageId}" is not registered in this app`);
   }
   const { params = {}, ...entryOptions } = options;
-  const href = pageHref(declared, params);
+  const href = pageHref(declared, params, {}, manifestParamsSchema(app.manifest, declared));
   if (!href.ok) {
     throw new RexError(
       "REX331",

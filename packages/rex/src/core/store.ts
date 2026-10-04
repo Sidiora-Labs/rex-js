@@ -39,10 +39,11 @@ export function normalizeListQuery<T>(query: ListQuery<T> = {}): NormalizedListQ
   const page = query.page ?? 1;
   const size = query.size ?? DEFAULT_PAGE_SIZE;
   if (!Number.isInteger(page) || page < 1) {
-    throw new RangeError(`list: page must be an integer of at least 1, received ${String(page)}`);
+    throw new RexError("REX329", `list: page must be an integer of at least 1, received ${String(page)}`);
   }
   if (!Number.isInteger(size) || size < 1 || size > MAX_PAGE_SIZE) {
-    throw new RangeError(
+    throw new RexError(
+      "REX329",
       `list: size must be an integer from 1 to ${MAX_PAGE_SIZE}, received ${String(size)}`,
     );
   }
@@ -60,7 +61,7 @@ export function matchesFilter<T>(record: T, filter: StoreFilter<T>): boolean {
 
 export function validateStoreId(id: unknown): string {
   if (typeof id !== "string" || id.length === 0) {
-    throw new TypeError(`store: id must be a non-empty string, received ${JSON.stringify(id)}`);
+    throw new RexError("REX329", `store: id must be a non-empty string, received ${JSON.stringify(id)}`);
   }
   return id;
 }

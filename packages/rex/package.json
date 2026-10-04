@@ -16,6 +16,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
+    "./schema": "./src/schema/index.ts",
+    "./manifest": "./src/manifest/index.ts",
     "./client": "./src/client/index.ts",
     "./server": "./src/server/index.ts",
     "./server/node": "./src/server/node.ts",
@@ -43,6 +45,14 @@
       "./config": {
         "types": "./dist/config.d.ts",
         "import": "./dist/config.js"
+      },
+      "./schema": {
+        "types": "./dist/schema/index.d.ts",
+        "import": "./dist/schema/index.js"
+      },
+      "./manifest": {
+        "types": "./dist/manifest/index.d.ts",
+        "import": "./dist/manifest/index.js"
       },
       "./client": {
         "types": "./dist/client/index.d.ts",

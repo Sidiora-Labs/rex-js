@@ -1,9 +1,40 @@
-import { defineConfig } from "@sidioralabs/rex";
+import { defineConfig } from "@sidioralabs/rex/config";
 import app from "rex:app";
 import { createDemoServer } from "./server.ts";
 
 export default defineConfig({
   app,
   ui: { kit: "designx", components: "app/components/Shell.tsx" },
+  i18n: { locales: ["en", "de"], default: "en", routing: "none" },
+  fonts: [
+    {
+      family: "Liberation Mono",
+      src: "/fonts/LiberationMono-Regular.ttf",
+      weight: 400,
+      preload: true,
+    },
+  ],
+  check: {
+    i18n: {
+      allow: [
+        "Portfolio",
+        "Send",
+        "Load wallet",
+        "Toggle hide dust",
+        "Pick token",
+        "Pick contact",
+        "List tokens",
+        "Send feedback",
+        "Holdings",
+        "Symbol or name contains",
+        "Recipient",
+        "Token",
+        "Review",
+        "Last transfer",
+        "Type a name or address, then press Enter",
+        "Type a token symbol or name, then press Enter",
+      ],
+    },
+  },
   server: (bundle) => createDemoServer(bundle),
 });

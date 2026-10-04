@@ -59,6 +59,7 @@ export interface ManifestLoader {
   readonly name: string;
   readonly action: string;
   readonly input: "params" | "mapped";
+  readonly invalidatedBy: readonly string[];
 }
 
 export interface ManifestPage {

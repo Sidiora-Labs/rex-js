@@ -1,4 +1,5 @@
-import { action, boolean } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { boolean } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { accountIdOf, accounts, requireAccount } from "../data/wallet.ts";
 import { wallet } from "../policies/wallet.ts";

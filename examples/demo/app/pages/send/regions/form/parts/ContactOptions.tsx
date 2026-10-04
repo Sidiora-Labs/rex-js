@@ -39,7 +39,10 @@ export default function ContactOptions({
     if (first !== undefined) onPick(first.id);
   };
   return (
-    <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "var(--rex-space-2)" }}>
+    <form
+      onSubmit={submit}
+      style={{ display: "flex", flexDirection: "column", gap: "var(--rex-space-2)" }}
+    >
       <Field
         label="Type a name or address, then press Enter"
         name="contact-query"

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { action, money, text } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { money, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { wallet } from "../policies/wallet.ts";
 

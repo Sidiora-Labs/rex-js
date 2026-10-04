@@ -29,15 +29,21 @@ export const accounts = bind(
   ]),
 );
 
-export const tokens = bind(
-  token,
-  memoryStore(token, [
-    { id: "dust", symbol: "DUST", name: "Dust Token", balance: "0.05", priceUsd: "0.004" },
-    { id: "eth", symbol: "ETH", name: "Ether", balance: "25", priceUsd: "3000" },
-    { id: "pax", symbol: "PAX", name: "Paxeer", balance: "320", priceUsd: "0.25" },
-    { id: "usdc", symbol: "USDC", name: "USD Coin", balance: "1500", priceUsd: "1" },
-  ]),
-);
+export const TOKEN_SEED: readonly Token[] = [
+  { id: "dust", symbol: "DUST", name: "Dust Token", balance: "0.05", priceUsd: "0.004" },
+  { id: "eth", symbol: "ETH", name: "Ether", balance: "25", priceUsd: "3000" },
+  { id: "pax", symbol: "PAX", name: "Paxeer", balance: "320", priceUsd: "0.25" },
+  { id: "usdc", symbol: "USDC", name: "USD Coin", balance: "1500", priceUsd: "1" },
+];
+
+export const TOKEN_PRICES = TOKEN_SEED.map(({ id, symbol, name, priceUsd }) => ({
+  id,
+  symbol,
+  name,
+  priceUsd,
+}));
+
+export const tokens = bind(token, memoryStore(token, [...TOKEN_SEED]));
 
 export const contacts = bind(
   contact,
@@ -109,4 +115,13 @@ export async function walletOverview(accountId: string) {
     contacts: (await contacts.list()).items,
     totalUsd: fromUnits(total),
   };
+}
+
+export async function tokenPrices() {
+  return (await tokens.list()).items.map(({ id, symbol, name, priceUsd }) => ({
+    id,
+    symbol,
+    name,
+    priceUsd,
+  }));
 }

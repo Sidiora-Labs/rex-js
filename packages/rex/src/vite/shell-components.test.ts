@@ -78,7 +78,8 @@ const FIXTURE: Readonly<Record<string, string>> = {
     "",
   ].join("\n"),
   "rex.config.ts": [
-    'import { anonymousActor, defineConfig } from "@sidioralabs/rex";',
+    'import { anonymousActor } from "@sidioralabs/rex";',
+    'import { defineConfig } from "@sidioralabs/rex/config";',
     'import { createRexServer, memoryLedger } from "@sidioralabs/rex/server";',
     'import app from "rex:app";',
     "",

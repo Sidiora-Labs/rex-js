@@ -13,15 +13,18 @@ function Tabs({ className, ...props }: TabsPrimitive.Root.Props) {
   );
 }
 
-const tabsListVariants = cva("relative z-0 inline-flex w-fit items-center data-[orientation=vertical]:flex-col", {
-  variants: {
-    variant: {
-      default: "gap-1 rounded-full bg-container p-1",
-      line: "gap-5 border-b border-outline-variant",
+const tabsListVariants = cva(
+  "relative z-0 inline-flex w-fit items-center data-[orientation=vertical]:flex-col",
+  {
+    variants: {
+      variant: {
+        default: "gap-1 rounded-full bg-container p-1",
+        line: "gap-5 border-b border-outline-variant",
+      },
     },
+    defaultVariants: { variant: "default" },
   },
-  defaultVariants: { variant: "default" },
-});
+);
 
 function TabsList({
   className,
@@ -65,7 +68,13 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
 }
 
 function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
-  return <TabsPrimitive.Panel data-slot="tabs-content" className={cn("flex-1 outline-none", className)} {...props} />;
+  return (
+    <TabsPrimitive.Panel
+      data-slot="tabs-content"
+      className={cn("flex-1 outline-none", className)}
+      {...props}
+    />
+  );
 }
 
 export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants };

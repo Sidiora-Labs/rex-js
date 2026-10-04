@@ -1,7 +1,9 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { action } from "./action.ts";
 import { RexDeclarationError } from "./entity.ts";
-import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
+import { RexDeclarationOptionError, RexError, type RexErrorCode } from "./errors.ts";
+import { validateStandardSync } from "./standard.ts";
+import { buildManifest } from "../manifest/build.ts";
 import {
   PAGE_RENDER_MODES,
   page,
@@ -13,7 +15,7 @@ import {
 } from "./page.ts";
 import { always, policy } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { integer, text } from "./schema.ts";
+import { integer, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import {
   REX_DATA_STATES,
@@ -151,7 +153,7 @@ describe("page", () => {
     expect(portfolio.recovery).toBeNull();
     expect(portfolio.actions).toEqual([]);
     expect(portfolio.overlays).toEqual([]);
-    expect(portfolio.params.parse({})).toEqual({});
+    expect(validateStandardSync(portfolio.params, {})).toEqual({ value: {} });
   });
 
   it("orders declared states canonically", () => {
@@ -167,10 +169,19 @@ describe("page", () => {
     expect(titled.chrome).toEqual({ header: false, nav: true, back: null, title: "Wallet" });
   });
 
-  it("emits a params JSON schema", () => {
-    expect(sendPage.paramsJsonSchema.type).toBe("object");
-    expect(sendPage.paramsJsonSchema.required).toEqual(["account"]);
-    expect(Object.keys(sendPage.paramsJsonSchema.properties as object)).toEqual([
+  it("keeps the declared params schema and leaves its JSON Schema to the manifest", () => {
+    expect(Object.hasOwn(sendPage, "paramsJsonSchema")).toBe(false);
+    const built = buildManifest({
+      entities: [],
+      actions: [send, pickToken],
+      pages: [sendPage, portfolio],
+      policies: [],
+    });
+    const params = (built.pages.find((entry) => entry.id === "send") as (typeof built.pages)[number])
+      .params;
+    expect(params.type).toBe("object");
+    expect(params.required).toEqual(["account"]);
+    expect(Object.keys(params.properties as object)).toEqual([
       "account",
       "token",
       "step",
@@ -238,9 +249,16 @@ describe("page declaration errors name the field", () => {
         page("send", { route: "/send/:account", params: z.object({ account: text().optional() }) }),
       ),
     ).toBe("params.account");
-    expect(fieldOf(() => page("send", { route: "/", params: z.object({ at: z.date() }) }))).toBe(
-      "params",
-    );
+    const dated = page("send", { route: "/", params: z.object({ at: z.date() }) });
+    let error: unknown;
+    try {
+      buildManifest({ entities: [], actions: [], pages: [dated], policies: [] });
+    } catch (thrown) {
+      error = thrown;
+    }
+    expect(error).toBeInstanceOf(RexError);
+    expect((error as RexError).code).toBe("REX210");
+    expect((error as RexError).message).toContain('page "send" params');
   });
 
   it("policy, recovery, draft", () => {

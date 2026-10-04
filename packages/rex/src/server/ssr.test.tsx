@@ -20,7 +20,7 @@ import { actor } from "../core/actor.ts";
 import { page, type AnyPage } from "../core/page.ts";
 import { can } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { SIDECAR_MIME_TYPE } from "../manifest/sidecar.schema.ts";

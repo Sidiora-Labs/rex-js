@@ -9,7 +9,12 @@ export interface ContactFieldProps {
   readonly onNext: () => void;
 }
 
-export default function ContactField({ contact, control, sheetTrigger, onNext }: ContactFieldProps) {
+export default function ContactField({
+  contact,
+  control,
+  sheetTrigger,
+  onNext,
+}: ContactFieldProps) {
   return (
     <Card title="Recipient">
       <p data-demo-selected-contact={contact === null ? "" : contact.name}>

@@ -1,8 +1,9 @@
 import { ACTION_EFFECTS, type ActionEffect } from "../core/action.ts";
 import { OVERLAY_DISMISS, type OverlayDismiss } from "../core/overlay.ts";
 import * as zm from "zod/mini";
-import { toJsonSchema, type JsonSchema } from "../core/schema.ts";
+import type { JsonSchema } from "../core/schema.ts";
 import { REX_DATA_STATES } from "../core/states.ts";
+import { toJsonSchema } from "./json-schema.ts";
 
 export const SIDECAR_MIME_TYPE = "application/rex+json";
 export const SIDECAR_ELEMENT_ID = "rex-page";
@@ -58,6 +59,12 @@ export const sidecarRegionSchema = zm.strictObject({
 
 export const sidecarStoresSchema = zm.record(nonEmpty(), zm.unknown());
 
+export const sidecarLoaderSchema = zm.strictObject({
+  name: nonEmpty(),
+  action: nonEmpty(),
+  invalidatedBy: uniqueList(nonEmpty()),
+});
+
 export const sidecarSchema = zm
   .strictObject({
     version: zm.literal(SIDECAR_VERSION),
@@ -69,6 +76,7 @@ export const sidecarSchema = zm
     outcome: zm.nullable(sidecarOutcomeSchema),
     regions: zm.optional(zm.array(sidecarRegionSchema).check(zm.minLength(1))),
     stores: zm.optional(sidecarStoresSchema),
+    loaders: zm.optional(zm.array(sidecarLoaderSchema)),
   })
   .check(
     zm.superRefine((payload, ctx) => {
@@ -105,6 +113,17 @@ export const sidecarSchema = zm
           seen.add(item.id);
         });
       }
+      const loaderNames = new Set<string>();
+      (payload.loaders ?? []).forEach((loader, index) => {
+        if (loaderNames.has(loader.name)) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["loaders", index, "name"],
+            message: `duplicate loader "${loader.name}"`,
+          });
+        }
+        loaderNames.add(loader.name);
+      });
       if (payload.stores !== undefined && Object.keys(payload.stores).length === 0) {
         ctx.addIssue({
           code: "custom",
@@ -120,6 +139,7 @@ export type SidecarOverlay = zm.output<typeof sidecarOverlaySchema>;
 export type SidecarOutcome = zm.output<typeof sidecarOutcomeSchema>;
 export type SidecarRegion = zm.output<typeof sidecarRegionSchema>;
 export type SidecarStores = zm.output<typeof sidecarStoresSchema>;
+export type SidecarLoader = zm.output<typeof sidecarLoaderSchema>;
 export type SidecarPayload = zm.output<typeof sidecarSchema>;
 
 let builtSidecarJsonSchema: JsonSchema | null = null;

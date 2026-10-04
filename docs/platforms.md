@@ -21,7 +21,7 @@ After a build, `rex build` prints the layout it wrote and the start hint for the
 | `@sidioralabs/rex/server/deno` | `startDenoServer` | `deno` |
 | `@sidioralabs/rex/server/edge` | `createEdgeHandler` | `edge` |
 
-Every server entry builds the app server from `rex.config.ts`: the `server(app)` factory when the config declares one, otherwise `createRexServer` with an in-memory ledger and the anonymous actor.
+Every server entry builds the app server from `rex.config.ts`: the `server(app)` factory when the config declares one, otherwise `createRexServer` with an in-memory ledger, the anonymous actor and the config's `security` and `client` options, so `security.origins`, the CSP mode and `client.apiOrigin` apply without a factory.
 
 ## node
 
@@ -64,7 +64,7 @@ The static target writes `dist/client/` only. No server is built and no page is 
 
 ```ts
 // rex.config.ts of the static client
-import { defineConfig } from "@sidioralabs/rex";
+import { defineConfig } from "@sidioralabs/rex/config";
 import app from "rex:app";
 
 export default defineConfig({
@@ -73,7 +73,7 @@ export default defineConfig({
 });
 ```
 
-The remote server is the same app built for the `node`, `bun`, `deno` or `edge` target. It must allow the client's origin: list it in `security.origins` and pass the security options to `createRexServer` from the `server` factory. With origins listed, the server answers CORS for exactly those origins with credentials:
+The remote server is the same app built for the `node`, `bun`, `deno` or `edge` target. It must allow the client's origin: list it in `security.origins` in its `rex.config.ts`. The default server of the built entry passes `security` and `client` to `createRexServer` itself; a `server` factory passes them to `createRexServer` as in the example below. With origins listed, the server answers CORS for exactly those origins with credentials:
 
 - a preflight (`OPTIONS`) from a listed origin answers `204` with `Access-Control-Allow-Origin` set to that origin, `Access-Control-Allow-Credentials: true`, the methods `GET, HEAD, POST`, the headers `content-type`, `authorization`, `accept-language`, `x-rex-confirm` and `x-rex-density`, and a ten minute max age;
 - every response to a listed origin carries the same origin and credentials grant and exposes `x-rex-actor` and `x-rex-density`, which the client reads from the manifest response;
@@ -82,12 +82,14 @@ The remote server is the same app built for the `node`, `bun`, `deno` or `edge` 
 
 ```ts
 // rex.config.ts of the API server
-import { defineConfig } from "@sidioralabs/rex";
+import { defineConfig } from "@sidioralabs/rex/config";
 import { createRexServer, memoryLedger } from "@sidioralabs/rex/server";
 import app from "rex:app";
 import { sessionActor } from "./app/server/session.ts";
 
-const security = { origins: ["https://app.example.com", "http://tauri.localhost"] };
+const security = {
+  origins: ["https://app.example.com", "http://tauri.localhost", "tauri://localhost", "capacitor://localhost"],
+};
 
 export default defineConfig({
   app,
@@ -103,7 +105,7 @@ export default defineConfig({
 });
 ```
 
-A cookie set by the API origin reaches it from another site only with `SameSite=None; Secure`, so serve the API over HTTPS when the client and the API are on different sites. `security.origins` accepts `http` and `https` origins only.
+A cookie set by the API origin reaches it from another site only with `SameSite=None; Secure`, so serve the API over HTTPS when the client and the API are on different sites. `security.origins` accepts URL origins: `http` and `https` origins and app-scheme origins of desktop and mobile webviews such as `tauri://localhost` and `capacitor://localhost`, each a scheme and a host with no path. `ftp`, `ws`, `wss` and `file` URLs and schemes without a host are refused with `REX115`. `client.apiOrigin` names the API server and stays an `http` or `https` origin.
 
 ## Desktop and mobile shells
 
@@ -131,7 +133,7 @@ When the data lives on a shared server instead, build the `static` target with `
 
 ### Tauri
 
-Tauri has no Node runtime, so the window loads the `static` build and calls a remote Rex server. Set `build.frontendDist` in `tauri.conf.json` to the app's `dist/client`, set `client.apiOrigin` to the server, and list the webview origin in the server's `security.origins`. On Windows and Android Tauri serves the frontend from `http://tauri.localhost`, which can be listed. On macOS, Linux and iOS it uses `tauri://localhost`, which `security.origins` cannot list; serve the frontend from a localhost HTTP origin there (for example with the Tauri localhost plugin) and list that origin.
+Tauri has no Node runtime, so the window loads the `static` build and calls a remote Rex server. Set `build.frontendDist` in `tauri.conf.json` to the app's `dist/client`, set `client.apiOrigin` to the server, and list the webview origin in the server's `security.origins`. On Windows and Android Tauri serves the frontend from `http://tauri.localhost`; on macOS, Linux and iOS it uses `tauri://localhost`. List the origins of the platforms you ship in `security.origins`.
 
 ```sh
 rex build --target static
@@ -140,7 +142,7 @@ cargo tauri build
 
 ### Capacitor
 
-Capacitor copies a web build into the native project. Set `webDir` in `capacitor.config.ts` to `dist/client`, build the `static` target with `client.apiOrigin` set to the server, and run `npx cap sync`. On Android the webview origin is `https://localhost` (or `http://localhost` with `androidScheme: "http"`); list it in `security.origins`. On iOS the origin is `capacitor://localhost`, which `security.origins` cannot list; there, set `server.url` in `capacitor.config.ts` to the app's deployed node, bun, deno or edge build so the webview loads the client from the server's own origin and needs no CORS.
+Capacitor copies a web build into the native project. Set `webDir` in `capacitor.config.ts` to `dist/client`, build the `static` target with `client.apiOrigin` set to the server, and run `npx cap sync`. On Android the webview origin is `https://localhost` (or `http://localhost` with `androidScheme: "http"`); list it in `security.origins`. On iOS the origin is `capacitor://localhost`; list it too. Alternatively set `server.url` in `capacitor.config.ts` to the app's deployed node, bun, deno or edge build so the webview loads the client from the server's own origin and needs no CORS.
 
 ```sh
 rex build --target static

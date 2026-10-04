@@ -147,7 +147,8 @@ export function generateAppModule(scan: AppScan, options: AppModuleOptions): str
   const shell = shellComponentsLines(options.shellComponents, options.client);
   const i18n = options.config.i18n;
   const imports: string[] = [
-    `import { RexError, buildManifest, createRegistry } from ${literal(options.core)};`,
+    `import { RexError, createRegistry } from ${literal(options.core)};`,
+    `import { buildManifest } from ${literal(options.core.replace(/index(\.[cm]?[jt]s)$/, "manifest/index$1"))};`,
     ...shell.imports,
   ];
   const messages: string[] = [];

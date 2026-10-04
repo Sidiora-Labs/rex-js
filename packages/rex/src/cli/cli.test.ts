@@ -10,7 +10,7 @@ import type { AnyEntity } from "../core/entity.ts";
 import type { AnyPage } from "../core/page.ts";
 import type { AnyPolicy } from "../core/policy.ts";
 import { REX_DATA_STATES, requiredStateExports } from "../core/states.ts";
-import { REX_VERSION, actor, evaluate } from "../index.ts";
+import { REX_VERSION, actor, evaluate, validateStandardSync } from "../index.ts";
 import {
   EXIT_OK,
   EXIT_USAGE,
@@ -22,6 +22,7 @@ import {
 import {
   CLIENT_IMPORT,
   CORE_IMPORT,
+  FIELDS_IMPORT,
   SCHEMA_IMPORT,
   actionTemplate,
   appPaths,
@@ -45,6 +46,7 @@ const packageRoot = join(here, "..", "..");
 const cliEntry = join(here, "index.ts");
 const coreEntry = join(here, "..", "index.ts");
 const schemaEntry = import.meta.resolve(SCHEMA_IMPORT);
+const fieldsEntry = join(here, "..", "schema", "index.ts");
 const packageVersion = (
   JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as { version: string }
 ).version;
@@ -279,7 +281,9 @@ async function importDeclaration(root: string, path: string, code: string) {
       .split(`"${CORE_IMPORT}"`)
       .join(JSON.stringify(coreEntry))
       .split(`"${SCHEMA_IMPORT}"`)
-      .join(JSON.stringify(schemaEntry)),
+      .join(JSON.stringify(schemaEntry))
+      .split(`"${FIELDS_IMPORT}"`)
+      .join(JSON.stringify(fieldsEntry)),
   );
   return (await import(pathToFileURL(file).href)) as Record<string, unknown>;
 }
@@ -375,7 +379,12 @@ describe("canonical templates", () => {
     });
     const shape = expectValid(code, "page.ts");
     expect(shape.hasDefault).toBe(true);
-    expect(shape.imports).toEqual([CORE_IMPORT, SCHEMA_IMPORT, "../../actions/pick-token.ts"]);
+    expect(shape.imports).toEqual([
+      CORE_IMPORT,
+      FIELDS_IMPORT,
+      SCHEMA_IMPORT,
+      "../../actions/pick-token.ts",
+    ]);
     expect(code).not.toMatch(/react/i);
 
     const root = tempDir("rex-templates-");
@@ -419,9 +428,9 @@ describe("canonical templates", () => {
     expect(action.id).toBe("toggle-hide-dust");
     expect(action.label).toBe("Toggle hide dust");
     expect(action.effect).toBe("reversible");
-    expect(action.output.parse(await action.handler({}, { actor: actor({ id: "a" }) }))).toEqual({
-      ok: true,
-    });
+    expect(
+      validateStandardSync(action.output, await action.handler({}, { actor: actor({ id: "a" }) })),
+    ).toEqual({ value: { ok: true } });
 
     const entity = (
       await importDeclaration(root, appPaths.entity("token"), entityTemplate({ name: "token" }))

@@ -9,9 +9,11 @@
     "check": "rex check",
     "manifest": "rex manifest",
     "start": "node dist/server.js",
-    "test": "rex check && playwright test",
+    "test": "rex check && playwright test e2e/operability.spec.ts e2e/nojs.spec.ts e2e/axe.spec.ts e2e/vitals.spec.ts e2e/lighthouse.ts",
     "test:unit": "vitest run",
-    "test:vitals": "playwright test e2e/vitals.spec.ts e2e/lighthouse.ts"
+    "test:vitals": "playwright test e2e/vitals.spec.ts e2e/lighthouse.ts",
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -41,8 +43,12 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@typescript-eslint/parser": "^8.71.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "happy-dom": "^20.14.5",
     "lighthouse": "^13.5.0",
+    "prettier": "^3.9.9",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3",
     "web-vitals": "^5.3.0"

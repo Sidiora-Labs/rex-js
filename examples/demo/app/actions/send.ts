@@ -1,4 +1,5 @@
-import { action, money, text } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { money, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import {
   DEFAULT_SEND_AMOUNT,
@@ -19,6 +20,7 @@ export const send = action("send", {
   effect: "irreversible",
   label: "Send",
   shortcut: "mod+enter",
+  form: { redirect: "/send" },
   invalidates: ["wallet"],
   handler: async (input, ctx) => {
     const owner = await requireAccount(accountIdOf(ctx.actor.attributes));

@@ -1,4 +1,5 @@
-import { can, page, text } from "../../../index.ts";
+import { can, page } from "../../../index.ts";
+import { text } from "../../../schema/index.ts";
 import { z } from "zod/mini";
 
 export default page("second", {

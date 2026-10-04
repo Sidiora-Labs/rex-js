@@ -1,25 +1,12 @@
-import * as zm from "zod/mini";
-import type { $ZodType, util } from "zod/v4/core";
-import { RexError } from "./errors.ts";
-import { validateName } from "./ids.ts";
-import { standardSource } from "./standard.ts";
-
+import type { StandardIssue, StandardResult, StandardSchemaV1 } from "./standard.ts";
 
 export const FIELD_KIND_KEY = "x-rex-field";
 export const FIELD_REF_KEY = "x-rex-ref";
 export const STANDARD_VENDOR_KEY = "x-rex-standard";
+export const REX_SCHEMA_VENDOR = "rex";
 
 export type FieldKind =
-  | "id"
-  | "text"
-  | "money"
-  | "integer"
-  | "real"
-  | "boolean"
-  | "enum"
-  | "ref"
-  | "timestamp"
-  | "json";
+  "id" | "text" | "money" | "integer" | "real" | "boolean" | "enum" | "ref" | "timestamp" | "json";
 
 export const FIELD_KINDS: readonly FieldKind[] = [
   "id",
@@ -39,186 +26,148 @@ export type JsonSchema = { [key: string]: unknown };
 export const MONEY_PATTERN = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/;
 export const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
-export interface TextOptions {
-  readonly min?: number;
-  readonly max?: number;
+export interface SchemaDefinition {
+  readonly type: string;
+  readonly innerType?: unknown;
+  readonly shape?: Readonly<Record<string, unknown>>;
 }
 
-export interface IntegerOptions {
-  readonly min?: number;
-  readonly max?: number;
+interface SchemaInternals {
+  readonly _zod: { readonly def: SchemaDefinition };
 }
 
-export interface RealOptions {
-  readonly min?: number;
-  readonly max?: number;
-}
-
-export type RefTarget = string | { readonly id: string };
-
-type FieldMeta = Readonly<Record<string, unknown>>;
-
-export interface RexFieldMethods<T extends zm.ZodMiniType> {
-  optional(): RexField<zm.ZodMiniOptional<T>>;
-  nullable(): RexField<zm.ZodMiniNullable<T>>;
-  default(value: util.NoUndefined<zm.output<T>>): RexField<zm.ZodMiniDefault<T>>;
-  meta(meta: FieldMeta): RexField<T>;
-}
-
-export type RexField<T extends zm.ZodMiniType> = T & RexFieldMethods<T>;
-
-export function field<T extends zm.ZodMiniType>(schema: T, meta?: FieldMeta): RexField<T> {
-  if (meta !== undefined) zm.globalRegistry.add(schema, { ...meta });
-  const methods: RexFieldMethods<T> = {
-    optional: () => field(zm.optional(schema)),
-    nullable: () => field(zm.nullable(schema)),
-    default: (value) => field(zm._default(schema, value)),
-    meta: (next) => field(schema.clone() as T, { ...zm.globalRegistry.get(schema), ...next }),
-  };
-  return Object.assign(schema, methods);
-}
-
-export function id() {
-  return field(
-    zm.string().check(zm.minLength(1), zm.maxLength(128), zm.regex(ID_PATTERN)),
-    { [FIELD_KIND_KEY]: "id" },
-  );
-}
-
-export function text(options: TextOptions = {}) {
-  return field(
-    zm.string().check(
-      ...[
-        ...(options.min === undefined ? [] : [zm.minLength(options.min)]),
-        ...(options.max === undefined ? [] : [zm.maxLength(options.max)]),
-      ],
-    ),
-    { [FIELD_KIND_KEY]: "text" },
-  );
-}
-
-export function money() {
-  return field(zm.string().check(zm.regex(MONEY_PATTERN)), {
-    [FIELD_KIND_KEY]: "money",
-    format: "decimal",
-  });
-}
-
-export function integer(options: IntegerOptions = {}) {
-  return field(
-    zm.int().check(
-      ...[
-        ...(options.min === undefined ? [] : [zm.gte(options.min)]),
-        ...(options.max === undefined ? [] : [zm.lte(options.max)]),
-      ],
-    ),
-    { [FIELD_KIND_KEY]: "integer" },
-  );
-}
-
-export function real(options: RealOptions = {}) {
-  return field(
-    zm.number().check(
-      ...[
-        ...(options.min === undefined ? [] : [zm.gte(options.min)]),
-        ...(options.max === undefined ? [] : [zm.lte(options.max)]),
-      ],
-    ),
-    { [FIELD_KIND_KEY]: "real" },
-  );
-}
-
-export function boolean() {
-  return field(zm.boolean(), { [FIELD_KIND_KEY]: "boolean" });
-}
-
-export function enumOf<const T extends readonly [string, ...string[]]>(values: T) {
-  if (new Set(values).size !== values.length) {
-    throw new RexError("REX221", `enumOf: duplicate value in ${JSON.stringify(values)}`);
-  }
-  return field(zm.enum(values), { [FIELD_KIND_KEY]: "enum" });
-}
-
-export function ref(target: RefTarget) {
-  const name = validateName(typeof target === "string" ? target : target.id, "ref target");
-  return field(zm.string().check(zm.minLength(1), zm.regex(ID_PATTERN)), {
-    [FIELD_KIND_KEY]: "ref",
-    [FIELD_REF_KEY]: name,
-  });
-}
-
-export function timestamp() {
-  return field(zm.iso.datetime(), { [FIELD_KIND_KEY]: "timestamp" });
-}
-
-export function json() {
-  return field(zm.json(), { [FIELD_KIND_KEY]: "json" });
+interface SchemaMetadataRegistry {
+  get(schema: unknown): unknown;
 }
 
 const WRAPPER_TYPES = new Set(["optional", "nullable", "default"]);
 
-export function unwrapSchema(schema: $ZodType): $ZodType {
+function hasDefinition(schema: unknown): schema is SchemaInternals {
+  if ((typeof schema !== "object" && typeof schema !== "function") || schema === null) return false;
+  const internals = (schema as { _zod?: unknown })._zod;
+  if (typeof internals !== "object" || internals === null) return false;
+  const def = (internals as { def?: unknown }).def;
+  return (
+    typeof def === "object" && def !== null && typeof (def as { type?: unknown }).type === "string"
+  );
+}
+
+export function schemaDefinition(schema: unknown): SchemaDefinition | undefined {
+  return hasDefinition(schema) ? schema._zod.def : undefined;
+}
+
+export function unwrapSchema(schema: unknown): unknown {
   let current = schema;
   for (;;) {
-    const def = current._zod.def as { readonly type: string; readonly innerType?: $ZodType };
-    if (!WRAPPER_TYPES.has(def.type) || def.innerType === undefined) return current;
+    const def = schemaDefinition(current);
+    if (def === undefined || !WRAPPER_TYPES.has(def.type) || def.innerType === undefined) {
+      return current;
+    }
     current = def.innerType;
   }
 }
 
-export function schemaType(schema: $ZodType): string {
-  return unwrapSchema(schema)._zod.def.type;
+export function schemaType(schema: unknown): string | undefined {
+  return schemaDefinition(unwrapSchema(schema))?.type;
 }
 
-function metaOf(schema: $ZodType): Readonly<Record<string, unknown>> | undefined {
-  return zm.globalRegistry.get(unwrapSchema(schema)) as Readonly<Record<string, unknown>> | undefined;
+export function objectShape(schema: unknown): Readonly<Record<string, unknown>> | undefined {
+  const def = schemaDefinition(schema);
+  if (def === undefined || def.type !== "object") return undefined;
+  const shape = def.shape;
+  return typeof shape === "object" && shape !== null ? shape : undefined;
 }
 
-export function fieldKind(schema: $ZodType): FieldKind | undefined {
+function metadataRegistry(): SchemaMetadataRegistry | undefined {
+  const registry = (globalThis as { __zod_globalRegistry?: unknown }).__zod_globalRegistry;
+  return typeof registry === "object" &&
+    registry !== null &&
+    typeof (registry as { get?: unknown }).get === "function"
+    ? (registry as SchemaMetadataRegistry)
+    : undefined;
+}
+
+function metaOf(schema: unknown): Readonly<Record<string, unknown>> | undefined {
+  const unwrapped = unwrapSchema(schema);
+  if (!hasDefinition(unwrapped)) return undefined;
+  const meta = metadataRegistry()?.get(unwrapped);
+  return typeof meta === "object" && meta !== null
+    ? (meta as Readonly<Record<string, unknown>>)
+    : undefined;
+}
+
+export function fieldKind(schema: unknown): FieldKind | undefined {
   const kind = metaOf(schema)?.[FIELD_KIND_KEY];
   return typeof kind === "string" && (FIELD_KINDS as readonly string[]).includes(kind)
     ? (kind as FieldKind)
     : undefined;
 }
 
-export function refTarget(schema: $ZodType): string | undefined {
+export function refTarget(schema: unknown): string | undefined {
   const target = metaOf(schema)?.[FIELD_REF_KEY];
   return typeof target === "string" ? target : undefined;
 }
 
-export function toJsonSchema(schema: $ZodType, io: "input" | "output" = "output"): JsonSchema {
-  return zm.toJSONSchema(schema, {
-    target: "draft-2020-12",
-    unrepresentable: "throw",
-    io,
-  }) as JsonSchema;
+export function acceptsSync(schema: StandardSchemaV1, value: unknown): boolean {
+  const result = schema["~standard"].validate(value);
+  return !(result instanceof Promise) && result.issues === undefined;
 }
 
-export function objectJsonSchema(
-  shape: Readonly<Record<string, $ZodType>>,
-  io: "input" | "output" = "output",
-): JsonSchema {
-  const placeholders = new Map<$ZodType, string>();
-  const requiredStandard = new Set<string>();
-  const entries = Object.entries(shape).map(([name, schema]): [string, $ZodType] => {
-    const source = standardSource(schema);
-    if (source === null) return [name, schema];
-    const placeholder = zm.unknown();
-    placeholders.set(placeholder, source["~standard"].vendor);
-    const missing = source["~standard"].validate(undefined);
-    if (!(missing instanceof Promise) && missing.issues !== undefined) requiredStandard.add(name);
-    return [name, placeholder];
+export type ObjectShape = { readonly [field: string]: StandardSchemaV1 };
+
+export interface ObjectSchema<Shape extends ObjectShape, Input, Output> extends StandardSchemaV1<
+  Input,
+  Output
+> {
+  readonly shape: Shape;
+}
+
+type FieldResult = readonly [string, StandardResult<unknown>];
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function settleObject(
+  input: Readonly<Record<string, unknown>>,
+  results: readonly FieldResult[],
+): StandardResult<Record<string, unknown>> {
+  const issues: StandardIssue[] = [];
+  const value: Record<string, unknown> = {};
+  for (const [name, result] of results) {
+    if (result.issues !== undefined) {
+      for (const issue of result.issues) {
+        issues.push({ message: issue.message, path: [name, ...(issue.path ?? [])] });
+      }
+      continue;
+    }
+    if (result.value === undefined && !Object.hasOwn(input, name)) continue;
+    value[name] = result.value;
+  }
+  return issues.length > 0 ? { issues } : { value };
+}
+
+export function objectSchema<Shape extends ObjectShape, Input = unknown, Output = Input>(
+  shape: Shape,
+): ObjectSchema<Shape, Input, Output> {
+  const names = Object.keys(shape);
+  const validate = (value: unknown): StandardResult<Output> | Promise<StandardResult<Output>> => {
+    if (!isRecord(value)) return { issues: [{ message: "expected an object", path: [] }] };
+    const pending: (FieldResult | Promise<FieldResult>)[] = names.map((name) => {
+      const result = (shape[name] as StandardSchemaV1)["~standard"].validate(value[name]);
+      return result instanceof Promise
+        ? result.then((settled): FieldResult => [name, settled])
+        : [name, result];
+    });
+    if (pending.some((entry) => entry instanceof Promise)) {
+      return Promise.all(pending).then(
+        (results) => settleObject(value, results) as StandardResult<Output>,
+      );
+    }
+    return settleObject(value, pending as FieldResult[]) as StandardResult<Output>;
+  };
+  return Object.freeze({
+    shape,
+    "~standard": Object.freeze({ version: 1 as const, vendor: REX_SCHEMA_VENDOR, validate }),
   });
-  const json = zm.toJSONSchema(zm.object(Object.fromEntries(entries)), {
-    target: "draft-2020-12",
-    unrepresentable: "throw",
-    io,
-    override: (ctx) => {
-      const vendor = placeholders.get(ctx.zodSchema as $ZodType);
-      if (vendor !== undefined) ctx.jsonSchema[STANDARD_VENDOR_KEY] = vendor;
-    },
-  }) as JsonSchema;
-  if (requiredStandard.size === 0) return json;
-  const required = new Set([...((json.required as string[] | undefined) ?? []), ...requiredStandard]);
-  return { ...json, required: Object.keys(shape).filter((name) => required.has(name)) };
 }

@@ -12,7 +12,7 @@ import { actor, anonymousActor, type Actor } from "../core/actor.ts";
 import type { RexLogger } from "../core/config.ts";
 import { page } from "../core/page.ts";
 import { always, never } from "../core/policy.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import {
   ATTR_ACTION_ID,

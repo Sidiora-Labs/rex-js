@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { entity } from "./entity.ts";
-import { id, integer, text } from "./schema.ts";
+import { id, integer, text } from "../schema/index.ts";
 import { bind } from "./store.ts";
 import { memoryStore } from "./store.memory.ts";
 import { conformanceEntity, conformanceRecord, runStoreConformance } from "./store.conformance.ts";
@@ -52,8 +52,9 @@ describe("bind", () => {
     await expect(store.list({ filter: { nope: 1 } as never })).rejects.toThrow(
       'unknown filter field "nope"',
     );
-    await expect(store.get("")).rejects.toThrow(TypeError);
-    await expect(store.delete("")).rejects.toThrow(TypeError);
+    const invalidArgument = expect.objectContaining({ name: "RexError", code: "REX329" });
+    await expect(store.get("")).rejects.toThrow(invalidArgument);
+    await expect(store.delete("")).rejects.toThrow(invalidArgument);
     expect(store.entity).toBe(account);
     expect(Object.isFrozen(store)).toBe(true);
   });

@@ -1,4 +1,5 @@
-import { boolean, entity, integer, ref, text } from "@sidioralabs/rex";
+import { entity } from "@sidioralabs/rex";
+import { boolean, integer, ref, text } from "@sidioralabs/rex/schema";
 import { account } from "./account.ts";
 
 export const token = entity("token", {

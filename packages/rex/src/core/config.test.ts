@@ -11,6 +11,7 @@ import {
   LEGACY_CONFIG_MESSAGE,
   RexConfigError,
   configServer,
+  configServerOptions,
   defineConfig,
   isDefinedConfig,
   isFetchHandler,
@@ -25,7 +26,7 @@ import { RexError, isRexError, type RexErrorCode } from "./errors.ts";
 import { page } from "./page.ts";
 import { always } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { text } from "./schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import * as configEntry from "../config.ts";
 import * as rootEntry from "../index.ts";
@@ -83,9 +84,10 @@ describe("defineConfig", () => {
     });
   });
 
-  it("is exported from the rex/config entry and from the package root", () => {
+  it("is exported from the rex/config entry only, not from the package root", () => {
     expect(configEntry.defineConfig).toBe(defineConfig);
-    expect(rootEntry.defineConfig).toBe(defineConfig);
+    expect(Object.hasOwn(rootEntry, "defineConfig")).toBe(false);
+    expect(Object.hasOwn(rootEntry, "parseConfig")).toBe(false);
     expect(configEntry.RexError).toBe(RexError);
   });
 });
@@ -209,6 +211,11 @@ describe("parseConfig", () => {
     [{ app, security: { csp: "loose" } }, "REX115", "security.csp"],
     [{ app, security: { origins: ["https://a.example.com/path"] } }, "REX115", "security.origins.0"],
     [{ app, security: { origins: ["ftp://a.example.com"] } }, "REX115", "security.origins.0"],
+    [{ app, security: { origins: ["ws://a.example.com"] } }, "REX115", "security.origins.0"],
+    [{ app, security: { origins: ["tauri://localhost/"] } }, "REX115", "security.origins.0"],
+    [{ app, security: { origins: ["tauri:localhost"] } }, "REX115", "security.origins.0"],
+    [{ app, security: { origins: ["javascript:alert(1)"] } }, "REX115", "security.origins.0"],
+    [{ app, client: { apiOrigin: "tauri://localhost" } }, "REX121", "client.apiOrigin"],
     [{ app, security: { headers: { "bad header": "x" } } }, "REX115", "security.headers.bad header"],
     [{ app, security: { secretNames: ["not-a-name"] } }, "REX115", "security.secretNames.0"],
     [{ app, i18n: { locales: [], default: "en" } }, "REX116", "i18n.locales"],
@@ -243,6 +250,22 @@ describe("parseConfig", () => {
     expect(failure.code).toBe(code);
     expect(failure.field).toBe(field);
     expect(failure.message).toContain(`${code} ${CONFIG_FILE}: field "${field}"`);
+  });
+
+  it("admits app-scheme origins of desktop and mobile webviews in security.origins", () => {
+    const origins = [
+      "tauri://localhost",
+      "capacitor://localhost",
+      "http://tauri.localhost",
+      "https://localhost",
+    ];
+    expect(parseConfig(defineConfig({ app, security: { origins } })).security.origins).toEqual(
+      origins,
+    );
+    const failure = rejection(() =>
+      parseConfig({ app, security: { origins: ["capacitor://localhost/index.html"] } }),
+    );
+    expect(failure.message).toContain("such as capacitor://localhost");
   });
 
   it("validates eagerly in defineConfig", () => {
@@ -282,6 +305,21 @@ describe("readConfigExport and configServer", () => {
     expect(await (await server.fetch(new Request("http://rex.test/rex/name"))).text()).toBe(
       "config-app",
     );
+  });
+
+  it("hands the default server the config security and client options", () => {
+    const security = { origins: ["tauri://localhost"], secretNames: ["API_KEY"] };
+    const remote = readConfigExport(
+      defineConfig({ app, security, client: { apiOrigin: "https://api.example.com" } }),
+    );
+    expect(configServerOptions(remote)).toEqual({
+      security: { csp: "strict", origins: ["tauri://localhost"], headers: {}, secretNames: ["API_KEY"] },
+      client: { apiOrigin: "https://api.example.com" },
+    });
+    const local = configServerOptions(readConfigExport(defineConfig({ app })));
+    expect(local).toEqual({ security: DEFAULT_OPTIONS.security });
+    expect("client" in local).toBe(false);
+    expect(resolveOptions(configServerOptions(remote)).security).toEqual(remote.options.security);
   });
 
   it("accepts a bare Hono app with a REX101 deprecation warned once", () => {

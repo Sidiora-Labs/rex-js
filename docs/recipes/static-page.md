@@ -45,7 +45,8 @@ The prerendered HTML keeps the sidecar (`<script type="application/rex+json" id=
 `ssg` prerenders at build and hydrates. A page with route params lists the params to prerender with `paths`; `revalidate` (seconds) makes the server regenerate the page after that window:
 
 ```ts
-import { id, page } from "@sidioralabs/rex";
+import { page } from "@sidioralabs/rex";
+import { id } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { readToken } from "../../actions/read-token.ts";
 

@@ -14,7 +14,13 @@ The declaration id is the name you pass. Names must start with a lowercase lette
 
 ## Field helpers
 
-`packages/rex/src/core/schema.ts` re-exports zod as `z` and adds field helpers that tag the zod schema with a field kind (`x-rex-field` metadata):
+Field helpers live in `@sidioralabs/rex/schema` (`packages/rex/src/schema/fields.ts`). They are built on zod/mini and tag the schema with a field kind (`x-rex-field` metadata). Apps import `z` from `zod/mini` themselves; the core entry `@sidioralabs/rex` imports no zod and exports neither `z` nor the helpers:
+
+```ts
+import { action } from "@sidioralabs/rex";
+import { money, text } from "@sidioralabs/rex/schema";
+import { z } from "zod/mini";
+```
 
 | Helper | Schema |
 | --- | --- |
@@ -27,7 +33,7 @@ The declaration id is the name you pass. Names must start with a lowercase lette
 | `ref(target)` | id string referring to another entity (`target` is an entity name or an object with `id`) |
 | `timestamp()` | ISO datetime string |
 
-`FieldKind` is the union of those eight kinds. `fieldKind(schema)` and `refTarget(schema)` read the tags back, and `toJsonSchema(schema, io?)` converts a zod schema to draft 2020-12 JSON Schema.
+`FieldKind` is the union of the field kinds. `fieldKind(schema)` and `refTarget(schema)` read the tags back. Declarations accept any Standard Schema and validate through `~standard.validate`; JSON Schema is derived only when the manifest is built, by `toJsonSchema(schema, io?)` and `buildManifest` in `@sidioralabs/rex/manifest`. `defineConfig` lives in `@sidioralabs/rex/config`.
 
 ## entity()
 
@@ -41,7 +47,7 @@ interface EntityConfig<F, K> {
 }
 ```
 
-Field names are camelCase. The key field must be a required string field (`id`, `text`, `ref` or a plain zod string). The declaration exposes `fields`, `fieldKinds`, `key`, `schema` (a zod object), `jsonSchema`, `label(record)`, `parse(value)` and `keyOf(record)`. `InferEntity<typeof myEntity>` is the record type.
+Field names are camelCase. The key field must be a required string field (`id`, `text`, `ref` or a plain zod string). The declaration exposes `fields` (the declared field schemas), `fieldKinds`, `key`, `schema` (a Standard Schema object validating the fields, with the fields as `shape`), `label(record)`, `parse(value)` and `keyOf(record)`. `InferEntity<typeof myEntity>` is the record type.
 
 ```ts
 export const token = entity("token", {
@@ -69,7 +75,7 @@ interface ActionConfig<I, O> {
 interface ActionContext { actor: Actor }
 ```
 
-The declaration adds `label` and `shortcut` as `string | null`, `invalidates` (deduplicated), `inputJsonSchema` and `outputJsonSchema`. Both schemas must be representable as JSON Schema.
+The declaration adds `label` and `shortcut` as `string | null` and `invalidates` (deduplicated), and keeps the declared `input` and `output` schemas. `buildManifest` derives their JSON Schema, or uses a declared `jsonSchema` override, and throws REX210 naming the action when neither is possible.
 
 Shortcuts are parsed by `parseShortcut`: modifiers from `mod`, `shift`, `alt` in that order, then one key (a lowercase letter, digit, punctuation key or named key such as `enter`, `escape`, `space`, `tab`, `arrowup`, `f1`). `mod+k` and `escape` are reserved (`RESERVED_SHORTCUTS`). `ActionInput<A>`, `ActionParsedInput<A>` and `ActionOutput<A>` extract the types.
 
@@ -94,7 +100,7 @@ interface PageConfig {
 }
 ```
 
-Chrome defaults: `header: true`, `nav: true`, `back: null`, and a title derived from the id (`titleFromId`: `send-money` becomes "Send money"). `recovery` and `chrome.back` must name a different page; `buildManifest` checks that the target exists. The declaration adds `routeParams`, `paramsJsonSchema`, and `states` in canonical order. `PageParams<P>`, `PageParamsInput<P>`, `PageStates<P>` and `PageStatesModule<P>` extract types; `PageStatesModule` is the type `states.tsx` must satisfy.
+Chrome defaults: `header: true`, `nav: true`, `back: null`, and a title derived from the id (`titleFromId`: `send-money` becomes "Send money"). `recovery` and `chrome.back` must name a different page; `buildManifest` checks that the target exists. The declaration adds `routeParams` and `states` in canonical order and keeps the declared `params` schema; `buildManifest` derives its JSON Schema. `PageParams<P>`, `PageParamsInput<P>`, `PageStates<P>` and `PageStatesModule<P>` extract types; `PageStatesModule` is the type `states.tsx` must satisfy.
 
 Draft modes, used by `useDraft(schema)` in `@sidioralabs/rex/client`:
 
@@ -191,7 +197,7 @@ Raw input is never stored; `digest(input)` hashes `canonicalJson(input)` (keys s
 
 ## The manifest
 
-`buildManifest(source, { app? })` turns registered declarations into a `Manifest` (`packages/rex/src/manifest/types.ts`):
+`buildManifest(source, { app? })` from `@sidioralabs/rex/manifest` turns registered declarations into a `Manifest` (`packages/rex/src/manifest/types.ts`):
 
 ```ts
 interface Manifest {

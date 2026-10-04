@@ -1,4 +1,5 @@
-import { action, id, text } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { id, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { accountIdOf, accounts, nextId, requireAccount, tokens } from "../data/wallet.ts";
 import { wallet } from "../policies/wallet.ts";
@@ -15,7 +16,8 @@ export const pickToken = action("pick-token", {
     const owner = await requireAccount(accountIdOf(ctx.actor.attributes));
     const held = (await tokens.list()).items;
     const chosen =
-      input.token ?? nextId(
+      input.token ??
+      nextId(
         held.map((entry) => entry.id),
         owner.sendToken,
       );

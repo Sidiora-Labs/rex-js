@@ -34,7 +34,7 @@ new RexDensityError(value): RexDensityError;
 
 ###### Overrides
 
-[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-4)
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
 
@@ -118,6 +118,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -148,6 +151,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -155,7 +160,7 @@ readonly code:
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-4)
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
 
 <a id="column"></a>
 
@@ -281,7 +286,7 @@ new RexStaticPageError(
 
 ###### Overrides
 
-[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-4)
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
 
@@ -365,6 +370,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -395,6 +403,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -402,7 +412,7 @@ readonly code:
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-4)
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
 
 <a id="column-1"></a>
 
@@ -1338,6 +1348,12 @@ readonly sidecar: object;
 
 ```ts
 actions: object[];
+```
+
+###### loaders?
+
+```ts
+optional loaders?: object[];
 ```
 
 ###### outcome
@@ -3968,7 +3984,7 @@ function coerceFormData(form, schema): Record<string, unknown>;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -4056,7 +4072,7 @@ function createConsoleLogger(target?): RexLogger;
 
 #### Returns
 
-[`RexLogger`](../rex.md#rexlogger)
+[`RexLogger`](config.md#rexlogger)
 
 ***
 
@@ -4132,7 +4148,7 @@ function createRexContext(
 
 ##### i18n?
 
-[`I18nConfig`](../rex.md#i18nconfig) \| `null`
+[`I18nConfig`](config.md#i18nconfig) \| `null`
 
 #### Returns
 
@@ -4198,7 +4214,7 @@ function createTelemetry(config?): RexTelemetry;
 
 ##### config?
 
-[`TelemetryConfig`](../rex.md#telemetryconfig) = `{}`
+[`TelemetryConfig`](config.md#telemetryconfig) = `{}`
 
 #### Returns
 
@@ -4510,7 +4526,7 @@ function formEntries(form, schema): [string, FormValue][];
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -5770,7 +5786,7 @@ function schemaDeclaresField(schema, name): boolean;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 ##### name
 
@@ -5862,7 +5878,7 @@ function submittedActionId(form, schema): string | null;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 

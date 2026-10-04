@@ -1,5 +1,6 @@
-import { region } from "@sidioralabs/rex/client";
+import { ActionForm, region } from "@sidioralabs/rex/client";
 import { send } from "../../../../actions/send.ts";
+import Button from "../../../../components/Button.tsx";
 import { useSendDraft } from "../../hooks/useSendDraft.ts";
 import { useWallet } from "../../hooks/useWallet.ts";
 import SendSummary from "./parts/SendSummary.tsx";
@@ -18,10 +19,16 @@ export default region("confirm", ({ act }) => {
       recipient={contact?.name ?? null}
       amount={draft.amount}
       valid={draft.valid}
-      control={sending.controlProps}
-      onSend={() => {
-        void sending.run(draft.amount === "" ? {} : { amount: draft.amount });
-      }}
-    />
+    >
+      {draft.valid ? (
+        <ActionForm action={send} submitLabel="Send">
+          <input type="hidden" name="amount" value={draft.amount} />
+        </ActionForm>
+      ) : (
+        <Button {...sending.controlProps} tone="primary" disabled aria-disabled>
+          Send
+        </Button>
+      )}
+    </SendSummary>
   );
 });

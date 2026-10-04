@@ -63,7 +63,8 @@ export function createRegistry(): Registry {
       for (const declaration of declarations) {
         const candidate = declaration as { kind?: unknown; id?: unknown };
         if (typeof candidate !== "object" || candidate === null || !isKind(candidate.kind)) {
-          throw new TypeError(
+          throw new RexError(
+            "REX224",
             `registry: expected a declaration with kind ${DECLARATION_KINDS.join(", ")}`,
           );
         }

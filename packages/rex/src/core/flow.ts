@@ -1,6 +1,7 @@
 import type { AnyAction } from "./action.ts";
 import type { Actor } from "./actor.ts";
 import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts";
+import { RexError } from "./errors.ts";
 import { validateName } from "./ids.ts";
 import {
   completedSteps,
@@ -85,16 +86,17 @@ export interface FlowRunResult {
   readonly gate: ApprovalStep | null;
 }
 
-export class FlowDecisionError extends Error {
-  readonly code: "NO_PENDING_APPROVAL" | "FORBIDDEN";
+export const FLOW_NO_PENDING_APPROVAL = "REX333";
+export const FLOW_DECISION_FORBIDDEN = "REX334";
+
+export type FlowDecisionErrorCode = typeof FLOW_NO_PENDING_APPROVAL | typeof FLOW_DECISION_FORBIDDEN;
+
+export class FlowDecisionError extends RexError {
+  override readonly code: FlowDecisionErrorCode;
   readonly reason: ReasonCode | null;
 
-  constructor(
-    code: "NO_PENDING_APPROVAL" | "FORBIDDEN",
-    message: string,
-    reason: ReasonCode | null,
-  ) {
-    super(message);
+  constructor(code: FlowDecisionErrorCode, message: string, reason: ReasonCode | null) {
+    super(code, message);
     this.name = "FlowDecisionError";
     this.code = code;
     this.reason = reason;
@@ -280,12 +282,12 @@ export async function decide(
   actor: Actor,
 ): Promise<FlowRunResult> {
   if (decision !== "approve" && decision !== "reject") {
-    throw new TypeError(`decide: decision must be approve or reject, received ${String(decision)}`);
+    throw new RexError("REX329", `decide: decision must be approve or reject, received ${String(decision)}`);
   }
   const instance = await declared.journal.load(instanceId);
   if (instance === undefined || instance.flowId !== declared.id) {
     throw new FlowDecisionError(
-      "NO_PENDING_APPROVAL",
+      FLOW_NO_PENDING_APPROVAL,
       `flow "${declared.id}" has no instance "${instanceId}"`,
       null,
     );
@@ -293,7 +295,7 @@ export async function decide(
   const pending = pendingGate(declared, instance);
   if (pending === null) {
     throw new FlowDecisionError(
-      "NO_PENDING_APPROVAL",
+      FLOW_NO_PENDING_APPROVAL,
       `flow "${declared.id}" instance "${instanceId}" is ${instance.status} with no pending approval`,
       null,
     );
@@ -301,7 +303,7 @@ export async function decide(
   const allowed = evaluate(pending.gate.approvers, actor);
   if (!allowed.allowed) {
     throw new FlowDecisionError(
-      "FORBIDDEN",
+      FLOW_DECISION_FORBIDDEN,
       `actor "${actor.id}" may not decide gate "${pending.gate.id}": ${allowed.reason}`,
       allowed.reason,
     );

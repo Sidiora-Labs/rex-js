@@ -17,7 +17,10 @@ export default function FilterForm({
     onDone();
   };
   return (
-    <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "var(--rex-space-2)" }}>
+    <form
+      onSubmit={submit}
+      style={{ display: "flex", flexDirection: "column", gap: "var(--rex-space-2)" }}
+    >
       <Field
         label="Symbol or name contains"
         name="holdings-filter"

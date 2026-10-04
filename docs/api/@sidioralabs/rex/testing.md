@@ -182,6 +182,12 @@ sidecar(): object;
 actions: object[];
 ```
 
+###### loaders?
+
+```ts
+optional loaders?: object[];
+```
+
 ###### outcome
 
 ```ts
@@ -608,6 +614,12 @@ function readSidecar(container?): object;
 
 ```ts
 actions: object[];
+```
+
+##### loaders?
+
+```ts
+optional loaders?: object[];
 ```
 
 ##### outcome

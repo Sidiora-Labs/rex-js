@@ -34,6 +34,8 @@ modern           = "Img requires width and height and lazy-loads by default; fon
 versioning       = "Semantic versioning. deprecated() warns once per code. rex migrate runs registered codemods built on the TypeScript compiler API; the first migrates 0.1 apps. Governance, maintainers, security policy and code of conduct files are part of the package repository."
 core_exports     = "The core entry does not re-export zod or zod/mini: a namespace re-export defeats tree-shaking and pulls locales and the JSON Schema generator into every bundle. Apps import z from zod/mini themselves; the Rex surface is the field helpers, validateStandard and the declaration functions. The manifest, with its JSON Schema, is built once by rex build and loaded by the server entry, so the JSON Schema generator never ships in a server bundle; buildManifest runs only in dev and the CLI. Page chunks contain only modules under their page folder; shared app modules, the runtime and vendor code live in shared chunks. The core entry is the declaration surface only: config lives behind rex/config, the zod/mini field helpers behind rex/schema, and buildManifest, the JSON Schema generator and the sidecar schema behind rex/manifest."
 zod_boundary     = "Rex validates through the Standard Schema interface, so its runtime never imports zod: no module reachable from the core, client or edge entries imports zod or zod/mini (the zod-boundary test bundles the three entries and fails on any zod module in the output); zod is imported only behind rex/schema, rex/config, rex/manifest and the CLI, where schemas are declared, parsed or turned into JSON Schema at build time. The runtime error catalog carries code and message; hints and docs live in core/errors.docs.ts for the CLI, devtools, check and the docs generator."
+screen_fit       = "Rex sizes to the screen, not to the viewport width alone. The runtime classifies the screen (phone, tablet, desktop, wide), the pointer (coarse, fine) and the density (comfortable, compact, agent) and writes them on the document root as data-rex-screen, data-rex-pointer and data-rex-density: on the server from the Client Hints Sec-CH-UA-Mobile and Sec-CH-Viewport-Width (Accept-CH is sent) with a user-agent fallback, on the client from matchMedia and ResizeObserver, with useScreen() exposing all three and the sidecar carrying them. The tokens are fluid: type and space scales are clamp() ranges keyed by screen class and density, controls meet a 44 px target on coarse pointers, and the layout primitives are container-driven (Page.Grid collapses by container width, Page.Stack spacing scales), so a part fits the region it is in. Overlays pick their form by screen: a dialog on desktop, a bottom sheet on phone; navigation is a sidebar on desktop and a dock on phone."
+designx_standard = "DesignX is Rex's standard UI vocabulary. rex/designx holds the map from every Rex surface to one registry item: shell Button to button, Sheet to sheet or bottom-sheet by screen, PaletteItem to command, Outcome to alert, navigation to sidebar, navigation-menu and dock, breadcrumbs to breadcrumb, forms to form, field, input, textarea, select, number-field, checkbox, switch and radio-group, lists to data-table on desktop and swipeable-list or a card list on phone, pagination, the nine data states to skeleton, empty, alert, spinner and progress, and the kit set to badge, avatar, tooltip, kbd, tabs, toolbar, separator, scroll-area, typography, theme-provider and theme-toggle with the use-mobile, use-media-query and use-touch-capable hooks. rex new installs the standard set, generated shells, states and regions use it, the demo uses it everywhere, and the checker's ui/designx-primitive rule reports a raw button, input, select, textarea, table or dialog in a region, part or overlay of an app whose ui.kit is designx, while layout/fixed-size reports pixel widths and heights on parts and layout/touch-target reports controls under 44 px on coarse pointers."
 shell_components = "Shell component overrides are app-wide: rex.config ui.components names a module under app/components exporting ShellComponents, and the shell, overlays, palette and outcome region render through useShellComponents(). page.ts stays free of React imports, so chrome.components is not a page option."
 vitals           = "The operability walk measures LCP, CLS and INP with the web-vitals library on the built demo and fails above 2500 ms, 0.1 and 200 ms; a Lighthouse run requires performance 90 and accessibility 95 or higher. Reports are committed."
 license_scope    = "tools/license-review.mjs reviews the full production closure of @sidioralabs/rex including peer dependencies and the demo app; the allowlist is MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, 0BSD, MPL-2.0 (lightningcss, file-level copyleft that does not reach app code), CC-BY-4.0 (caniuse-lite data) and Unlicense (wouter); any other license fails the lint gate and needs a new decision here."
@@ -149,6 +151,14 @@ s2_tasks = ["3.4"]
 s3 = "Hooks for i18n and locale-aware routing."
 s3_now = "gap"
 s3_tasks = ["3.5"]
+
+[standard.screen_fit]
+s1 = "Components size to the screen and the pointer: fluid type and space, container-driven layout, 44 px targets on touch, overlay and navigation forms chosen by screen class."
+s1_now = "gap: static rem tokens, Page.Grid with fixed columns, one density (agent)"
+s1_tasks = ["9.1", "9.4"]
+s2 = "One standard component vocabulary (DesignX) across generated apps, the shell and the demo, enforced by the checker."
+s2_now = "partial: rex new installs a DesignX base set and the demo overrides four shell slots; demo regions and parts use plain elements; no rule"
+s2_tasks = ["9.2", "9.3", "9.4"]
 
 [standard.styling]
 s1 = "No lock-in: scoped CSS, CSS Modules, Tailwind and CSS-in-JS all work."
@@ -494,6 +504,19 @@ ac_1  = "Every push and pull request runs typecheck, the unit tests with coverag
 ac_2  = "The unit suite covers at least 90 percent of lines, statements and functions and 80 percent of branches of packages/rex/src, and the repository holds at least one line of test code for every line of source code; both are measured by scripts the CI pipeline runs and are never lowered to pass."
 ac_3  = "The packed tarball installs into a fresh rex new app, which builds, serves its home page, its manifest and an RPC call from the built server, and the tarball passes publint and are-the-types-wrong; the README documents installation from npm."
 ac_4  = "The repository is linted and formatted by its own rex/eslint and rex/prettier presets with zero findings, checked in CI."
+
+[req.37]
+title = "Screen-fit sizing"
+ac_1  = "The document root carries data-rex-screen (phone, tablet, desktop, wide), data-rex-pointer (coarse, fine) and data-rex-density (comfortable, compact, agent) from the first server response (Client Hints with a user-agent fallback, Accept-CH sent) and the client keeps them current on resize and pointer change; useScreen() returns the three values and the sidecar carries them."
+ac_2  = "The token sheet defines fluid type and space scales with clamp() keyed by screen class and density; Page.Grid collapses its columns by the width of its container, not the viewport, and Page.Stack spacing scales with the density; every interactive control meets a 44 px minimum target on coarse pointers."
+ac_3  = "An overlay renders as a dialog on desktop and as a bottom sheet on phone, navigation renders as a sidebar on desktop and a dock on phone, and both stay operable through the same data-rex addresses and sidecar entries on every screen."
+ac_4  = "The demo walk runs on phone, tablet and desktop viewports with no horizontal overflow, targets of at least 44 px on the phone project, axe clean and the vitals thresholds met on each."
+
+[req.38]
+title = "DesignX as the standard vocabulary"
+ac_1  = "rex/designx exports the surface-to-registry map and the standard set; rex new --ui designx installs the standard set from the registry and generates the shell override, the states and the first regions on those primitives; the demo uses the primitives in every region, part, overlay and state."
+ac_2  = "The checker reports ui/designx-primitive for a raw button, input, select, textarea, table or dialog element in a region, part or overlay of an app whose ui.kit is designx, layout/fixed-size for pixel widths and heights on parts, and layout/touch-target for controls declared under 44 px, each with a fix hint naming the primitive or token to use."
+ac_3  = "docs/convention.md and docs/recipes document the screen-fit contract and the DesignX map, and the agent contract documents the screen, pointer and density fields of the sidecar."
 
 [task.0.1]
 title = "Split the Vite plugin, server and client entry points into per-concern modules with registration lists"
@@ -1311,7 +1334,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.6.2]
 title = "Demo on every 0.2 capability with the operability, no-JS, axe and vitals walks green"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 6
 requires = ["1.2", "1.3", "1.7", "2.1", "2.2", "2.3", "2.5", "2.7", "3.1", "3.2", "3.4", "3.5", "3.6", "3.7", "4.1", "4.2", "4.3", "4.4", "4.5", "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9", "6.1", "7.2", "7.4", "7.5", "7.6"]
@@ -1393,11 +1416,11 @@ title = "Re-qualify the tasks that ended implemented once their blockers are mer
 status = "pending"
 mode = "BUILD"
 wave = 7
-requires = ["7.1", "7.2", "7.4", "7.5", "7.6", "7.8", "7.9", "7.10", "6.2", "2.6"]
+requires = ["7.1", "7.2", "7.4", "7.5", "7.6", "7.8", "7.9", "7.10", "7.11", "7.12", "6.2", "2.6"]
 reqs = ["7.1", "22.2", "29.1", "32.1", "3.4", "16.2", "34.1", "12.3", "3.3", "25.2"]
 do_1 = "For each of 0.7, 0.8, 1.7, 2.7, 3.7, 5.2, 5.5, 6.1, 7.1, 7.4, 7.5 and 7.6 (and 6.2, 7.8 or 7.9 if they ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release."
 touches = ["spec/rex-v02/spec.kvx"]
-verify_cmd = "pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/cli/designx.test.ts && pnpm -C examples/demo exec rex check && pnpm -C examples/demo test:unit && pnpm -C examples/demo exec playwright test e2e/axe.spec.ts && pnpm -C examples/demo test:vitals"
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex test && pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/cli/designx.test.ts && pnpm -C examples/demo exec rex check && pnpm -C examples/demo test:unit && pnpm -C examples/demo exec playwright test e2e/axe.spec.ts && pnpm -C examples/demo test:vitals"
 gate_kind = "planned"
 max_builds = 1
 max_verify_runs = 1
@@ -1468,7 +1491,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.7]
 title = "One error pattern everywhere: catalogued RexError codes in core, the manifest scanner, the CLI arguments and the runtime adapters, one node server entry, and the peer licenses reviewed"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = ["5.7", "7.5", "7.2"]
@@ -1478,7 +1501,7 @@ do_2 = "RuntimeMissingError in server/adapters/runtime.ts extends RexError with 
 do_3 = "One node server entry (qualification.132): startPrerenderedNodeServer delegates to startNodeServer and createPrerenderedNodeApp becomes a thin alias of createNodeApp now that createNodeApp forwards page paths; the generated server entry in cli/commands/build.ts and static-cache.test.ts follow only if an export name changes."
 do_4 = "Apply [decision] license_scope: tools/license-review.mjs walks peer dependencies and the demo closure as well as dependencies and optionalDependencies, with the allowlist the decision names; the script keeps failing on any license outside it (qualification.451)."
 do_5 = "Static and native clients reach the app server without an app server factory (qualification.531): the server entry that rex build generates passes config.security and config.client into its default createRexServer so credentialed CORS applies out of the box, and security.origins admits app-scheme origins such as tauri://localhost and capacitor://localhost, validated as URL origins rather than http(s) only, with security.test.ts and cors.test.ts covering both and docs/platforms.md stating it."
-touches = ["packages/rex/src/server/middleware/security.ts", "packages/rex/src/server/security.test.ts", "packages/rex/src/server/cors.test.ts", "packages/rex/src/core/config.ts", "packages/rex/src/core/config.test.ts", "docs/platforms.md", "packages/rex/src/core/store.ts", "packages/rex/src/core/registry.ts", "packages/rex/src/core/flow.ts", "packages/rex/src/core/standard.ts", "packages/rex/src/core/actor.ts", "packages/rex/src/core/serialize.ts", "packages/rex/src/core/errors.ts", "packages/rex/src/core/store.conformance.ts", "packages/rex/src/core/store.memory.test.ts", "packages/rex/src/core/registry.test.ts", "packages/rex/src/core/flow.test.ts", "packages/rex/src/core/standard.test.ts", "packages/rex/src/manifest/scan.ts", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/args.test.ts", "packages/rex/src/cli/commands.test.ts", "packages/rex/src/server/flow.ts", "packages/rex/src/server/adapters/runtime.ts", "packages/rex/src/server/adapters/bun.ts", "packages/rex/src/server/adapters/deno.ts", "packages/rex/src/server/adapters/adapters.test.ts", "packages/rex/src/server/node.ts", "packages/rex/src/server/adapters/node.ts", "packages/rex/src/server/static-cache.test.ts", "packages/rex/src/cli/commands/build.ts", "docs/errors.md", "tools/license-review.mjs"]
+touches = ["packages/rex/src/server/security.test.ts", "packages/rex/src/server/cors.test.ts", "packages/rex/src/core/config.ts", "packages/rex/src/core/config.test.ts", "docs/platforms.md", "packages/rex/src/core/store.ts", "packages/rex/src/core/registry.ts", "packages/rex/src/core/flow.ts", "packages/rex/src/core/standard.ts", "packages/rex/src/core/actor.ts", "packages/rex/src/core/serialize.ts", "packages/rex/src/core/errors.ts", "packages/rex/src/core/store.conformance.ts", "packages/rex/src/core/store.memory.test.ts", "packages/rex/src/core/registry.test.ts", "packages/rex/src/core/flow.test.ts", "packages/rex/src/core/standard.test.ts", "packages/rex/src/manifest/scan.ts", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/args.test.ts", "packages/rex/src/cli/commands.test.ts", "packages/rex/src/server/flow.ts", "packages/rex/src/server/adapters/runtime.ts", "packages/rex/src/server/adapters/adapters.test.ts", "packages/rex/src/server/node.ts", "packages/rex/src/cli/commands/build.ts", "docs/errors.md", "tools/license-review.mjs"]
 verify_cmd = "pnpm -C packages/rex exec vitest run src/core/store.memory.test.ts src/core/registry.test.ts src/core/flow.test.ts src/core/standard.test.ts src/core/errors.test.ts src/cli/args.test.ts src/cli/commands.test.ts src/server/adapters/adapters.test.ts src/server/static-cache.test.ts && node tools/license-review.mjs"
 gate_kind = "planned"
 max_builds = 1
@@ -1489,7 +1512,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.8]
 title = "The core entry is the declaration surface, imports no zod and meets its 15 KB budget"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 7
 requires = ["5.7", "7.2", "7.5", "7.6"]
@@ -1530,7 +1553,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.10]
 title = "Generated apps are formatted as generated and prerendered pages carry the font preloads"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = ["5.7", "7.5"]
@@ -1571,7 +1594,7 @@ title = "Coverage thresholds and the one-to-one test ratio, measured and enforce
 status = "pending"
 mode = "BUILD"
 wave = 8
-requires = ["8.1"]
+requires = ["8.1", "9.3"]
 reqs = ["36.2", "16.1"]
 do_1 = "packages/rex gains @vitest/coverage-v8 and vitest.config.ts enables coverage over src with the test, conformance, fixture, testing-helper and .d.ts files excluded and thresholds lines 90, statements 90, functions 90, branches 80; pnpm -C packages/rex test:coverage runs it and the CI verify job uses that script; tools/test-ratio.mjs counts non-blank lines of test code (*.test.ts and .tsx, *.conformance.ts, src/testing, src/cli/fixtures, examples/demo/e2e and the demo page test folders) against source lines (packages/rex/src without those, examples/demo/app and tools) and exits non-zero under 1.0, printing both counts; pnpm test:ratio runs it in the CI verify job."
 do_2 = "Bring the suite to the thresholds and the ratio to at least 1.0 with real tests on the least covered modules the coverage report names (list the ten lowest in the task report with before and after figures): real code paths, real servers and registries, no mocks; no threshold is lowered and no file is excluded to pass."
@@ -1589,7 +1612,7 @@ title = "The repository lints and formats itself with the rex presets"
 status = "pending"
 mode = "BUILD"
 wave = 8
-requires = ["8.2"]
+requires = ["8.2", "9.4"]
 reqs = ["36.4", "17.1"]
 do_1 = "A root eslint.config.js applies the rex/eslint preset with jsx-a11y to examples/demo/app and typescript-eslint recommended to packages/rex/src, examples/demo/e2e and tools; .prettierrc is the string @sidioralabs/rex/prettier and .prettierignore lists dist, .rex, AGENTS.md, pnpm-lock.yaml, docs/api, e2e/report and generated manifests; the root scripts lint, format and format:check run them."
 do_2 = "One format sweep of the whole repository with the preset, committed on its own as the first commit of the task; then every lint finding is fixed in place without disabling a rule, except a generated file that gets a targeted eslint-disable with its reason; ci.yml gains the lint job running pnpm lint and pnpm format:check, and CONTRIBUTING.md names the two commands."
@@ -1600,4 +1623,114 @@ max_builds = 1
 max_verify_runs = 1
 max_repair_cycles = 2
 time_limit_minutes = 60
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.7.11]
+title = "The server and client suites are green on the integrated branch"
+status = "pending"
+mode = "BUILD"
+wave = 7
+requires = ["7.7", "7.9"]
+reqs = ["25.2", "16.1", "15.1", "6.1"]
+do_1 = "The full package suite on the integrated branch (revision 955fbf9, pnpm -C packages/rex test: 47 failed of 1154) shows these server and client failures; make each one pass without weakening a check: telemetry.test.ts (5), adapters.test.ts (4), form.test.tsx (3), protocol.test.ts (1) and interop.test.tsx (1) fail with Forbidden because they post without the browser Origin that the 4.2 security middleware requires, so the tests send Origin the way rex/testing does (through its helpers where they fit) and the Origin rule stays; devtools.test.tsx (9) expects the provider list without i18n and a Findings panel text that no longer renders, so the expectations follow the merged devtools and any real devtools regression from the lazy loading in 7.2 is fixed in client/devtools; compiler.test.tsx fails to load with Vite's INVALID_OPTION combination, fixed at its source in vite/compiler.ts or the test's options; ssr.test.tsx failures are triaged the same way."
+do_2 = "packages/rex/vitest.config.ts excludes src/**/fixtures/** from the test file globs so fixture apps' own test files (check/fixtures/media and security render.test.tsx) are no longer collected as suites; a timeout that only trips under the shared machine's load is raised to a stated bound with a note, never removed."
+do_3 = "Production SSR works from the built node server: on main 2041e6f the demo built with rex build and started with node dist/server.js answers GET /, /portfolio and /send with the 698-byte static index.html and no x-rex-render or Content-Security-Policy header although both pages declare render ssr and the bundle registers the renderer, so the path from startPrerenderedNodeServer and createPrerenderedNodeApp through the render route is repaired until a page path returns the streamed document with data-rex-ssr, the application/rex+json sidecar, the nonce CSP header and x-rex-render page, while non-page paths still fall through to the client directory; server/node.test.ts proves it against a server started from a built fixture the way rex build generates it; prerenderBuild in cli/commands/build.ts passes the resolved fonts into prerenderPages so prerendered pages carry the preloads (qualification.7101)."
+touches = ["packages/rex/src/server/node.ts", "packages/rex/src/server/adapters/node.ts", "packages/rex/src/server/routes/render.ts", "packages/rex/src/server/node.test.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/server/telemetry.test.ts", "packages/rex/src/server/adapters/adapters.test.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/client/form.test.tsx", "packages/rex/src/core/protocol.test.ts", "packages/rex/src/client/interop/interop.test.tsx", "packages/rex/src/client/devtools", "packages/rex/src/client/compiler.test.tsx", "packages/rex/src/vite/compiler.ts", "packages/rex/src/vite/compiler.test.ts", "packages/rex/vitest.config.ts"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server src/client src/core/protocol.test.ts src/vite/compiler.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 75
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.7.12]
+title = "The CLI, manifest, Vite and checker suites are green on the integrated branch"
+status = "pending"
+mode = "BUILD"
+wave = 7
+requires = ["7.8", "7.10"]
+reqs = ["13.2", "1.1", "4.1", "23.1"]
+do_1 = "The full package suite on the integrated branch (revision 955fbf9) shows these failures outside the server and client; make each one pass without weakening a check: cli.test.ts (4) runs the CLI as a plain node process and gets exit 1, so whatever the CLI entry imports that plain Node cannot load (a .tsx chain or a missing built file) is fixed at its source or the test builds what it needs first; scan.test.ts (4) scans temp apps whose imports of zod/mini cannot be resolved because the temp app has no node_modules, so the module loader in cli/load.ts resolves the framework's peer dependencies from the rex package when the app cannot, and the stale child-process expectation follows the 0.8 scanner; vite.test.ts (3) expects the rex:app export list without the config export that 7.5 added, and the devtools bundling case times out, so the expectations follow the merged module and the timeout gets a stated bound; frame.test.ts (1), check/rules/i18n.test.ts (1) and migrate.test.ts (1, the migrated 0.1 fixture reads z from the core entry that no longer exports it, so the 0.2 codemod rewrites that import) follow the merged code."
+do_2 = "Any failure of commands.test.ts, new.test.ts or designx.test.ts still present after 7.10 (format/prettier findings on generated apps) is fixed in the generator templates, never by filtering the findings."
+touches = ["packages/rex/src/cli/cli.test.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/cli/frame.test.ts", "packages/rex/src/cli/migrate.test.ts", "packages/rex/src/cli/codemods", "packages/rex/src/cli/templates.ts", "packages/rex/src/manifest/scan.ts", "packages/rex/src/manifest/scan.test.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/check/rules/i18n.test.ts", "packages/rex/src/cli/commands.test.ts", "packages/rex/src/cli/new.test.ts", "packages/rex/src/cli/designx.test.ts"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/cli src/manifest src/vite src/check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 75
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.9.1]
+title = "Screen classification, fluid tokens, container-driven layout and screen-aware overlays in the runtime"
+status = "pending"
+mode = "BUILD"
+wave = 9
+requires = ["7.9", "7.11"]
+reqs = ["37.1", "37.2", "37.3"]
+do_1 = "client/screen.ts classifies the screen (phone under 600 px, tablet under 1024, desktop under 1600, wide), the pointer (matchMedia pointer: coarse) and the density (comfortable by default, compact when the app or the user asks, agent when the agent density is requested) and keeps data-rex-screen, data-rex-pointer and data-rex-density current on the document root through matchMedia and ResizeObserver; useScreen() exposes them and the sidecar carries screen, pointer and density; server/ssr.ts writes the initial root attributes from Sec-CH-UA-Mobile and Sec-CH-Viewport-Width with a user-agent fallback and sends Accept-CH, and the node, bun, deno and edge adapters pass those headers through."
+do_2 = "client/tokens.css becomes fluid: --rex-text-1 to --rex-text-6 and --rex-space-1 to --rex-space-8 are clamp() ranges keyed by data-rex-screen and scaled by data-rex-density, controls get min-block-size and min-inline-size 44px under data-rex-pointer coarse (density.css keeps its agent rules), and client/layout.tsx makes Page.Grid a container (container-type inline-size) whose columns collapse at container widths rather than viewport widths and Page.Stack spacing follow the density scale; no component declares a pixel width."
+do_3 = "Overlays and navigation choose their form by screen: the overlay host renders the shell Sheet slot with a form prop (dialog on desktop and tablet, bottom-sheet on phone) and the default token-styled Sheet honours it, the shell gains a Nav slot with a form prop (sidebar on desktop, dock on phone) that the derived shell renders from the manifest's pages, and both keep their data-rex addresses, declared dismissal and sidecar entries on every screen; client/screen.test.tsx, layout.test.tsx, the overlay and shell tests and server/ssr.test.tsx prove each claim against happy-dom with matchMedia stubs that are part of the test, and docs/agent-contract.md documents the new sidecar fields."
+touches = ["packages/rex/src/client/screen.ts", "packages/rex/src/client/screen.test.tsx", "packages/rex/src/client/tokens.css", "packages/rex/src/client/agent/density.css", "packages/rex/src/client/agent/density.ts", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/layout.tsx", "packages/rex/src/client/layout.test.tsx", "packages/rex/src/client/shell", "packages/rex/src/client/shell.tsx", "packages/rex/src/client/shell.test.tsx", "packages/rex/src/client/overlay.tsx", "packages/rex/src/client/overlay.test.tsx", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/adapters", "packages/rex/src/manifest/sidecar.schema.ts", "packages/rex/src/manifest/types.ts", "docs/agent-contract.md"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/client src/server/ssr.test.tsx src/server/adapters src/manifest"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 75
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.9.2]
+title = "rex/designx: the standard map and set, installed and generated by rex new"
+status = "pending"
+mode = "BUILD"
+wave = 9
+requires = ["7.8", "7.12", "9.1"]
+reqs = ["38.1", "29.1", "29.2"]
+do_1 = "src/designx/index.ts, exported as rex/designx, holds the surface-to-registry map and the standard set named in [decision] designx_standard, typed so a surface resolves to one registry item per screen form; cli/designx.ts installs the standard set (registry:ui, hook and lib items with their registryDependencies, resolved from https://dxuireact.com/r) instead of the 0.2 base set, and the designx test proves every item of the standard set resolves and installs into a fresh app that passes rex check."
+do_2 = "rex new --ui designx generates app/components/Shell.tsx mapping every shell slot (Button, Sheet with its dialog and bottom-sheet forms, PaletteItem, Outcome, Nav with its sidebar and dock forms) to the installed primitives, states.tsx rendering loading on skeleton, empty on empty, the error states on alert and stale and offline on badge, a first region built on card, field, input and button, and app/components/ui/use-screen.ts re-exporting useScreen from rex/client so apps never install use-mobile; new.test.ts proves the generated app passes rex check with zero findings and renders each state; docs/recipes/designx.md documents the map and docs/primitives.md the shell slots."
+touches = ["packages/rex/src/designx", "packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "packages/rex/src/cli/gen/designx.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/new.test.ts", "packages/rex/src/cli/fixtures", "docs/recipes/designx.md", "docs/primitives.md"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/designx src/cli/designx.test.ts src/cli/new.test.ts src/cli/commands.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 75
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.9.3]
+title = "Checker rules for the standard: ui/designx-primitive, layout/fixed-size and layout/touch-target"
+status = "pending"
+mode = "BUILD"
+wave = 9
+requires = ["7.12", "9.2"]
+reqs = ["38.2", "38.3", "22.1"]
+do_1 = "check/rules/ui.ts reports ui/designx-primitive for a raw button, input, select, textarea, table or dialog JSX element in a region, part or overlay of an app whose rex.config ui.kit is designx, with a fix hint naming the primitive from the rex/designx map; check/rules/layout.ts reports layout/fixed-size for width, height, min-width or min-height declared in pixels on a part (style props, Tailwind arbitrary values and CSS module literals in scope) and layout/touch-target for a control with a declared height or min-height under 44 px; both are registered in check/rules/index.ts after the format rule with pass and fail fixtures, listed in the rex/eslint plugin's LINT_RULE_IDS, and the rule-order and combined-fixture expectations in check.test.ts follow."
+do_2 = "docs/convention.md gains the screen-fit contract and the three rules with their hints, and docs/errors.md gains their codes through the catalog."
+touches = ["packages/rex/src/check/rules/ui.ts", "packages/rex/src/check/rules/ui.test.ts", "packages/rex/src/check/rules/layout.ts", "packages/rex/src/check/rules/layout.test.ts", "packages/rex/src/check/fixtures", "packages/rex/src/check/check.test.ts", "packages/rex/src/eslint", "packages/rex/src/core/errors.ts", "packages/rex/src/core/errors.docs.ts", "docs/convention.md", "docs/errors.md"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/check src/eslint && node tools/docs-errors.mjs --check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 60
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.9.4]
+title = "The demo on the standard: DesignX in every region, part, overlay and state, screen-fit walked on phone, tablet and desktop"
+status = "pending"
+mode = "BUILD"
+wave = 9
+requires = ["6.2", "6.3", "9.2", "9.3"]
+reqs = ["37.4", "38.1", "35.1"]
+do_1 = "Every demo region, part, overlay and state uses the installed DesignX primitives per the rex/designx map (holdings on data-table on desktop and a card list on phone, the send form on form, field, number-field and button, the confirm overlay on the dialog or bottom-sheet form, the states on skeleton, empty and alert, the shell Nav on sidebar and dock) with no raw button, input, select, table or dialog left, no pixel width on a part, and rex check reporting zero findings under the new rules; regenerate .rex/manifest.json and AGENTS.md."
+do_2 = "examples/demo/playwright.config.ts gains phone (a 390 px coarse-pointer device), tablet (820 px) and desktop (1440 px) projects; e2e/screen-fit.spec.ts asserts on each project no horizontal overflow on any page, every data-rex control at least 44 px tall on the phone project, the overlay form (bottom sheet on phone, dialog elsewhere) and the navigation form (dock on phone, sidebar on desktop) with their data-rex addresses present in the sidecar; the operability walk, axe and vitals run on all three projects, the demo test script includes screen-fit, and the CHANGELOG 0.2.0 entry gains the screen-fit and DesignX standard lines."
+touches = ["examples/demo", "CHANGELOG.md"]
+verify_cmd = "pnpm -C examples/demo exec rex check && pnpm -C examples/demo test"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 90
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."

@@ -5,7 +5,8 @@ import * as z from "zod/mini";
 import { action } from "../core/action.ts";
 import { actor, anonymousActor, type Actor } from "../core/actor.ts";
 import { always, can, never } from "../core/policy.ts";
-import { boolean, integer, money, text, toJsonSchema } from "../core/schema.ts";
+import { boolean, integer, money, text } from "../schema/index.ts";
+import { toJsonSchema } from "../manifest/json-schema.ts";
 import {
   ACTION_FIELD,
   CONFIRM_FIELD,

@@ -34,7 +34,7 @@ new RexAppScanError(message): RexAppScanError;
 
 ###### Overrides
 
-[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-4)
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
 
@@ -118,6 +118,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -148,6 +151,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -155,7 +160,7 @@ readonly code:
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-4)
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
 
 <a id="column"></a>
 

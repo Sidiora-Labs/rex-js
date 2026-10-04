@@ -6,12 +6,13 @@ import type { AnyPage, PageRender } from "../core/page.ts";
 import { predicateToJson, type AnyPolicy } from "../core/policy.ts";
 import { compareIds } from "../core/registry.ts";
 import {
-  objectJsonSchema,
+  STANDARD_VENDOR_KEY,
+  acceptsSync,
   refTarget,
-  toJsonSchema,
   type JsonSchema,
 } from "../core/schema.ts";
-import { standardSource, type ZodSchemaLike } from "../core/standard.ts";
+import type { StandardSchemaV1 } from "../core/standard.ts";
+import { objectJsonSchema, standardJsonSchema, standardVendorOf } from "./json-schema.ts";
 import {
   MANIFEST_VERSION,
   type FlowSource,
@@ -53,21 +54,21 @@ function unrepresentable(subject: string, problem: string): RexError {
 }
 
 export function declaredJsonSchema(
-  schema: ZodSchemaLike,
+  schema: StandardSchemaV1,
   override: JsonSchema | null,
   io: "input" | "output",
   subject: string,
 ): JsonSchema {
   if (override !== null) return override;
-  const source = standardSource(schema);
-  if (source !== null) {
+  const vendor = standardVendorOf(schema);
+  if (vendor !== null) {
     throw unrepresentable(
       subject,
-      `is a ${source["~standard"].vendor} Standard Schema; declare jsonSchema.${io} on the declaration`,
+      `is a ${vendor} Standard Schema; declare jsonSchema.${io} on the declaration`,
     );
   }
   try {
-    return toJsonSchema(schema, io);
+    return standardJsonSchema(schema, io);
   } catch (error) {
     throw unrepresentable(
       subject,
@@ -94,10 +95,25 @@ function entityManifest(declared: AnyEntity): ManifestEntity {
     fields: Object.entries(declared.fields).map(([name, schema]) => ({
       name,
       kind: declared.fieldKinds[name] ?? null,
-      ref: refTarget(schema as ZodSchemaLike) ?? null,
-      required: !(schema as ZodSchemaLike).safeParse(undefined).success,
+      ref: refTarget(schema) ?? null,
+      required: !acceptsSync(schema, undefined),
     })),
     schema: entityJsonSchema(declared),
+  };
+}
+
+function pageParamsJsonSchema(declared: AnyPage): JsonSchema {
+  const vendor = standardVendorOf(declared.params);
+  if (vendor === null) {
+    return declaredJsonSchema(declared.params, null, "input", `page "${declared.id}" params`);
+  }
+  return {
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    type: "object",
+    properties: Object.fromEntries(declared.routeParams.map((name) => [name, { type: "string" }])),
+    ...(declared.routeParams.length > 0 ? { required: [...declared.routeParams] } : {}),
+    additionalProperties: {},
+    [STANDARD_VENDOR_KEY]: vendor,
   };
 }
 
@@ -130,7 +146,7 @@ function pageManifest(declared: AnyPage, render: PageRender): ManifestPage {
     id: declared.id,
     route: declared.route,
     routeParams: [...declared.routeParams],
-    params: declaredJsonSchema(declared.params, null, "input", `page "${declared.id}" params`),
+    params: pageParamsJsonSchema(declared),
     policy: predicateToJson(declared.policy),
     recovery: declared.recovery,
     draft: declared.draft,
@@ -143,6 +159,7 @@ function pageManifest(declared: AnyPage, render: PageRender): ManifestPage {
         name: loader.name,
         action: loader.action.id,
         input: loader.input === null ? ("params" as const) : ("mapped" as const),
+        invalidatedBy: [...loader.invalidatedBy].sort(),
       })),
     cache: declared.cache === null ? null : { ...declared.cache },
     transition: declared.transition,
@@ -205,11 +222,13 @@ export function buildManifest(
       }
     }
     for (const loader of declared.loaders) {
-      if (!actionIds.has(loader.action.id)) {
-        throw new RexError(
-          "REX209",
-          `buildManifest: page "${declared.id}" loader "${loader.name}" names action "${loader.action.id}" that is not registered`,
-        );
+      for (const named of [loader.action.id, ...loader.invalidatedBy]) {
+        if (!actionIds.has(named)) {
+          throw new RexError(
+            "REX209",
+            `buildManifest: page "${declared.id}" loader "${loader.name}" names action "${named}" that is not registered`,
+          );
+        }
       }
     }
     for (const [field, target] of [

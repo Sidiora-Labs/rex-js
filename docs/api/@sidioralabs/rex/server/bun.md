@@ -38,7 +38,7 @@ new RuntimeMissingError(runtime, entry): RuntimeMissingError;
 
 ###### Overrides
 
-[`RexError`](../../rex.md#rexerror).[`constructor`](../../rex.md#constructor-4)
+[`RexError`](../../rex.md#rexerror).[`constructor`](../../rex.md#constructor-3)
 
 #### Properties
 
@@ -52,7 +52,7 @@ readonly code: "REX450" = RUNTIME_MISSING_CODE;
 
 ###### Overrides
 
-[`RexError`](../../rex.md#rexerror).[`code`](../../rex.md#code-4)
+[`RexError`](../../rex.md#rexerror).[`code`](../../rex.md#code-3)
 
 <a id="column"></a>
 
