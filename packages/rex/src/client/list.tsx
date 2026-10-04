@@ -1,8 +1,9 @@
-import { useLayoutEffect, useRef, type MouseEvent, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useLocation, useSearch } from "wouter";
 import { RexError } from "../core/errors.ts";
 import { validateName } from "../core/ids.ts";
 import { isReservedQueryKey } from "../core/protocol.ts";
+import { lazyModule, useLazyModule } from "./lazy.ts";
 import { useActivePage } from "./router.tsx";
 
 export const LIST_PAGE_PARAM = "page";
@@ -41,6 +42,23 @@ export interface ListProps<T> {
   readonly moreLabel?: string;
   readonly params?: Partial<ListParamNames>;
 }
+
+export interface ListViewProps<T> {
+  readonly address: string;
+  readonly window: ListWindow;
+  readonly items: readonly T[];
+  readonly itemKey: (item: T, index: number) => string;
+  readonly children: (item: T, index: number) => ReactNode;
+  readonly label: string | undefined;
+  readonly empty: ReactNode;
+  readonly moreLabel: string;
+  readonly href: string;
+  readonly navigate: (href: string) => void;
+}
+
+const listView = lazyModule("rex.list", "the list window", () =>
+  import("./list-view.tsx").then((loaded) => loaded.ListView),
+);
 
 const POSITIVE_INTEGER = /^[1-9][0-9]*$/;
 
@@ -121,17 +139,6 @@ export function listSearch(search: string, names: ListParamNames, params: ListPa
   return query.toString();
 }
 
-function plainPrimaryClick(event: MouseEvent<HTMLAnchorElement>): boolean {
-  return (
-    !event.defaultPrevented &&
-    event.button === 0 &&
-    !event.metaKey &&
-    !event.ctrlKey &&
-    !event.shiftKey &&
-    !event.altKey
-  );
-}
-
 export function List<T>({
   name,
   items,
@@ -150,60 +157,28 @@ export function List<T>({
   const [location, navigate] = useLocation();
   const search = useSearch();
   const current = listWindow(items.length, readListParams(search, size, names));
-  const listRef = useRef<HTMLUListElement>(null);
-  const focusFrom = useRef<number | null>(null);
-
-  useLayoutEffect(() => {
-    const from = focusFrom.current;
-    const element = listRef.current;
-    if (from === null || element === null) return;
-    focusFrom.current = null;
-    const target = element.children.item(from);
-    if (target instanceof HTMLElement) target.focus();
-  }, [current.shown]);
+  const view = useLazyModule(listView);
 
   if (typeof itemKey !== "function" || typeof children !== "function") {
     throw new RexError("REX314", "Page.List: itemKey and children must be functions of the item");
   }
-
-  const state = {
-    "data-rex-list": address,
-    "data-rex-list-page": current.page,
-    "data-rex-list-size": current.size,
-    "data-rex-list-shown": current.shown,
-    "data-rex-list-total": current.total,
-  };
-
-  if (items.length === 0) {
-    return <div {...state}>{empty ?? <p>{LIST_EMPTY_TEXT}</p>}</div>;
-  }
-
+  if (view === null || !view.ok) return null;
+  const ListWindowView = view.value;
   const nextSearch = listSearch(search, names, { page: current.page + 1, size: current.size });
-  const href = `${location}?${nextSearch}`;
-  const loadMore = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (!plainPrimaryClick(event)) return;
-    event.preventDefault();
-    focusFrom.current = current.shown;
-    navigate(href);
-  };
 
   return (
-    <div {...state}>
-      <ul ref={listRef} aria-label={label}>
-        {items.slice(0, current.shown).map((item, index) => (
-          <li key={itemKey(item, index)} tabIndex={-1}>
-            {children(item, index)}
-          </li>
-        ))}
-      </ul>
-      <p role="status" aria-live="polite">
-        {`Showing ${current.shown} of ${current.total}`}
-      </p>
-      {current.hasMore ? (
-        <a href={href} data-rex-list-more={address} onClick={loadMore}>
-          {moreLabel}
-        </a>
-      ) : null}
-    </div>
+    <ListWindowView
+      address={address}
+      window={current}
+      items={items}
+      itemKey={itemKey}
+      label={label}
+      empty={empty ?? <p>{LIST_EMPTY_TEXT}</p>}
+      moreLabel={moreLabel}
+      href={`${location}?${nextSearch}`}
+      navigate={navigate}
+    >
+      {children}
+    </ListWindowView>
   );
 }

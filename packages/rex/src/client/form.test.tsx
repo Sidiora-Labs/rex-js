@@ -99,7 +99,7 @@ interface Mounted {
   readonly history: readonly string[];
 }
 
-function mount(csrf: string | null = null): Mounted {
+async function mount(csrf: string | null = null): Promise<Mounted> {
   const ledger = memoryLedger();
   const app = createTestApp({ registry, manifest, pages }, { actor: owner, server: { ledger } });
   const fetch: RexFetch = testServer(app).fetch;
@@ -130,6 +130,7 @@ function mount(csrf: string | null = null): Mounted {
       <CsrfTokenContext.Provider value={csrf}>{shell}</CsrfTokenContext.Provider>
     ),
   );
+  await screen.findByRole("form", { name: "Transfer" });
   return { ledger, store, history: memory.history ?? [] };
 }
 
@@ -168,8 +169,8 @@ afterEach(() => {
 });
 
 describe("ActionForm", () => {
-  it("renders a real form posting to the form route with CSRF, action and schema fields", () => {
-    mount();
+  it("renders a real form posting to the form route with CSRF, action and schema fields", async () => {
+    await mount();
     const transferForm = form("Transfer");
     expect(transferForm.getAttribute("method")).toBe("post");
     expect(transferForm.getAttribute("action")).toBe("/rex/form/transfer");
@@ -221,14 +222,14 @@ describe("ActionForm", () => {
     expect(button.getAttribute("data-rex-allowed")).toBe("true");
   });
 
-  it("uses a CSRF token provided by the server render instead of minting one", () => {
-    mount("server-token");
+  it("uses a CSRF token provided by the server render instead of minting one", async () => {
+    await mount("server-token");
     expect(named(form("Transfer"), CSRF_FIELD).value).toBe("server-token");
     expect(readCookie(CSRF_COOKIE, document.cookie)).toBeNull();
   });
 
   it("intercepts the submit with JavaScript and runs the action over RPC", async () => {
-    const { ledger, history } = mount();
+    const { ledger, history } = await mount();
     const transferForm = form("Transfer");
     fill(transferForm, { amount: "12.50", count: "3", tier: "priority", "to.name": "Ada" });
     fireEvent.click(named(transferForm, "express"));
@@ -253,7 +254,7 @@ describe("ActionForm", () => {
   });
 
   it("asks for confirmation before running an irreversible action from its form", async () => {
-    const { ledger } = mount();
+    const { ledger } = await mount();
     const wipeForm = form("Wipe");
     fill(wipeForm, { reason: "cleanup" });
     await submit(wipeForm);
@@ -269,7 +270,7 @@ describe("ActionForm", () => {
   });
 
   it("shows field errors next to the fields when the input fails the schema", async () => {
-    const { ledger } = mount();
+    const { ledger } = await mount();
     const transferForm = form("Transfer");
     fill(transferForm, { amount: "12,5", count: "2", tier: "basic", "to.name": "" });
     await submit(transferForm);
@@ -312,7 +313,7 @@ describe("ActionForm", () => {
         _form: ["check the form"],
       },
     })}; Path=/`;
-    const { store } = mount();
+    const { store } = await mount();
     const transferForm = form("Transfer");
     await waitFor(() =>
       expect(
@@ -351,13 +352,13 @@ describe("ActionForm", () => {
       code: null,
       fields: {},
     })}; Path=/`;
-    mount();
+    await mount();
     await waitFor(() => expect(outcomeText()).toContain("Wipe: Succeeded"));
     expect(readCookie(OUTCOME_COOKIE, document.cookie)).toBeNull();
     cleanup();
 
     document.cookie = `${OUTCOME_COOKIE}=${encodeURIComponent("{not json")}; Path=/`;
-    mount();
+    await mount();
     await waitFor(() => expect(readCookie(OUTCOME_COOKIE, document.cookie)).toBeNull());
     expect(outcomeText()).toBe("No action has run on this page yet.");
     const malformed = { actionId: "wipe", ok: "yes" };
