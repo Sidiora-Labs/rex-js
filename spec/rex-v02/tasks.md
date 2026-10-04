@@ -192,7 +192,7 @@
   - [ ] 5.7 Convert the remaining server, client and Vite errors to catalogued codes
     - Convert every throw in server/, client/, vite/, check/ and cli/commands to RexError with a catalogued code, adding codes to core/errors.ts where missing, and regenerate docs/errors.md; the test asserts no bare Error throw remains in those directories by scanning the sources.
     - _Requirements: 13.1_
-  - [ ] 5.8 Audit records for flow decisions
+  - [x] 5.8 Audit records for flow decisions
     - Make server/flow.ts write an audit record for every approval decision with the gate id and the decision; extend server/flow.test.ts and client/agent/flow.test.tsx.
     - _Requirements: 33.2_
   - [x] 5.9 rex check --runtime: sidecar and DOM parity without a browser

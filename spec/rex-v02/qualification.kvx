@@ -95,3 +95,11 @@ symbol = "entityManifest (z.ZodType casts), entity schema test (z.ZodObject), se
 observed = "With the core z now zod/mini, files outside the 0.8 touches still use classic-only z members: build.ts lines 103-104 cast to z.ZodType (TS2694, fails tsc in pnpm build, the rex new check in new.test.ts and the demo typecheck), entity.test.ts line 74 asserts toBeInstanceOf(z.ZodObject), and the two demo hooks call z.string().max (TS2339 in rex check); evidence: revision a6f6eda, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0.8-private/logs/0.8-typecheck.log; command node packages/rex/src/cli/index.ts check in examples/demo, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0.8-private/logs/0.8-demo-check.log."
 assumption = "A follow-up owning those files casts to ZodSchemaLike in build.ts, asserts zm.ZodMiniObject in entity.test.ts and writes z.string().check(z.maxLength(n)) in the demo hooks; with that the demo checker is green (the regenerated manifest already passes the manifest rule)."
 severity = "blocker"
+
+[qualification.581]
+task = "5.8"
+file = "packages/rex/src/core/serialize.test.ts"
+symbol = "serialize sidecar source test (line 81)"
+observed = "The single typecheck reports TS2345 in serialize.test.ts line 81 (SidecarSource now requires manifest) beside the build.ts and entity.test.ts errors already in qualification.082; no error is in the 5.8 touches; evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.8-private/logs/5.8-typecheck.log."
+assumption = "A follow-up owning core/serialize.test.ts passes the manifest in its sidecar source as 0.8 made SidecarSource require it; the 5.8 verify_cmd passes with exit 0."
+severity = "minor"
