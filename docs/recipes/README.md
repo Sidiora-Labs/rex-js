@@ -12,5 +12,6 @@ Each recipe solves one task with the pattern Rex already has for it. They assume
 | [Translate an app](i18n.md) | `app/locales`, `msg:` keys, `useT`, locale resolution and prefixed routes |
 | [Export a part as a web component](web-component.md) | `defineElement`, attribute props, `Native` |
 | [Adopt Rex one page at a time](incremental-adoption.md) | the Vite plugin in an existing app and `mountRexPage` |
+| [Build on the DesignX standard](designx.md) | `@sidioralabs/rex/designx`, the surface-to-item map, what `rex new --ui designx` installs and generates, the token rules |
 
 Every recipe ends with the checker rules that guard it. Run `rex check` after each change; it prints the rule id, the file and line, and a hint.

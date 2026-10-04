@@ -20,9 +20,18 @@ export const loadWallet = action("load-wallet", {
   input: z.object({}),
   output: z.object({
     account: z.object(account.fields),
-    tokens: z.array(z.object({ ...token.fields, valueUsd: money(), dust: boolean() })),
+    tokens: z.array(
+      z.object({
+        ...token.fields,
+        valueUsd: money(),
+        dust: boolean(),
+        change24hPct: z.string(),
+      }),
+    ),
     contacts: z.array(z.object(contact.fields)),
     totalUsd: money(),
+    change24hUsd: z.string(),
+    change24hPct: z.string(),
   }),
   policy: viewer.can("viewer.read"),
   effect: "read",
@@ -33,7 +42,7 @@ export const loadWallet = action("load-wallet", {
 
 ## 2. Declare the loader on the page
 
-`load` maps camelCase loader names to read actions. When the action needs input from the route params, give `{ action, input }`, where `input` maps the validated params to the action input:
+`load` maps camelCase loader names to read actions. `load` values are a read action or `{ action, input, invalidatedBy }`: when the action needs input from the route params, give `{ action, input }`, where `input` maps the validated params to the action input; `invalidatedBy` lists mutating action ids that refetch the loader, the reverse of `invalidates`, and `input` may be left out when `invalidatedBy` is given:
 
 ```ts
 import { page } from "@sidioralabs/rex";
@@ -56,7 +65,7 @@ export default page("token", {
 });
 ```
 
-`page()` validates the declaration and throws a `RexDeclarationError` with code `REX203` when a loader name is not camelCase, when a value is neither an action nor `{ action, input }`, or when the action's effect is not `read`; `cache.staleTime` (milliseconds) is validated as `REX204`. The manifest lists each loader under the page as `{ name, action, input }`, where `input` is `"params"` for a bare action and `"mapped"` for `{ action, input }`.
+`page()` validates the declaration and throws a `RexDeclarationError` with code `REX203` when a loader name is not camelCase, when a value is neither an action nor `{ action, input, invalidatedBy }`, or when the action's effect is not `read`; `cache.staleTime` (milliseconds) is validated as `REX204`. The manifest lists each loader under the page as `{ name, action, input }`, where `input` is `"params"` for a bare action and `"mapped"` for `{ action, input }`.
 
 In the demo, the portfolio and send pages declare `load: { wallet: loadWallet }` (`examples/demo/app/pages/portfolio/page.ts` and `examples/demo/app/pages/send/page.ts`), and the embed page declares `load: { tokens: listTokens }` (`examples/demo/app/pages/embed/page.ts`).
 
@@ -95,7 +104,7 @@ Every consumer of the same loader with the same input shares one query: the key 
 - **Build time.** For a page with `render: "ssg"` or `render: "static"`, `rex build` runs the page's loaders while it prerenders the page, through the same action router as a server render, as the anonymous build actor, so policy, validation and audit apply. An `ssg` page carries the results in its `<script type="application/rex+data">` and hydrates them like a server-rendered page; a `static` page keeps only the rendered HTML, since it ships no JavaScript. When an `ssg` page with `revalidate` is regenerated, its loaders run again.
 - **Client navigation.** On a client-side route change the loaders run as RPC calls to `/rex/rpc`.
 - **Data states.** A page's loaders feed its data state with the same precedence as any other query: a pending loader without data is `loading`; a failed loader without data is `terminal-error` when the action failed with a 4xx status other than 408, 425 or 429 (for example `NOT_FOUND`), and `recoverable-error` otherwise; a mix of succeeded and missing loaders is `partial`. The `RecoverableError` state's `retry` refetches them. Failures arrive as `RexLoaderError` with `page`, `loader`, `code`, `status` and `message`.
-- **Invalidation.** A mutating action refetches every loader it names in `invalidates`, either by loader name or by the loader's read action id:
+- **Invalidation.** A mutating action refetches every loader it names in `invalidates`, either by loader name or by the loader's read action id, and every loader that lists the action's id in its `invalidatedBy`:
 
 ```ts
 export const send = action("send", {

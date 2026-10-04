@@ -64,7 +64,7 @@ For a Rex widget inside a Next.js page, export the part with `defineElement`, bu
 
 ## Upgrading from 0.1 to 0.2
 
-Rex 0.2 keeps every 0.1 concept: the six primitives, the page folder convention, the nine data states, the agent contract and one DOM. The breaking changes are mechanical and three codemods apply them.
+Rex 0.2 keeps every 0.1 concept: the six primitives, the page folder convention, the nine data states, the agent contract and one DOM. The breaking changes are mechanical and four codemods apply them.
 
 ### 1. Update the packages
 
@@ -90,7 +90,8 @@ rex migrate
 | --- | --- |
 | `0.1-config` | Wraps the bare server default export of `rex.config.ts` in `defineConfig({ app, server: (app) => ... })`. A 0.1 config still works in 0.2 but warns `REX101` once. |
 | `0.1-page-render` | Adds `render: "csr"` to pages that read browser globals (`window`, `document`, `localStorage` and others) while rendering, because 0.2 renders pages on the server by default. Other pages take the new default. |
-| `0.1-raw-img` | Converts `<img>` in regions and parts to `<Img>` from `@sidioralabs/rex/client`, which requires `width` and `height`. |
+| `0.1-raw-img` | Converts `<img>` in regions and parts to `<Img>` from `@sidioralabs/rex/client/media`, which requires `width` and `height`. |
+| `0.1-schema-entry` | Rewrites imports for the 0.2 entry split: `z` to `zod/mini`; the field helpers (`id`, `text`, `money`, ...) and `MONEY_PATTERN` to `@sidioralabs/rex/schema`; `defineConfig` and the config types to `@sidioralabs/rex/config`; `buildManifest`, the JSON Schema and sidecar names to `@sidioralabs/rex/manifest`; `defineElement`, `mountRexPage`, `Native` to `@sidioralabs/rex/client/interop`; `Img`, `Script`, `MediaProvider` to `@sidioralabs/rex/client/media`; `useT`, `useLocale`, `t`, the formatter and locale helpers to `@sidioralabs/rex/client/i18n`. |
 
 The report lists every changed file. Codemods are idempotent; a second run reports `no changes`. The details of each codemod are in [versioning.md](versioning.md#01-codemods).
 
