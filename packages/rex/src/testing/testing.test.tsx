@@ -14,6 +14,7 @@ import {
   renderPage,
   renderRegion,
   setupRexTesting,
+  testOrigin,
   testServer,
   type RexRenderResult,
 } from "./index.ts";
@@ -106,6 +107,61 @@ describe("testServer", () => {
     expect(records.map((record) => [record.actionId, record.outcome])).toEqual([
       ["add-note", "FORBIDDEN"],
     ]);
+  });
+});
+
+describe("Origin", () => {
+  const FOREIGN_ORIGIN = "https://foreign.example";
+
+  function postAddNote(title: string, headers: Record<string, string> = {}): RequestInit {
+    return {
+      method: "POST",
+      headers: { "content-type": "application/json", ...headers },
+      body: JSON.stringify({ json: { title } }),
+    };
+  }
+
+  it("sends the test app origin on posts so the security middleware admits them", async () => {
+    const app = createTestApp(notesApp, { actor: writer });
+    const server = testServer(app);
+    expect(testOrigin(app)).toBe("http://rex.test");
+
+    const admitted = await server.fetch("/rex/rpc/add-note", postAddNote("Same origin"));
+    expect(admitted.status).toBe(200);
+    const output = (await admitted.json()) as { json: unknown };
+    expect(output.json).toEqual({ id: "n3", title: "Same origin" });
+
+    const explicit = await server.fetch(
+      "/rex/rpc/add-note",
+      postAddNote("Explicit origin", { origin: testOrigin(app) }),
+    );
+    expect(explicit.status).toBe(200);
+    expect(listRecords().map((record) => record.title)).toEqual([
+      ...SEED_NOTES.map((record) => record.title),
+      "Same origin",
+      "Explicit origin",
+    ]);
+    const records = await server.ledger.list();
+    expect(records.map((record) => [record.actionId, record.outcome])).toEqual([
+      ["add-note", "ok"],
+      ["add-note", "ok"],
+    ]);
+  });
+
+  it("rejects a post from a foreign Origin before the action runs", async () => {
+    const app = createTestApp(notesApp, { actor: writer });
+    const server = testServer(app);
+
+    const refused = await server.fetch(
+      "/rex/rpc/add-note",
+      postAddNote("Cross origin", { origin: FOREIGN_ORIGIN }),
+    );
+    expect(refused.status).toBe(403);
+    const body = (await refused.json()) as { code: string; message: string };
+    expect(body.code).toBe("FORBIDDEN");
+    expect(body.message).toContain(`Origin ${FOREIGN_ORIGIN}`);
+    expect(listRecords()).toEqual(SEED_NOTES);
+    expect(await server.ledger.list()).toEqual([]);
   });
 });
 
@@ -229,6 +285,7 @@ describe("readSidecar", () => {
   it("reports the actor's policy and fails without exactly one sidecar", async () => {
     const app = createTestApp(notesApp, { actor: reader });
     const view = await renderPage(app, "notes");
+    await waitFor(() => expect(noteTitles(view)).toEqual(["Buy milk", "Call Ada"]));
     const [entry] = readSidecar(view.container).actions;
     expect(entry?.id).toBe("add-note");
     expect(entry?.allowed).toBe(false);

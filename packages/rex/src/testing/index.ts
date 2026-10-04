@@ -41,6 +41,7 @@ import { AgentOutcome } from "../client/shell.tsx";
 import { memoryLedger, type Ledger } from "../server/audit.ts";
 import { createRexServer } from "../server/app.ts";
 import { isRexDensity, type RexDensity } from "../server/context.ts";
+import { ORIGIN_HEADER } from "../server/middleware/security.ts";
 
 export const TEST_BASE_URL = "http://rex.test";
 export const ACCEPT_LANGUAGE_HEADER = "accept-language";
@@ -169,11 +170,28 @@ function toRequest(app: TestApp, input: string | URL | Request, init?: RequestIn
   return new Request(new URL(String(input), app.baseUrl), init);
 }
 
+const ORIGINLESS_METHODS: ReadonlySet<string> = new Set(["GET", "HEAD"]);
+
+export function testOrigin(app: TestApp): string {
+  return new URL(app.baseUrl).origin;
+}
+
+function restoreGivenHeaders(request: Request, init: RequestInit | undefined): void {
+  if (init?.headers === undefined) return;
+  for (const [name, value] of new Headers(init.headers)) {
+    if (request.headers.get(name) !== value) request.headers.set(name, value);
+  }
+}
+
 function serverFetch(app: TestApp, headers: Readonly<Record<string, string>> = {}): TestFetch {
   return async (input, init) => {
     const request = toRequest(app, input, init);
+    restoreGivenHeaders(request, init);
     for (const [name, value] of Object.entries(headers)) {
       if (!request.headers.has(name)) request.headers.set(name, value);
+    }
+    if (!ORIGINLESS_METHODS.has(request.method) && !request.headers.has(ORIGIN_HEADER)) {
+      request.headers.set(ORIGIN_HEADER, testOrigin(app));
     }
     return app.server.fetch(request);
   };
