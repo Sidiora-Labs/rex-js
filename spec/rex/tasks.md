@@ -129,7 +129,7 @@
     - Implement src/check/rules/boundaries.ts encoding the import table from [design] import_table by file role, the cross-page import ban, and the no-direct-fetch rule for component roles; each finding names the offending import and the allowed alternatives.
     - Create pass and fail fixtures under src/check/fixtures/boundaries and write src/check/rules/boundaries.test.ts asserting zero findings on pass and one named finding per violation on fail.
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
-  - [ ] 3.3 Implement the parity and states rules
+  - [x] 3.3 Implement the parity and states rules
     - Implement src/check/rules/parity.ts: regions declared in page.ts match regions folders, overlays declared match overlays files, every action declared on the page is referenced by at least one of its regions, and no region references an action the page does not declare.
     - Implement src/check/rules/states.ts: states.tsx exports one component per declared state, no extra exports, and view.tsx has a default export.
     - Create pass and fail fixtures and write src/check/rules/parity.test.ts covering each mismatch direction.

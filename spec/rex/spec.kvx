@@ -660,7 +660,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.3]
 title = "Implement the parity and states rules"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["3.1"]
