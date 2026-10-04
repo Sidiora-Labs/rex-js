@@ -103,3 +103,11 @@ symbol = "RexSidecar, Shell, OverlayRegistry, AffordanceRegistry"
 observed = "RexSidecar renders inside the Shell outcome slot (Shell pages outcome prop) because shell.tsx is outside the 5.2 touches; sidecar.tsx also owns the overlay registry used by 5.6 and an affordance registry that 5.7 flow gates use to add approve and reject entries; evidence: revision 6863e76d296aa5ab72ebbfc087a284d8d29101b0, command pnpm -C packages/rex exec vitest run src/client/agent/sidecar.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/w-rex-5-private/logs/5.2-verify.log."
 assumption = "The task that composes the generated client entry or owns shell.tsx mounts RexSidecar once per page next to the outcome region, for example through the outcome slot."
 severity = "note"
+
+[qualification.52]
+task = "5.4"
+file = "packages/rex/src/client/page.tsx"
+symbol = "RegionContext.act, useAct, useInvoke, ConfirmProvider, PageInvokers"
+observed = "The confirmation overlay runs through useInvoke and PageInvokers in src/client/agent/confirm.tsx, but region() still hands regions useAct, whose run() requests a confirm token without any visible step, so a region that calls act(send).run() skips the overlay on the click route; ConfirmProvider must wrap the Shell and PageInvokers with RexPalette, RexShortcuts and RexUrlInvoke must render in the Shell outcome slot because page.tsx, shell.tsx and act.ts are outside the 5.4 touches; evidence: revision 81666e2e6456920b0e8a6522ed13263999d0cd5d, command pnpm -C packages/rex exec vitest run src/client/agent/invoke.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/w-rex-5-private/logs/5.4-verify.log."
+assumption = "A later task owning page.tsx and shell.tsx passes useInvoke as the region act primitive, mounts ConfirmProvider and the agent slot in the Shell, and the demo calls invoke() from regions."
+severity = "suspect"

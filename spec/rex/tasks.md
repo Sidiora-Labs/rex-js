@@ -203,7 +203,7 @@
     - Implement src/client/agent/outcome.tsx: Page.Outcome reading the outcome store and rendering an aria-live polite region with the last action label, ok or failure and message, plus a dismiss control; the Shell renders it on every page.
     - Write src/client/agent/outcome.test.tsx asserting rendering after success and failure and persistence across re-renders.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ] 5.4 Implement the command palette, shortcuts, URL invocation and confirmation
+  - [x] 5.4 Implement the command palette, shortcuts, URL invocation and confirmation
     - Implement src/client/agent/palette.tsx with cmdk: opens on mod+k, lists active page actions (allowed state and reason shown) and navigable pages from the manifest, filters by label and id, executes or navigates on enter.
     - Implement src/client/agent/shortcuts.ts binding each active page action shortcut and src/client/agent/url-invoke.ts reading act and input query parameters on page mount, validating input and invoking through useAct; invalid input writes a validation outcome.
     - Implement src/client/agent/confirm.tsx: a confirmation overlay for irreversible actions used by all four routes, obtaining the confirm token on accept.
