@@ -86,7 +86,7 @@
     - Implement src/client/context.ts exposing useManifest, useActor, useRexClient and useRegistry hooks.
     - Write src/client/app.test.tsx rendering RexApp with a mocked fetch of the manifest and asserting the hooks resolve.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 11.1, 11.2, 11.3_
-  - [ ] 2.2 Implement the router and typed navigation
+  - [x] 2.2 Implement the router and typed navigation
     - Implement src/client/router.tsx: routes built from every page declaration with wouter, params parsed and validated with the page params schema, a not-found page and the page policy check producing permission-denied with the recovery target.
     - Implement src/client/nav.ts: useNav() returning to(page, params), back(), replace(page, params) typed against the registry; params failing the schema are a compile error through the declaration types and a runtime validation outcome; draft state is serialized into the URL as declared by page.draft.
     - Write src/client/nav.test.tsx covering navigation, params validation, reload restoration from URL and the denied recovery path.
