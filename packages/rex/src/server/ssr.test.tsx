@@ -16,6 +16,7 @@ import {
 import { Img, SCRIPT_ATTRIBUTE, Script } from "../client/media.tsx";
 import { ActionForm } from "../client/form.tsx";
 import { region, view, type LazyPageModuleSet, type LoadedPageModules } from "../client/page.tsx";
+import { store, type RexStore } from "../client/store.ts";
 import { action } from "../core/action.ts";
 import { actor } from "../core/actor.ts";
 import { page, type AnyPage } from "../core/page.ts";
@@ -607,6 +608,135 @@ describe("the CSRF token in server-rendered forms", () => {
     expect(field?.value).toBe(token);
     expect(mismatches).toEqual([]);
     expect(hydrationErrors(errors.mock.calls)).toEqual([]);
+  });
+});
+
+const watchPage = page("watch", {
+  route: "/watch",
+  chrome: { title: "Watchlist" },
+  regions: ["chips"],
+});
+
+const plainPage = page("plain", {
+  route: "/plain",
+  chrome: { title: "Plain" },
+});
+
+const WATCHED_INITIAL: readonly string[] = ["eth", "pax"];
+let watched: RexStore<readonly string[]> | null = null;
+
+function watchedStore(): RexStore<readonly string[]> {
+  watched ??= store<readonly string[]>("watched", { initial: WATCHED_INITIAL, expose: true });
+  return watched;
+}
+
+const WatchChips = region("chips", () => {
+  const ids = watchedStore().useStore();
+  return (
+    <ul>
+      {ids.map((id) => (
+        <li key={id}>{id}</li>
+      ))}
+    </ul>
+  );
+});
+
+const watchModules: LoadedPageModules = {
+  view: view(() => <WatchChips />),
+  states: statesFor("the watchlist"),
+  regions: { chips: WatchChips },
+  overlays: {},
+};
+let watchLoading: Promise<LoadedPageModules> | null = null;
+const watchSet: LazyPageModuleSet = Object.freeze({
+  page: watchPage,
+  chunk: "page-watch",
+  load: () => {
+    watchLoading ??= Promise.resolve().then(() => {
+      watchedStore();
+      return watchModules;
+    });
+    return watchLoading;
+  },
+});
+
+const storeRegistry = createRegistry().register(watchPage, plainPage).freeze();
+const storeBundle: RexEntryBundle = {
+  registry: storeRegistry,
+  manifest: buildManifest(storeRegistry, { app: "ssr-stores" }),
+  pages: [
+    watchSet,
+    lazySet(plainPage, { view: view(() => <p>Nothing watched</p>), states: statesFor("Plain") }),
+  ],
+};
+const storeRenderer = createRexRenderer({ bundle: storeBundle });
+
+async function renderStorePage(path: string): Promise<string> {
+  const result = await storeRenderer.render(request(path), {
+    actor: owner,
+    density: DEFAULT_DENSITY,
+    nonce: "0123456789abcdef0123456789abcdef",
+  });
+  expect(result.kind).toBe("page");
+  return new Response(result.body).text();
+}
+
+function serverSidecarOf(html: string): Record<string, unknown> {
+  return readSidecar(new DOMParser().parseFromString(html, "text/html")) as Record<string, unknown>;
+}
+
+async function hydrateStorePage(path: string): Promise<{
+  readonly server: Record<string, unknown>;
+  readonly container: HTMLElement;
+}> {
+  const html = await renderStorePage(path);
+  const container = mountDocument(html, path);
+  const server = readSidecar(container) as Record<string, unknown>;
+  await act(async () => {
+    started = startRexEntry(container, storeBundle, { dev: true, fetch: serverFetch });
+  });
+  expect(started?.mode).toBe("hydrate");
+  await waitFor(() => expect(window.__rex?.page).toBe(server.page));
+  return { server, container };
+}
+
+describe("the stores a server render exposes", () => {
+  it("lists only the stores the rendered page uses after another page exposed one", async () => {
+    const before = serverSidecarOf(await renderStorePage("/plain"));
+    expect(before).not.toHaveProperty("stores");
+    const watch = serverSidecarOf(await renderStorePage("/watch"));
+    expect(watch.stores).toEqual({ watched: WATCHED_INITIAL });
+    const after = serverSidecarOf(await renderStorePage("/plain"));
+    expect(after).not.toHaveProperty("stores");
+    expect(after).toEqual(before);
+  });
+
+  it("keeps the stores of concurrent renders apart", async () => {
+    const [watch, plain, again] = await Promise.all([
+      renderStorePage("/watch"),
+      renderStorePage("/plain"),
+      renderStorePage("/watch"),
+    ]);
+    expect(serverSidecarOf(watch).stores).toEqual({ watched: WATCHED_INITIAL });
+    expect(serverSidecarOf(again).stores).toEqual({ watched: WATCHED_INITIAL });
+    expect(serverSidecarOf(plain)).not.toHaveProperty("stores");
+    expect(watch).toContain("<li>pax</li>");
+  });
+
+  it("hydrates the store page to the server sidecar and the next page to its own sidecar script", async () => {
+    const watch = await hydrateStorePage("/watch");
+    expect(watch.server.stores).toEqual({ watched: WATCHED_INITIAL });
+    expect(window.__rex).toEqual(watch.server);
+    expect(JSON.stringify(window.__rex)).toBe(JSON.stringify(readSidecar(watch.container)));
+    const root = started?.root;
+    await act(async () => {
+      root?.unmount();
+    });
+    started = null;
+
+    const plain = await hydrateStorePage("/plain");
+    expect(plain.server).not.toHaveProperty("stores");
+    expect(JSON.stringify(window.__rex)).toBe(JSON.stringify(readSidecar(plain.container)));
   });
 });
 
