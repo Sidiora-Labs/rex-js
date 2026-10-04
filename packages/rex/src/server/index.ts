@@ -25,3 +25,5 @@ export {
   type SecurityPolicy,
   type SecurityPolicyInput,
 } from "./middleware/security.ts";
+export * from "./form.ts";
+export { FORM_ROUTE, installFormRoute } from "./routes/form.ts";
