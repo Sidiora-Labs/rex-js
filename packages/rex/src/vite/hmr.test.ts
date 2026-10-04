@@ -47,13 +47,7 @@ const HOME_CHUNK_URLS = [
   `${HOME}/overlays/NoteSheet.tsx`,
 ];
 const NOTE_VIEW_URL = "/app/pages/note/view.tsx";
-const BROWSER_URLS = [
-  "/@rex/entry",
-  APP_URL,
-  HOME_PAGE_URL,
-  ...HOME_CHUNK_URLS,
-  NOTE_VIEW_URL,
-];
+const BROWSER_URLS = ["/@rex/entry", APP_URL, HOME_PAGE_URL, ...HOME_CHUNK_URLS, NOTE_VIEW_URL];
 
 describe("pageIdOfDeclaration", () => {
   const appPath = "/srv/site/app";
@@ -162,8 +156,7 @@ describe("hot module replacement on the dev server", () => {
     const update = await waitForMessage(
       from,
       (payload) =>
-        payload.type === "update" &&
-        payload.updates.some((entry) => entry.path === PART_URL),
+        payload.type === "update" && payload.updates.some((entry) => entry.path === PART_URL),
     );
     if (update.type !== "update") throw new Error(`expected an update, got ${update.type}`);
     expect(update.updates.map((entry) => [entry.type, entry.path, entry.acceptedPath])).toEqual([
@@ -185,8 +178,7 @@ describe("hot module replacement on the dev server", () => {
     const update = await waitForMessage(
       from,
       (payload) =>
-        payload.type === "update" &&
-        payload.updates.some((entry) => entry.path === REGION_URL),
+        payload.type === "update" && payload.updates.some((entry) => entry.path === REGION_URL),
     );
     if (update.type !== "update") throw new Error(`expected an update, got ${update.type}`);
     expect(update.updates.map((entry) => [entry.type, entry.path, entry.acceptedPath])).toEqual([

@@ -194,10 +194,7 @@ export function action<
   const N extends string,
   I extends StandardSchemaV1,
   O extends StandardSchemaV1,
->(
-  name: N,
-  config: ActionConfig<I, O>,
-): ActionDeclaration<N, I, O> {
+>(name: N, config: ActionConfig<I, O>): ActionDeclaration<N, I, O> {
   const id = declarationName("action", name);
   const fail = (field: string, problem: string): never => {
     throw new RexDeclarationError("action", id, field, problem);
@@ -210,7 +207,8 @@ export function action<
   for (const property of Object.keys(config)) {
     if (!ACTION_KEYS.has(property)) fail(property, "is not part of the action declaration");
   }
-  if (!isStandardSchema(config.input)) fail("input", "must be a Standard Schema such as a zod schema");
+  if (!isStandardSchema(config.input))
+    fail("input", "must be a Standard Schema such as a zod schema");
   if (!isStandardSchema(config.output)) {
     fail("output", "must be a Standard Schema such as a zod schema");
   }
@@ -282,9 +280,14 @@ export function action<
       }
     }
     jsonSchema = Object.freeze({
-      input: config.jsonSchema.input === undefined ? null : Object.freeze({ ...config.jsonSchema.input }),
+      input:
+        config.jsonSchema.input === undefined
+          ? null
+          : Object.freeze({ ...config.jsonSchema.input }),
       output:
-        config.jsonSchema.output === undefined ? null : Object.freeze({ ...config.jsonSchema.output }),
+        config.jsonSchema.output === undefined
+          ? null
+          : Object.freeze({ ...config.jsonSchema.output }),
     });
   }
 

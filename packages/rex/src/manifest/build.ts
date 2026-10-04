@@ -5,12 +5,7 @@ import { isValidName } from "../core/ids.ts";
 import type { AnyPage, PageRender } from "../core/page.ts";
 import { predicateToJson, type AnyPolicy } from "../core/policy.ts";
 import { compareIds } from "../core/registry.ts";
-import {
-  STANDARD_VENDOR_KEY,
-  acceptsSync,
-  refTarget,
-  type JsonSchema,
-} from "../core/schema.ts";
+import { STANDARD_VENDOR_KEY, acceptsSync, refTarget, type JsonSchema } from "../core/schema.ts";
 import type { StandardSchemaV1 } from "../core/standard.ts";
 import { objectJsonSchema, standardJsonSchema, standardVendorOf } from "./json-schema.ts";
 import {
@@ -257,7 +252,8 @@ export function buildManifest(
 function canonical(value: unknown, path: string): unknown {
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw new RexError("REX502", `stableStringify: ${path} is not finite`);
+    if (!Number.isFinite(value))
+      throw new RexError("REX502", `stableStringify: ${path} is not finite`);
     return value;
   }
   if (Array.isArray(value)) {

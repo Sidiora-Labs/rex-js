@@ -66,7 +66,10 @@ describe("CLI error output", () => {
   beforeAll(() => {
     dir = realpathSync(mkdtempSync(join(tmpdir(), "rex-frame-")));
     file = join(dir, "page.ts");
-    writeFileSync(file, 'import { page } from "@sidioralabs/rex";\n\nexport default page("x", {\n  route: "x",\n});\n');
+    writeFileSync(
+      file,
+      'import { page } from "@sidioralabs/rex";\n\nexport default page("x", {\n  route: "x",\n});\n',
+    );
   });
 
   afterAll(() => {
@@ -74,11 +77,15 @@ describe("CLI error output", () => {
   });
 
   it("prints the error, hint, docs and a source frame for a located RexError", () => {
-    const error = new RexError("REX213", 'page "x": field "route" route must be a string starting with /', {
-      file,
-      line: 3,
-      column: 16,
-    });
+    const error = new RexError(
+      "REX213",
+      'page "x": field "route" route must be a string starting with /',
+      {
+        file,
+        line: 3,
+        column: 16,
+      },
+    );
     expect(formatCliError(error)).toBe(
       [
         `rex: REX213 page "x": field "route" route must be a string starting with / (${file}:3:16)`,
@@ -101,7 +108,9 @@ describe("CLI error output", () => {
     expect(formatCliError(bare)).toBe(
       `rex: REX100 missing\n  hint: ${REX_ERROR_DOCS.REX100.hint}\n  docs: https://rex.sidioralabs.com/errors/REX100`,
     );
-    expect(fileFrame(new RexError("REX213", "x", { file: join(dir, "gone.ts"), line: 1 }))).toBe("");
+    expect(fileFrame(new RexError("REX213", "x", { file: join(dir, "gone.ts"), line: 1 }))).toBe(
+      "",
+    );
     expect(formatCliError(new Error("plain"))).toBe("rex: plain");
   });
 
@@ -126,8 +135,8 @@ describe("CLI error output", () => {
         `import { RexCliExit } from ${indexModule};`,
         `const located = () => new RexError("REX213", "page declaration failed", { file: ${JSON.stringify(file)}, line: 4, column: 3 });`,
         "export function register(program) {",
-        "  program.command(\"raw\").action(() => { throw located(); });",
-        "  program.command(\"wrapped\").action(() => { throw new RexCliExit(1, \"rex wrapped: failed\", { cause: located() }); });",
+        '  program.command("raw").action(() => { throw located(); });',
+        '  program.command("wrapped").action(() => { throw new RexCliExit(1, "rex wrapped: failed", { cause: located() }); });',
         "}",
         "",
       ].join("\n"),

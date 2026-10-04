@@ -103,7 +103,8 @@ export function memoryJournal(): Journal {
 
   const snapshot = (instanceId: string): FlowInstance => {
     const stored = instances.get(instanceId);
-    if (stored === undefined) throw new RexError("REX303", `journal: unknown instance "${instanceId}"`);
+    if (stored === undefined)
+      throw new RexError("REX303", `journal: unknown instance "${instanceId}"`);
     const entries = structuredClone(stored.entries);
     return {
       flowId: stored.flowId,
@@ -132,7 +133,8 @@ export function memoryJournal(): Journal {
     },
     async record(instanceId: string, entry: JournalEntry): Promise<FlowInstance> {
       const stored = instances.get(requireId("instanceId", instanceId));
-      if (stored === undefined) throw new RexError("REX303", `journal: unknown instance "${instanceId}"`);
+      if (stored === undefined)
+        throw new RexError("REX303", `journal: unknown instance "${instanceId}"`);
       stored.entries.push(structuredClone(entry));
       return snapshot(instanceId);
     },

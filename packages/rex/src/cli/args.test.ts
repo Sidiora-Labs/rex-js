@@ -26,11 +26,16 @@ function program(): Captured {
   root
     .command("serve")
     .description("serve files")
-    .option("--port <port>", "port", (value) => {
-      const port = Number(value);
-      if (!Number.isInteger(port)) throw new InvalidArgumentError("the port must be an integer");
-      return port;
-    }, 3000)
+    .option(
+      "--port <port>",
+      "port",
+      (value) => {
+        const port = Number(value);
+        if (!Number.isInteger(port)) throw new InvalidArgumentError("the port must be an integer");
+        return port;
+      },
+      3000,
+    )
     .option("--host <host>", "host")
     .option("--no-check", "skip the check")
     .option("-q, --quiet", "print less")
@@ -67,7 +72,16 @@ async function failure(run: Promise<unknown>): Promise<RexArgsError> {
 describe("RexCommand parsing", () => {
   it("parses flags, values, defaults, negations, short flags and repeated flags", async () => {
     const tool = program();
-    await tool.program.parseAsync(["serve", "--port", "8080", "--host=0.0.0.0", "-q", "--tag", "a", "--tag=b"]);
+    await tool.program.parseAsync([
+      "serve",
+      "--port",
+      "8080",
+      "--host=0.0.0.0",
+      "-q",
+      "--tag",
+      "a",
+      "--tag=b",
+    ]);
     await tool.program.parseAsync(["serve", "--no-check"]);
     expect(tool.calls).toEqual([
       ["serve", { port: 8080, host: "0.0.0.0", check: true, quiet: true, tag: ["a", "b"] }],
@@ -78,7 +92,14 @@ describe("RexCommand parsing", () => {
   it("passes positionals, optional positionals and options to nested commands", async () => {
     const tool = program();
     await tool.program.parseAsync(["make", "page", "home", "--layout", "wide"]);
-    await tool.program.parseAsync(["make", "page", "--dry-run", "about", "About us", "--layout=narrow"]);
+    await tool.program.parseAsync([
+      "make",
+      "page",
+      "--dry-run",
+      "about",
+      "About us",
+      "--layout=narrow",
+    ]);
     await tool.program.parseAsync(["greet", "--", "-rex"]);
     expect(tool.calls).toEqual([
       ["make page", "home", undefined, { layout: "wide" }],
@@ -95,8 +116,16 @@ describe("RexCommand parsing", () => {
     [["serve", "--port", "x"], ARGS_ERROR.invalidArgument, "the port must be an integer"],
     [["serve", "--quiet=yes"], ARGS_ERROR.excessArguments, "takes no value"],
     [["serve", "extra"], ARGS_ERROR.excessArguments, "too many arguments"],
-    [["make", "page", "--layout", "x"], ARGS_ERROR.missingArgument, "missing required argument 'id'"],
-    [["make", "page", "home"], ARGS_ERROR.missingMandatoryOptionValue, "required option '--layout <name>'"],
+    [
+      ["make", "page", "--layout", "x"],
+      ARGS_ERROR.missingArgument,
+      "missing required argument 'id'",
+    ],
+    [
+      ["make", "page", "home"],
+      ARGS_ERROR.missingMandatoryOptionValue,
+      "required option '--layout <name>'",
+    ],
     [["make"], ARGS_ERROR.missingCommand, "needs a command"],
   ])("rejects %j with exit code 2", async (argv, code, message) => {
     const tool = program();

@@ -313,10 +313,7 @@ export function useLoader<Pg extends AnyPage, N extends LoaderName<Pg>>(
   const loader = pageLoader(declared, name);
   return useQuery(
     loaderQueryOptions({ page: declared, loader, params, client, consumer: true }),
-  ) as LoaderResult<
-    Pg,
-    N
-  >;
+  ) as LoaderResult<Pg, N>;
 }
 
 export function useLoaders<Pg extends AnyPage>(declared: Pg): LoaderResults<Pg> {

@@ -19,9 +19,8 @@ import {
   type ParamIssue,
 } from "./router.tsx";
 
-export type NavParamsArg<Pg extends AnyPage> = {} extends PageParamsInput<Pg>
-  ? [params?: PageParamsInput<Pg>]
-  : [params: PageParamsInput<Pg>];
+export type NavParamsArg<Pg extends AnyPage> =
+  {} extends PageParamsInput<Pg> ? [params?: PageParamsInput<Pg>] : [params: PageParamsInput<Pg>];
 
 export type NavOutcome =
   | { readonly ok: true; readonly page: string; readonly href: string }
@@ -39,7 +38,11 @@ export interface Nav {
   back(): NavOutcome;
 }
 
-function failure(page: string | null, message: string, issues: readonly ParamIssue[] = []): NavOutcome {
+function failure(
+  page: string | null,
+  message: string,
+  issues: readonly ParamIssue[] = [],
+): NavOutcome {
   return { ok: false, page, message, issues };
 }
 
@@ -145,7 +148,8 @@ function writeSession(key: string, value: string | null): void {
 
 export function useDraft<S extends StandardSchemaV1>(schema: S): Draft<StandardInferOutput<S>> {
   const active = useActivePage();
-  if (active === null) throw new RexError("REX306", "rex: useDraft must be called inside an active page");
+  if (active === null)
+    throw new RexError("REX306", "rex: useDraft must be called inside an active page");
   const declared = active.page;
   const [location, navigate] = useLocation();
   const search = useSearch();
@@ -165,7 +169,10 @@ export function useDraft<S extends StandardSchemaV1>(schema: S): Draft<StandardI
   const set = useCallback(
     (next: StandardInferOutput<S> | null) => {
       if (next !== null && validateStandardSync(schema, next).issues !== undefined) {
-        throw new RexError("REX325", `rex: draft for page "${declared.id}" does not match its schema`);
+        throw new RexError(
+          "REX325",
+          `rex: draft for page "${declared.id}" does not match its schema`,
+        );
       }
       const encoded = next === null ? null : JSON.stringify(next);
       if (declared.draft === "route") {

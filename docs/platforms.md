@@ -2,24 +2,24 @@
 
 `rex build --target <target>` builds one app for a runtime. The target picks the server adapter and the layout of `dist/`; the client bundle in `dist/client/` is the same Vite build for every target. `--target` defaults to `node`; any other value exits 2 with the list of targets.
 
-| Target | Command | Writes | Start or deploy |
-| --- | --- | --- | --- |
-| `node` | `rex build` | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list) | `node dist/server.js` |
-| `bun` | `rex build --target bun` | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list) | `bun dist/server.js` |
-| `deno` | `rex build --target deno` | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list) | `deno run --allow-net --allow-read --allow-env dist/server.js` |
-| `edge` | `rex build --target edge` | `dist/client/`, `dist/server.js` (a webworker bundle) | deploy `dist/server.js` as the worker module and `dist/client/` as its static assets |
-| `static` | `rex build --target static` | `dist/client/` only | serve `dist/client/` from any static host; the client calls `client.apiOrigin` |
+| Target   | Command                     | Writes                                                                                                                             | Start or deploy                                                                      |
+| -------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `node`   | `rex build`                 | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list)                                                | `node dist/server.js`                                                                |
+| `bun`    | `rex build --target bun`    | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list)                                                | `bun dist/server.js`                                                                 |
+| `deno`   | `rex build --target deno`   | `dist/client/`, `dist/server.js`, `dist/prerender.json` (the prerendered page list)                                                | `deno run --allow-net --allow-read --allow-env dist/server.js`                       |
+| `edge`   | `rex build --target edge`   | `dist/client/`, `dist/server.js` (a webworker bundle)                                                                              | deploy `dist/server.js` as the worker module and `dist/client/` as its static assets |
+| `static` | `rex build --target static` | `dist/client/` (every page as HTML, `index.md` beside each prerendered page, `rex/manifest`, `404.html`) and `dist/prerender.json` | serve `dist/client/` from any static host; the client calls `client.apiOrigin`       |
 
 After a build, `rex build` prints the layout it wrote and the start hint for the target.
 
 `rex/server` itself is fetch-only: `createRexServer` returns a Hono app whose `fetch(request)` answers a `Request` with a `Response` and imports nothing from `node:`. The adapters live in their own entry points:
 
-| Entry point | Exports | Used by |
-| --- | --- | --- |
+| Entry point                    | Exports                                                                                                                | Used by                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `@sidioralabs/rex/server/node` | `startNodeServer`, `createNodeApp`, `startPrerenderedNodeServer`, `createPrerenderedNodeApp`, `installNodeStaticPages` | `node`, and the static file serving of `bun` and `deno` |
-| `@sidioralabs/rex/server/bun` | `startBunServer` | `bun` |
-| `@sidioralabs/rex/server/deno` | `startDenoServer` | `deno` |
-| `@sidioralabs/rex/server/edge` | `createEdgeHandler` | `edge` |
+| `@sidioralabs/rex/server/bun`  | `startBunServer`                                                                                                       | `bun`                                                   |
+| `@sidioralabs/rex/server/deno` | `startDenoServer`                                                                                                      | `deno`                                                  |
+| `@sidioralabs/rex/server/edge` | `createEdgeHandler`                                                                                                    | `edge`                                                  |
 
 Every server entry builds the app server from `rex.config.ts`: the `server(app)` factory when the config declares one, otherwise `createRexServer` with an in-memory ledger, the anonymous actor and the config's `security` and `client` options, so `security.origins`, the CSP mode and `client.apiOrigin` apply without a factory.
 
@@ -60,7 +60,15 @@ rex build --target edge
 
 ## static
 
-The static target writes `dist/client/` only. No server is built and no page is prerendered: the client renders every page in the browser and talks to a Rex server that runs elsewhere. `client.apiOrigin` in `rex.config.ts` names that server, and `rex build --target static` bakes it into the client entry as the base URL for `GET /rex/manifest`, `/rex/rpc` and the rest of the Rex protocol, together with a fetch that sends credentials (`credentials: "include"`), so the session cookie of the API origin travels with every call. Without `client.apiOrigin` the static client calls the origin it is served from.
+The static target builds no server. It writes `dist/client/` as a complete static deployment:
+
+- every `ssg` and `static` page prerendered to `dist/client/<path>/index.html` (with `paths` expanded), a `static` page with zero page JavaScript and an `ssg` page hydrating;
+- `dist/client/<path>/index.md` beside each prerendered page, the same text rendering `GET /rex/pages/<page>.md` answers, for terminal agents;
+- `dist/client/rex/manifest`, the manifest JSON `GET /rex/manifest` answers, so an agent on the static host reads the same manifest;
+- the built `index.html` as the shell document at the route of every `ssr` and `csr` page without route params, where the client renders the page, and as `dist/client/404.html`, which static hosts such as GitHub Pages serve for every other path so the client boots and routes it;
+- `dist/prerender.json` listing the prerendered pages.
+
+Without `client.apiOrigin` the client starts from the manifest inlined in its bundle and the anonymous actor, and never requests `/rex/manifest`, so a page with no actions makes no request at all on load. With `client.apiOrigin` the client talks to a Rex server that runs elsewhere. `client.apiOrigin` in `rex.config.ts` names that server, and `rex build --target static` bakes it into the client entry as the base URL for `GET /rex/manifest`, `/rex/rpc` and the rest of the Rex protocol, together with a fetch that sends credentials (`credentials: "include"`), so the session cookie of the API origin travels with every call. Without `client.apiOrigin` the static client calls the origin it is served from.
 
 ```ts
 // rex.config.ts of the static client
@@ -88,7 +96,12 @@ import app from "rex:app";
 import { sessionActor } from "./app/server/session.ts";
 
 const security = {
-  origins: ["https://app.example.com", "http://tauri.localhost", "tauri://localhost", "capacitor://localhost"],
+  origins: [
+    "https://app.example.com",
+    "http://tauri.localhost",
+    "tauri://localhost",
+    "capacitor://localhost",
+  ],
 };
 
 export default defineConfig({

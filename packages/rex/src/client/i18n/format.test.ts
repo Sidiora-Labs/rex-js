@@ -21,21 +21,19 @@ describe("parseMessage", () => {
       { kind: "text", value: " in " },
       { kind: "arg", name: "cart" },
     ]);
-    expect(parseMessage("{n, plural, offset:1 =0 {none} one {# other} other {# others}}")).toEqual(
-      [
-        {
-          kind: "plural",
-          name: "n",
-          ordinal: false,
-          offset: 1,
-          options: {
-            "=0": [{ kind: "text", value: "none" }],
-            one: [{ kind: "pound" }, { kind: "text", value: " other" }],
-            other: [{ kind: "pound" }, { kind: "text", value: " others" }],
-          },
+    expect(parseMessage("{n, plural, offset:1 =0 {none} one {# other} other {# others}}")).toEqual([
+      {
+        kind: "plural",
+        name: "n",
+        ordinal: false,
+        offset: 1,
+        options: {
+          "=0": [{ kind: "text", value: "none" }],
+          one: [{ kind: "pound" }, { kind: "text", value: " other" }],
+          other: [{ kind: "pound" }, { kind: "text", value: " others" }],
         },
-      ],
-    );
+      },
+    ]);
     expect(parseMessage("{p, selectordinal, one {#st} other {#th}}")).toEqual([
       {
         kind: "plural",
@@ -116,7 +114,10 @@ describe("parseMessage", () => {
       position: 11,
       message: 'REX317 rex: message "Hello {name" at 11: expected ","',
     });
-    expect(failure("Hello }")).toMatchObject({ position: 6, detail: expect.stringContaining("unmatched }") });
+    expect(failure("Hello }")).toMatchObject({
+      position: 6,
+      detail: expect.stringContaining("unmatched }"),
+    });
     expect(failure("{1st}")).toMatchObject({
       detail: expect.stringContaining('invalid argument name "1st"'),
     });
@@ -175,7 +176,11 @@ describe("formatMessage", () => {
     expect(formatMessage(days, { n: "soon" }, "en")).toBe("NaN days");
     expect(formatMessage(days, {}, "en")).toBe("{n}");
     expect(
-      formatMessage("{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}", { n: 22 }, "en"),
+      formatMessage(
+        "{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+        { n: 22 },
+        "en",
+      ),
     ).toBe("22nd");
     expect(
       formatMessage(

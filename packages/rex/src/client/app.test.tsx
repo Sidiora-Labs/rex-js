@@ -118,9 +118,10 @@ function Probe() {
       <button
         type="button"
         onClick={() => {
-          void procedureOf(client, echo.id)({ text: "hello" }).then((output) =>
-            setResult(JSON.stringify(output)),
-          );
+          void procedureOf(
+            client,
+            echo.id,
+          )({ text: "hello" }).then((output) => setResult(JSON.stringify(output)));
         }}
       >
         call
@@ -209,7 +210,9 @@ describe("createRexApp", () => {
     const requests: string[] = [];
     const fetch: RexFetch = async (input) => {
       requests.push(String(input instanceof Request ? input.url : input));
-      return new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify(body), {
+        headers: { "content-type": "application/json" },
+      });
     };
     const RexApp = createRexApp({ registry, fetch, baseUrl: "http://rex.test" });
     render(

@@ -26,7 +26,9 @@ export function renderErrorsDoc({ catalog, areas, hints, docs }) {
     lines.push("| Code | Error | Hint |", "| --- | --- | --- |");
     for (const code of codes) {
       const cell = (text) => text.replace(/\|/g, "\\|");
-      lines.push(`| [${code}](${docs(code)}) | ${cell(catalog[code])} | ${cell(hints[code].hint)} |`);
+      lines.push(
+        `| [${code}](${docs(code)}) | ${cell(catalog[code])} | ${cell(hints[code].hint)} |`,
+      );
     }
     lines.push("");
   }

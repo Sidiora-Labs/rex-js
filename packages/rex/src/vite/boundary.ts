@@ -131,7 +131,8 @@ function referencedNames(program: AstNode): Set<string> {
         parent.key === node &&
         parent.computed !== true &&
         parent.shorthand !== true;
-      const isMember = parent.type === "MemberExpression" && parent.property === node && parent.computed !== true;
+      const isMember =
+        parent.type === "MemberExpression" && parent.property === node && parent.computed !== true;
       const isBinding =
         (parent.type === "VariableDeclarator" ||
           parent.type === "FunctionDeclaration" ||
@@ -170,7 +171,9 @@ function isActionCall(node: AstNode, callees: ReturnType<typeof actionCallees>):
   if (name !== null) return callees.names.has(name);
   if (callee.type !== "MemberExpression") return false;
   const object = identifierName(nodeAt(callee, "object"));
-  return object !== null && callees.namespaces.has(object) && staticKey(callee, "property") === "action";
+  return (
+    object !== null && callees.namespaces.has(object) && staticKey(callee, "property") === "action"
+  );
 }
 
 function handlerEdits(program: AstNode): Edit[] {
@@ -183,7 +186,11 @@ function handlerEdits(program: AstNode): Edit[] {
     if (options === undefined || options.type !== "ObjectExpression") return;
     for (const property of nodesAt(options, "properties")) {
       if (property.type !== "Property" || staticKey(property, "key") !== "handler") continue;
-      edits.push({ start: property.start, end: property.end, text: `handler: ${SERVER_ONLY_HANDLER}` });
+      edits.push({
+        start: property.start,
+        end: property.end,
+        text: `handler: ${SERVER_ONLY_HANDLER}`,
+      });
     }
   });
   return edits;
@@ -194,7 +201,8 @@ function importText(code: string, statement: AstNode, kept: readonly AstNode[]):
   const defaults = kept.filter((item) => item.type !== "ImportSpecifier");
   const named = kept.filter((item) => item.type === "ImportSpecifier");
   const parts = defaults.map((item) => code.slice(item.start, item.end));
-  if (named.length > 0) parts.push(`{ ${named.map((item) => code.slice(item.start, item.end)).join(", ")} }`);
+  if (named.length > 0)
+    parts.push(`{ ${named.map((item) => code.slice(item.start, item.end)).join(", ")} }`);
   const kind = statement.importKind === "type" ? "type " : "";
   return `import ${kind}${parts.join(", ")} from ${code.slice(source.start, source.end)};`;
 }
@@ -212,7 +220,11 @@ function pruneEdits(code: string, program: AstNode, before: ReadonlySet<string>)
       if (kept.length === specifiers.length) continue;
       if (kept.length === 0) remove();
       else if (nodesAt(statement, "attributes").length === 0) {
-        edits.push({ start: statement.start, end: statement.end, text: importText(code, statement, kept) });
+        edits.push({
+          start: statement.start,
+          end: statement.end,
+          text: importText(code, statement, kept),
+        });
       }
     } else if (statement.type === "FunctionDeclaration" || statement.type === "ClassDeclaration") {
       if (dropped(identifierName(nodeAt(statement, "id")))) remove();
@@ -256,12 +268,16 @@ function isProcessEnv(node: AstNode | null): boolean {
     object !== null &&
     object.type === "MemberExpression" &&
     staticKey(object, "property") === "process" &&
-    ["globalThis", "global", "window", "self"].includes(identifierName(nodeAt(object, "object")) ?? "")
+    ["globalThis", "global", "window", "self"].includes(
+      identifierName(nodeAt(object, "object")) ?? "",
+    )
   );
 }
 
 export function isPublicEnvName(name: string): boolean {
-  return name.startsWith(PUBLIC_ENV_PREFIX) || (ALLOWED_ENV_NAMES as readonly string[]).includes(name);
+  return (
+    name.startsWith(PUBLIC_ENV_PREFIX) || (ALLOWED_ENV_NAMES as readonly string[]).includes(name)
+  );
 }
 
 export function collectEnvReferences(code: string, file: string): string[] {
@@ -409,7 +425,9 @@ export function boundaryHook(context: RexHookContext): Plugin {
       if (id.startsWith("\0")) return null;
       const file = fileOf(id);
       if (!SCRIPT_FILE.test(file)) return null;
-      const stripped = isActionModule(id, context.appPath()) ? stripActionHandlers(code, file) : null;
+      const stripped = isActionModule(id, context.appPath())
+        ? stripActionHandlers(code, file)
+        : null;
       const output = stripped ?? code;
       if (!NODE_MODULES.test(file)) {
         const references = collectEnvReferences(output, file);

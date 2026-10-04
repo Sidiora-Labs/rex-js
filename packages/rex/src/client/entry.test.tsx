@@ -204,9 +204,7 @@ describe("findRootElement", () => {
     expect(findRootElement("root").id).toBe("root");
     const parsed = new DOMParser().parseFromString('<main id="app"></main>', "text/html");
     expect(findRootElement("app", parsed).tagName).toBe("MAIN");
-    expect(() => findRootElement("app")).toThrow(
-      'rex: index.html has no element with id "app"',
-    );
+    expect(() => findRootElement("app")).toThrow('rex: index.html has no element with id "app"');
     const error = thrownBy(() => findRootElement("missing", parsed));
     expect(isRexError(error) && error.code).toBe("REX463");
   });

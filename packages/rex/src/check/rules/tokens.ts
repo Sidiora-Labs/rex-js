@@ -247,12 +247,17 @@ export function splitVariants(token: string): { readonly variants: string; reado
 }
 
 function utilityOf(base: string): string {
-  return base.replace(/^!/, "").replace(/!$/, "").replace(/^-(?=[a-z])/, "");
+  return base
+    .replace(/^!/, "")
+    .replace(/!$/, "")
+    .replace(/^-(?=[a-z])/, "");
 }
 
 function arbitraryContent(raw: string): string {
   const spaced = raw.replace(/(?<!\\)_/g, " ").replace(/\\_/g, "_");
-  return TYPE_HINT.test(spaced) && !spaced.startsWith("var(") ? spaced.replace(TYPE_HINT, "") : spaced;
+  return TYPE_HINT.test(spaced) && !spaced.startsWith("var(")
+    ? spaced.replace(TYPE_HINT, "")
+    : spaced;
 }
 
 export function classifyClassToken(
@@ -287,7 +292,8 @@ export function classifyClassToken(
   const color = ARBITRARY_COLOR_UTILITY.exec(utility);
   if (color !== null) {
     const content = arbitraryContent(color[1] ?? "");
-    if (rawColors(content, allow.colors).length > 0) return { kind: "arbitrary-value", value: content };
+    if (rawColors(content, allow.colors).length > 0)
+      return { kind: "arbitrary-value", value: content };
   }
   const spacing = ARBITRARY_SPACING_UTILITY.exec(utility);
   if (spacing !== null) {
@@ -385,7 +391,8 @@ function literalValue(node: ts.Expression): unknown {
     const record: Record<string, unknown> = {};
     for (const property of value.properties) {
       const key = ts.isPropertyAssignment(property) ? propertyKey(property.name) : null;
-      if (key === null || !ts.isPropertyAssignment(property)) throw new DynamicConfigValue(property);
+      if (key === null || !ts.isPropertyAssignment(property))
+        throw new DynamicConfigValue(property);
       record[key] = literalValue(property.initializer);
     }
     return record;
@@ -446,7 +453,10 @@ export function readTokenConfig(root: string, sources: SourceLoader): TokenConfi
     ],
   });
   if (!ts.isPropertyAssignment(check)) {
-    return report(check, "check in rex.config.ts is not a static literal, so rex check cannot read its token allow lists");
+    return report(
+      check,
+      "check in rex.config.ts is not a static literal, so rex check cannot read its token allow lists",
+    );
   }
   let value: unknown;
   try {
@@ -527,7 +537,9 @@ function checkFile(sources: SourceLoader, file: AppFile, settings: TokenSettings
         const number = staticNumber(property.initializer);
         const raw =
           number !== null
-            ? number !== 0 && !allowed(allow.spacing, `${number}px`) && !allowed(allow.spacing, `${number}`)
+            ? number !== 0 &&
+              !allowed(allow.spacing, `${number}px`) &&
+              !allowed(allow.spacing, `${number}`)
               ? `${number}`
               : null
             : value !== null

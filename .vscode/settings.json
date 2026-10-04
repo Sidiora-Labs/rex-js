@@ -1,28 +1,28 @@
 {
-    "codify.acp.claudeCommand": "npx -y @agentclientprotocol/claude-agent-acp",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit",
-            "source.fixAll": "explicit"
-        },
-        "extensions.ignoreRecommendations": true,
-        "[python]": {
-            "editor.defaultFormatter": "ms-python.black-formatter",
-        },
-        "[javascript][typescript][typescriptreact][javascriptreact]": {
-            "editor.defaultFormatter": "esbenp.prettier-vscode"
-        },
-        "workbench.colorCustomizations": {
-            "activityBar.background": "#000000",
-            "titleBar.activeBackground": "#000000",
-            "titleBar.activeForeground": "#ffffff",
-            "titleBar.inactiveBackground": "#000000",
-            "titleBar.inactiveForeground": "#FEFBFF",
-            "statusBar.background": "#000000",
-            "statusBar.foreground": "#ffffff",
-            "statusBar.debuggingBackground": "#000000",
-            "statusBar.debuggingForeground": "#FEFBFF",
-            "statusBar.noFolderBackground": "#410A56",
-            "statusBar.noFolderForeground": "#FEFBFF"
-        }
-    }
+  "codify.acp.claudeCommand": "npx -y @agentclientprotocol/claude-agent-acp",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll": "explicit"
+  },
+  "extensions.ignoreRecommendations": true,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "[javascript][typescript][typescriptreact][javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#000000",
+    "titleBar.activeBackground": "#000000",
+    "titleBar.activeForeground": "#ffffff",
+    "titleBar.inactiveBackground": "#000000",
+    "titleBar.inactiveForeground": "#FEFBFF",
+    "statusBar.background": "#000000",
+    "statusBar.foreground": "#ffffff",
+    "statusBar.debuggingBackground": "#000000",
+    "statusBar.debuggingForeground": "#FEFBFF",
+    "statusBar.noFolderBackground": "#410A56",
+    "statusBar.noFolderForeground": "#FEFBFF"
+  }
+}

@@ -12,12 +12,7 @@ import { STATE_EXPORT_NAMES, type StateProps } from "../core/states.ts";
 import { useRegionFailureRegistry } from "./agent/sidecar.tsx";
 import { useOutcomeStore } from "./outcome.ts";
 import { useFallback } from "./fallback-host.ts";
-import {
-  DefaultState,
-  PageStatesContext,
-  usePageRuntime,
-  type PageParamsValue,
-} from "./page.tsx";
+import { DefaultState, PageStatesContext, usePageRuntime, type PageParamsValue } from "./page.tsx";
 
 export const REGION_ERROR_CODE = "REX330";
 

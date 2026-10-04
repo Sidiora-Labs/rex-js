@@ -3,11 +3,7 @@ import path from "node:path";
 import { withModuleLoader, type ModuleLoader } from "../cli/load.ts";
 import { RexError } from "../core/errors.ts";
 import type { AnyFlow } from "../core/flow.ts";
-import {
-  DECLARATION_KINDS,
-  type AnyDeclaration,
-  type RegistrySnapshot,
-} from "../core/registry.ts";
+import { DECLARATION_KINDS, type AnyDeclaration, type RegistrySnapshot } from "../core/registry.ts";
 import { runtimePaths } from "../vite/resolve.ts";
 import { CORE_SPECIFIER } from "../vite/virtual.ts";
 import { renderAgentsMd } from "./agents-md.ts";

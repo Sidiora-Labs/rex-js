@@ -50,7 +50,12 @@ const source = { entities: [], actions: [toggleDust], pages: [portfolio], polici
 const alice = actor({ id: "alice" });
 
 function rexApp() {
-  return createRexServer({ registry: source, ledger: memoryLedger(), actor: () => alice, app: APP });
+  return createRexServer({
+    registry: source,
+    ledger: memoryLedger(),
+    actor: () => alice,
+    app: APP,
+  });
 }
 
 let clientDir: string;
@@ -184,9 +189,9 @@ describe("startNodeServer", () => {
         String(port),
       ).toThrow(expect.objectContaining({ name: "RexError", code: "REX407" }));
     }
-    expect(() => startNodeServer(rexApp(), { port: 0, clientDir: join(clientDir, "nope") })).toThrow(
-      expect.objectContaining({ name: "RexError", code: "REX406" }),
-    );
+    expect(() =>
+      startNodeServer(rexApp(), { port: 0, clientDir: join(clientDir, "nope") }),
+    ).toThrow(expect.objectContaining({ name: "RexError", code: "REX406" }));
   });
 
   it("listens on an ephemeral port, reports localhost without a hostname and releases the socket on close", async () => {

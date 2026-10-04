@@ -2,8 +2,10 @@ import { lazyModule, useLazyModule } from "./lazy.ts";
 
 type FallbackModule = typeof import("./fallbacks.tsx");
 
-const fallbacks = lazyModule<FallbackModule>("rex.fallbacks", "the error and not-found renderers", () =>
-  import("./fallbacks.tsx"),
+const fallbacks = lazyModule<FallbackModule>(
+  "rex.fallbacks",
+  "the error and not-found renderers",
+  () => import("./fallbacks.tsx"),
 );
 
 export function useFallback<Name extends keyof FallbackModule>(

@@ -63,12 +63,7 @@ const listView = lazyModule("rex.list", "the list window", () =>
 const POSITIVE_INTEGER = /^[1-9][0-9]*$/;
 
 function checkSize(size: unknown): number {
-  if (
-    typeof size !== "number" ||
-    !Number.isInteger(size) ||
-    size < 1 ||
-    size > MAX_LIST_SIZE
-  ) {
+  if (typeof size !== "number" || !Number.isInteger(size) || size < 1 || size > MAX_LIST_SIZE) {
     throw new RexError(
       "REX314",
       `Page.List: size must be an integer 1..${MAX_LIST_SIZE}, received ${String(size)}`,

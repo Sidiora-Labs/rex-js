@@ -127,7 +127,9 @@ describe("RegionBoundary", () => {
     });
     expect(scoped?.getAttribute("data-rex-region-error")).toBe("fragile/flaky");
     expect(scoped?.getAttribute("data-rex-error-code")).toBe(REGION_ERROR_CODE);
-    expect(within(flaky).getByRole("alert").textContent).toContain("Region failed: ledger unavailable");
+    expect(within(flaky).getByRole("alert").textContent).toContain(
+      "Region failed: ledger unavailable",
+    );
     expect(document.querySelector('main[data-rex-page="fragile"]')).not.toBeNull();
   });
 

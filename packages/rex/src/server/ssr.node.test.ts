@@ -134,7 +134,9 @@ const waitlistBundle: RexEntryBundle = {
 const owner = actor({ id: "owner", roles: ["owner"], permissions: ["notes.write"] });
 
 function csrfFieldOf(html: string): string | null {
-  const input = new RegExp(`<input type="hidden" name="${CSRF_FIELD}" value="([^"]*)"/>`).exec(html);
+  const input = new RegExp(`<input type="hidden" name="${CSRF_FIELD}" value="([^"]*)"/>`).exec(
+    html,
+  );
   return input === null ? null : (input[1] as string);
 }
 

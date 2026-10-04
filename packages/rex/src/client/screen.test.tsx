@@ -125,33 +125,7 @@ class StubViewport {
     return this.lists.reduce((total, list) => total + list.listeners, 0);
   }
 
-  readonly ResizeObserver: ResizeObserverConstructor = (() => {
-    const viewport = this;
-    return class StubResizeObserver {
-      private targets: Element[] = [];
-
-      constructor(private readonly callback: ResizeObserverCallback) {
-        viewport.observers.add(this);
-      }
-
-      observe(target: Element): void {
-        this.targets.push(target);
-      }
-
-      unobserve(target: Element): void {
-        this.targets = this.targets.filter((entry) => entry !== target);
-      }
-
-      disconnect(): void {
-        this.targets = [];
-        viewport.observers.delete(this);
-      }
-
-      notify(): void {
-        if (this.targets.length > 0) this.callback([], this as unknown as ResizeObserver);
-      }
-    } as unknown as ResizeObserverConstructor;
-  })();
+  readonly ResizeObserver: ResizeObserverConstructor = stubResizeObserver(this);
 
   source(): ScreenSource {
     return createScreenSource({
@@ -160,6 +134,33 @@ class StubViewport {
       width: () => this.width,
     });
   }
+}
+
+function stubResizeObserver(viewport: Pick<StubViewport, "observers">): ResizeObserverConstructor {
+  return class StubResizeObserver {
+    private targets: Element[] = [];
+
+    constructor(private readonly callback: ResizeObserverCallback) {
+      viewport.observers.add(this);
+    }
+
+    observe(target: Element): void {
+      this.targets.push(target);
+    }
+
+    unobserve(target: Element): void {
+      this.targets = this.targets.filter((entry) => entry !== target);
+    }
+
+    disconnect(): void {
+      this.targets = [];
+      viewport.observers.delete(this);
+    }
+
+    notify(): void {
+      if (this.targets.length > 0) this.callback([], this as unknown as ResizeObserver);
+    }
+  } as unknown as ResizeObserverConstructor;
 }
 
 const home = page("home", { route: "/", chrome: { title: "Home" }, states: ["ready"] });

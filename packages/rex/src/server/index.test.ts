@@ -67,7 +67,13 @@ const NAMED_MODULES: readonly (readonly [string, Exports, readonly string[]])[] 
   [
     "routes/render.ts",
     render,
-    ["RENDER_STATUS", "installRenderRoute", "isDocumentPath", "pageRendererFor", "registerPageRenderer"],
+    [
+      "RENDER_STATUS",
+      "installRenderRoute",
+      "isDocumentPath",
+      "pageRendererFor",
+      "registerPageRenderer",
+    ],
   ],
 ];
 
@@ -124,7 +130,12 @@ describe("rex/server", () => {
     expect(render.HTML_CONTENT_TYPE).toBeDefined();
     expect(dev.DEV_AUDIT_MAX_LIMIT).toBeDefined();
     expect(typeof dev.parseAuditLimit).toBe("function");
-    for (const name of ["RENDER_PAGE_HEADER", "HTML_CONTENT_TYPE", "DEV_AUDIT_MAX_LIMIT", "parseAuditLimit"]) {
+    for (const name of [
+      "RENDER_PAGE_HEADER",
+      "HTML_CONTENT_TYPE",
+      "DEV_AUDIT_MAX_LIMIT",
+      "parseAuditLimit",
+    ]) {
       expect(index, name).not.toHaveProperty(name);
     }
   });

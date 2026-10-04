@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -45,12 +46,17 @@ import {
 import { useLoader } from "../client/loaders.ts";
 import { rex } from "./plugin.ts";
 import {
+  NOT_FOUND_FILE,
   type PrerenderRuntime,
   expandPagePaths,
   formatPrerenderList,
   prerenderPages,
+  prerenderedTextFile,
   routePath,
+  shellDocumentPages,
   stripHydration,
+  writeShellDocuments,
+  writeStaticManifest,
 } from "./prerender.ts";
 import { readClientManifest, readSsrAssets } from "./ssr-css.ts";
 
@@ -272,7 +278,13 @@ function executableScripts(html: string): string[] {
 describe("rex build prerendering", { timeout: BUILD_TIMEOUT_MS }, () => {
   it("prerenders every ssg and static page to dist/client/<route>/index.html, expanding paths, and lists them", () => {
     expect(
-      result.list.pages.map((entry) => [entry.path, entry.page, entry.render, entry.revalidate, entry.file]),
+      result.list.pages.map((entry) => [
+        entry.path,
+        entry.page,
+        entry.render,
+        entry.revalidate,
+        entry.file,
+      ]),
     ).toEqual([
       ["/about", "about", "static", null, "about/index.html"],
       ["/guides/intro", "guide", "ssg", 60, "guides/intro/index.html"],
@@ -346,7 +358,11 @@ describe("rex build prerendering", { timeout: BUILD_TIMEOUT_MS }, () => {
   });
 
   it("writes the default screen, pointer and density on the html element and in the sidecar of every prerendered page", () => {
-    expect(PRERENDER_SCREEN).toEqual({ screen: "desktop", pointer: "fine", density: "comfortable" });
+    expect(PRERENDER_SCREEN).toEqual({
+      screen: "desktop",
+      pointer: "fine",
+      density: "comfortable",
+    });
     for (const entry of result.list.pages) {
       const html = read(entry.file);
       const root = /<html\b[^>]*>/.exec(html)?.[0] ?? "";
@@ -422,7 +438,11 @@ describe("path expansion", () => {
       route: "/docs/:slug",
       params: slugParams,
       render: "ssg",
-      paths: async () => [{ slug: "getting started" }, { slug: "getting started" }, { slug: "faq" }],
+      paths: async () => [
+        { slug: "getting started" },
+        { slug: "getting started" },
+        { slug: "faq" },
+      ],
     });
     expect(await expandPagePaths(docs)).toEqual(["/docs/getting%20started", "/docs/faq"]);
     expect(routePath(docs, { slug: 42 })).toBe("/docs/42");
@@ -615,27 +635,47 @@ describe("prerender guards", () => {
       expect(html).toContain("<li>Rex 0.2 ships</li>");
       expect(html).toContain("<li>Loaders run at build time</li>");
     }
-    expect(dehydratedQueries(ssg).map((query) => [query.queryKey.slice(0, 3), query.state.data])).toEqual([
+    expect(
+      dehydratedQueries(ssg).map((query) => [query.queryKey.slice(0, 3), query.state.data]),
+    ).toEqual([
       [["loader", "news", "headlines"], { titles: ["Rex 0.2 ships", "Loaders run at build time"] }],
     ]);
     expect(zeroJs).not.toContain("application/rex+data");
     const records = await ledger.list();
-    expect(records.map((record) => [record.actionId, record.actor, record.outcome, record.effect])).toEqual([
+    expect(
+      records.map((record) => [record.actionId, record.actor, record.outcome, record.effect]),
+    ).toEqual([
       ["list-headlines", anonymousActor.id, "ok", "read"],
       ["list-headlines", anonymousActor.id, "ok", "read"],
     ]);
   });
 
   it("carries the configured font preloads and the font-display swap block into ssg and static pages", async () => {
-    const leaflet = page("leaflet", { route: "/leaflet", render: "static", chrome: { title: "Leaflet" } });
+    const leaflet = page("leaflet", {
+      route: "/leaflet",
+      render: "static",
+      chrome: { title: "Leaflet" },
+    });
     const digest = page("digest", { route: "/digest", render: "ssg", chrome: { title: "Digest" } });
     const registry = createRegistry().register(leaflet, digest).freeze();
     const bundle: RexEntryBundle = {
       registry,
       manifest: buildManifest(registry, { app: "fonts" }),
       pages: [
-        { page: leaflet, view: view(() => createElement("p", null, "Leaflet")), states, regions: {}, overlays: {} },
-        { page: digest, view: view(() => createElement("p", null, "Digest")), states, regions: {}, overlays: {} },
+        {
+          page: leaflet,
+          view: view(() => createElement("p", null, "Leaflet")),
+          states,
+          regions: {},
+          overlays: {},
+        },
+        {
+          page: digest,
+          view: view(() => createElement("p", null, "Digest")),
+          states,
+          regions: {},
+          overlays: {},
+        },
       ],
     };
     const clientDir = tempClientDir();
@@ -668,6 +708,97 @@ describe("prerender guards", () => {
           '@font-face{font-family:"Mono";src:url("/fonts/mono.ttf") format("truetype");font-style:normal;font-display:swap}' +
           "</style>",
       );
+    }
+  });
+});
+
+describe("static target shell documents", () => {
+  const SHELL =
+    '<!doctype html><html><body><div id="root"></div><script type="module" src="/assets/entry.js"></script></body></html>';
+
+  function shellApp() {
+    const home = page("home", { route: "/", regions: ["main"] });
+    const panel = page("console", {
+      route: "/console",
+      render: "csr",
+      regions: ["main"],
+    });
+    const item = page("item", {
+      route: "/items/:id",
+      params: z.object({ id: text({ min: 1, max: 40 }) }),
+      regions: ["main"],
+    });
+    const about = page("about", {
+      route: "/about",
+      render: "static",
+      regions: ["main"],
+    });
+    const news = page("news", {
+      route: "/news",
+      render: "ssg",
+      regions: ["main"],
+    });
+    return buildManifest(createRegistry().register(home, panel, item, about, news).freeze(), {
+      app: "shells",
+    });
+  }
+
+  it("names index.md beside every prerendered index.html", () => {
+    expect(prerenderedTextFile("/")).toBe("index.md");
+    expect(prerenderedTextFile("/about")).toBe("about/index.md");
+    expect(prerenderedTextFile("/guides/intro")).toBe("guides/intro/index.md");
+    expect(prerenderedTextFile("/guides/a%20b/")).toBe("guides/a b/index.md");
+  });
+
+  it("lists the ssr and csr pages without route params, in route order", () => {
+    expect(shellDocumentPages(shellApp())).toEqual([
+      { id: "home", route: "/" },
+      { id: "console", route: "/console" },
+    ]);
+  });
+
+  it("writes the shell at each listed route and as 404.html, never over a prerendered path", () => {
+    const dir = mkdtempSync(join(tmpdir(), "rex-shells-"));
+    try {
+      const prerendered = {
+        version: 1 as const,
+        pages: [
+          {
+            path: "/",
+            page: "landing",
+            render: "static" as const,
+            revalidate: null,
+            file: "index.html",
+            generatedAt: 0,
+          },
+        ],
+      };
+      writeFileSync(join(dir, "index.html"), "prerendered landing");
+      const written = writeShellDocuments(dir, SHELL, shellApp(), prerendered);
+      expect(written).toEqual([
+        { path: "/console", page: "console", file: "console/index.html" },
+        { path: null, page: null, file: NOT_FOUND_FILE },
+      ]);
+      expect(readFileSync(join(dir, "console", "index.html"), "utf8")).toBe(SHELL);
+      expect(readFileSync(join(dir, NOT_FOUND_FILE), "utf8")).toBe(SHELL);
+      expect(readFileSync(join(dir, "index.html"), "utf8")).toBe("prerendered landing");
+      expect(existsSync(join(dir, "items"))).toBe(false);
+      expect(existsSync(join(dir, "about"))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes the manifest body at rex/manifest", () => {
+    const dir = mkdtempSync(join(tmpdir(), "rex-static-manifest-"));
+    try {
+      const body = JSON.stringify(shellApp());
+      const file = writeStaticManifest(dir, body);
+      expect(file).toBe(join(dir, "rex", "manifest"));
+      expect(readFileSync(file, "utf8")).toBe(body);
+      expect(readdirSync(join(dir, "rex"))).toEqual(["manifest"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });

@@ -9,7 +9,11 @@ export interface SourceFrameOptions {
   readonly context?: number;
 }
 
-export function sourceFrame(source: string, line: number, options: SourceFrameOptions = {}): string {
+export function sourceFrame(
+  source: string,
+  line: number,
+  options: SourceFrameOptions = {},
+): string {
   const lines = source.split(/\r?\n/);
   if (!Number.isInteger(line) || line < 1 || line > lines.length) return "";
   const context = options.context ?? FRAME_CONTEXT_LINES;

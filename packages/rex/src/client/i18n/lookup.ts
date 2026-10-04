@@ -63,7 +63,10 @@ export function parseMessageRef(text: string): MessageRef | null {
 
 export function validateMessages(locale: string, value: unknown): Messages {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new RexError("REX316", `rex: app/locales/${locale}.json must be a flat object of messages`);
+    throw new RexError(
+      "REX316",
+      `rex: app/locales/${locale}.json must be a flat object of messages`,
+    );
   }
   const messages: Record<string, string> = {};
   for (const [key, pattern] of Object.entries(value as Record<string, unknown>)) {

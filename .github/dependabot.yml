@@ -1,0 +1,34 @@
+# Dependency updates for the pnpm workspace and the GitHub Actions workflows.
+# Minor and patch npm updates arrive grouped in one weekly pull request; a major update is not in
+# the group, so Dependabot opens it on its own. Actions are pinned by major version in the
+# workflows and arrive grouped weekly.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      npm-minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns:
+          - "*"

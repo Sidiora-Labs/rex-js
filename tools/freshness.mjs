@@ -328,7 +328,10 @@ export function checkVersions({ packageVersion, rexVersion, newAppRex, changelog
   const escaped = rexVersion.replace(/\./g, "\\.");
   if (head === null) {
     problems.push(`${CHANGELOG} has no version heading`);
-  } else if (!new RegExp(`^${escaped}(?:\\s|$)`).test(head) && !/\bunreleased\b/i.test(head)) {
+  } else if (
+    !new RegExp(`^\\[?v?${escaped}\\]?(?:\\s|$)`).test(head) &&
+    !/\bunreleased\b/i.test(head)
+  ) {
     problems.push(
       `${CHANGELOG} starts with "## ${head}"; expected ${rexVersion} or an unreleased entry`,
     );

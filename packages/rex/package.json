@@ -150,7 +150,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && node -e \"const fs=require('node:fs');for(const f of ['client/tokens.css','client/agent/density.css','vite/rex-app.d.ts'])fs.cpSync('src/'+f,'dist/'+f)\" && pnpm --dir ../.. install --frozen-lockfile --offline --ignore-scripts"
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && node -e \"const fs=require('node:fs');for(const f of ['client/tokens.css','client/agent/density.css','vite/rex-app.d.ts'])fs.cpSync('src/'+f,'dist/'+f)\" && pnpm --dir ../.. install --frozen-lockfile --offline --ignore-scripts",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@orpc/client": "^1.15.4",
@@ -247,6 +248,7 @@
     "@types/react-dom": "^19.3.0",
     "@typescript-eslint/parser": "^8.71.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "cmdk": "^1.1.1",
     "drizzle-orm": "^0.45.3",

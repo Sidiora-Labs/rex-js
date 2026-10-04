@@ -68,8 +68,7 @@ export interface PageCacheConfig {
 }
 
 export type PagePaths<Params = Readonly<Record<string, unknown>>> = () =>
-  | readonly Params[]
-  | Promise<readonly Params[]>;
+  readonly Params[] | Promise<readonly Params[]>;
 
 export const LOADER_NAME = /^[a-z][a-zA-Z0-9]*$/;
 
@@ -293,10 +292,7 @@ export function page<
   const O extends string = never,
   const A extends AnyAction = never,
   const L extends PageLoadMap = {},
->(
-  name: N,
-  config: PageConfig<P, S, R, O, A, L>,
-): PageDeclaration<N, P, S[number], R, O, A, L> {
+>(name: N, config: PageConfig<P, S, R, O, A, L>): PageDeclaration<N, P, S[number], R, O, A, L> {
   const id = declarationName("page", name);
   const fail = (field: string, problem: string): never => {
     throw new RexDeclarationError("page", id, field, problem);
@@ -463,7 +459,11 @@ export function page<
         }
       }
       if (spec.invalidatedBy !== undefined) {
-        invalidatedBy = loaderInvalidatedByList(spec.invalidatedBy, `${field}.invalidatedBy`, reject);
+        invalidatedBy = loaderInvalidatedByList(
+          spec.invalidatedBy,
+          `${field}.invalidatedBy`,
+          reject,
+        );
       }
       if (spec.input !== undefined || spec.invalidatedBy === undefined) {
         const mapInput: unknown = spec.input;

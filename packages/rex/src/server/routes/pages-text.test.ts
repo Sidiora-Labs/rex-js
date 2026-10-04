@@ -204,7 +204,7 @@ describe("renderPageText", () => {
     );
     expect(section(markdown, "Regions")).toContain('| `body` | `[data-rex-region="note/body"]` |');
     expect(section(markdown, "Actions")).toContain(
-      "| `add-note` | ADD \\| NOTE | reversible | yes | `[data-rex=\"note/add-note\"]` | `title`, `tags` | - | `POST /rex/form/add-note` |",
+      '| `add-note` | ADD \\| NOTE | reversible | yes | `[data-rex="note/add-note"]` | `title`, `tags` | - | `POST /rex/form/add-note` |',
     );
     expect(section(markdown, "Overlays")).toBe("## Overlays\n\n_None._\n");
     expect(rendered.sidecar.state).toBe("terminal-error");
@@ -275,7 +275,12 @@ describe("installPagesTextRoute", () => {
     expect(errors[0]).toBeInstanceOf(RexError);
     expect((errors[0] as RexError).code).toBe("REX408");
     expect((errors[0] as RexError).message).toContain('page "notes" declares loaders');
-    const server = createRexServer({ registry, ledger: memoryLedger(), actor: () => carol, app: APP });
+    const server = createRexServer({
+      registry,
+      ledger: memoryLedger(),
+      actor: () => carol,
+      app: APP,
+    });
     const served = await server.request(pageTextPath("notes"));
     expect(served.status).toBe(PAGES_TEXT_STATUS.page);
     expect(served.headers.get(RENDER_PAGE_HEADER)).toBe("notes");

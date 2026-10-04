@@ -244,7 +244,10 @@ describe("budgets", () => {
       raw: Buffer.byteLength(entryCode) + Buffer.byteLength(sharedCode),
       gzip: gzipSync(entryCode).byteLength + gzipSync(sharedCode).byteLength,
     });
-    expect(measured.firstPaint.map((chunk) => chunk.fileName)).toEqual(["entry.js", "shared-c3.js"]);
+    expect(measured.firstPaint.map((chunk) => chunk.fileName)).toEqual([
+      "entry.js",
+      "shared-c3.js",
+    ]);
     expect(measured.lazy).toEqual([
       {
         fileName: "confirm-dialog-d4.js",

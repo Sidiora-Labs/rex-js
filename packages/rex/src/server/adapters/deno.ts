@@ -67,23 +67,22 @@ export function startDenoServer(
   assertPort("startDenoServer", port);
   const handler: DenoServeHandler = (request, info) => app.fetch(request, info);
   return new Promise((resolvePromise) => {
-    let listening: DenoNetAddr | undefined;
-    let server: DenoHttpServer | undefined;
+    const state: { server?: DenoHttpServer; listening?: DenoNetAddr } = {};
     const settle = (): void => {
+      const { server, listening } = state;
       if (server === undefined || listening === undefined) return;
-      const running = server;
       resolvePromise({
-        server: running,
+        server,
         port: listening.port,
         url: serverUrl(hostname ?? "localhost", listening.port),
-        close: () => running.shutdown(),
+        close: () => server.shutdown(),
       });
     };
     const onListen = (localAddr: DenoNetAddr): void => {
-      listening = localAddr;
+      state.listening = localAddr;
       settle();
     };
-    server = runtime.serve(
+    state.server = runtime.serve(
       hostname === undefined ? { port, onListen } : { port, hostname, onListen },
       handler,
     );

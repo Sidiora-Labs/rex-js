@@ -87,12 +87,12 @@ export default region("actions", ({ nav }) => {
 
 ## Checks
 
-| Rule | Reports |
-| --- | --- |
-| `parity/overlay-missing` | an overlay declared in `page.ts` without `overlays/<Id>.tsx` |
-| `parity/overlay-undeclared` | an overlay file that `page.ts` does not declare |
-| `naming/overlay-name` | an overlay file name that is not PascalCase |
-| `boundaries/import-table` | an overlay importing data, actions or hooks |
-| `render/static-needs-js` | a region-bound overlay on a page rendered `static` |
+| Rule                        | Reports                                                      |
+| --------------------------- | ------------------------------------------------------------ |
+| `parity/overlay-missing`    | an overlay declared in `page.ts` without `overlays/<Id>.tsx` |
+| `parity/overlay-undeclared` | an overlay file that `page.ts` does not declare              |
+| `naming/overlay-name`       | an overlay file name that is not PascalCase                  |
+| `boundaries/import-table`   | an overlay importing data, actions or hooks                  |
+| `render/static-needs-js`    | a region-bound overlay on a page rendered `static`           |
 
 Related: [agent-contract.md](../agent-contract.md#overlays), [convention.md](../convention.md#import-table).

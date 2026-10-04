@@ -240,7 +240,10 @@ describe("security middleware", () => {
 
       const config = readConfigExport(
         defineConfig({
-          app: { name: "demo", registry: createRegistry().register(toggleDust, portfolio).freeze() },
+          app: {
+            name: "demo",
+            registry: createRegistry().register(toggleDust, portfolio).freeze(),
+          },
           security: { origins: [TAURI] },
           client: { apiOrigin: "https://api.example" },
         }),
@@ -416,7 +419,7 @@ describe("security middleware", () => {
         "<html><head><title>Rex</title>",
         "<script>window.theme = 'dark'</script>",
         "<script type='text/javascript' nonce='stale'>window.early = 1</script>",
-        "</head><body><div id=\"root\"></div>",
+        '</head><body><div id="root"></div>',
         '<script type="module" src="/main.ts"></script>',
         "</body></html>",
       ].join("\n");
