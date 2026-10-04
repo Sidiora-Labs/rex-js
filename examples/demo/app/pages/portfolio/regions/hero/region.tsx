@@ -12,6 +12,8 @@ export default region("hero", () => {
       address={data.account.address}
       totalUsd={data.totalUsd}
       tokenCount={data.tokens.length}
+      change24hUsd={data.change24hUsd}
+      change24hPct={data.change24hPct}
     />
   );
 });

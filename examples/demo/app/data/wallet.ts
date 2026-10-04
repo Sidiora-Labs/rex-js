@@ -36,6 +36,22 @@ export const TOKEN_SEED: readonly Token[] = [
   { id: "usdc", symbol: "USDC", name: "USD Coin", balance: "1500", priceUsd: "1" },
 ];
 
+export const CHANGE_24H_PCT: Readonly<Record<string, number>> = {
+  dust: -12.5,
+  eth: 2.84,
+  pax: 6.1,
+  usdc: 0.01,
+};
+
+export function change24hPct(tokenId: string): number {
+  return CHANGE_24H_PCT[tokenId] ?? 0;
+}
+
+function changeUsdOf(valueUsd: string, pct: number): number {
+  const value = Number(valueUsd);
+  return value - value / (1 + pct / 100);
+}
+
 export const TOKEN_PRICES = TOKEN_SEED.map(({ id, symbol, name, priceUsd }) => ({
   id,
   symbol,
@@ -107,13 +123,22 @@ export async function walletOverview(accountId: string) {
     ...entry,
     valueUsd: valueUsd(entry),
     dust: isDust(entry),
+    change24hPct: change24hPct(entry.id).toFixed(2),
   }));
   const total = held.reduce((sum, entry) => sum + toUnits(entry.valueUsd), 0n);
+  const changeUsd = held.reduce(
+    (sum, entry) => sum + changeUsdOf(entry.valueUsd, Number(entry.change24hPct)),
+    0,
+  );
+  const totalNumber = Number(fromUnits(total));
+  const before = totalNumber - changeUsd;
   return {
     account: owner,
     tokens: held,
     contacts: (await contacts.list()).items,
     totalUsd: fromUnits(total),
+    change24hUsd: changeUsd.toFixed(2),
+    change24hPct: (before === 0 ? 0 : (changeUsd / before) * 100).toFixed(2),
   };
 }
 

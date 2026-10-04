@@ -1,0 +1,100 @@
+{
+  "page": "about",
+  "actor": "owner",
+  "densities": [
+    {
+      "density": "default",
+      "checks": [
+        {
+          "name": "page serves one ready static sidecar",
+          "ok": true,
+          "detail": "1 actions as static JSON"
+        },
+        {
+          "name": "the page ships zero JavaScript",
+          "ok": true,
+          "detail": "no page chunk, hydration or data script"
+        },
+        {
+          "name": "root density is default",
+          "ok": false,
+          "detail": "data-rex-density is null"
+        },
+        {
+          "name": "stylesheet links precede the first body content",
+          "ok": true,
+          "detail": "1 stylesheet links precede the body"
+        },
+        {
+          "name": "every action renders as a form posting to the form route",
+          "ok": true,
+          "detail": "about/send-feedback"
+        },
+        {
+          "name": "sidecar lists exactly the present controls",
+          "ok": true,
+          "detail": "about/send-feedback"
+        },
+        {
+          "name": "the text renderer lists every sidecar action",
+          "ok": true,
+          "detail": "1 actions listed"
+        },
+        {
+          "name": "the console reports no Content Security Policy violation",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "density": "agent",
+      "checks": [
+        {
+          "name": "page serves one ready static sidecar",
+          "ok": true,
+          "detail": "1 actions as static JSON"
+        },
+        {
+          "name": "the page ships zero JavaScript",
+          "ok": true,
+          "detail": "no page chunk, hydration or data script"
+        },
+        {
+          "name": "root density is agent",
+          "ok": false,
+          "detail": "data-rex-density is null"
+        },
+        {
+          "name": "stylesheet links precede the first body content",
+          "ok": true,
+          "detail": "1 stylesheet links precede the body"
+        },
+        {
+          "name": "every action renders as a form posting to the form route",
+          "ok": true,
+          "detail": "about/send-feedback"
+        },
+        {
+          "name": "sidecar lists exactly the present controls",
+          "ok": true,
+          "detail": "about/send-feedback"
+        },
+        {
+          "name": "the text renderer lists every sidecar action",
+          "ok": true,
+          "detail": "1 actions listed"
+        },
+        {
+          "name": "the console reports no Content Security Policy violation",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "failures": [
+    "[default] root density is default: data-rex-density is null",
+    "[agent] root density is agent: data-rex-density is null"
+  ]
+}
