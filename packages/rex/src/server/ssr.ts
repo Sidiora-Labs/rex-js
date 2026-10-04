@@ -64,6 +64,7 @@ export { registerPageRenderer } from "./routes/render.ts";
 export const DEFAULT_ROOT_ELEMENT = "root";
 export const DEFAULT_DOCUMENT_LANG = "en";
 export const RENDER_FAILURE_MESSAGE = "The page failed to render on the server";
+export const INLINE_BOUNDARY_BYTES = Number.POSITIVE_INFINITY;
 
 export interface RexPageAssets {
   readonly stylesheets: readonly string[];
@@ -344,10 +345,6 @@ export function documentStream(
   });
 }
 
-function nextTask(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
-
 function actorData(context: RexRequestContext): RexDataPayload["actor"] {
   const { id, roles, permissions, attributes } = context.actor;
   return { id, roles, permissions, attributes };
@@ -545,6 +542,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
           entryTree(url, context, pages, queryClient, locale, media.collector, csrf, screen),
           {
             nonce: context.nonce,
+            progressiveChunkSize: INLINE_BOUNDARY_BYTES,
           },
         );
         await stream.allReady;
@@ -620,6 +618,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     try {
       stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient, locale, media.collector, csrf, screen), {
         nonce: context.nonce,
+        progressiveChunkSize: INLINE_BOUNDARY_BYTES,
         onError(error) {
           if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
           errors.push(error);
@@ -629,7 +628,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     } catch {
       return failure(url, match, context, locale, csrf, screen);
     }
-    await Promise.race([stream.allReady.catch(() => {}), nextTask()]);
+    await stream.allReady.catch(() => {});
     if (errors.length > 0) {
       await stream.cancel();
       return failure(url, match, context, locale, csrf, screen);

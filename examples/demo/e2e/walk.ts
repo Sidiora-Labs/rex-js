@@ -236,9 +236,10 @@ export async function waitForSidecar(
   options: SidecarReadOptions = {},
 ): Promise<SidecarPayload> {
   await page.waitForFunction(
-    ([selector, id]) => {
+    ([selector, id, mirrored]) => {
       const found = document.querySelectorAll(selector);
       if (found.length !== 1) return false;
+      if (mirrored && (window as unknown as { __rex?: unknown }).__rex === undefined) return false;
       try {
         const payload = JSON.parse(found[0]?.textContent ?? "") as {
           page?: string;
@@ -249,7 +250,7 @@ export async function waitForSidecar(
         return false;
       }
     },
-    [SIDECAR_SELECTOR, pageId] as const,
+    [SIDECAR_SELECTOR, pageId, options.mirror !== false] as const,
     { timeout: STEP_TIMEOUT },
   );
   return readSidecar(page, options);

@@ -1,5 +1,8 @@
 import { QueryClient, useQuery } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToReadableStream } from "react-dom/server";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
@@ -189,6 +192,39 @@ function mount(path: string, slot = Slot): Mounted {
   return { overlays, affordances, memory };
 }
 
+function documentTree(path: string, overlays: OverlayRegistry): ReactNode {
+  const server = createRexServer({ registry, ledger: memoryLedger(), actor: () => owner });
+  const fetch: RexFetch = async (input, init) =>
+    server.fetch(input instanceof Request ? input : new Request(input, init));
+  const RexApp = createRexApp({
+    registry,
+    manifest,
+    actor: owner,
+    fetch,
+    baseUrl: "http://rex.test",
+    queryClient: new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+  });
+  return (
+    <OutcomeProvider store={createOutcomeStore()}>
+      <OverlayRegistryProvider registry={overlays}>
+        <AffordanceRegistryProvider registry={createAffordanceRegistry()}>
+          <RexApp>
+            <Router ssrPath={path}>
+              <Shell pages={pages} outcome={Slot} />
+            </Router>
+          </RexApp>
+        </AffordanceRegistryProvider>
+      </OverlayRegistryProvider>
+    </OutcomeProvider>
+  );
+}
+
+async function serverHtml(tree: ReactNode): Promise<string> {
+  const stream = await renderToReadableStream(tree);
+  await stream.allReady;
+  return new Response(stream).text();
+}
+
 function sidecar(): SidecarPayload {
   const raw = readSidecar(document);
   const result = validateSidecar(raw);
@@ -357,6 +393,41 @@ describe("RexSidecar", () => {
     } finally {
       console.error = original;
     }
+  });
+
+  it("writes the script in the commit that sets window.__rex when hydration renders a newer payload", async () => {
+    window.history.replaceState(null, "", "/");
+    const container = document.createElement("div");
+    container.innerHTML = await serverHtml(documentTree("/", createOverlayRegistry()));
+    document.body.append(container);
+    const serverScript = container.querySelector('script[type="application/rex+json"]#rex-page');
+    expect(serverScript).not.toBeNull();
+    expect(JSON.parse(serverScript?.textContent ?? "")).toMatchObject({
+      page: "portfolio",
+      overlays: [{ id: "FilterSheet", open: false, dismiss: "both" }],
+    });
+    expect(window.__rex).toBeUndefined();
+
+    const overlays = createOverlayRegistry();
+    overlays.setOpen("portfolio", "FilterSheet", true);
+    const hydrated: { root: Root | null } = { root: null };
+    try {
+      await act(async () => {
+        hydrated.root = hydrateRoot(container, documentTree("/", overlays));
+      });
+      await waitFor(() => expect(window.__rex).toBeDefined());
+      expect(sidecarElements()).toHaveLength(1);
+      expect(container.querySelector("#rex-page")).toBe(serverScript);
+      expect(window.__rex?.overlays).toEqual([{ id: "FilterSheet", open: true, dismiss: "both" }]);
+      expect(JSON.parse(serverScript?.textContent ?? "")).toEqual(window.__rex);
+      expect(sidecar().page).toBe("portfolio");
+    } finally {
+      await act(async () => {
+        hydrated.root?.unmount();
+      });
+      container.remove();
+    }
+    expect(window.__rex).toBeUndefined();
   });
 
   it("renders nothing and clears window.__rex outside a page", async () => {

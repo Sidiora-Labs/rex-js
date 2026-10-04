@@ -11,12 +11,14 @@ function summary(view: RexRenderResult): string | null {
   return view.container.querySelector("[data-demo-summary]")?.textContent ?? null;
 }
 
-function sendButton(view: RexRenderResult): HTMLButtonElement {
-  const found = view.container.querySelector(
-    '[data-rex-region="send/confirm"] [data-rex="send/send"]',
-  );
-  expect(found).not.toBeNull();
-  return found as HTMLButtonElement;
+async function sendButton(view: RexRenderResult): Promise<HTMLButtonElement> {
+  return waitFor(() => {
+    const found = view.container.querySelector(
+      '[data-rex-region="send/confirm"] [data-rex="send/send"]',
+    );
+    expect(found).not.toBeNull();
+    return found as HTMLButtonElement;
+  });
 }
 
 function draftHref(amount: string): string {
@@ -41,8 +43,8 @@ describe("send confirm region", () => {
   it("summarises the default transfer alone", async () => {
     const view = await renderRegion(walletApp(owner), "send", "confirm");
     await waitFor(() => expect(summary(view)).toBe("Send 0.001 (default) ETH to Alice"));
-    expect(sendButton(view).getAttribute("data-rex-allowed")).toBe("true");
-    expect(sendButton(view).disabled).toBe(false);
+    expect((await sendButton(view)).getAttribute("data-rex-allowed")).toBe("true");
+    expect((await sendButton(view)).disabled).toBe(false);
     expect(view.container.querySelector('[data-rex-region="send/form"]')).toBeNull();
     expect(within(view.container).queryByRole("alert")).toBeNull();
   });
@@ -52,21 +54,21 @@ describe("send confirm region", () => {
     await waitFor(() => expect(summary(view)).not.toBeNull());
     act(() => view.navigate(draftHref("5"), { replace: true }));
     await waitFor(() => expect(summary(view)).toBe("Send 5 ETH to Alice"));
-    expect(sendButton(view).disabled).toBe(false);
+    expect((await sendButton(view)).disabled).toBe(false);
 
     act(() => view.navigate(draftHref("five"), { replace: true }));
     await waitFor(() => expect(summary(view)).toBe("Send five ETH to Alice"));
     expect(within(view.container).getByRole("alert").textContent).toBe(
       "Fix the amount before sending.",
     );
-    expect(sendButton(view).disabled).toBe(true);
+    expect((await sendButton(view)).disabled).toBe(true);
   });
 
   it("sends the default amount once the confirmation is accepted", async () => {
     const app = walletApp(owner);
     const view = await renderRegion(app, "send", "confirm");
     await waitFor(() => expect(summary(view)).not.toBeNull());
-    await click(sendButton(view));
+    await click(await sendButton(view));
     const dialog = await confirmDialog(view);
     expect(within(dialog).getByRole("heading", { level: 2 }).textContent).toBe("Confirm Send");
     expect(dialog.textContent).toContain("Send cannot be undone. Input: {}");
@@ -89,7 +91,7 @@ describe("send confirm region", () => {
     const app = walletApp(owner);
     const view = await renderRegion(app, "send", "confirm");
     await waitFor(() => expect(summary(view)).not.toBeNull());
-    await click(sendButton(view));
+    await click(await sendButton(view));
     const dialog = await confirmDialog(view);
     await click(dialog.querySelector('[data-rex-confirm-cancel="send/send"]') as Element);
     await waitFor(() =>
@@ -107,7 +109,7 @@ describe("send confirm region", () => {
   it("disables sending for the guest with the policy reason", async () => {
     const view = await renderRegion(walletApp(guest), "send", "confirm");
     await waitFor(() => expect(summary(view)).not.toBeNull());
-    const button = sendButton(view);
+    const button = await sendButton(view);
     expect(button.getAttribute("data-rex-allowed")).toBe("false");
     expect(button.getAttribute("title")).toMatch(/^Not allowed: /);
     expect(button.disabled).toBe(true);
