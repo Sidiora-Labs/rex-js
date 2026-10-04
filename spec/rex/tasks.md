@@ -199,7 +199,7 @@
     - Implement src/client/agent/sidecar.tsx: RexSidecar rendering one script element type application/rex+json id rex-page with the payload from [design] sidecar built from the active page, data state, act allowed results, overlay registry and outcome store; mirrors to window.__rex; updates on every change.
     - Write src/client/agent/sidecar.test.tsx validating the payload with validateSidecar, asserting updates after a state change, an overlay open and an action outcome, and asserting exactly one sidecar element per page.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ] 5.3 Implement the outcome region
+  - [x] 5.3 Implement the outcome region
     - Implement src/client/agent/outcome.tsx: Page.Outcome reading the outcome store and rendering an aria-live polite region with the last action label, ok or failure and message, plus a dismiss control; the Shell renders it on every page.
     - Write src/client/agent/outcome.test.tsx asserting rendering after success and failure and persistence across re-renders.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 7.1, 7.2, 7.3, 7.4, 7.5_
