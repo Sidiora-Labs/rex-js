@@ -47,6 +47,17 @@ export const sidecarOutcomeSchema = zm.strictObject({
   at: zm.iso.datetime(),
 });
 
+export const SIDECAR_ERROR_CODE_PATTERN = /^REX[0-9]{3}$/;
+
+export const sidecarRegionSchema = zm.strictObject({
+  id: nonEmpty(),
+  address: nonEmpty(),
+  state: zm.enum(REX_DATA_STATES),
+  code: zm.string().check(zm.regex(SIDECAR_ERROR_CODE_PATTERN)),
+});
+
+export const sidecarStoresSchema = zm.record(nonEmpty(), zm.unknown());
+
 export const sidecarSchema = zm
   .strictObject({
     version: zm.literal(SIDECAR_VERSION),
@@ -56,6 +67,8 @@ export const sidecarSchema = zm
     actions: zm.array(sidecarActionSchema),
     overlays: zm.array(sidecarOverlaySchema),
     outcome: zm.nullable(sidecarOutcomeSchema),
+    regions: zm.optional(zm.array(sidecarRegionSchema).check(zm.minLength(1))),
+    stores: zm.optional(sidecarStoresSchema),
   })
   .check(
     zm.superRefine((payload, ctx) => {
@@ -78,6 +91,7 @@ export const sidecarSchema = zm
       for (const [field, items] of [
         ["actions", payload.actions],
         ["overlays", payload.overlays],
+        ["regions", payload.regions ?? []],
       ] as const) {
         const seen = new Set<string>();
         items.forEach((item, index) => {
@@ -91,12 +105,21 @@ export const sidecarSchema = zm
           seen.add(item.id);
         });
       }
+      if (payload.stores !== undefined && Object.keys(payload.stores).length === 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["stores"],
+          message: "stores is omitted when no store is exposed",
+        });
+      }
     }),
   );
 
 export type SidecarAction = zm.output<typeof sidecarActionSchema>;
 export type SidecarOverlay = zm.output<typeof sidecarOverlaySchema>;
 export type SidecarOutcome = zm.output<typeof sidecarOutcomeSchema>;
+export type SidecarRegion = zm.output<typeof sidecarRegionSchema>;
+export type SidecarStores = zm.output<typeof sidecarStoresSchema>;
 export type SidecarPayload = zm.output<typeof sidecarSchema>;
 
 let builtSidecarJsonSchema: JsonSchema | null = null;

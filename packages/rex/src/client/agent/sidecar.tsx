@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { ActionEffect, AnyAction } from "../../core/action.ts";
 import type { Actor } from "../../core/actor.ts";
+import { regionAddress } from "../../core/ids.ts";
 import type { AnyPage } from "../../core/page.ts";
 import { evaluate } from "../../core/policy.ts";
 import type { JsonSchema } from "../../core/schema.ts";
@@ -25,6 +26,8 @@ import {
   type SidecarOutcome,
   type SidecarOverlay,
   type SidecarPayload,
+  type SidecarRegion,
+  type SidecarStores,
 } from "../../manifest/sidecar.schema.ts";
 import type { Manifest } from "../../manifest/types.ts";
 import { actionLabel } from "../act.ts";
@@ -33,6 +36,7 @@ import { useOutcome, type Outcome } from "../outcome.ts";
 import { PageRuntimeContext, usePageQueries } from "../page.tsx";
 import { useActivePage, type PageResolution } from "../router.tsx";
 import { useDataState } from "../states.ts";
+import { useExposedStores } from "../store.ts";
 
 declare global {
   interface Window {
@@ -333,6 +337,27 @@ export interface SidecarSource {
   readonly affordances?: readonly Affordance[];
   readonly failures?: readonly RegionFailure[];
   readonly outcome: Outcome | null;
+  readonly stores?: Readonly<Record<string, unknown>>;
+}
+
+export function sidecarRegions(
+  page: string,
+  failures: readonly RegionFailure[],
+): readonly SidecarRegion[] {
+  return failures.map((failure) => ({
+    id: failure.region,
+    address: regionAddress(page, failure.region),
+    state: "recoverable-error",
+    code: failure.code,
+  }));
+}
+
+export function sidecarStores(stores: Readonly<Record<string, unknown>>): SidecarStores | null {
+  const ids = Object.keys(stores).sort();
+  if (ids.length === 0) return null;
+  return JSON.parse(
+    JSON.stringify(Object.fromEntries(ids.map((id) => [id, stores[id]]))),
+  ) as SidecarStores;
 }
 
 function jsonParams(params: Readonly<Record<string, unknown>>): Record<string, unknown> {
@@ -370,17 +395,19 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
     open: source.openOverlays.includes(overlay.id),
     dismiss: overlay.dismiss,
   }));
+  const failures = source.failures ?? [];
+  const regions = sidecarRegions(declared.id, failures);
+  const stores = sidecarStores(source.stores ?? {});
   return {
     version: SIDECAR_VERSION,
     page: declared.id,
     params: jsonParams(source.params),
-    state:
-      (source.failures ?? []).length > 0 && source.state === "ready"
-        ? "recoverable-error"
-        : source.state,
+    state: failures.length > 0 && source.state === "ready" ? "recoverable-error" : source.state,
     actions,
     overlays,
     outcome: sidecarOutcome(source.outcome),
+    ...(regions.length > 0 ? { regions: [...regions] } : {}),
+    ...(stores === null ? {} : { stores }),
   };
 }
 
@@ -405,6 +432,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
   const affordances = useAffordances(resolution.page.id);
   const failures = useRegionFailures(resolution.page.id);
   const outcome = useOutcome(resolution.page.id);
+  const stores = useExposedStores();
   return useMemo(
     () =>
       buildSidecarPayload({
@@ -417,8 +445,9 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
         affordances,
         failures,
         outcome,
+        stores,
       }),
-    [manifest, resolution, state, subject, openOverlays, affordances, failures, outcome],
+    [manifest, resolution, state, subject, openOverlays, affordances, failures, outcome, stores],
   );
 }
 
