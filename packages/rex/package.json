@@ -1,6 +1,6 @@
 {
   "name": "@sidioralabs/rex",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Sidiora Labs' framework for web application interfaces that AI agents can write and operate.",
   "type": "module",
   "license": "MIT",

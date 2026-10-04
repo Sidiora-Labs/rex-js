@@ -1,4 +1,4 @@
-export const REX_VERSION = "0.1.0";
+export const REX_VERSION = "0.2.0";
 
 export * from "./core/errors.ts";
 export * from "./core/serialize.ts";
