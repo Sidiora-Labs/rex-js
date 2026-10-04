@@ -4,7 +4,7 @@
 
 # Rex
 
-Rex is Sidiora Labs' framework for building web application interfaces that AI agents can write and that AI agents can operate. It ships as one package, `@sidioralabs/rex`, with a CLI named `rex`.
+Rex is Sidiora Labs' framework for building web application interfaces that AI agents can write and that AI agents can operate. It ships as one package, `@sidioralabs/rex`, with a CLI named `rex`. Its site, [rex.sidioralabs.com](https://rex.sidioralabs.com), is built with Rex and carries the documentation, the error catalog, the API reference and the changelog.
 
 Rex is built around four rules:
 
@@ -195,6 +195,7 @@ Run it with `pnpm -C packages/rex build` and then `pnpm -C examples/demo test`, 
 - [docs/errors.md](docs/errors.md): the REX1xx to REX6xx error codes.
 - [docs/migration.md](docs/migration.md): adopting Rex in a Vite or Next.js app and upgrading from 0.1 to 0.2.
 - [docs/versioning.md](docs/versioning.md): semantic versioning, deprecations and codemods (`rex migrate`).
+- [docs/releasing.md](docs/releasing.md): deploying the site to rex.sidioralabs.com through GitHub Pages.
 - [docs/api/README.md](docs/api/README.md): the generated API reference, one page per package entry.
 - [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 
