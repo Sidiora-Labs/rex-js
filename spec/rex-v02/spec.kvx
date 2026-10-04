@@ -1977,6 +1977,24 @@ max_repair_cycles = 2
 time_limit_minutes = 75
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
 
+[task.9.6]
+title = "The demo walks green end to end: no-JS forms visible without JavaScript, the sidecar mirror and hydration in step with the server, portfolio contrast, INP on SSR pages and the demo unit tests"
+status = "pending"
+mode = "BUILD"
+wave = 9
+requires = ["9.5", "7.19", "7.21"]
+reqs = ["35.1", "37.4", "4.3"]
+do_1 = "The qualification.951 follow-ups: server/ssr.ts waits for allReady (or inlines completed boundaries) when the document is requested without JavaScript so a form inside a streamed Suspense boundary renders visible and the Send submit is reachable without JavaScript (ssr tests cover a suspended region); client/agent/sidecar.tsx writes window.__rex in the same commit as the rex-page script and on the development bundles that rex build shipped before 7.19 the first client render of the sidecar differed from the server script (React's hydration warning on /), while on production bundles the hydration render is byte-identical to the server script (measured on the lab build of 22ea8fe), so the mirror check runs on production bundles first and window.__rex is written in the same commit as the script only if it still lags, so the walk's mirror check and React's hydration both see one payload (a test renders the demo portfolio page on the server and hydrates it in happy-dom with no hydration warning); the demo's SSR vitals path records INP from first-input like the static path so embed no longer times out."
+do_2 = "The portfolio page passes Lighthouse color-contrast in both themes (theme.css tokens, not per-element overrides) and its performance score is re-measured on the production bundles of 7.19; the demo unit tests in portfolio/test and send/test pass on the redesign (qualification.734: the actions region waits for the page loaders, the contact picker shows its empty state); the serial demo suites walk every page including send and tokens; then the unchanged 6.4, 9.5 and 2.7 verify_cmds pass and qualification.641, 734, 951 close."
+touches = ["packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/ssr.node.test.ts", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/sidecar.test.tsx", "packages/rex/src/client/hydrate.ts", "packages/rex/src/client/screen.ts", "examples/demo"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server/ssr.test.tsx src/server/ssr.node.test.ts src/client && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check && pnpm -C examples/demo test:unit && pnpm -C examples/demo test"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 90
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
 [task.9.5]
 title = "Static pages carry the root attributes, the walks fit static and SSR pages, the demo tests follow the redesign, and the two 9.0 follow-ups"
 status = "implemented"
@@ -2001,7 +2019,7 @@ title = "Second re-qualification: the full suite green and every implemented tas
 status = "pending"
 mode = "BUILD"
 wave = 7
-requires = ["7.3", "7.16", "9.5", "7.19", "7.20", "7.21"]
+requires = ["7.3", "7.16", "9.5", "7.19", "7.20", "7.21", "9.6"]
 reqs = ["7.1", "22.2", "29.1", "32.1", "3.4", "16.2", "34.1", "35.1"]
 do_1 = "Run pnpm -r typecheck and pnpm -C packages/rex test on the integrated branch; for every failure make the task-scoped repair in the test or the code it covers without weakening a check, and record what cannot be repaired within the limit; then for every task whose status is implemented, in id order, run its unchanged verify_cmd once, run cg spec done <id> when it passes, and record one qualification entry with the measured result when it fails; every task must end done for the release, and the list of tasks still implemented, if any, is the task report's first line."
 touches = ["spec/rex-v02/spec.kvx", "packages/rex/src", "examples/demo"]
