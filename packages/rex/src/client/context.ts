@@ -1,15 +1,23 @@
 import type { Client } from "@orpc/client";
 import { createContext, useContext } from "react";
 import type { Actor } from "../core/actor.ts";
+import {
+  CONFIRM_PROCEDURE,
+  REX_ACTOR_HEADER,
+  REX_CONFIRM_HEADER,
+  REX_DENSITY_HEADER,
+  REX_MANIFEST_PATH,
+  REX_RPC_PREFIX,
+} from "../core/protocol.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import type { Manifest } from "../manifest/types.ts";
 
-export const REX_RPC_PATH = "/rex/rpc";
-export const REX_MANIFEST_PATH = "/rex/manifest";
-export const ACTOR_HEADER = "x-rex-actor";
-export const DENSITY_HEADER = "x-rex-density";
-export const CONFIRM_HEADER = "x-rex-confirm";
-export const CONFIRM_PROCEDURE = "$confirm";
+export { CONFIRM_PROCEDURE, REX_MANIFEST_PATH };
+
+export const REX_RPC_PATH = REX_RPC_PREFIX;
+export const ACTOR_HEADER = REX_ACTOR_HEADER;
+export const DENSITY_HEADER = REX_DENSITY_HEADER;
+export const CONFIRM_HEADER = REX_CONFIRM_HEADER;
 
 export interface RexClientContext {
   readonly confirmToken?: string;

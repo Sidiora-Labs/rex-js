@@ -4,6 +4,7 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { Hono } from "hono";
 import type { AnyAction } from "../core/action.ts";
 import type { Actor } from "../core/actor.ts";
+import { REX_ACTOR_HEADER, REX_MANIFEST_PATH, REX_RPC_PREFIX } from "../core/protocol.ts";
 import { buildManifest, stableStringify, type ManifestSource } from "../manifest/build.ts";
 import type { Ledger } from "./audit.ts";
 import {
@@ -21,8 +22,9 @@ export * from "./audit.ts";
 export * from "./context.ts";
 export * from "./router.ts";
 
-export const RPC_PREFIX = "/rex/rpc";
-export const MANIFEST_PATH = "/rex/manifest";
+export const RPC_PREFIX = REX_RPC_PREFIX;
+export const MANIFEST_PATH = REX_MANIFEST_PATH;
+export const ACTOR_HEADER = REX_ACTOR_HEADER;
 export const HEALTH_PATH = "/rex/health";
 
 export type ActorResolver = (request: Request) => Actor | Promise<Actor>;
@@ -61,6 +63,17 @@ export class RexDensityError extends Error {
   }
 }
 
+export function encodeActorHeaderValue(subject: Actor): string {
+  return encodeURIComponent(
+    JSON.stringify({
+      id: subject.id,
+      roles: subject.roles,
+      permissions: subject.permissions,
+      attributes: subject.attributes,
+    }),
+  );
+}
+
 export async function createRexContext(
   request: Request,
   resolveActor: ActorResolver,
@@ -92,9 +105,22 @@ export function createRexServer<A extends AnyAction>(options: RexServerOptions<A
   const handler = new RPCHandler(router);
   const app = new Hono();
 
-  app.get(MANIFEST_PATH, (c) =>
-    c.body(manifestBody, 200, { "content-type": "application/json; charset=utf-8" }),
-  );
+  app.get(MANIFEST_PATH, async (c) => {
+    let context: RexContext;
+    try {
+      context = await createRexContext(c.req.raw, options.actor);
+    } catch (error) {
+      if (error instanceof RexDensityError) {
+        return c.json({ code: "BAD_REQUEST", message: error.message }, 400);
+      }
+      throw error;
+    }
+    return c.body(manifestBody, 200, {
+      "content-type": "application/json; charset=utf-8",
+      [ACTOR_HEADER]: encodeActorHeaderValue(context.actor),
+      [DENSITY_HEADER]: context.density,
+    });
+  });
 
   app.get(HEALTH_PATH, (c) => c.json({ status: "ok" }));
 

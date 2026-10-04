@@ -185,41 +185,41 @@
 ## Wave 5
 
 - [ ] 5. Agent contract: addressing, sidecar, outcome, invocation, density, overlays
-  - [ ] 5.0 Align the confirm protocol, header names and reserved query keys between client and server
+  - [x] 5.0 Align the confirm protocol, header names and reserved query keys between client and server
     - Add src/core/protocol.ts exporting the single source of truth for the wire protocol: CONFIRM_PROCEDURE, the header names REX_CONFIRM_HEADER (x-rex-confirm), REX_ACTOR_HEADER (x-rex-actor), REX_DENSITY_HEADER (x-rex-density), the RPC prefix /rex/rpc and manifest path /rex/manifest, and RESERVED_QUERY_KEYS (act, input, draft, density); export it from src/index.ts.
     - Make src/server/router.ts, src/server/context.ts, src/server/index.ts, src/client/context.ts and src/client/act.ts import those constants instead of their own literals (wave 1 named the confirm procedure _confirm while wave 2 used $confirm; one name must win, taken from protocol.ts).
     - Make createRexServer set x-rex-actor (URI-encoded JSON of the resolved actor) and x-rex-density on the GET /rex/manifest response, which createRexApp already reads; add the assertion to src/server/server.test.ts.
     - Add src/core/protocol.test.ts proving the client confirm path and the server confirm procedure agree by running useAct against a real RPCHandler built from buildActionRouter for an irreversible action.
     - _Requirements: 2.1, 2.6, 6.4, 15.3_
-  - [ ] 5.1 Implement stable addressing
+  - [x] 5.1 Implement stable addressing
     - Implement src/client/agent/address.tsx: useAddress() returning the current page and region ids; controlProps from useAct include data-rex=<page>/<action>; PageHost sets data-rex-page; Region sets data-rex-region; overlays set data-rex-overlay.
     - Write src/client/agent/address.test.tsx asserting every attribute on the fixture page and that attributes are unchanged when class names change.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ] 5.2 Implement the affordance sidecar
+  - [x] 5.2 Implement the affordance sidecar
     - Implement src/client/agent/sidecar.tsx: RexSidecar rendering one script element type application/rex+json id rex-page with the payload from [design] sidecar built from the active page, data state, act allowed results, overlay registry and outcome store; mirrors to window.__rex; updates on every change.
     - Write src/client/agent/sidecar.test.tsx validating the payload with validateSidecar, asserting updates after a state change, an overlay open and an action outcome, and asserting exactly one sidecar element per page.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ] 5.3 Implement the outcome region
+  - [x] 5.3 Implement the outcome region
     - Implement src/client/agent/outcome.tsx: Page.Outcome reading the outcome store and rendering an aria-live polite region with the last action label, ok or failure and message, plus a dismiss control; the Shell renders it on every page.
     - Write src/client/agent/outcome.test.tsx asserting rendering after success and failure and persistence across re-renders.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ] 5.4 Implement the command palette, shortcuts, URL invocation and confirmation
+  - [x] 5.4 Implement the command palette, shortcuts, URL invocation and confirmation
     - Implement src/client/agent/palette.tsx with cmdk: opens on mod+k, lists active page actions (allowed state and reason shown) and navigable pages from the manifest, filters by label and id, executes or navigates on enter.
     - Implement src/client/agent/shortcuts.ts binding each active page action shortcut and src/client/agent/url-invoke.ts reading act and input query parameters on page mount, validating input and invoking through useAct; invalid input writes a validation outcome.
     - Implement src/client/agent/confirm.tsx: a confirmation overlay for irreversible actions used by all four routes, obtaining the confirm token on accept.
     - Write src/client/agent/invoke.test.tsx covering palette listing and execution, shortcut invocation, URL invocation with valid and invalid input, and confirmation on each route.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 8.1, 8.2, 8.3_
-  - [ ] 5.5 Implement the density and motion preference
+  - [x] 5.5 Implement the density and motion preference
     - Implement src/client/agent/density.ts: resolveDensity from the density query parameter, the x-rex-density header exposed by the server on the manifest response, the stored preference and default; DensityProvider sets data-rex-density on the root and exposes useDensity and setDensity.
     - Extend tokens.css agent density overrides: motion duration zero, collapsed groups expanded, hit targets at least 44 by 44 pixels.
     - Write src/client/agent/density.test.tsx covering precedence order and the root attribute.
     - _Requirements: 9.1, 9.2, 9.3_
-  - [ ] 5.6 Implement overlays
+  - [x] 5.6 Implement overlays
     - Implement src/client/overlay.tsx: overlay(id, {dismiss, binding}, render) producing a component that registers itself in the overlay registry with open state, renders data-rex-overlay, traps focus while open, closes on Escape and the declared dismiss control, and restores focus to the opener; open state binds to region state or the URL as declared.
     - Export overlay from src/client/index.ts by appending to the existing export list.
     - Write src/client/overlay.test.tsx covering open and close on each dismiss path, focus trap and restoration, URL binding and sidecar registration.
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 22.1, 22.2, 22.3_
-  - [ ] 5.7 Expose flow approval gates on the owning page
+  - [x] 5.7 Expose flow approval gates on the owning page
     - Implement src/client/agent/flow.tsx: useFlow(flow, instanceId) exposing status and, while paused at an approval gate, approve and reject actions that appear in the sidecar and the palette of the owning page and resume or terminate the flow through the server.
     - Export flow, the Journal types, the memory journal, runFlow and decide from src/index.ts so apps import them from the core entry (closes qualification.1 from wave 0).
     - Write src/client/agent/flow.test.tsx covering pause, sidecar exposure, approve resume and reject termination.
