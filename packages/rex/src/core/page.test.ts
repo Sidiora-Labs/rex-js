@@ -466,6 +466,37 @@ describe("0.2 page options", () => {
     expect(staticPage.render).toBe("static");
   });
 
+  it("records invalidatedBy action ids on a loader, with or without an input mapper", () => {
+    const declared = page("ledger", {
+      route: "/ledger/:account",
+      params: z.object({ account: text() }),
+      load: {
+        holdings,
+        prices: { action: prices, invalidatedBy: ["send", "pick-token"] },
+        mapped: {
+          action: holdings,
+          input: (params: Readonly<Record<string, unknown>>) => ({ account: String(params.account) }),
+          invalidatedBy: ["send"],
+        },
+      },
+    });
+    expect(
+      declared.loaders.map((loader) => ({
+        name: loader.name,
+        action: loader.action.id,
+        input: loader.input === null ? "params" : "mapped",
+        invalidatedBy: loader.invalidatedBy,
+      })),
+    ).toEqual([
+      { name: "holdings", action: "holdings", input: "params", invalidatedBy: [] },
+      { name: "prices", action: "prices", input: "params", invalidatedBy: ["send", "pick-token"] },
+      { name: "mapped", action: "holdings", input: "mapped", invalidatedBy: ["send"] },
+    ]);
+    expect(declared.loaders[2]?.input?.({ account: "main" })).toEqual({ account: "main" });
+    expect(declared.loaders.every((loader) => Object.isFrozen(loader.invalidatedBy))).toBe(true);
+    expect(declared.load.prices).toEqual({ action: prices, invalidatedBy: ["send", "pick-token"] });
+  });
+
   it.each([
     [{ route: "/", render: "edge" }, "REX200", "render"],
     [{ route: "/", revalidate: 60 }, "REX201", "revalidate"],
@@ -491,6 +522,20 @@ describe("0.2 page options", () => {
     [{ route: "/", load: { list: { action: "holdings", input: () => ({}) } } }, "REX203", "load.list"],
     [{ route: "/", load: { list: { action: holdings, input: () => ({}), key: 1 } } }, "REX203", "load.list.key"],
     [{ route: "/", load: { list: "holdings" } }, "REX203", "load.list"],
+    [{ route: "/", load: { list: { action: holdings, invalidatedBy: "send" } } }, "REX203", "load.list.invalidatedBy"],
+    [{ route: "/", load: { list: { action: holdings, invalidatedBy: ["Send"] } } }, "REX203", "load.list.invalidatedBy.0"],
+    [{ route: "/", load: { list: { action: holdings, invalidatedBy: [send] } } }, "REX203", "load.list.invalidatedBy.0"],
+    [
+      { route: "/", load: { list: { action: holdings, invalidatedBy: ["send", "send"] } } },
+      "REX203",
+      "load.list.invalidatedBy.1",
+    ],
+    [
+      { route: "/", load: { list: { action: holdings, input: 1, invalidatedBy: ["send"] } } },
+      "REX203",
+      "load.list.input",
+    ],
+    [{ route: "/", load: { list: { action: send, invalidatedBy: ["send"] } } }, "REX203", "load.list"],
     [{ route: "/", cache: { staleTime: -1 } }, "REX204", "cache.staleTime"],
     [{ route: "/", cache: { gcTime: 1, staleTime: 1 } }, "REX204", "cache.gcTime"],
     [{ route: "/", cache: 10 }, "REX204", "cache"],
