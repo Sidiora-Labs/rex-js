@@ -4,11 +4,13 @@ import type { ActorInput } from "../core/actor.ts";
 import { isPlainObject } from "../core/entity.ts";
 import { escapeInlineJson } from "../core/serialize.ts";
 import { adoptServerLoaders } from "./loaders.ts";
+import { SSR_ATTRIBUTE } from "./ssr-attribute.ts";
+
+export { SSR_ATTRIBUTE };
 
 export const REX_DATA_MIME_TYPE = "application/rex+data";
 export const REX_DATA_ELEMENT_ID = "rex-data";
 export const REX_DATA_VERSION = 1;
-export const SSR_ATTRIBUTE = "data-rex-ssr";
 export const HYDRATION_MISMATCH_CODE = "REX310";
 export const CLIENT_RENDER_DIGEST = "rex:client-render";
 

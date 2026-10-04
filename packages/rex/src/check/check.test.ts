@@ -142,6 +142,8 @@ describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
       "a11y",
       "render",
       "i18n",
+      "media",
+      "format",
     ]);
   });
 
@@ -205,6 +207,8 @@ describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
       "app/pages/about/page.ts",
     ]);
     expect(pick("i18n/literal").map(([file]) => file)).toEqual(["app/actions/ping.ts"]);
+    expect(pick("media/no-raw-img")).toEqual([["app/pages/home/regions/extra/region.tsx", 5, 7]]);
+    expect(pick("format/prettier")).toEqual([["app/data/unformatted.ts", 1, 23]]);
 
     const human = await runCheck(root);
     expect(human.output).toBe(formatHuman(result.findings));

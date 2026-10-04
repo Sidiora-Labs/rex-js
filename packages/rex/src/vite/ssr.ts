@@ -27,10 +27,10 @@ export function generateRenderModule(options: RenderModuleOptions): string {
   const rootElement = options.rootElement ?? ROOT_ELEMENT_ID;
   return [
     `import { createRexRenderer, registerPageRenderer } from ${JSON.stringify(options.ssr)};`,
-    `import app from ${JSON.stringify(APP_MODULE_ID)};`,
+    `import app, { config } from ${JSON.stringify(APP_MODULE_ID)};`,
     "",
     `export const assets = ${JSON.stringify(options.assets)};`,
-    `export const renderer = createRexRenderer({ bundle: app, assets, rootElement: ${JSON.stringify(rootElement)} });`,
+    `export const renderer = createRexRenderer({ bundle: app, assets, rootElement: ${JSON.stringify(rootElement)}, fonts: config.fonts });`,
     "registerPageRenderer(app.registry, renderer);",
     "export default renderer;",
     "",

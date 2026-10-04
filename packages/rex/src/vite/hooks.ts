@@ -12,6 +12,7 @@ import { entryModuleHook } from "./entry-module.ts";
 import { hmrHook } from "./hmr.ts";
 import { nonceHook } from "./nonce.ts";
 import { overlayHook } from "./overlay.ts";
+import { shellComponentsHook } from "./shell-components.ts";
 import type { RexPluginOptions } from "./plugin.ts";
 import type { RuntimePaths } from "./resolve.ts";
 import { ssrHook } from "./ssr.ts";
@@ -68,4 +69,5 @@ export const REX_HOOKS: readonly RexHook[] = [
   boundaryHook,
   devtoolsHook,
   overlayHook,
+  shellComponentsHook,
 ];

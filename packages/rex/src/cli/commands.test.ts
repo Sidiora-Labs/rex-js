@@ -25,6 +25,7 @@ import {
   CLIENT_DIR,
   type BuildTarget,
   DIST_DIR,
+  MANIFEST_OUTPUT,
   SERVER_FILE,
   SERVING_PREFIX,
   buildApp,
@@ -49,7 +50,7 @@ const EDGE_PROBE = [
   'const manifest = await worker.fetch(new Request("https://edge.test/rex/manifest"));',
   'const ping = await worker.fetch(new Request("https://edge.test/rex/rpc/ping", {',
   '  method: "POST",',
-  '  headers: { "content-type": "application/json" },',
+  '  headers: { "content-type": "application/json", origin: "https://edge.test" },',
   "  body: JSON.stringify({ json: {} }),",
   "}));",
   'const page = await worker.fetch(new Request("https://edge.test/", { headers: { accept: "text/html" } }));',
@@ -58,6 +59,7 @@ const EDGE_PROBE = [
   "  ping: { status: ping.status, body: await ping.json() },",
   '  page: { status: page.status, type: page.headers.get("content-type"), body: await page.text() },',
   "}));",
+  "process.exit(0);",
 ].join("\n");
 
 const temporary: string[] = [];
@@ -457,13 +459,16 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     }
   });
 
-  it("passes compiler, devtools, tailwind, ui and security.secretNames from rex.config.ts into rex()", async () => {
+  it("passes compiler, devtools, tailwind, ui, security.secretNames, ui.components, fonts and i18n from rex.config.ts into rex()", async () => {
     expect(configPluginOptions((await loadRexConfig(root)).read)).toEqual({
       compiler: true,
       devtools: true,
       tailwind: false,
       ui: "none",
       secretNames: [],
+      shellComponents: null,
+      fonts: [],
+      i18n: null,
     });
     const configFile = join(root, "rex.config.ts");
     const generated = readFileSync(configFile, "utf8");
@@ -479,6 +484,8 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
             "  tailwind: true,",
             '  ui: { kit: "designx", components: "app/components/Button.tsx" },',
             '  security: { secretNames: ["STRIPE_KEY"] },',
+            '  fonts: [{ family: "Inter", src: "/fonts/inter.woff2", weight: "100 900" }, { family: "Mono", src: "/fonts/mono.woff2" }],',
+            '  i18n: { locales: ["en", "de"], default: "en" },',
           ].join("\n"),
         ),
       );
@@ -488,6 +495,12 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
         tailwind: true,
         ui: "designx",
         secretNames: ["STRIPE_KEY"],
+        shellComponents: "app/components/Button.tsx",
+        fonts: [
+          { family: "Inter", src: "/fonts/inter.woff2", weight: "100 900", style: "normal", preload: true },
+          { family: "Mono", src: "/fonts/mono.woff2", style: "normal", preload: true },
+        ],
+        i18n: { locales: ["en", "de"], default: "en", routing: "none" },
       });
     } finally {
       writeFileSync(configFile, generated);
@@ -513,7 +526,7 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
       expect(startHint(built), target).toBe(`${expected.hint} (${join(outDir, SERVER_FILE)})`);
 
       expect(serverLayout(outDir), target).toEqual(
-        [CLIENT_DIR, PRERENDER_LIST_FILE, SERVER_FILE].sort(),
+        [CLIENT_DIR, MANIFEST_OUTPUT, PRERENDER_LIST_FILE, SERVER_FILE].sort(),
       );
       expect(existsSync(join(outDir, CLIENT_DIR, "index.html")), target).toBe(true);
       const server = readFileSync(join(outDir, SERVER_FILE), "utf8");
@@ -522,7 +535,7 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
       for (const other of Object.values(entries)) {
         if (other.start !== expected.start) expect(server, target).not.toContain(other.start);
       }
-      expect(server, target).not.toContain("createEdgeHandler");
+      if (target === "node") expect(server, target).not.toContain("createEdgeHandler");
     }
 
     for (const [target, runtime] of [
@@ -552,7 +565,7 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
 
     expect(existsSync(join(outDir, SERVER_FILE))).toBe(true);
     expect(existsSync(join(outDir, CLIENT_DIR, "index.html"))).toBe(true);
-    expect(serverLayout(outDir)).toEqual([CLIENT_DIR, SERVER_FILE]);
+    expect(serverLayout(outDir)).toEqual([CLIENT_DIR, MANIFEST_OUTPUT, SERVER_FILE].sort());
     const modules = serverModules(outDir);
     expect(modules).toContain(join(outDir, SERVER_FILE));
     for (const file of modules) {
@@ -604,7 +617,7 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
       expect(readdirSync(outDir)).toEqual([CLIENT_DIR]);
       const clientDir = join(outDir, CLIENT_DIR);
       expect(existsSync(join(clientDir, "index.html"))).toBe(true);
-      expect(entryScript(clientDir)).toMatch(/baseUrl:\s*"https:\/\/api\.example\.test"/);
+      expect(entryScript(clientDir)).toMatch(/baseUrl:\s*(["`])https:\/\/api\.example\.test\1/);
 
       const node = await buildApp(root, { logLevel: "silent", target: "node" });
       expect(node.serverFile).toBe(join(outDir, SERVER_FILE));

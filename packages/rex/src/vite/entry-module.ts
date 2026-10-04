@@ -1,7 +1,7 @@
 import { dirname, join } from "node:path";
 import { normalizePath, type Plugin } from "vite";
+import { SSR_ATTRIBUTE } from "../client/ssr-attribute.ts";
 import type { RexHookContext } from "./hooks.ts";
-import { SSR_ATTRIBUTE } from "../client/hydrate.ts";
 import { resolveRuntimeEntry } from "./resolve.ts";
 import {
   APP_MODULE_ID,

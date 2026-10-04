@@ -14,9 +14,11 @@ import type { AnyAction } from "../core/action.ts";
 import type { AnyPage } from "../core/page.ts";
 import type { RexServerSetup } from "./app.ts";
 import type { RexContext } from "./context.ts";
+import { telemetryFor, traceLoader, type RexTelemetry } from "./middleware/telemetry.ts";
 import { buildActionRouter, type ActionProcedure } from "./router.ts";
 
 export interface LoaderRunner {
+  readonly telemetry: RexTelemetry;
   run(declared: AnyAction, input: unknown, context: RexContext): Promise<unknown>;
 }
 
@@ -44,6 +46,9 @@ export function createLoaderRunner(setup: RexServerSetup): LoaderRunner {
       : { ledger: options.ledger, confirmTtlMs: options.confirmTtlMs },
   ) as unknown as Readonly<Record<string, ActionProcedure<AnyAction> | undefined>>;
   return Object.freeze({
+    get telemetry(): RexTelemetry {
+      return telemetryFor(options.ledger);
+    },
     async run(declared: AnyAction, input: unknown, context: RexContext): Promise<unknown> {
       const procedure = router[declared.id];
       if (procedure === undefined) {
@@ -82,13 +87,20 @@ export async function runPageLoaders(
       const key = loaderQueryKey(declared.id, loader.name, input);
       await queryClient.prefetchQuery({
         queryKey: key,
-        queryFn: async () => {
-          try {
-            return await runner.run(loader.action, input, context);
-          } catch (error) {
-            throw loaderError(declared.id, loader.name, toORPCError(error));
-          }
-        },
+        queryFn: () =>
+          traceLoader(
+            runner.telemetry,
+            { pageId: declared.id, actionId: loader.action.id, actorId: context.actor.id },
+            async (span) => {
+              try {
+                return await runner.run(loader.action, input, context);
+              } catch (error) {
+                const failure = toORPCError(error);
+                span.outcome(failure.code);
+                throw loaderError(declared.id, loader.name, failure);
+              }
+            },
+          ),
         retry: false,
       });
       const state = queryClient.getQueryState<unknown, RexLoaderError>(key);

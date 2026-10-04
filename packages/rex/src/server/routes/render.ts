@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import { i18nFor } from "../../client/i18n/context.ts";
 import { STATIC_HEADER, staticCacheFor, type StaticHit } from "../adapters/static-cache.ts";
 import type { RexServerSetup } from "../app.ts";
 import {
@@ -82,7 +83,11 @@ export function installRenderRoute(app: Hono, setup: RexServerSetup): void {
     }
     let context: RexRequestContext;
     try {
-      context = await createRexContext(c.req.raw, setup.options.actor);
+      context = await createRexContext(
+        c.req.raw,
+        setup.options.actor,
+        i18nFor(setup.options.registry)?.settings ?? null,
+      );
     } catch (error) {
       if (error instanceof RexDensityError) {
         return c.json({ code: "BAD_REQUEST", message: error.message }, 400);
