@@ -2,15 +2,17 @@
 import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import type { RexErrorCode } from "../core/errors.ts";
 import { REX_VERSION } from "../index.ts";
-import { ARGS_ERROR, RexArgsError, RexCommand } from "./args.ts";
+import { ARGS_USAGE_CODE, RexArgsError, RexCommand } from "./args.ts";
+import { MAKE_INVALID_CODE } from "./commands/make.ts";
 import { causeFrame, formatCliError } from "./frame.ts";
 
 export const EXIT_OK = 0;
 export const EXIT_FAILURE = 1;
 export const EXIT_USAGE = 2;
 
-export const USAGE_ERROR_CODES: readonly string[] = Object.values(ARGS_ERROR);
+export const USAGE_ERROR_CODES: readonly RexErrorCode[] = [ARGS_USAGE_CODE, MAKE_INVALID_CODE];
 
 export interface RexCliIO {
   readonly cwd: string;

@@ -1755,7 +1755,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.14]
 title = "CLI follow-ups: codemod output in prettier form, DesignX files written formatted, catalogued usage errors and the Drizzle store"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = ["7.12"]
@@ -1763,7 +1763,7 @@ reqs = ["31.2", "29.1", "13.1"]
 do_1 = "The 0.1-raw-img codemod emits a converted Img whose single-line form would exceed 100 columns with one attribute per line at element indent plus two, the form prettier prints, reports its REX610 flags at the output positions, and MIGRATED_COVER_REGION and FLAG_LINES in migrate.test.ts follow (qualification.781), so the unchanged 7.8 verify_cmd can qualify."
 do_2 = "rex new --ui designx writes every fetched registry file through the rex/prettier preset before saving it, so a fresh DesignX app reports no format/prettier finding (qualification.7121); the designx test asserts it."
 do_3 = "The 7.7 follow-ups in qualification.771: cli/index.ts maps RexArgsError codes to the usage exit code through the catalogued codes, make and promote report REX601 and REX602 as themselves, store/drizzle.ts raises catalogued RexError codes instead of TypeError, and docs/primitives.md and docs/reference.md name the catalogued codes and RexError in place of NO_PENDING_APPROVAL, FORBIDDEN and the old Error classes."
-touches = ["packages/rex/src/cli/codemods/0.1-raw-img.ts", "packages/rex/src/cli/migrate.test.ts", "packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/cli.test.ts", "packages/rex/src/cli/commands/make.ts", "packages/rex/src/cli/commands/promote.ts", "packages/rex/src/cli/make.test.ts", "packages/rex/src/store/drizzle.ts", "packages/rex/src/store/drizzle.test.ts", "packages/rex/src/core/errors.ts", "packages/rex/src/core/errors.docs.ts", "docs/primitives.md", "docs/reference.md", "docs/errors.md"]
+touches = ["packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/cli.test.ts", "packages/rex/src/cli/commands/make.ts", "packages/rex/src/cli/commands/promote.ts", "packages/rex/src/cli/make.test.ts", "packages/rex/src/store/drizzle.ts", "packages/rex/src/store/drizzle.test.ts", "docs/primitives.md", "docs/reference.md"]
 verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/cli/migrate.test.ts src/cli/designx.test.ts src/cli/cli.test.ts src/cli/make.test.ts src/store/drizzle.test.ts src/core/errors.test.ts && node tools/docs-errors.mjs --check"
 gate_kind = "planned"
 max_builds = 1

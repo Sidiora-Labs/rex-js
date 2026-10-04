@@ -1,6 +1,6 @@
 # Primitives
 
-Rex has five declarations, all imported from `@sidioralabs/rex`: `entity()`, `action()`, `page()`, `policy()` and `flow()`. Each takes a name and exactly one declaration object, validates it when it is called, and returns a frozen declaration with `kind`, `id` and `name`. A malformed declaration throws `RexDeclarationError` with the declaration kind, the id and the field name, for example `action "send": field "effect" must be one of reversible, irreversible, read`. Unknown keys in the declaration object are rejected. Declarations contain no React code and import from both server and client bundles.
+Rex has five declarations, all imported from `@sidioralabs/rex`: `entity()`, `action()`, `page()`, `policy()` and `flow()`. Each takes a name and exactly one declaration object, validates it when it is called, and returns a frozen declaration with `kind`, `id` and `name`. A malformed declaration throws `RexDeclarationError`, a `RexError` with a catalogued code (`REX211` to `REX216` by declaration kind, see [errors.md](errors.md)), the declaration kind, the id and the field name, for example `action "send": field "effect" must be one of reversible, irreversible, read`. Unknown keys in the declaration object are rejected. Declarations contain no React code and import from both server and client bundles.
 
 The manifest is the sixth piece: a generated description of all declarations.
 
@@ -8,7 +8,7 @@ Sources: `packages/rex/src/core/*.ts`, `packages/rex/src/manifest/*.ts`, `packag
 
 ## Names and ids
 
-The declaration id is the name you pass. Names must start with a lowercase letter and contain only lowercase letters, digits, dot and dash (`validateName`); otherwise `RexNameError` is raised and reported as a `RexDeclarationError` on the `id` field. Overlay ids are PascalCase (`validateComponentName`).
+The declaration id is the name you pass. Names must start with a lowercase letter and contain only lowercase letters, digits, dot and dash (`validateName`); otherwise `RexNameError` (code `REX218`) is raised and reported as a `RexDeclarationError` on the `id` field. Overlay ids are PascalCase (`validateComponentName`).
 
 `createRegistry()` collects declarations: `register(...declarations)` adds them (registering the same object twice is a no-op; a different declaration with an existing id throws "is already registered by another `<kind>`"), `has(kind, id)` tests membership, and `freeze()` returns a `RegistrySnapshot` with `entities`, `actions`, `pages`, `policies` and `flows` sorted by id, plus `find(kind, id)` and `get(kind, id)` (which throws for an unknown id). The generated `rex:app` module builds the app's registry this way.
 
@@ -152,7 +152,7 @@ interface ApprovalStepConfig { approval: string; label: string; approvers: Predi
 interface FlowStepContext { actor: Actor; input: unknown; outputs: unknown[] }
 ```
 
-`runFlow(flow, instanceId, { actor, input? })` opens or resumes an instance in the journal and runs from the first incomplete step. An action step evaluates the action's policy, parses the step input, runs the handler and records the output; an error records a `failed` entry and stops with status `failed`. An approval step records `paused` and returns with the gate. `decide(flow, instanceId, "approve" | "reject", actor)` requires a pending gate (`FlowDecisionError` with code `NO_PENDING_APPROVAL` otherwise) and an actor allowed by `approvers` (code `FORBIDDEN`), records the decision, and either resumes the flow or ends it as `rejected`.
+`runFlow(flow, instanceId, { actor, input? })` opens or resumes an instance in the journal and runs from the first incomplete step. An action step evaluates the action's policy, parses the step input, runs the handler and records the output; an error records a `failed` entry and stops with status `failed`. An approval step records `paused` and returns with the gate. `decide(flow, instanceId, "approve" | "reject", actor)` requires a pending gate (otherwise a `FlowDecisionError`, the `RexError` with code `REX333`) and an actor allowed by `approvers` (otherwise code `REX334`, with the denial `reason`), records the decision, and either resumes the flow or ends it as `rejected`.
 
 Flow statuses are `running`, `paused`, `completed`, `rejected`, `failed`. The `Journal` interface has `open`, `record`, `load` and `list`; journal entries are `step`, `paused`, `decision`, `failed` and `completed`. `memoryJournal()` is the in-memory implementation.
 
@@ -172,7 +172,7 @@ interface Store<T> {
 Pages start at 1; `size` defaults to 50 (`DEFAULT_PAGE_SIZE`) and may not exceed 500 (`MAX_PAGE_SIZE`). Filters match fields by equality. `bind(entity, store)` returns an `EntityStore` that validates ids, rejects unknown filter fields, and parses records with the entity schema on `put`.
 
 - **Memory.** `memoryStore(entity, seed?)` keeps records in a map keyed by `entity.keyOf`, returns copies, and lists in key order.
-- **Drizzle.** `drizzleStore(entity, db, { table?, createTable? })` in `packages/rex/src/store/drizzle.ts` maps an entity to a SQLite table on an async Drizzle database (libsql in the tests). The table name defaults to the entity id with dots and dashes replaced by underscores. Column types follow the field kind (`id`, `text`, `money`, `enum`, `ref`, `timestamp` as text, `integer` as integer, `boolean` as integer in boolean mode, other numbers as real, other values as JSON text). The key field is the primary key. Unless `createTable` is `false`, it runs `CREATE TABLE IF NOT EXISTS` before the first query. `put` is an upsert. A field that is both optional and nullable is rejected. This module is not exposed by the package exports map in 0.1.0.
+- **Drizzle.** `drizzleStore(entity, db, { table?, createTable? })` in `packages/rex/src/store/drizzle.ts` maps an entity to a SQLite table on an async Drizzle database (libsql in the tests). The table name defaults to the entity id with dots and dashes replaced by underscores. Column types follow the field kind (`id`, `text`, `money`, `enum`, `ref`, `timestamp` as text, `integer` as integer, `boolean` as integer in boolean mode, other numbers as real, other values as JSON text). The key field is the primary key. Unless `createTable` is `false`, it runs `CREATE TABLE IF NOT EXISTS` before the first query. `put` is an upsert. A field that is both optional and nullable and a table name that is not lowercase snake_case are rejected with a `RexError` coded `REX329`, and a list filter on an undeclared field with `REX305`, as in the memory store. This module is not exposed by the package exports map in 0.1.0.
 
 Both adapters are tested against the shared conformance suite in `packages/rex/src/core/store.conformance.ts` (`runStoreConformance`).
 

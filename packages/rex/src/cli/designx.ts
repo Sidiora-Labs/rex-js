@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, posix } from "node:path";
+import { rexPrettierConfig } from "../prettier.ts";
 import type { PlannedFile } from "./commands/make.ts";
 
 export const DESIGNX_REGISTRY = "https://dxuireact.com/r";
@@ -158,7 +159,9 @@ export async function fetchDesignxItem(
   try {
     response = await request(url);
   } catch (error) {
-    throw new DesignxError(`cannot reach the DesignX registry at ${url}`, { cause: error });
+    throw new DesignxError(`cannot reach the DesignX registry at ${url}`, {
+      cause: error,
+    });
   }
   if (!response.ok) {
     throw new DesignxError(`the DesignX registry answered ${response.status} for ${url}`);
@@ -179,9 +182,7 @@ export async function resolveDesignxItems(
   const resolved = new Map<string, DesignxItem>();
   let pending = [...new Set(names.map(registryName))];
   while (pending.length > 0) {
-    const fetched = await Promise.all(
-      pending.map((name) => fetchDesignxItem(name, options)),
-    );
+    const fetched = await Promise.all(pending.map((name) => fetchDesignxItem(name, options)));
     const next = new Set<string>();
     for (const item of fetched) {
       resolved.set(item.name, item);
@@ -202,11 +203,17 @@ function stripExtension(path: string): string {
 export function designxTarget(item: DesignxItem, file: DesignxFile): string {
   if (item.type === "registry:style" || file.path.endsWith(".css")) return DESIGNX_THEME_FILE;
   const base = posix.basename(file.path);
-  if (file.path.startsWith("ui/") || file.path.startsWith("lib/") || file.path.startsWith("hooks/")) {
+  if (
+    file.path.startsWith("ui/") ||
+    file.path.startsWith("lib/") ||
+    file.path.startsWith("hooks/")
+  ) {
     return `${DESIGNX_UI_DIR}/${base}`;
   }
   if (file.path.startsWith("components/")) return `${DESIGNX_UI_DIR}/${base}`;
-  throw new DesignxError(`DesignX item "${item.name}" has the file ${file.path}, which Rex cannot place`);
+  throw new DesignxError(
+    `DesignX item "${item.name}" has the file ${file.path}, which Rex cannot place`,
+  );
 }
 
 function aliasOf(file: DesignxFile): string | null {
@@ -262,6 +269,47 @@ export function designxFiles(items: readonly DesignxItem[]): readonly PlannedFil
   return planned.sort((a, b) => a.path.localeCompare(b.path));
 }
 
+type Prettier = typeof import("prettier");
+
+function isMissingModule(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return code === "ERR_MODULE_NOT_FOUND" || code === "MODULE_NOT_FOUND";
+}
+
+async function loadPrettier(): Promise<Prettier> {
+  try {
+    return await import("prettier");
+  } catch (error) {
+    if (!isMissingModule(error)) throw error;
+    throw new DesignxError(
+      "the DesignX registry files are written through the rex/prettier preset, but prettier is not installed; add prettier next to rex or pass --ui none",
+      { cause: error },
+    );
+  }
+}
+
+export async function formatDesignxFiles(
+  files: readonly PlannedFile[],
+): Promise<readonly PlannedFile[]> {
+  const prettier = await loadPrettier();
+  return Promise.all(
+    files.map(async (file) => {
+      let content: string;
+      try {
+        content = await prettier.format(file.content, {
+          ...rexPrettierConfig,
+          filepath: file.path,
+        });
+      } catch (error) {
+        throw new DesignxError(`cannot format the DesignX file ${file.path} with rex/prettier`, {
+          cause: error,
+        });
+      }
+      return { ...file, content };
+    }),
+  );
+}
+
 export function parseDependency(spec: string): readonly [string, string] {
   const at = spec.indexOf("@", spec.startsWith("@") ? 1 : 0);
   if (at === -1) return [spec, "latest"];
@@ -308,8 +356,12 @@ export async function fetchDesignx(
     registry,
     items,
     files: [
-      ...designxFiles(items),
-      { kind: "file", path: DESIGNX_CONFIG_FILE, content: designxConfig(items, registry) },
+      ...(await formatDesignxFiles(designxFiles(items))),
+      {
+        kind: "file",
+        path: DESIGNX_CONFIG_FILE,
+        content: designxConfig(items, registry),
+      },
     ],
     dependencies: designxDependencies(items),
     devDependencies: collect(items.flatMap((item) => item.devDependencies)),
@@ -333,7 +385,10 @@ export function withDesignxDependencies(packageJson: string, install: DesignxIns
     dependencies: sorted({ ...install.dependencies, ...manifest.dependencies }),
   };
   if (Object.keys(install.devDependencies).length > 0) {
-    next.devDependencies = sorted({ ...install.devDependencies, ...manifest.devDependencies });
+    next.devDependencies = sorted({
+      ...install.devDependencies,
+      ...manifest.devDependencies,
+    });
   }
   return `${JSON.stringify(next, null, 2)}\n`;
 }
@@ -349,13 +404,18 @@ export function withDesignxStylesheet(indexHtml: string): string {
   );
 }
 
-export function packageManager(userAgent: string | undefined = process.env.npm_config_user_agent): string {
+export function packageManager(
+  userAgent: string | undefined = process.env.npm_config_user_agent,
+): string {
   const name = userAgent?.split("/")[0];
   return name === "pnpm" || name === "yarn" || name === "bun" ? name : "npm";
 }
 
 export function installPackages(root: string, manager: string = packageManager()): void {
-  const result = spawnSync(manager, ["install"], { cwd: root, stdio: "inherit" });
+  const result = spawnSync(manager, ["install"], {
+    cwd: root,
+    stdio: "inherit",
+  });
   if (result.error !== undefined || result.status !== 0) {
     throw new DesignxError(
       `${manager} install failed in ${root}${result.error === undefined ? ` with exit code ${String(result.status)}` : `: ${result.error.message}`}`,
@@ -381,7 +441,9 @@ export async function addDesignx(
     .filter((file) => file.path !== DESIGNX_CONFIG_FILE && existsSync(join(root, file.path)))
     .map((file) => file.path);
   if (clashes.length > 0 && options.overwrite !== true) {
-    throw new DesignxError(`refusing to overwrite existing files:\n${clashes.map((path) => `  ${path}`).join("\n")}`);
+    throw new DesignxError(
+      `refusing to overwrite existing files:\n${clashes.map((path) => `  ${path}`).join("\n")}`,
+    );
   }
   const written: string[] = [];
   for (const file of install.files) {
