@@ -10,7 +10,7 @@
 
 #### Extends
 
-- `Error`
+- [`RexError`](#rexerror)
 
 #### Constructors
 
@@ -30,7 +30,7 @@ new FlowDecisionError(
 
 ###### code
 
-`"NO_PENDING_APPROVAL"` \| `"FORBIDDEN"`
+[`FlowDecisionErrorCode`](#flowdecisionerrorcode-1)
 
 ###### message
 
@@ -46,9 +46,7 @@ new FlowDecisionError(
 
 ###### Overrides
 
-```ts
-Error.constructor
-```
+[`RexError`](#rexerror).[`constructor`](#constructor-3)
 
 #### Properties
 
@@ -57,8 +55,84 @@ Error.constructor
 ##### code
 
 ```ts
-readonly code: "NO_PENDING_APPROVAL" | "FORBIDDEN";
+readonly code: FlowDecisionErrorCode;
 ```
+
+###### Overrides
+
+[`RexError`](#rexerror).[`code`](#code-3)
+
+<a id="column"></a>
+
+##### column
+
+```ts
+readonly column: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](#rexerror).[`column`](#column-3)
+
+<a id="detail"></a>
+
+##### detail
+
+```ts
+readonly detail: string;
+```
+
+###### Inherited from
+
+[`RexError`](#rexerror).[`detail`](#detail-3)
+
+<a id="docs"></a>
+
+##### docs
+
+```ts
+readonly docs: string;
+```
+
+###### Inherited from
+
+[`RexError`](#rexerror).[`docs`](#docs-3)
+
+<a id="file"></a>
+
+##### file
+
+```ts
+readonly file: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](#rexerror).[`file`](#file-3)
+
+<a id="hint"></a>
+
+##### hint
+
+```ts
+readonly hint: string | null;
+```
+
+###### Inherited from
+
+[`RexError`](#rexerror).[`hint`](#hint-3)
+
+<a id="line"></a>
+
+##### line
+
+```ts
+readonly line: number | null;
+```
+
+###### Inherited from
+
+[`RexError`](#rexerror).[`line`](#line-3)
 
 <a id="reason"></a>
 
@@ -188,6 +262,9 @@ new RexDeclarationError(
   \| `"REX329"`
   \| `"REX330"`
   \| `"REX331"`
+  \| `"REX332"`
+  \| `"REX333"`
+  \| `"REX334"`
   \| `"REX400"`
   \| `"REX401"`
   \| `"REX402"`
@@ -218,6 +295,8 @@ new RexDeclarationError(
   \| `"REX601"`
   \| `"REX602"`
   \| `"REX603"`
+  \| `"REX604"`
+  \| `"REX605"`
   \| `"REX610"`
   \| `"REX611"`
   \| `"REX612"`
@@ -312,6 +391,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -342,6 +424,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -351,7 +435,7 @@ readonly code:
 
 [`RexError`](#rexerror).[`code`](#code-3)
 
-<a id="column"></a>
+<a id="column-1"></a>
 
 ##### column
 
@@ -361,7 +445,7 @@ readonly column: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`column`](#column-2)
+[`RexError`](#rexerror).[`column`](#column-3)
 
 <a id="declaration"></a>
 
@@ -371,7 +455,7 @@ readonly column: number | null;
 readonly declaration: DeclarationName;
 ```
 
-<a id="detail"></a>
+<a id="detail-1"></a>
 
 ##### detail
 
@@ -381,9 +465,9 @@ readonly detail: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`detail`](#detail-2)
+[`RexError`](#rexerror).[`detail`](#detail-3)
 
-<a id="docs"></a>
+<a id="docs-1"></a>
 
 ##### docs
 
@@ -393,7 +477,7 @@ readonly docs: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`docs`](#docs-2)
+[`RexError`](#rexerror).[`docs`](#docs-3)
 
 <a id="field"></a>
 
@@ -403,7 +487,7 @@ readonly docs: string;
 readonly field: string;
 ```
 
-<a id="file"></a>
+<a id="file-1"></a>
 
 ##### file
 
@@ -413,9 +497,9 @@ readonly file: string | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`file`](#file-2)
+[`RexError`](#rexerror).[`file`](#file-3)
 
-<a id="hint"></a>
+<a id="hint-1"></a>
 
 ##### hint
 
@@ -425,7 +509,7 @@ readonly hint: string | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`hint`](#hint-2)
+[`RexError`](#rexerror).[`hint`](#hint-3)
 
 <a id="id"></a>
 
@@ -435,7 +519,7 @@ readonly hint: string | null;
 readonly id: string;
 ```
 
-<a id="line"></a>
+<a id="line-1"></a>
 
 ##### line
 
@@ -445,7 +529,7 @@ readonly line: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`line`](#line-2)
+[`RexError`](#rexerror).[`line`](#line-3)
 
 ***
 
@@ -545,6 +629,9 @@ new RexDeclarationOptionError(code, details): RexDeclarationOptionError;
   \| `"REX329"`
   \| `"REX330"`
   \| `"REX331"`
+  \| `"REX332"`
+  \| `"REX333"`
+  \| `"REX334"`
   \| `"REX400"`
   \| `"REX401"`
   \| `"REX402"`
@@ -575,6 +662,8 @@ new RexDeclarationOptionError(code, details): RexDeclarationOptionError;
   \| `"REX601"`
   \| `"REX602"`
   \| `"REX603"`
+  \| `"REX604"`
+  \| `"REX605"`
   \| `"REX610"`
   \| `"REX611"`
   \| `"REX612"`
@@ -673,6 +762,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -703,6 +795,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -712,7 +806,7 @@ readonly code:
 
 [`RexError`](#rexerror).[`code`](#code-3)
 
-<a id="column-1"></a>
+<a id="column-2"></a>
 
 ##### column
 
@@ -722,7 +816,7 @@ readonly column: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`column`](#column-2)
+[`RexError`](#rexerror).[`column`](#column-3)
 
 <a id="declaration-1"></a>
 
@@ -732,7 +826,7 @@ readonly column: number | null;
 readonly declaration: string;
 ```
 
-<a id="detail-1"></a>
+<a id="detail-2"></a>
 
 ##### detail
 
@@ -742,9 +836,9 @@ readonly detail: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`detail`](#detail-2)
+[`RexError`](#rexerror).[`detail`](#detail-3)
 
-<a id="docs-1"></a>
+<a id="docs-2"></a>
 
 ##### docs
 
@@ -754,7 +848,7 @@ readonly docs: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`docs`](#docs-2)
+[`RexError`](#rexerror).[`docs`](#docs-3)
 
 <a id="field-1"></a>
 
@@ -764,7 +858,7 @@ readonly docs: string;
 readonly field: string;
 ```
 
-<a id="file-1"></a>
+<a id="file-2"></a>
 
 ##### file
 
@@ -774,9 +868,9 @@ readonly file: string | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`file`](#file-2)
+[`RexError`](#rexerror).[`file`](#file-3)
 
-<a id="hint-1"></a>
+<a id="hint-2"></a>
 
 ##### hint
 
@@ -786,7 +880,7 @@ readonly hint: string | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`hint`](#hint-2)
+[`RexError`](#rexerror).[`hint`](#hint-3)
 
 <a id="id-1"></a>
 
@@ -796,7 +890,7 @@ readonly hint: string | null;
 readonly id: string;
 ```
 
-<a id="line-1"></a>
+<a id="line-2"></a>
 
 ##### line
 
@@ -806,7 +900,7 @@ readonly line: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`line`](#line-2)
+[`RexError`](#rexerror).[`line`](#line-3)
 
 ***
 
@@ -823,6 +917,7 @@ readonly line: number | null;
 - [`RexDeclarationOptionError`](#rexdeclarationoptionerror)
 - [`RexNameError`](#rexnameerror)
 - [`RexDeclarationError`](#rexdeclarationerror)
+- [`FlowDecisionError`](#flowdecisionerror)
 - [`RexConfigError`](rex/config.md#rexconfigerror)
 - [`RexStartupError`](rex/client.md#rexstartuperror)
 - [`RexPageModuleError`](rex/client.md#rexpagemoduleerror)
@@ -924,6 +1019,9 @@ new RexError(
   \| `"REX329"`
   \| `"REX330"`
   \| `"REX331"`
+  \| `"REX332"`
+  \| `"REX333"`
+  \| `"REX334"`
   \| `"REX400"`
   \| `"REX401"`
   \| `"REX402"`
@@ -954,6 +1052,8 @@ new RexError(
   \| `"REX601"`
   \| `"REX602"`
   \| `"REX603"`
+  \| `"REX604"`
+  \| `"REX605"`
   \| `"REX610"`
   \| `"REX611"`
   \| `"REX612"`
@@ -1058,6 +1158,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -1088,12 +1191,14 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
 ```
 
-<a id="column-2"></a>
+<a id="column-3"></a>
 
 ##### column
 
@@ -1101,7 +1206,7 @@ readonly code:
 readonly column: number | null;
 ```
 
-<a id="detail-2"></a>
+<a id="detail-3"></a>
 
 ##### detail
 
@@ -1109,7 +1214,7 @@ readonly column: number | null;
 readonly detail: string;
 ```
 
-<a id="docs-2"></a>
+<a id="docs-3"></a>
 
 ##### docs
 
@@ -1117,7 +1222,7 @@ readonly detail: string;
 readonly docs: string;
 ```
 
-<a id="file-2"></a>
+<a id="file-3"></a>
 
 ##### file
 
@@ -1125,7 +1230,7 @@ readonly docs: string;
 readonly file: string | null;
 ```
 
-<a id="hint-2"></a>
+<a id="hint-3"></a>
 
 ##### hint
 
@@ -1133,7 +1238,7 @@ readonly file: string | null;
 readonly hint: string | null;
 ```
 
-<a id="line-2"></a>
+<a id="line-3"></a>
 
 ##### line
 
@@ -1269,6 +1374,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -1299,6 +1407,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -1308,7 +1418,7 @@ readonly code:
 
 [`RexError`](#rexerror).[`code`](#code-3)
 
-<a id="column-3"></a>
+<a id="column-4"></a>
 
 ##### column
 
@@ -1318,9 +1428,9 @@ readonly column: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`column`](#column-2)
+[`RexError`](#rexerror).[`column`](#column-3)
 
-<a id="detail-3"></a>
+<a id="detail-4"></a>
 
 ##### detail
 
@@ -1330,9 +1440,9 @@ readonly detail: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`detail`](#detail-2)
+[`RexError`](#rexerror).[`detail`](#detail-3)
 
-<a id="docs-3"></a>
+<a id="docs-4"></a>
 
 ##### docs
 
@@ -1342,9 +1452,9 @@ readonly docs: string;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`docs`](#docs-2)
+[`RexError`](#rexerror).[`docs`](#docs-3)
 
-<a id="file-3"></a>
+<a id="file-4"></a>
 
 ##### file
 
@@ -1354,9 +1464,9 @@ readonly file: string | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`file`](#file-2)
+[`RexError`](#rexerror).[`file`](#file-3)
 
-<a id="hint-3"></a>
+<a id="hint-4"></a>
 
 ##### hint
 
@@ -1366,7 +1476,7 @@ readonly hint: string | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`hint`](#hint-2)
+[`RexError`](#rexerror).[`hint`](#hint-3)
 
 <a id="kind"></a>
 
@@ -1376,7 +1486,7 @@ readonly hint: string | null;
 readonly kind: string;
 ```
 
-<a id="line-3"></a>
+<a id="line-4"></a>
 
 ##### line
 
@@ -1386,7 +1496,7 @@ readonly line: number | null;
 
 ###### Inherited from
 
-[`RexError`](#rexerror).[`line`](#line-2)
+[`RexError`](#rexerror).[`line`](#line-3)
 
 <a id="value"></a>
 
@@ -4417,7 +4527,7 @@ readonly problem: string;
 
 #### Properties
 
-<a id="column-4"></a>
+<a id="column-5"></a>
 
 ##### column?
 
@@ -4425,7 +4535,7 @@ readonly problem: string;
 readonly optional column?: number;
 ```
 
-<a id="file-4"></a>
+<a id="file-5"></a>
 
 ##### file?
 
@@ -4433,7 +4543,7 @@ readonly optional column?: number;
 readonly optional file?: string;
 ```
 
-<a id="line-4"></a>
+<a id="line-5"></a>
 
 ##### line?
 
@@ -4461,7 +4571,7 @@ readonly optional line?: number;
 readonly optional cause?: unknown;
 ```
 
-<a id="column-5"></a>
+<a id="column-6"></a>
 
 ##### column?
 
@@ -4471,9 +4581,9 @@ readonly optional column?: number;
 
 ###### Inherited from
 
-[`RexErrorLocation`](#rexerrorlocation).[`column`](#column-4)
+[`RexErrorLocation`](#rexerrorlocation).[`column`](#column-5)
 
-<a id="file-5"></a>
+<a id="file-6"></a>
 
 ##### file?
 
@@ -4483,9 +4593,9 @@ readonly optional file?: string;
 
 ###### Inherited from
 
-[`RexErrorLocation`](#rexerrorlocation).[`file`](#file-4)
+[`RexErrorLocation`](#rexerrorlocation).[`file`](#file-5)
 
-<a id="hint-4"></a>
+<a id="hint-5"></a>
 
 ##### hint?
 
@@ -4493,7 +4603,7 @@ readonly optional file?: string;
 readonly optional hint?: string;
 ```
 
-<a id="line-5"></a>
+<a id="line-6"></a>
 
 ##### line?
 
@@ -4503,7 +4613,7 @@ readonly optional line?: number;
 
 ###### Inherited from
 
-[`RexErrorLocation`](#rexerrorlocation).[`line`](#line-4)
+[`RexErrorLocation`](#rexerrorlocation).[`line`](#line-5)
 
 ***
 
@@ -4513,7 +4623,7 @@ readonly optional line?: number;
 
 #### Properties
 
-<a id="column-6"></a>
+<a id="column-7"></a>
 
 ##### column
 
@@ -4521,7 +4631,7 @@ readonly optional line?: number;
 readonly column: number;
 ```
 
-<a id="file-6"></a>
+<a id="file-7"></a>
 
 ##### file
 
@@ -4529,7 +4639,7 @@ readonly column: number;
 readonly file: string;
 ```
 
-<a id="line-6"></a>
+<a id="line-7"></a>
 
 ##### line
 
@@ -4957,6 +5067,18 @@ type EntitySchema<F> = ObjectSchema<F, EntityInput<F>, EntityRecord<F>>;
 
 ```ts
 type FlowDecision = "approve" | "reject";
+```
+
+***
+
+<a id="flowdecisionerrorcode-1"></a>
+
+### FlowDecisionErrorCode
+
+```ts
+type FlowDecisionErrorCode = 
+  | typeof FLOW_NO_PENDING_APPROVAL
+  | typeof FLOW_DECISION_FORBIDDEN;
 ```
 
 ***
@@ -5833,6 +5955,26 @@ const FIELD_NAME_PATTERN: RegExp;
 
 ***
 
+<a id="flow_decision_forbidden"></a>
+
+### FLOW\_DECISION\_FORBIDDEN
+
+```ts
+const FLOW_DECISION_FORBIDDEN: "REX334" = "REX334";
+```
+
+***
+
+<a id="flow_no_pending_approval"></a>
+
+### FLOW\_NO\_PENDING\_APPROVAL
+
+```ts
+const FLOW_NO_PENDING_APPROVAL: "REX333" = "REX333";
+```
+
+***
+
 <a id="flow_statuses"></a>
 
 ### FLOW\_STATUSES
@@ -6635,6 +6777,30 @@ readonly REX330: "Region failed to render" = "Region failed to render";
 readonly REX331: "Invalid page params" = "Invalid page params";
 ```
 
+<a id="rex332"></a>
+
+##### REX332
+
+```ts
+readonly REX332: "Value rejected by its schema" = "Value rejected by its schema";
+```
+
+<a id="rex333"></a>
+
+##### REX333
+
+```ts
+readonly REX333: "Flow has no pending approval" = "Flow has no pending approval";
+```
+
+<a id="rex334"></a>
+
+##### REX334
+
+```ts
+readonly REX334: "Actor may not decide the approval gate" = "Actor may not decide the approval gate";
+```
+
 <a id="rex400"></a>
 
 ##### REX400
@@ -6873,6 +7039,22 @@ readonly REX602: "Generator refused to write" = "Generator refused to write";
 
 ```ts
 readonly REX603: "Template dependency not pinned" = "Template dependency not pinned";
+```
+
+<a id="rex604"></a>
+
+##### REX604
+
+```ts
+readonly REX604: "Invalid command line" = "Invalid command line";
+```
+
+<a id="rex605"></a>
+
+##### REX605
+
+```ts
+readonly REX605: "Command refused" = "Command refused";
 ```
 
 <a id="rex610"></a>
@@ -7412,6 +7594,9 @@ function deprecated(
   \| `"REX329"`
   \| `"REX330"`
   \| `"REX331"`
+  \| `"REX332"`
+  \| `"REX333"`
+  \| `"REX334"`
   \| `"REX400"`
   \| `"REX401"`
   \| `"REX402"`
@@ -7442,6 +7627,8 @@ function deprecated(
   \| `"REX601"`
   \| `"REX602"`
   \| `"REX603"`
+  \| `"REX604"`
+  \| `"REX605"`
   \| `"REX610"`
   \| `"REX611"`
   \| `"REX612"`
@@ -7546,6 +7733,9 @@ function deprecationMessage(code, message): string;
   \| `"REX329"`
   \| `"REX330"`
   \| `"REX331"`
+  \| `"REX332"`
+  \| `"REX333"`
+  \| `"REX334"`
   \| `"REX400"`
   \| `"REX401"`
   \| `"REX402"`
@@ -7576,6 +7766,8 @@ function deprecationMessage(code, message): string;
   \| `"REX601"`
   \| `"REX602"`
   \| `"REX603"`
+  \| `"REX604"`
+  \| `"REX605"`
   \| `"REX610"`
   \| `"REX611"`
   \| `"REX612"`
@@ -7734,6 +7926,9 @@ function errorDocs(code): string;
   \| `"REX329"`
   \| `"REX330"`
   \| `"REX331"`
+  \| `"REX332"`
+  \| `"REX333"`
+  \| `"REX334"`
   \| `"REX400"`
   \| `"REX401"`
   \| `"REX402"`
@@ -7764,6 +7959,8 @@ function errorDocs(code): string;
   \| `"REX601"`
   \| `"REX602"`
   \| `"REX603"`
+  \| `"REX604"`
+  \| `"REX605"`
   \| `"REX610"`
   \| `"REX611"`
   \| `"REX612"`
@@ -7958,6 +8155,9 @@ function hasWarned(code): boolean;
   \| `"REX329"`
   \| `"REX330"`
   \| `"REX331"`
+  \| `"REX332"`
+  \| `"REX333"`
+  \| `"REX334"`
   \| `"REX400"`
   \| `"REX401"`
   \| `"REX402"`
@@ -7988,6 +8188,8 @@ function hasWarned(code): boolean;
   \| `"REX601"`
   \| `"REX602"`
   \| `"REX603"`
+  \| `"REX604"`
+  \| `"REX605"`
   \| `"REX610"`
   \| `"REX611"`
   \| `"REX612"`
@@ -8143,7 +8345,7 @@ function isRexError(value): value is RexError;
 ### isRexErrorCode()
 
 ```ts
-function isRexErrorCode(value): value is "REX100" | "REX101" | "REX102" | "REX110" | "REX111" | "REX112" | "REX113" | "REX114" | "REX115" | "REX116" | "REX117" | "REX118" | "REX119" | "REX120" | "REX121" | "REX122" | "REX123" | "REX200" | "REX201" | "REX202" | "REX203" | "REX204" | "REX205" | "REX206" | "REX207" | "REX208" | "REX209" | "REX210" | "REX211" | "REX212" | "REX213" | "REX214" | "REX215" | "REX216" | "REX217" | "REX218" | "REX219" | "REX220" | "REX221" | "REX222" | "REX223" | "REX224" | "REX300" | "REX301" | "REX302" | "REX303" | "REX304" | "REX305" | "REX306" | "REX307" | "REX308" | "REX309" | "REX310" | "REX311" | "REX312" | "REX313" | "REX314" | "REX315" | "REX316" | "REX317" | "REX318" | "REX319" | "REX320" | "REX321" | "REX322" | "REX323" | "REX324" | "REX325" | "REX326" | "REX327" | "REX328" | "REX329" | "REX330" | "REX331" | "REX400" | "REX401" | "REX402" | "REX403" | "REX404" | "REX405" | "REX406" | "REX407" | "REX408" | "REX440" | "REX441" | "REX442" | "REX450" | "REX460" | "REX461" | "REX462" | "REX463" | "REX500" | "REX501" | "REX502" | "REX503" | "REX504" | "REX505" | "REX506" | "REX507" | "REX508" | "REX600" | "REX601" | "REX602" | "REX603" | "REX610" | "REX611" | "REX612";
+function isRexErrorCode(value): value is "REX100" | "REX101" | "REX102" | "REX110" | "REX111" | "REX112" | "REX113" | "REX114" | "REX115" | "REX116" | "REX117" | "REX118" | "REX119" | "REX120" | "REX121" | "REX122" | "REX123" | "REX200" | "REX201" | "REX202" | "REX203" | "REX204" | "REX205" | "REX206" | "REX207" | "REX208" | "REX209" | "REX210" | "REX211" | "REX212" | "REX213" | "REX214" | "REX215" | "REX216" | "REX217" | "REX218" | "REX219" | "REX220" | "REX221" | "REX222" | "REX223" | "REX224" | "REX300" | "REX301" | "REX302" | "REX303" | "REX304" | "REX305" | "REX306" | "REX307" | "REX308" | "REX309" | "REX310" | "REX311" | "REX312" | "REX313" | "REX314" | "REX315" | "REX316" | "REX317" | "REX318" | "REX319" | "REX320" | "REX321" | "REX322" | "REX323" | "REX324" | "REX325" | "REX326" | "REX327" | "REX328" | "REX329" | "REX330" | "REX331" | "REX332" | "REX333" | "REX334" | "REX400" | "REX401" | "REX402" | "REX403" | "REX404" | "REX405" | "REX406" | "REX407" | "REX408" | "REX440" | "REX441" | "REX442" | "REX450" | "REX460" | "REX461" | "REX462" | "REX463" | "REX500" | "REX501" | "REX502" | "REX503" | "REX504" | "REX505" | "REX506" | "REX507" | "REX508" | "REX600" | "REX601" | "REX602" | "REX603" | "REX604" | "REX605" | "REX610" | "REX611" | "REX612";
 ```
 
 #### Parameters
@@ -8154,7 +8356,7 @@ function isRexErrorCode(value): value is "REX100" | "REX101" | "REX102" | "REX11
 
 #### Returns
 
-value is "REX100" \| "REX101" \| "REX102" \| "REX110" \| "REX111" \| "REX112" \| "REX113" \| "REX114" \| "REX115" \| "REX116" \| "REX117" \| "REX118" \| "REX119" \| "REX120" \| "REX121" \| "REX122" \| "REX123" \| "REX200" \| "REX201" \| "REX202" \| "REX203" \| "REX204" \| "REX205" \| "REX206" \| "REX207" \| "REX208" \| "REX209" \| "REX210" \| "REX211" \| "REX212" \| "REX213" \| "REX214" \| "REX215" \| "REX216" \| "REX217" \| "REX218" \| "REX219" \| "REX220" \| "REX221" \| "REX222" \| "REX223" \| "REX224" \| "REX300" \| "REX301" \| "REX302" \| "REX303" \| "REX304" \| "REX305" \| "REX306" \| "REX307" \| "REX308" \| "REX309" \| "REX310" \| "REX311" \| "REX312" \| "REX313" \| "REX314" \| "REX315" \| "REX316" \| "REX317" \| "REX318" \| "REX319" \| "REX320" \| "REX321" \| "REX322" \| "REX323" \| "REX324" \| "REX325" \| "REX326" \| "REX327" \| "REX328" \| "REX329" \| "REX330" \| "REX331" \| "REX400" \| "REX401" \| "REX402" \| "REX403" \| "REX404" \| "REX405" \| "REX406" \| "REX407" \| "REX408" \| "REX440" \| "REX441" \| "REX442" \| "REX450" \| "REX460" \| "REX461" \| "REX462" \| "REX463" \| "REX500" \| "REX501" \| "REX502" \| "REX503" \| "REX504" \| "REX505" \| "REX506" \| "REX507" \| "REX508" \| "REX600" \| "REX601" \| "REX602" \| "REX603" \| "REX610" \| "REX611" \| "REX612"
+value is "REX100" \| "REX101" \| "REX102" \| "REX110" \| "REX111" \| "REX112" \| "REX113" \| "REX114" \| "REX115" \| "REX116" \| "REX117" \| "REX118" \| "REX119" \| "REX120" \| "REX121" \| "REX122" \| "REX123" \| "REX200" \| "REX201" \| "REX202" \| "REX203" \| "REX204" \| "REX205" \| "REX206" \| "REX207" \| "REX208" \| "REX209" \| "REX210" \| "REX211" \| "REX212" \| "REX213" \| "REX214" \| "REX215" \| "REX216" \| "REX217" \| "REX218" \| "REX219" \| "REX220" \| "REX221" \| "REX222" \| "REX223" \| "REX224" \| "REX300" \| "REX301" \| "REX302" \| "REX303" \| "REX304" \| "REX305" \| "REX306" \| "REX307" \| "REX308" \| "REX309" \| "REX310" \| "REX311" \| "REX312" \| "REX313" \| "REX314" \| "REX315" \| "REX316" \| "REX317" \| "REX318" \| "REX319" \| "REX320" \| "REX321" \| "REX322" \| "REX323" \| "REX324" \| "REX325" \| "REX326" \| "REX327" \| "REX328" \| "REX329" \| "REX330" \| "REX331" \| "REX332" \| "REX333" \| "REX334" \| "REX400" \| "REX401" \| "REX402" \| "REX403" \| "REX404" \| "REX405" \| "REX406" \| "REX407" \| "REX408" \| "REX440" \| "REX441" \| "REX442" \| "REX450" \| "REX460" \| "REX461" \| "REX462" \| "REX463" \| "REX500" \| "REX501" \| "REX502" \| "REX503" \| "REX504" \| "REX505" \| "REX506" \| "REX507" \| "REX508" \| "REX600" \| "REX601" \| "REX602" \| "REX603" \| "REX604" \| "REX605" \| "REX610" \| "REX611" \| "REX612"
 
 ***
 

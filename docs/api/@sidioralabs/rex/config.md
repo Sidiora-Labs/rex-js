@@ -104,6 +104,9 @@ new RexConfigError(
   \| `"REX329"`
   \| `"REX330"`
   \| `"REX331"`
+  \| `"REX332"`
+  \| `"REX333"`
+  \| `"REX334"`
   \| `"REX400"`
   \| `"REX401"`
   \| `"REX402"`
@@ -134,6 +137,8 @@ new RexConfigError(
   \| `"REX601"`
   \| `"REX602"`
   \| `"REX603"`
+  \| `"REX604"`
+  \| `"REX605"`
   \| `"REX610"`
   \| `"REX611"`
   \| `"REX612"`
@@ -236,6 +241,9 @@ readonly code:
   | "REX329"
   | "REX330"
   | "REX331"
+  | "REX332"
+  | "REX333"
+  | "REX334"
   | "REX400"
   | "REX401"
   | "REX402"
@@ -266,6 +274,8 @@ readonly code:
   | "REX601"
   | "REX602"
   | "REX603"
+  | "REX604"
+  | "REX605"
   | "REX610"
   | "REX611"
   | "REX612";
@@ -285,7 +295,7 @@ readonly column: number | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-2)
+[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-3)
 
 <a id="detail"></a>
 
@@ -297,7 +307,7 @@ readonly detail: string;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-2)
+[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-3)
 
 <a id="docs"></a>
 
@@ -309,7 +319,7 @@ readonly docs: string;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-2)
+[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-3)
 
 <a id="field"></a>
 
@@ -329,7 +339,7 @@ readonly file: string | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-2)
+[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-3)
 
 <a id="hint"></a>
 
@@ -341,7 +351,7 @@ readonly hint: string | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-2)
+[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-3)
 
 <a id="line"></a>
 
@@ -353,7 +363,7 @@ readonly line: number | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-2)
+[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-3)
 
 ## Interfaces
 
@@ -425,6 +435,30 @@ readonly optional tokens?: TokenAllowLists;
 
 ```ts
 readonly optional apiOrigin?: string;
+```
+
+***
+
+<a id="configserveroptions"></a>
+
+### ConfigServerOptions
+
+#### Properties
+
+<a id="client-1"></a>
+
+##### client?
+
+```ts
+readonly optional client?: ClientConfig;
+```
+
+<a id="security"></a>
+
+##### security
+
+```ts
+readonly security: SecurityConfig;
 ```
 
 ***
@@ -571,7 +605,7 @@ readonly optional default?: "ssr" | "csr" | "ssg" | "static";
 
 #### Properties
 
-<a id="client-1"></a>
+<a id="client-2"></a>
 
 ##### client
 
@@ -761,7 +795,7 @@ readonly spacing: readonly string[];
 
 [`ResolvedRexOptions`](#resolvedrexoptions).[`check`](#check-1)
 
-<a id="client-2"></a>
+<a id="client-3"></a>
 
 ##### client
 
@@ -777,7 +811,7 @@ readonly apiOrigin: string | null;
 
 ###### Inherited from
 
-[`ResolvedRexOptions`](#resolvedrexoptions).[`client`](#client-3)
+[`ResolvedRexOptions`](#resolvedrexoptions).[`client`](#client-4)
 
 <a id="compiler"></a>
 
@@ -869,7 +903,7 @@ readonly default: "ssr" | "csr" | "ssg" | "static";
 
 [`ResolvedRexOptions`](#resolvedrexoptions).[`render`](#render-1)
 
-<a id="security"></a>
+<a id="security-1"></a>
 
 ##### security
 
@@ -879,7 +913,7 @@ readonly security: ResolvedSecurity;
 
 ###### Inherited from
 
-[`ResolvedRexOptions`](#resolvedrexoptions).[`security`](#security-1)
+[`ResolvedRexOptions`](#resolvedrexoptions).[`security`](#security-2)
 
 <a id="server"></a>
 
@@ -1013,7 +1047,7 @@ readonly colors: readonly string[];
 readonly spacing: readonly string[];
 ```
 
-<a id="client-3"></a>
+<a id="client-4"></a>
 
 ##### client
 
@@ -1093,7 +1127,7 @@ readonly render: object;
 readonly default: "ssr" | "csr" | "ssg" | "static";
 ```
 
-<a id="security-1"></a>
+<a id="security-2"></a>
 
 ##### security
 
@@ -1235,7 +1269,7 @@ readonly optional check?: CheckConfig;
 
 [`RexOptionsConfig`](#rexoptionsconfig).[`check`](#check-3)
 
-<a id="client-4"></a>
+<a id="client-5"></a>
 
 ##### client?
 
@@ -1245,7 +1279,7 @@ readonly optional client?: ClientConfig;
 
 ###### Inherited from
 
-[`RexOptionsConfig`](#rexoptionsconfig).[`client`](#client-5)
+[`RexOptionsConfig`](#rexoptionsconfig).[`client`](#client-6)
 
 <a id="compiler-2"></a>
 
@@ -1319,7 +1353,7 @@ readonly optional render?: RenderConfig;
 
 [`RexOptionsConfig`](#rexoptionsconfig).[`render`](#render-3)
 
-<a id="security-2"></a>
+<a id="security-3"></a>
 
 ##### security?
 
@@ -1329,7 +1363,7 @@ readonly optional security?: SecurityConfig;
 
 ###### Inherited from
 
-[`RexOptionsConfig`](#rexoptionsconfig).[`security`](#security-3)
+[`RexOptionsConfig`](#rexoptionsconfig).[`security`](#security-4)
 
 <a id="server-1"></a>
 
@@ -1559,7 +1593,7 @@ readonly optional budgets?: BudgetsConfig;
 readonly optional check?: CheckConfig;
 ```
 
-<a id="client-5"></a>
+<a id="client-6"></a>
 
 ##### client?
 
@@ -1615,7 +1649,7 @@ readonly optional images?: ImagesConfig;
 readonly optional render?: RenderConfig;
 ```
 
-<a id="security-3"></a>
+<a id="security-4"></a>
 
 ##### security?
 
@@ -2020,6 +2054,26 @@ function configServer(read, fallback): RexFetchHandler;
 #### Returns
 
 [`RexFetchHandler`](#rexfetchhandler)
+
+***
+
+<a id="configserveroptions-1"></a>
+
+### configServerOptions()
+
+```ts
+function configServerOptions(read): ConfigServerOptions;
+```
+
+#### Parameters
+
+##### read
+
+[`RexConfigExport`](#rexconfigexport)
+
+#### Returns
+
+[`ConfigServerOptions`](#configserveroptions)
 
 ***
 

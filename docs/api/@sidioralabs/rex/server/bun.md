@@ -64,7 +64,7 @@ readonly column: number | null;
 
 ###### Inherited from
 
-[`RexError`](../../rex.md#rexerror).[`column`](../../rex.md#column-2)
+[`RexError`](../../rex.md#rexerror).[`column`](../../rex.md#column-3)
 
 <a id="detail"></a>
 
@@ -76,7 +76,7 @@ readonly detail: string;
 
 ###### Inherited from
 
-[`RexError`](../../rex.md#rexerror).[`detail`](../../rex.md#detail-2)
+[`RexError`](../../rex.md#rexerror).[`detail`](../../rex.md#detail-3)
 
 <a id="docs"></a>
 
@@ -88,7 +88,7 @@ readonly docs: string;
 
 ###### Inherited from
 
-[`RexError`](../../rex.md#rexerror).[`docs`](../../rex.md#docs-2)
+[`RexError`](../../rex.md#rexerror).[`docs`](../../rex.md#docs-3)
 
 <a id="file"></a>
 
@@ -100,7 +100,7 @@ readonly file: string | null;
 
 ###### Inherited from
 
-[`RexError`](../../rex.md#rexerror).[`file`](../../rex.md#file-2)
+[`RexError`](../../rex.md#rexerror).[`file`](../../rex.md#file-3)
 
 <a id="hint"></a>
 
@@ -112,7 +112,7 @@ readonly hint: string | null;
 
 ###### Inherited from
 
-[`RexError`](../../rex.md#rexerror).[`hint`](../../rex.md#hint-2)
+[`RexError`](../../rex.md#rexerror).[`hint`](../../rex.md#hint-3)
 
 <a id="line"></a>
 
@@ -124,7 +124,7 @@ readonly line: number | null;
 
 ###### Inherited from
 
-[`RexError`](../../rex.md#rexerror).[`line`](../../rex.md#line-2)
+[`RexError`](../../rex.md#rexerror).[`line`](../../rex.md#line-3)
 
 <a id="runtime"></a>
 
