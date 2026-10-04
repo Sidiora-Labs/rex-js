@@ -70,7 +70,7 @@ One line per command with every flag it accepts, as `rex --help --json` reports 
 
 ```sh
 rex version                                          # print the rex version
-rex build --target <target> --no-check               # build the client into dist/client and, unless the target is static, the server into dist/server.js
+rex build --target <target> --no-check               # build the client into dist/client and, unless the target is static, the server into dist/server.js; for static, every page as HTML (prerendered or the shell), index.md beside each prerendered page, 404.html and dist/client/rex/manifest
 rex check --json --runtime                           # run typecheck, boundaries, states, parity, naming, traps, tokens and manifest freshness
 rex dev --port <port> --host <host> --no-check       # serve the Vite client and the app's Hono server on one port with hot reload
 rex make page <id> --regions <names> --overlays <names> # write a page folder: page.ts, view.tsx, states.tsx, hooks/, regions, overlays and test/

@@ -1,1 +1,17 @@
 # rex-site qualification log. One six-line entry per unrelated failure, contradiction or framework gap.
+
+[qualification.251]
+task = "2.5"
+file = "packages/rex/src/client/loaders.ts, packages/rex/src/client/router.tsx, packages/rex/src/client/form.tsx"
+symbol = "client navigation, loader refetch and ActionForm posts of a static build without client.apiOrigin"
+observed = "2.5 makes rex build --target static write every page, index.md, rex/manifest and 404.html and removes the manifest request from the static client (no /rex/manifest in any client chunk), but a client-side navigation from a hydrated ssg page to a page with loaders runs the loaders through POST /rex/rpc, a stale loader query refetches on window focus through the same route, and an ActionForm posts to /rex/form/<action>; none of these routes exists on a static host, which [decision] static_target forbids; evidence: revision 4967803 plus the 2.5 changes, read from loaderQueryOptions (refetchOnMount only guards server-seeded data) and the wouter navigation in the shell."
+assumption = "Task 3.3 makes a static build navigate to prerendered paths with a document load (or reads the dehydrated data of the target page) and disables loader refetch when no apiOrigin is configured, so the site's walk records no failed request; the site has no actions, so no form posts."
+severity = "high"
+
+[qualification.252]
+task = "2.5"
+file = "packages/rex/src/cli/migrate.test.ts, packages/rex/src/cli/codemods"
+symbol = "rex migrate codemods > moves the interop, media and i18n names out of the client import, once"
+observed = "The 2.5 verify_cmd fails only on this test, which expects resolveMessage and resolveText in the 0.1 i18n codemod list; every 2.5 test passes (644 of 645) and the demo static build exits 0 (log 2.5-demo-probe.log); evidence: revision 4967803 plus the 2.5 changes, command pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli src/vite/prerender.test.ts src/client/app.test.tsx && pnpm -C examples/demo exec rex build --target static --no-check, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.5-private/logs/2.5-verify-2.log."
+assumption = "feature/rex-site was cut from 6134e5e before main gained rex-v02 task 7.18 (06c3c95, which moves resolveMessage, resolveText and MessageFormatter in the 0.1 codemod); merging main into feature/rex-site clears it and the unchanged 2.5 verify_cmd then passes; no 2.5 file touches the codemods."
+severity = "note"

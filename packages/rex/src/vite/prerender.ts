@@ -7,6 +7,7 @@ import type { FontSpec } from "../core/config.ts";
 import { isPlainObject } from "../core/entity.ts";
 import { RexError } from "../core/errors.ts";
 import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from "../core/page.ts";
+import { REX_MANIFEST_PATH } from "../core/protocol.ts";
 import type { Manifest } from "../manifest/types.ts";
 import {
   PRERENDER_LIST_FILE,
@@ -24,6 +25,7 @@ import {
 } from "../server/adapters/static-cache.ts";
 import { memoryLedger, type Ledger } from "../server/audit.ts";
 import { formPath } from "../server/form.ts";
+import type { StaticPageTextOptions } from "../server/routes/pages-text.ts";
 import type { RexPageRenderer } from "../server/routes/render.ts";
 import type { RexDocumentAssets, RexRendererOptions } from "../server/ssr.ts";
 
@@ -32,15 +34,24 @@ export const REX_DATA_SCRIPT = /<script type="application\/rex\+data"[^>]*>[\s\S
 export const MODULE_SCRIPT = /<script type="module"[^>]*><\/script>/g;
 export const MODULE_PRELOAD = /<link rel="modulepreload"[^>]*>/g;
 export const SSR_ROOT_ATTRIBUTE = / data-rex-ssr=""/g;
+export const PRERENDER_TEXT_FILE = "index.md";
+export const SHELL_DOCUMENT_FILE = "index.html";
+export const NOT_FOUND_FILE = "404.html";
+export const STATIC_MANIFEST_FILE = REX_MANIFEST_PATH.slice(1);
 
 export interface PrerenderRuntime {
   createRexRenderer(options: RexRendererOptions): RexPageRenderer;
   pageRenderMode(manifest: Manifest, declared: AnyPage): PageRender;
 }
 
+export interface PrerenderTextRuntime {
+  renderStaticPageText(options: StaticPageTextOptions): Promise<string>;
+}
+
 export interface PrerenderSource {
   readonly bundle: RexEntryBundle;
   readonly ssr: PrerenderRuntime;
+  readonly text?: PrerenderTextRuntime;
   readonly assets: RexDocumentAssets;
   readonly rootElement?: string;
   readonly fonts?: readonly FontSpec[];
@@ -193,6 +204,17 @@ export async function prerenderPages(
       const target = join(clientDir, file);
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, html, "utf8");
+      if (source.text !== undefined) {
+        const markdown = await source.text.renderStaticPageText({
+          manifest,
+          registry: bundle.registry,
+          page: declared,
+          url: new URL(path, origin),
+          actor,
+          ledger,
+        });
+        writeFileSync(join(clientDir, prerenderedTextFile(path)), markdown, "utf8");
+      }
       pages.push(
         Object.freeze({
           path,
@@ -206,6 +228,56 @@ export async function prerenderPages(
     }
   }
   return Object.freeze({ version: PRERENDER_LIST_VERSION, pages: Object.freeze(pages) });
+}
+
+export function prerenderedTextFile(path: string): string {
+  const file = prerenderedFile(path);
+  return `${file.slice(0, file.length - SHELL_DOCUMENT_FILE.length)}${PRERENDER_TEXT_FILE}`;
+}
+
+export interface ShellDocumentEntry {
+  readonly path: string | null;
+  readonly page: string | null;
+  readonly file: string;
+}
+
+export function shellDocumentPages(
+  manifest: Manifest,
+): readonly { readonly id: string; readonly route: string }[] {
+  return manifest.pages
+    .filter((listed) => !isPrerenderMode(listed.render) && listed.routeParams.length === 0)
+    .map((listed) => ({ id: listed.id, route: listed.route }))
+    .sort((a, b) => (a.route < b.route ? -1 : a.route > b.route ? 1 : 0));
+}
+
+export function writeShellDocuments(
+  clientDir: string,
+  shell: string,
+  manifest: Manifest,
+  prerendered: PrerenderList,
+): readonly ShellDocumentEntry[] {
+  const root = resolve(clientDir);
+  const taken = new Set(prerendered.pages.map((entry) => entry.path));
+  const written: ShellDocumentEntry[] = [];
+  const write = (file: string, path: string | null, page: string | null) => {
+    const target = join(root, file);
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, shell, "utf8");
+    written.push(Object.freeze({ path, page, file }));
+  };
+  for (const listed of shellDocumentPages(manifest)) {
+    if (taken.has(listed.route)) continue;
+    write(prerenderedFile(listed.route), listed.route, listed.id);
+  }
+  write(NOT_FOUND_FILE, null, null);
+  return Object.freeze(written);
+}
+
+export function writeStaticManifest(clientDir: string, body: string): string {
+  const file = join(resolve(clientDir), STATIC_MANIFEST_FILE);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, body, "utf8");
+  return file;
 }
 
 export function writePrerenderList(outDir: string, list: PrerenderList): string {
