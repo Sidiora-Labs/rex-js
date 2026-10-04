@@ -151,3 +151,19 @@ symbol = "createNodeApp, RexServerOptions, REX310, pageChunkGroups"
 observed = "SSR is served by routes/render.ts for any registry with a renderer registered through registerPageRenderer (the rex:render module does this in dev and in the rex build server entry) because RexServerOptions in app.ts is outside the 1.1 touches; createNodeApp still answers page paths with dist/client/index.html before the app, so the built node server never reaches the SSR route; REX310 travels as the HYDRATION_MISMATCH_CODE string since the catalog has no REX3xx entries; the fixture client manifest shows the entry chunk statically importing page-home (and page-note importing page-home), so the home page CSS is an entry stylesheet; evidence: revision b285a9f2322adae9098dab5f36d1a4b9b564aea9, command pnpm -C packages/rex exec vitest run src/server/ssr.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.1-private/logs/1.1-verify.log."
 assumption = "The owner of adapters/node.ts forwards GET page paths to the app when a page renderer is registered (static assets first, no index.html fallback), 2.1 adds REX310 to the catalog, and the owner of vite/split.ts keeps shared modules out of page-<id> groups so each page chunk loads only on its route."
 severity = "note"
+
+[qualification.131]
+task = "1.3"
+file = "packages/rex/src/check/check.test.ts, packages/rex/src/check/fixtures/all/fail"
+symbol = "defaultRules, default rule set execution order test, combined fail fixture test"
+observed = "Task 1.3 appends renderRule after securityRule in check/rules/index.ts, but check.test.ts (outside the 1.3 touches) pins the rule id list without security and render and expects the combined all/fail fixture to report a finding from every default rule, and that fixture has no static page; evidence: revision a4eef5ab9d759aecb674a4b13ba42130c1050dd7, command pnpm -C packages/rex exec vitest run src/vite/prerender.test.ts src/server/static-cache.test.ts src/check/rules/render.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.3-private/logs/1.3-verify.log."
+assumption = "The owner of check.test.ts appends \"security\" and \"render\" to the pinned order and adds a static page with a shortcut action or a region-bound overlay to all/fail with its expected render/static-needs-js position; no assertion was relaxed."
+severity = "assumption"
+
+[qualification.132]
+task = "1.3"
+file = "packages/rex/src/server/adapters/node.ts, packages/rex/src/server/node.ts"
+symbol = "createNodeApp, startNodeServer, createPrerenderedNodeApp, startPrerenderedNodeServer"
+observed = "createNodeApp serves dist/client files before the app, so dist/client/<route>/index.html would bypass the static cache (no revalidation, no CSRF token); adapters/node.ts is outside the 1.3 touches, so rex/server/node (server/node.ts) adds createPrerenderedNodeApp, which forwards GET document paths to the app when they are prerendered or a page renderer is registered, and startPrerenderedNodeServer, which repeats the serve wrapper of startNodeServer and falls back to it when nothing is prerendered; the built server entry uses it; evidence: revision a4eef5ab9d759aecb674a4b13ba42130c1050dd7, command pnpm -C packages/rex exec vitest run src/vite/prerender.test.ts src/server/static-cache.test.ts src/check/rules/render.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.3-private/logs/1.3-verify.log."
+assumption = "The owner of adapters/node.ts folds the document-path forwarding into createNodeApp (closing qualification.111 too), after which startPrerenderedNodeServer can delegate to startNodeServer instead of repeating its serve wrapper."
+severity = "note"

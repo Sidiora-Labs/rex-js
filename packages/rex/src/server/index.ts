@@ -36,3 +36,4 @@ export {
   type RexPageRenderer,
   type RexRenderResult,
 } from "./routes/render.ts";
+export * from "./adapters/static-cache.ts";

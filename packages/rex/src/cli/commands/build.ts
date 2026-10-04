@@ -5,7 +5,21 @@ import type { RexCommand as Command } from "../args.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
 import { rex, type RexPluginOptions } from "../../vite/index.ts";
 import { chunkBudgets, resolveBudgets } from "../../vite/budgets.ts";
-import { RENDER_MODULE_ID, renderModulePlugin } from "../../vite/ssr.ts";
+import {
+  formatPrerenderList,
+  prerenderPages,
+  writePrerenderList,
+  type PrerenderRuntime,
+} from "../../vite/prerender.ts";
+import { RENDER_MODULE_ID, renderModulePlugin, ssrRuntimePath } from "../../vite/ssr.ts";
+import { APP_MODULE_ID } from "../../vite/virtual.ts";
+import {
+  PRERENDER_LIST_FILE,
+  PRERENDER_LIST_VERSION,
+  type PrerenderList,
+  type StaticPageEntry,
+} from "../../server/adapters/static-cache.ts";
+import type { RexDocumentAssets } from "../../server/ssr.ts";
 import { readSsrAssets } from "../../vite/ssr-css.ts";
 import {
   chunkTable,
@@ -16,7 +30,7 @@ import {
 } from "../../vite/split.ts";
 import { loadRexConfig } from "../config.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
-import { configPluginOptions } from "../load.ts";
+import { configPluginOptions, loadAppBundle, withModuleLoader } from "../load.ts";
 import { ensureCheckPasses } from "./check.ts";
 import { appConfigPath, cliWarn, rexCliExit } from "./dev.ts";
 import type { ResolvedBudgets } from "../../core/config.ts";
@@ -65,11 +79,12 @@ export function generateServerEntry(options: ServerEntryOptions): string {
   const { runtime } = options;
   return [
     'import { fileURLToPath } from "node:url";',
-    `import { startNodeServer } from ${JSON.stringify(runtime.node)};`,
+    `import { installNodeStaticPages, startPrerenderedNodeServer } from ${JSON.stringify(runtime.node)};`,
     `import { createRexServer, memoryLedger } from ${JSON.stringify(runtime.server)};`,
     `import { configServer, readConfigExport } from ${JSON.stringify(runtime.config)};`,
     `import { anonymousActor } from ${JSON.stringify(runtime.actor)};`,
     `import exported from ${JSON.stringify(normalizePath(options.config))};`,
+    `import rexApp from ${JSON.stringify(APP_MODULE_ID)};`,
     `import ${JSON.stringify(RENDER_MODULE_ID)};`,
     "",
     "const server = configServer(readConfigExport(exported), (app) =>",
@@ -83,9 +98,13 @@ export function generateServerEntry(options: ServerEntryOptions): string {
     `const port = Number(process.env.PORT ?? ${JSON.stringify(String(DEFAULT_PORT))});`,
     "const hostname = process.env.HOST;",
     `const clientDir = fileURLToPath(new URL(${JSON.stringify(`./${CLIENT_DIR}`)}, import.meta.url));`,
-    "const running = await startNodeServer(",
+    `const prerendered = fileURLToPath(new URL(${JSON.stringify(`./${PRERENDER_LIST_FILE}`)}, import.meta.url));`,
+    "await installNodeStaticPages(rexApp.registry, { clientDir, list: prerendered });",
+    "const running = await startPrerenderedNodeServer(",
     "  server,",
-    '  hostname === undefined || hostname === "" ? { port, clientDir } : { port, clientDir, hostname },',
+    "  hostname === undefined || hostname === \"\"",
+    "    ? { port, clientDir, registry: rexApp.registry }",
+    "    : { port, clientDir, hostname, registry: rexApp.registry },",
     ");",
     `console.log(${JSON.stringify(SERVING_PREFIX)} + running.url);`,
     "",
@@ -115,6 +134,42 @@ export interface BuildResult {
   readonly clientDir: string;
   readonly serverFile: string;
   readonly chunks: readonly ChunkRow[];
+  readonly prerendered: readonly StaticPageEntry[];
+  readonly prerenderFile: string;
+}
+
+export interface PrerenderBuildOptions {
+  readonly outDir: string;
+  readonly clientDir: string;
+  readonly assets: RexDocumentAssets;
+  readonly rex: RexPluginOptions;
+  readonly logLevel?: LogLevel;
+  readonly plugins?: readonly Plugin[];
+}
+
+export interface PrerenderBuildResult {
+  readonly list: PrerenderList;
+  readonly file: string;
+}
+
+export async function prerenderBuild(
+  root: string,
+  options: PrerenderBuildOptions,
+): Promise<PrerenderBuildResult> {
+  const list = await withModuleLoader(
+    root,
+    async (loader) => {
+      const bundle = await loadAppBundle(loader);
+      const ssr = await loader.load<PrerenderRuntime & Record<string, unknown>>(ssrRuntimePath());
+      return prerenderPages({ bundle, ssr, assets: options.assets }, { clientDir: options.clientDir });
+    },
+    {
+      rex: options.rex,
+      ...(options.logLevel === undefined ? {} : { logLevel: options.logLevel }),
+      ...(options.plugins === undefined ? {} : { plugins: options.plugins }),
+    },
+  );
+  return { list, file: writePrerenderList(options.outDir, list) };
 }
 
 type BuildOutput = Awaited<ReturnType<typeof build>>;
@@ -183,7 +238,22 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     },
   });
 
-  return { outDir, clientDir, serverFile: join(outDir, SERVER_FILE), chunks };
+  const prerendered = await prerenderBuild(appRoot, {
+    outDir,
+    clientDir,
+    assets,
+    rex: pluginOptions,
+    logLevel,
+  });
+
+  return {
+    outDir,
+    clientDir,
+    serverFile: join(outDir, SERVER_FILE),
+    chunks,
+    prerendered: prerendered.list.pages,
+    prerenderFile: prerendered.file,
+  };
 }
 
 export function register(program: Command, io: RexCliIO): void {
@@ -198,6 +268,12 @@ export function register(program: Command, io: RexCliIO): void {
       const result = await buildApp(io.cwd, { warn: cliWarn(io) });
       io.out(formatChunkTable(result.chunks));
       io.out(`rex build: wrote ${DIST_DIR}/${CLIENT_DIR}/ and ${DIST_DIR}/${SERVER_FILE}\n`);
+      io.out(
+        formatPrerenderList(
+          { version: PRERENDER_LIST_VERSION, pages: result.prerendered },
+          `${DIST_DIR}/${CLIENT_DIR}`,
+        ),
+      );
       const over = overBudget(result.chunks);
       if (over.length > 0) {
         throw new RexCliExit(
