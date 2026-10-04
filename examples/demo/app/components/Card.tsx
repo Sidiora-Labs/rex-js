@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Card as DesignxCard, CardContent, CardHeader, CardTitle } from "./ui/card.tsx";
 
 export interface CardProps {
   readonly title?: string;
@@ -7,18 +8,15 @@ export interface CardProps {
 
 export default function Card({ title, children }: CardProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--rex-space-3)",
-        padding: "var(--rex-space-4)",
-        borderRadius: "var(--rex-radius-3)",
-        border: "1px solid currentcolor",
-      }}
-    >
-      {title === undefined ? null : <h3 style={{ margin: 0 }}>{title}</h3>}
-      {children}
-    </div>
+    <DesignxCard>
+      {title === undefined ? null : (
+        <CardHeader>
+          <CardTitle>
+            <h3 className="m-0 font-[inherit] text-[length:inherit]">{title}</h3>
+          </CardTitle>
+        </CardHeader>
+      )}
+      <CardContent className="flex flex-col gap-3">{children}</CardContent>
+    </DesignxCard>
   );
 }

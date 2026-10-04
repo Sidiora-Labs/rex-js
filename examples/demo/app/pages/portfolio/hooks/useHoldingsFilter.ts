@@ -1,7 +1,7 @@
 import { useDraft } from "@sidioralabs/rex/client";
 import { z } from "@sidioralabs/rex";
 
-const holdingsFilter = z.object({ query: z.string().max(40) });
+const holdingsFilter = z.object({ query: z.string().check(z.maxLength(40)) });
 
 export function useHoldingsFilter() {
   const draft = useDraft(holdingsFilter);
