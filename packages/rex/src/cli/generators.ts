@@ -2,6 +2,7 @@ import { baseAppPlan } from "./commands/new.ts";
 import type { PlannedEntry } from "./commands/make.ts";
 import { designxGenerator } from "./gen/designx.ts";
 import { i18nGenerator } from "./gen/i18n.ts";
+import { lintGenerator } from "./gen/lint.ts";
 
 export interface RexNewContext {
   readonly name: string;
@@ -21,6 +22,7 @@ export const REX_NEW_GENERATORS: readonly RexNewGenerator[] = [
   appGenerator,
   designxGenerator,
   i18nGenerator,
+  lintGenerator,
 ];
 
 export function runGenerators(

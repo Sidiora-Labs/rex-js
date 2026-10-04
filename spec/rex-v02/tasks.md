@@ -101,7 +101,7 @@
     - Add src/testing/index.ts exporting createTestApp, renderPage, renderRegion, testServer and readSidecar per [design] testing_api on the real server and runtime, calling resetAll from client/reset.ts between renders; add the ./testing export and a vitest setup helper.
     - Write src/testing/testing.test.tsx proving each helper against the fixture app.
     - _Requirements: 16.1_
-  - [ ] 2.5 ESLint plugin, prettier preset and format rule
+  - [x] 2.5 ESLint plugin, prettier preset and format rule
     - Add src/eslint/index.ts exporting a flat config and an ESLint plugin whose rules run the checker's boundary, naming, trap, token, a11y and media rule functions per file (a11y and media land in waves 3 and 5; register them through check/rules/index.ts so they appear when present), plus eslint-plugin-jsx-a11y recommended; add src/prettier.ts with the format preset; add check/rules/format.ts running prettier in check mode.
     - Add cli/gen/lint.ts contributing eslint.config.js, .prettierrc and lint and format scripts to rex new through cli/generators.ts; add eslint, prettier and eslint-plugin-jsx-a11y as dev dependencies and optional peers; add the ./eslint and ./prettier exports.
     - Write src/eslint/eslint.test.ts running ESLint programmatically on a fixture with a boundary violation and an a11y violation.
