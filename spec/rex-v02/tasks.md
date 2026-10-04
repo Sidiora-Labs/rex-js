@@ -179,7 +179,7 @@
     - Add server/routes/pages-text.ts serving GET /rex/pages/<id>.md per [design] text_renderer and register it.
     - Write server/pages-text.test.ts and server/cors.test.ts.
     - _Requirements: 30.1, 30.2, 12.3_
-  - [ ] 5.4 Deprecations and rex migrate with the 0.1 codemods
+  - [x] 5.4 Deprecations and rex migrate with the 0.1 codemods
     - Finish core/deprecated.ts (warn once per code with the docs link) and add cli/commands/migrate.ts with cli/codemods/ implementing [design] migrate on the TypeScript compiler API, idempotent, reporting changed files; register the command.
     - Add cli/fixtures/app-01 (a 0.1-shaped app) and write cli/migrate.test.ts: migrate it, assert the config wrap, the img conversion with REX610 flags, idempotency, and that the migrated app passes runCheck; add the codemod section to docs/versioning.md.
     - _Requirements: 31.1, 31.2_

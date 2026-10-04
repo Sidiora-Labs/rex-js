@@ -1175,14 +1175,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.4]
 title = "Deprecations and rex migrate with the 0.1 codemods"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["5.1", "0.8"]
 reqs = ["31.1", "31.2"]
 do_1 = "Finish core/deprecated.ts (warn once per code with the docs link) and add cli/commands/migrate.ts with cli/codemods/ implementing [design] migrate on the TypeScript compiler API, idempotent, reporting changed files; register the command."
 do_2 = "Add cli/fixtures/app-01 (a 0.1-shaped app) and write cli/migrate.test.ts: migrate it, assert the config wrap, the img conversion with REX610 flags, idempotency, and that the migrated app passes runCheck; add the codemod section to docs/versioning.md."
-touches = ["packages/rex/src/core/deprecated.ts", "packages/rex/src/cli/commands/migrate.ts", "packages/rex/src/cli/codemods", "packages/rex/src/cli/fixtures", "packages/rex/src/cli/migrate.test.ts", "docs/versioning.md"]
+touches = ["packages/rex/src/cli/commands/migrate.ts", "packages/rex/src/cli/codemods", "packages/rex/src/cli/fixtures", "packages/rex/src/cli/migrate.test.ts", "docs/versioning.md"]
 verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/migrate.test.ts"
 gate_kind = "planned"
 max_builds = 1
