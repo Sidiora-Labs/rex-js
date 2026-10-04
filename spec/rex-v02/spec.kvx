@@ -1754,6 +1754,23 @@ max_repair_cycles = 2
 time_limit_minutes = 75
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
 
+[task.7.19]
+title = "rex build emits production bundles: config loading no longer leaks Vite's development NODE_ENV into the build"
+status = "pending"
+mode = "BUILD"
+wave = 7
+requires = ["7.14"]
+reqs = ["7.1", "36.1"]
+do_1 = "rex build loads rex.config.ts through loadRexConfig, which creates a Vite dev server; Vite sets process.env.NODE_ENV to development when it is unset, and the client and server builds that follow in the same process then honour it, so every rex build without NODE_ENV in the environment ships the development builds of React, Base UI and the app (the demo's entry chunk measures 682 KB with the jsx-dev-runtime chunk and React's hydration diagnostics against 426 KB with NODE_ENV=production). loadRexConfig in cli/config.ts and createModuleLoader in cli/load.ts snapshot process.env.NODE_ENV before createServer and restore it afterwards (deleting it when it was unset); the build command sets NODE_ENV to production for the duration of the build and restores it, and both build() calls pass mode: \"production\"; commands.test.ts asserts that rex build's client assets contain neither a jsx-dev-runtime chunk nor React's hydration diagnostic text, that NODE_ENV is what it was after rex build, and that loadRexConfig leaves an unset NODE_ENV unset."
+touches = ["packages/rex/src/cli/config.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands.test.ts"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/cli/commands.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
 [task.7.14]
 title = "CLI follow-ups: codemod output in prettier form, DesignX files written formatted, catalogued usage errors and the Drizzle store"
 status = "done"
