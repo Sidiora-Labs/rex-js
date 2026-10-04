@@ -220,7 +220,7 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
 
       const entry = await fetch(`${base}/@rex/entry`);
       expect(entry.status).toBe(200);
-      expect(await entry.text()).toContain("createRexApp");
+      expect(await entry.text()).toContain("createRexEntry");
     } finally {
       await vite.close();
     }
