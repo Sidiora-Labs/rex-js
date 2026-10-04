@@ -8918,8 +8918,14 @@ function createScreenSource(options?): ScreenSource;
 ### createStoreRegistry()
 
 ```ts
-function createStoreRegistry(): StoreRegistry;
+function createStoreRegistry(options?): StoreRegistry;
 ```
+
+#### Parameters
+
+##### options?
+
+`StoreRegistryOptions` = `{}`
 
 #### Returns
 
