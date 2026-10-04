@@ -105,6 +105,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "cmdk": "^1.1.1",
     "drizzle-orm": "^0.45.3",
+    "happy-dom": "^20.14.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "typescript": "^5.9.3",
@@ -138,6 +139,9 @@
       "optional": true
     },
     "drizzle-orm": {
+      "optional": true
+    },
+    "happy-dom": {
       "optional": true
     },
     "wouter": {

@@ -195,7 +195,7 @@
   - [ ] 5.8 Audit records for flow decisions
     - Make server/flow.ts write an audit record for every approval decision with the gate id and the decision; extend server/flow.test.ts and client/agent/flow.test.tsx.
     - _Requirements: 33.2_
-  - [ ] 5.9 rex check --runtime: sidecar and DOM parity without a browser
+  - [x] 5.9 rex check --runtime: sidecar and DOM parity without a browser
     - Add check/runtime.ts mounting every page in happy-dom per actor and state and reporting sidecar actions without a visible control and controls without a sidecar entry as parity/runtime findings; wire --runtime into cli/commands/check.ts; write check/runtime.test.ts.
     - _Requirements: 33.3_
   - [ ] 6.1 Core Web Vitals and Lighthouse gate on the built demo
