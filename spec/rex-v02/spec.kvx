@@ -648,7 +648,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.7]
 title = "Enforce size budgets for the core, the client runtime and page chunks"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.4", "0.5"]
@@ -666,7 +666,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.8]
 title = "Finish the zod/mini and Standard Schema move, regenerate the demo manifest and wire the config flags so the budgets pass"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = ["0.7"]
@@ -929,7 +929,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.7]
 title = "Real demo page tests written with rex/testing"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["2.4"]
@@ -1057,7 +1057,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.7]
 title = "The axe audit in the demo walk"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["0.7"]
@@ -1325,7 +1325,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.6.1]
 title = "Core Web Vitals and Lighthouse gate on the built demo"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 6
 requires = ["1.1", "5.2"]
@@ -1342,7 +1342,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.6.2]
 title = "Demo on every 0.2 capability with the operability, no-JS, axe and vitals walks green"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 6
 requires = ["1.2", "1.3", "1.7", "2.1", "2.2", "2.3", "2.5", "2.7", "3.1", "3.2", "3.4", "3.5", "3.6", "3.7", "4.1", "4.2", "4.3", "4.4", "4.5", "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9", "6.1", "7.2", "7.4", "7.5", "7.6"]
@@ -1438,7 +1438,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.4]
 title = "rex/testing sends the request Origin and the demo page tests pass"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = ["7.1", "2.7"]
@@ -1480,7 +1480,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.6]
 title = "Loaders declare invalidatedBy so a mutating action refreshes the loaders that name it"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = []
@@ -1742,7 +1742,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.9.1]
 title = "Screen classification, fluid tokens, container-driven layout and screen-aware overlays in the runtime"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 9
 requires = ["7.9", "7.11", "7.15"]
@@ -1797,7 +1797,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.9.4]
 title = "The demo on the standard: DesignX in every region, part, overlay and state, screen-fit walked on phone, tablet and desktop"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 9
 requires = ["6.2", "6.3", "6.4", "9.2", "9.3"]
@@ -1815,7 +1815,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.13]
 title = "The client entry at 30 KB: minified entry-chunk measurement, lazy chunks on their own budget and optional capabilities behind subpath entries"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = ["7.11", "9.1"]
@@ -1851,7 +1851,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.20]
 title = "The first paint at 30 KB: locale negotiation and the i18n provider load with registerI18n, shortcuts, URL invocation and density switching load on first use, and Page.List windowing and Form internals go lazy if still needed"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = ["7.16"]
@@ -1942,7 +1942,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.6.4]
 title = "The demo looks like a product: a wallet frame, portfolio and send designed on DesignX"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 6
 requires = ["6.2", "9.0", "7.15"]
@@ -1980,7 +1980,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.9.6]
 title = "The demo walks green end to end: no-JS forms visible without JavaScript, the sidecar mirror and hydration in step with the server, portfolio contrast, INP on SSR pages and the demo unit tests"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 9
 requires = ["9.5", "7.19", "7.21"]
@@ -1998,7 +1998,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.9.7]
 title = "Isolate the stores a server render exposes so a sidecar never carries another page's stores"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 9
 requires = ["9.6"]
@@ -2016,7 +2016,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.9.8]
 title = "Repair the two walk regressions: the no-JS send outcome and the embed page's vitals"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 9
 requires = ["9.4", "9.7"]
@@ -2034,7 +2034,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.9.5]
 title = "Static pages carry the root attributes, the walks fit static and SSR pages, the demo tests follow the redesign, and the two 9.0 follow-ups"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 9
 requires = ["6.4", "9.0", "9.1"]
