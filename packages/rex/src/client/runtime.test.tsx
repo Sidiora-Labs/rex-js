@@ -267,10 +267,10 @@ describe("the assembled entry", () => {
     expect(document.documentElement.getAttribute(DENSITY_ATTRIBUTE)).toBe("agent");
   });
 
-  it("uses the default density when nothing is stored and the header is absent", async () => {
+  it("uses the default density, comfortable on the root, when nothing is stored and the header is absent", async () => {
     const { manifestDensity } = mount("/vault");
     await ready("vault");
     expect(manifestDensity()).toBeNull();
-    expect(document.documentElement.getAttribute(DENSITY_ATTRIBUTE)).toBe("default");
+    expect(document.documentElement.getAttribute(DENSITY_ATTRIBUTE)).toBe("comfortable");
   });
 });

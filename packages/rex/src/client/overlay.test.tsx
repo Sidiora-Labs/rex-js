@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
@@ -274,7 +274,11 @@ describe("region-bound overlays", () => {
       { id: "NoteDialog", open: false, dismiss: "button" },
     ]);
     const trigger = await openWith("Choose token");
-    const sheet = dialog("TokenSheet");
+    const sheet = await waitFor(() => {
+      const found = dialog("TokenSheet");
+      expect(found).not.toBeNull();
+      return found;
+    });
     expect(sheet?.getAttribute("role")).toBe("dialog");
     expect(sheet?.getAttribute("aria-modal")).toBe("true");
     expect(trigger.getAttribute("aria-expanded")).toBe("true");

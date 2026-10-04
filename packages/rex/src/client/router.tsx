@@ -28,6 +28,7 @@ import type { JsonSchema } from "../core/schema.ts";
 import { issuePath, validateStandardSync, type StandardIssue } from "../core/standard.ts";
 import type { Manifest } from "../manifest/types.ts";
 import { useActor, useManifest, useRegistry } from "./context.ts";
+import { useFallback } from "./fallback-host.ts";
 import { useI18n } from "./i18n/context.ts";
 import { localePrefix, localizeHref, stripLocalePrefix } from "./i18n/locale.ts";
 
@@ -527,10 +528,6 @@ export function RexRoutes({ render }: RexRoutesProps) {
 }
 
 export function NotFound({ path }: { readonly path: string }) {
-  return (
-    <section role="alert" data-rex-app-state="not-found">
-      <h1>Page not found</h1>
-      <p>No page matches {path}.</p>
-    </section>
-  );
+  const Section = useFallback("NotFoundSection");
+  return Section === null ? null : <Section path={path} />;
 }

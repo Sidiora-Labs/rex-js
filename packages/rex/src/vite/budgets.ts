@@ -79,6 +79,7 @@ export interface BundledChunk {
   readonly isEntry: boolean;
   readonly code: string;
   readonly imports: readonly string[];
+  readonly staticImports?: readonly string[];
   readonly moduleIds: readonly string[];
 }
 
@@ -116,6 +117,7 @@ export async function bundleBudgetEntry(
                 isEntry: item.isEntry,
                 code: item.code,
                 imports: [...item.imports, ...item.dynamicImports],
+                staticImports: [...item.imports],
                 moduleIds: [...item.moduleIds],
               },
             ]
@@ -135,6 +137,7 @@ export interface ChunkSize {
 
 export interface BudgetMeasurement {
   readonly entry: ChunkSize;
+  readonly firstPaint: readonly ChunkSize[];
   readonly lazy: readonly ChunkSize[];
 }
 
@@ -146,6 +149,24 @@ function chunkSize(chunk: BundledChunk): ChunkSize {
   };
 }
 
+function firstPaintChunks(
+  entry: BundledChunk,
+  chunks: readonly BundledChunk[],
+): ReadonlySet<BundledChunk> {
+  const byName = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+  const reached = new Set<BundledChunk>([entry]);
+  const queue = [entry];
+  for (let next = queue.pop(); next !== undefined; next = queue.pop()) {
+    for (const name of next.staticImports ?? []) {
+      const imported = byName.get(name);
+      if (imported === undefined || reached.has(imported)) continue;
+      reached.add(imported);
+      queue.push(imported);
+    }
+  }
+  return reached;
+}
+
 export function measureBudgetChunks(chunks: readonly BundledChunk[]): BudgetMeasurement {
   const entries = chunks.filter((chunk) => chunk.isEntry);
   if (entries.length !== 1) {
@@ -154,10 +175,18 @@ export function measureBudgetChunks(chunks: readonly BundledChunk[]): BudgetMeas
       `measureBudgetChunks: expected one entry chunk, found ${entries.length}`,
     );
   }
+  const entry = entries[0] as BundledChunk;
+  const firstPaint = firstPaintChunks(entry, chunks);
+  const sizes = [...firstPaint].map(chunkSize);
   return {
-    entry: chunkSize(entries[0] as BundledChunk),
+    entry: {
+      fileName: entry.fileName,
+      raw: sizes.reduce((total, size) => total + size.raw, 0),
+      gzip: sizes.reduce((total, size) => total + size.gzip, 0),
+    },
+    firstPaint: sizes,
     lazy: chunks
-      .filter((chunk) => !chunk.isEntry)
+      .filter((chunk) => !firstPaint.has(chunk))
       .map(chunkSize)
       .sort((a, b) => (a.fileName < b.fileName ? -1 : a.fileName > b.fileName ? 1 : 0)),
   };

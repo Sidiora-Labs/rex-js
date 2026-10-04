@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useState,
+  type ComponentType,
   type ErrorInfo,
   type ReactNode,
 } from "react";
@@ -11,6 +12,7 @@ import { regionAddress } from "../core/ids.ts";
 import { STATE_EXPORT_NAMES, type StateProps } from "../core/states.ts";
 import { useRegionFailureRegistry } from "./agent/sidecar.tsx";
 import { useOutcomeStore } from "./outcome.ts";
+import { useFallback } from "./fallback-host.ts";
 import { DefaultState, usePageRuntime, type PageParamsValue } from "./page.tsx";
 
 export const REGION_ERROR_CODE = "REX330";
@@ -26,6 +28,30 @@ interface BoundaryFallbackProps {
   readonly address: string;
   readonly error: Error;
   readonly retry: () => void;
+}
+
+type StateExport = ComponentType<StateProps<PageParamsValue>>;
+
+function LazyRegionError({ address, error, retry }: BoundaryFallbackProps) {
+  const runtime = usePageRuntime();
+  const states = useContext(PageStatesContext);
+  const Fallback = useFallback("RegionErrorFallback", runtime.page.id);
+  if (Fallback === null) return null;
+  const declared = runtime.page.states.includes("recoverable-error");
+  const Export = declared
+    ? (states?.[STATE_EXPORT_NAMES["recoverable-error"]] as StateExport | undefined)
+    : undefined;
+  return (
+    <Fallback
+      address={address}
+      code={REGION_ERROR_CODE}
+      error={error}
+      retry={retry}
+      params={runtime.params}
+      Export={Export}
+      Default={DefaultState}
+    />
+  );
 }
 
 interface BoundaryProps {
@@ -62,8 +88,6 @@ class RegionErrorBoundary extends Component<BoundaryProps, BoundaryState> {
   }
 }
 
-type StateExport = (props: StateProps<PageParamsValue>) => ReactNode;
-
 export interface RegionBoundaryProps {
   readonly region: string;
   readonly children?: ReactNode;
@@ -71,7 +95,6 @@ export interface RegionBoundaryProps {
 
 export function RegionBoundary({ region, children }: RegionBoundaryProps) {
   const runtime = usePageRuntime();
-  const states = useContext(PageStatesContext);
   const failures = useRegionFailureRegistry();
   const outcomes = useOutcomeStore();
   const [attempt, setAttempt] = useState(0);
@@ -97,26 +120,9 @@ export function RegionBoundary({ region, children }: RegionBoundaryProps) {
     setAttempt((count) => count + 1);
   }, [failures, pageId, region]);
 
-  const fallback = ({ error, retry }: BoundaryFallbackProps) => {
-    const declared = runtime.page.states.includes("recoverable-error");
-    const Export = declared
-      ? (states?.[STATE_EXPORT_NAMES["recoverable-error"]] as StateExport | undefined)
-      : undefined;
-    return (
-      <div data-rex-region-error={address} data-rex-error-code={REGION_ERROR_CODE}>
-        {Export === undefined ? (
-          <DefaultState
-            state="recoverable-error"
-            params={runtime.params}
-            retry={retry}
-            error={error}
-          />
-        ) : (
-          <Export params={runtime.params} retry={retry} error={error} />
-        )}
-      </div>
-    );
-  };
+  const fallback = ({ error, retry }: BoundaryFallbackProps) => (
+    <LazyRegionError address={address} error={error} retry={retry} />
+  );
 
   return (
     <RegionErrorBoundary

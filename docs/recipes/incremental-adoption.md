@@ -69,7 +69,7 @@ export default defineConfig({
 Anywhere in the existing app, mount the Rex page into an element and keep the returned function to unmount it:
 
 ```tsx
-import { mountRexPage } from "@sidioralabs/rex/client";
+import { mountRexPage } from "@sidioralabs/rex/client/interop";
 import app from "rex:app";
 import { useEffect, useRef } from "react";
 

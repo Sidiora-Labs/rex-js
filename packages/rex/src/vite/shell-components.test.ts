@@ -247,9 +247,9 @@ function expectRenderedApp(german: string, english: string): void {
     expect(html).toContain(FONT_PRELOAD);
     expect(html).toContain(FONT_FACE);
   }
-  expect(german).toContain('<html lang="de">');
+  expect(german).toMatch(/<html\b[^>]*\slang="de"[^>]*>/);
   expect(german).toContain("<title>Notizen</title>");
-  expect(english).toContain('<html lang="en">');
+  expect(english).toMatch(/<html\b[^>]*\slang="en"[^>]*>/);
   expect(english).toContain("<title>Notes</title>");
 }
 

@@ -9,6 +9,7 @@ import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
 import { useNav } from "../nav.ts";
 import { useActivePage } from "../router.tsx";
 import { isNavigable } from "../shell.tsx";
+import { lazyModule, useLazyModule } from "../lazy.ts";
 import { useShellComponents, type ShellPaletteItemProps } from "../shell/components.ts";
 import { useConfirm, usePageInvokers } from "./confirm.tsx";
 import { isModShortcut } from "./shortcuts.ts";
@@ -53,20 +54,9 @@ export interface PaletteMenuProps {
   onClose(): void;
 }
 
-type PaletteMenuComponent = ComponentType<PaletteMenuProps>;
-
-let paletteMenu: Promise<PaletteMenuComponent> | null = null;
-
-function loadPaletteMenu(): Promise<PaletteMenuComponent> {
-  if (paletteMenu === null) {
-    const loading = import("./palette-menu.tsx").then((loaded) => loaded.PaletteMenu);
-    loading.catch(() => {
-      if (paletteMenu === loading) paletteMenu = null;
-    });
-    paletteMenu = loading;
-  }
-  return paletteMenu;
-}
+const paletteMenu = lazyModule("rex.palette", "the command palette", () =>
+  import("./palette-menu.tsx").then((loaded) => loaded.PaletteMenu),
+);
 
 function usePaletteEntries(): {
   readonly actions: readonly PaletteActionEntry[];
@@ -129,7 +119,7 @@ export interface RexPaletteProps {
 
 export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
   const [open, setOpen] = useState(defaultOpen);
-  const [Menu, setMenu] = useState<PaletteMenuComponent | null>(null);
+  const loaded = useLazyModule(paletteMenu, { active: open, suspend: "never" });
   const opener = useRef<Element | null>(null);
   const invokers = usePageInvokers();
   const outcomes = useOutcomeStore();
@@ -155,17 +145,6 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
   }, []);
 
   useEffect(() => {
-    if (!open || Menu !== null) return;
-    let current = true;
-    void loadPaletteMenu().then((loaded) => {
-      if (current) setMenu(() => loaded);
-    });
-    return () => {
-      current = false;
-    };
-  }, [open, Menu]);
-
-  useEffect(() => {
     if (open) return;
     const previous = opener.current;
     opener.current = null;
@@ -174,7 +153,8 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
 
   const close = useCallback(() => setOpen(false), []);
 
-  if (!open || Menu === null) return null;
+  if (!open || loaded === null || !loaded.ok) return null;
+  const Menu = loaded.value;
 
   const pageId = active === null ? null : active.page.id;
 

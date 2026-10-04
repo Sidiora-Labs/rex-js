@@ -1,13 +1,4 @@
-import {
-  useCallback,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  type ComponentType,
-  type KeyboardEvent,
-  type ReactNode,
-} from "react";
+import { useCallback, useLayoutEffect, useMemo, type ComponentType, type ReactNode } from "react";
 import { useLocation, useSearch } from "wouter";
 import { RexError } from "../core/errors.ts";
 import { overlayAddress, overlayName } from "../core/ids.ts";
@@ -20,9 +11,14 @@ import {
 } from "../core/overlay.ts";
 import type { AnyPage } from "../core/page.ts";
 import { useOpenOverlays, useOverlayRegistry } from "./agent/sidecar.tsx";
+import { lazyModule, useLazyModule } from "./lazy.ts";
 import { useActivePage } from "./router.tsx";
 import { sheetFormFor, useScreen } from "./screen.ts";
-import { useShellComponents } from "./shell/components.ts";
+import {
+  useShellComponents,
+  type ShellComponents,
+  type ShellSheetForm,
+} from "./shell/components.ts";
 
 export const OVERLAY_QUERY_KEY = "overlay";
 export const OVERLAY_DISMISS_LABEL = "Close";
@@ -153,90 +149,49 @@ export function useOverlay(component: OverlayComponent): OverlayHandle {
   }, [declared, open, pageId, setOpen]);
 }
 
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-function focusables(container: HTMLElement): HTMLElement[] {
-  return [...container.querySelectorAll<HTMLElement>(FOCUSABLE)];
+export interface OverlaySurfaceProps {
+  readonly address: string;
+  readonly dismiss: OverlayDismiss;
+  readonly title: string;
+  readonly form: ShellSheetForm;
+  readonly escape: boolean;
+  readonly closeLabel: string | null;
+  readonly hide: () => void;
+  readonly Sheet: ShellComponents["Sheet"];
+  readonly Button: ShellComponents["Button"];
+  readonly children?: ReactNode;
 }
 
-interface OverlaySurfaceProps {
+const overlaySurface = lazyModule("rex.overlay-host", "the overlay host", () =>
+  import("./overlay-surface.tsx").then((loaded) => loaded.OverlaySurface),
+);
+
+interface LazyOverlaySurfaceProps {
   readonly handle: OverlayHandle;
   readonly dismiss: OverlayDismiss;
   readonly children?: ReactNode;
 }
 
-function OverlaySurface({ handle, dismiss, children }: OverlaySurfaceProps) {
-  const surface = useRef<HTMLDivElement>(null);
-  const titleId = useId();
+function LazyOverlaySurface({ handle, dismiss, children }: LazyOverlaySurfaceProps) {
+  const loaded = useLazyModule(overlaySurface, { outcome: handle.page });
   const { Sheet, Button } = useShellComponents();
   const form = sheetFormFor(useScreen().screen);
-  const { hide } = handle;
-
-  useLayoutEffect(() => {
-    const element = surface.current;
-    if (element === null) return;
-    const opener = globalThis.document?.activeElement ?? null;
-    const first = focusables(element)[0];
-    (first ?? element).focus();
-    return () => {
-      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
-    };
-  }, []);
-
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape") {
-      if (!dismissesOnEscape(dismiss)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      hide();
-      return;
-    }
-    if (event.key !== "Tab" || surface.current === null) return;
-    const items = focusables(surface.current);
-    const first = items[0];
-    const last = items.at(-1);
-    if (first === undefined || last === undefined) {
-      event.preventDefault();
-      surface.current.focus();
-      return;
-    }
-    const current = globalThis.document?.activeElement;
-    if (event.shiftKey && (current === first || current === surface.current)) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && current === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
+  if (loaded === null || !loaded.ok) return null;
+  const Surface = loaded.value;
   return (
-    <div
-      ref={surface}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      tabIndex={-1}
-      data-rex-overlay={handle.address}
-      data-rex-overlay-dismiss={dismiss}
-      data-rex-overlay-form={form}
-      onKeyDown={onKeyDown}
+    <Surface
+      address={handle.address}
+      dismiss={dismiss}
+      title={overlaySentence(handle.id)}
+      form={form}
+      escape={dismissesOnEscape(dismiss)}
+      closeLabel={dismissesOnButton(dismiss) ? OVERLAY_DISMISS_LABEL : null}
+      hide={handle.hide}
+      Sheet={Sheet}
+      Button={Button}
     >
-      <Sheet
-        address={handle.address}
-        title={overlaySentence(handle.id)}
-        titleId={titleId}
-        form={form}
-      >
-        {children}
-      </Sheet>
-      {dismissesOnButton(dismiss) ? (
-        <Button type="button" data-rex-overlay-close={handle.address} onClick={hide}>
-          {OVERLAY_DISMISS_LABEL}
-        </Button>
-      ) : null}
-    </div>
+      {children}
+    </Surface>
   );
 }
 
@@ -289,9 +244,9 @@ export function overlay(
 
     if (!open) return null;
     return (
-      <OverlaySurface handle={handle} dismiss={options.dismiss}>
+      <LazyOverlaySurface handle={handle} dismiss={options.dismiss}>
         {render({ page, id, close: handle.hide })}
-      </OverlaySurface>
+      </LazyOverlaySurface>
     );
   }
   RexOverlay.displayName = `Overlay(${id})`;

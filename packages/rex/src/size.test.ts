@@ -37,6 +37,9 @@ describe("entry size budgets", { timeout: SIZE_TEST_TIMEOUT_MS }, () => {
     "keeps the $entry entry chunk within $budget KB gzipped and each lazy chunk within 10 KB",
     async (target) => {
       const size = await measuredSize(target);
+      for (const chunk of size.firstPaint) {
+        report(target, `first-paint chunk ${chunk.fileName}`, chunk, target.budget);
+      }
       report(target, `${target.source} entry chunk`, size.entry, target.budget);
       for (const lazy of size.lazy) {
         report(target, `lazy chunk ${lazy.fileName}`, lazy, LAZY_CHUNK_BUDGET_KB);

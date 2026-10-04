@@ -50,7 +50,7 @@ describe("media/no-raw-img", () => {
     ]);
     for (const entry of result.findings) {
       expect(entry.severity).toBe("error");
-      expect(entry.hint).toContain("Img from @sidioralabs/rex/client");
+      expect(entry.hint).toContain("Img from @sidioralabs/rex/client/media");
       expect(entry.hint).toContain("width and height");
     }
   });
@@ -76,7 +76,7 @@ describe("media/no-raw-img", () => {
       parse(
         [
           'import React, { createElement } from "react";',
-          'import { Img } from "@sidioralabs/rex/client";',
+          'import { Img } from "@sidioralabs/rex/client/media";',
           "export const a = <img src=\"/a.png\" alt=\"\" />;",
           "export const b = <Img src=\"/b.png\" alt=\"\" width={1} height={1} />;",
           'export const c = React.createElement("img", { src: "/c.png" });',

@@ -378,6 +378,7 @@ describe("locale resolution", () => {
 describe("prefix routing", () => {
   it("mounts every page under /:locale and resolves titles, messages and lang", async () => {
     mount(prefixRegistry, "/pt-BR");
+    await screen.findByRole("heading", { level: 1 });
     expect(heading()).toBe("Início");
     expect(screen.getByTestId("items").textContent).toBe("3 itens");
     expect(screen.getByTestId("none").textContent).toBe("Nenhum item");
@@ -483,13 +484,13 @@ describe("server rendering", () => {
   it("sets html lang and resolves the title and chrome in the request locale", async () => {
     const prefixed = await renderDocument("/pt-BR/detail/7", { "accept-language": "en" });
     expect(prefixed.kind).toBe("page");
-    expect(prefixed.html).toContain('<html lang="pt-BR">');
+    expect(prefixed.html).toMatch(/<html\b[^>]*\slang="pt-BR"[^>]*>/);
     expect(prefixed.html).toContain("<title>Detalhe</title>");
     expect(prefixed.html).toContain("<h1");
     expect(prefixed.html).toContain("Detalhe</h1>");
     expect(prefixed.html).toContain("Detail body <!-- -->7");
     const english = await renderDocument("/en", { cookie: "rex-locale=pt-BR" });
-    expect(english.html).toContain('<html lang="en">');
+    expect(english.html).toMatch(/<html\b[^>]*\slang="en"[^>]*>/);
     expect(english.html).toContain("<title>Home</title>");
     expect(english.html).toContain("3 items");
   });

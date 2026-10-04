@@ -43,7 +43,7 @@ export function rawImgSites(source: ts.SourceFile): RawImgSite[] {
 }
 
 const HINT =
-  "Render images with Img from @sidioralabs/rex/client: it requires width and height, lazy-loads by default and preloads priority images during SSR.";
+  "Render images with Img from @sidioralabs/rex/client/media: it requires width and height, lazy-loads by default and preloads priority images during SSR.";
 
 function checkFile(sources: SourceLoader, file: AppFile): Finding[] {
   const source = sources.load(file.path);

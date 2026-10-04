@@ -165,9 +165,9 @@ describe("router", () => {
     ]);
   });
 
-  it("renders the app-level not-found state for unknown routes", () => {
+  it("renders the app-level not-found state for unknown routes", async () => {
     mount("/nowhere/at/all");
-    expect(screen.getByRole("alert").textContent).toBe(
+    expect((await screen.findByRole("alert")).textContent).toBe(
       "Page not foundNo page matches /nowhere/at/all.",
     );
   });

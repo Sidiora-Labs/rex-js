@@ -1,4 +1,4 @@
-import { Img } from "@sidioralabs/rex/client";
+import { Img } from "@sidioralabs/rex/client/media";
 import Tile from "./parts/Tile.tsx";
 
 export default function GridRegion() {
