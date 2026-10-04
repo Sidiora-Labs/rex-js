@@ -1,9 +1,12 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useLocation, useSearch } from "wouter";
+import { useLocation, useRouter, useSearch } from "wouter";
 import { RexError } from "../../core/errors.ts";
 import { readCookie } from "../agent/outcome.tsx";
+import { pageAtPath } from "../app.tsx";
 import { useRegistry } from "../context.ts";
 import { SSR_ATTRIBUTE } from "../hydrate.ts";
+import { useLazyModule } from "../lazy.ts";
+import { APP_OUTCOME_KEY } from "../outcome.ts";
 import type { RexProviderProps } from "../providers.ts";
 import {
   I18nContext,
@@ -13,6 +16,7 @@ import {
   type I18nSource,
   type I18nState,
 } from "./context.ts";
+import { messageFormatter } from "./formatter.ts";
 import {
   LOCALE_COOKIE,
   localeCookie,
@@ -49,6 +53,8 @@ export function detectClientLocale(settings: LocaleSettings): string {
 
 function ConfiguredI18n({ source, children }: RexProviderProps & { readonly source: I18nSource }) {
   const settings = source.settings;
+  const registry = useRegistry();
+  const { parser } = useRouter();
   const seed = useContext(LocaleSeedContext);
   const [path, navigate] = useLocation();
   const search = useSearch();
@@ -58,6 +64,12 @@ function ConfiguredI18n({ source, children }: RexProviderProps & { readonly sour
   });
   const [chosen, setChosen] = useState<string | null>(null);
   const prefixed = settings.routing === "prefix" ? localePrefix(path, settings.locales) : null;
+  const page = pageAtPath(registry, parser, stripLocalePrefix(path, settings.locales));
+  const formatter = useLazyModule(messageFormatter, {
+    suspend: "always",
+    outcome: page ?? APP_OUTCOME_KEY,
+  });
+  const format = formatter !== null && formatter.ok ? formatter.value : null;
   const locale = prefixed ?? chosen ?? detected;
 
   const setLocale = useCallback(
@@ -80,7 +92,10 @@ function ConfiguredI18n({ source, children }: RexProviderProps & { readonly sour
     if (doc !== undefined) doc.documentElement.lang = locale;
   }, [locale]);
 
-  const value = useMemo<I18nState>(() => ({ source, locale, setLocale }), [source, locale, setLocale]);
+  const value = useMemo<I18nState>(
+    () => ({ source, locale, format, setLocale }),
+    [source, locale, format, setLocale],
+  );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 

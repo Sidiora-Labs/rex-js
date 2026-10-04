@@ -3,12 +3,10 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent,
   type ReactNode,
 } from "react";
 import type { ActionInput, AnyAction } from "../../core/action.ts";
@@ -17,6 +15,7 @@ import { actionAddress } from "../../core/ids.ts";
 import { validateStandard } from "../../core/standard.ts";
 import { actionLabel, describeError, useAct, type ActHandle, type ActResult } from "../act.ts";
 import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
+import { lazyModule, useLazyModule } from "../lazy.ts";
 import { useActivePage } from "../router.tsx";
 
 export const CANCELLED = "CANCELLED";
@@ -46,88 +45,34 @@ export function useConfirm(): ConfirmFn {
   return confirm;
 }
 
-interface Pending {
+export interface ConfirmPending {
   readonly request: ConfirmRequest;
   readonly resolve: (accepted: boolean) => void;
   readonly opener: Element | null;
 }
 
-function describeInput(input: unknown): string {
-  try {
-    return JSON.stringify(input) ?? "";
-  } catch {
-    return String(input);
-  }
-}
+const confirmDialog = lazyModule("rex.confirm-dialog", "the confirmation dialog", () =>
+  import("./confirm-dialog.tsx").then((loaded) => loaded.ConfirmDialog),
+);
 
-function ConfirmDialog({
+function LazyConfirmDialog({
   pending,
   settle,
 }: {
-  readonly pending: Pending;
+  readonly pending: ConfirmPending;
   readonly settle: (accepted: boolean) => void;
 }) {
-  const titleId = useId();
-  const bodyId = useId();
-  const accept = useRef<HTMLButtonElement>(null);
-  const dialog = useRef<HTMLDivElement>(null);
+  const cancel = useCallback(() => settle(false), [settle]);
+  const loaded = useLazyModule(confirmDialog, {
+    outcome: pending.request.page ?? APP_OUTCOME_KEY,
+    onFailure: cancel,
+  });
+  if (loaded === null || !loaded.ok) return null;
+  const Dialog = loaded.value;
   const { request } = pending;
-  const label = request.action.label ?? request.action.id;
   const address =
     request.page === null ? request.action.id : actionAddress(request.page, request.action.id);
-
-  useLayoutEffect(() => {
-    accept.current?.focus();
-  }, [pending]);
-
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      settle(false);
-      return;
-    }
-    if (event.key !== "Tab" || dialog.current === null) return;
-    const buttons = [...dialog.current.querySelectorAll("button")];
-    const first = buttons[0];
-    const last = buttons.at(-1);
-    if (first === undefined || last === undefined) return;
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
-  return (
-    <div
-      ref={dialog}
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      aria-describedby={bodyId}
-      data-rex-confirm={address}
-      onKeyDown={onKeyDown}
-    >
-      <h2 id={titleId}>Confirm {label}</h2>
-      <p id={bodyId}>
-        {label} cannot be undone. Input: <code>{describeInput(request.input)}</code>
-      </p>
-      <button
-        type="button"
-        ref={accept}
-        data-rex-confirm-accept={address}
-        onClick={() => settle(true)}
-      >
-        Confirm {label}
-      </button>
-      <button type="button" data-rex-confirm-cancel={address} onClick={() => settle(false)}>
-        Cancel
-      </button>
-    </div>
-  );
+  return <Dialog pending={pending} address={address} settle={settle} />;
 }
 
 export interface ConfirmProviderProps {
@@ -135,14 +80,14 @@ export interface ConfirmProviderProps {
 }
 
 export function ConfirmProvider({ children }: ConfirmProviderProps) {
-  const [pending, setPending] = useState<Pending | null>(null);
-  const current = useRef<Pending | null>(null);
+  const [pending, setPending] = useState<ConfirmPending | null>(null);
+  const current = useRef<ConfirmPending | null>(null);
 
   const confirm = useCallback<ConfirmFn>((request) => {
     if (request.action.effect !== "irreversible") return Promise.resolve(true);
     return new Promise<boolean>((resolve) => {
       current.current?.resolve(false);
-      const next: Pending = {
+      const next: ConfirmPending = {
         request,
         resolve,
         opener: globalThis.document?.activeElement ?? null,
@@ -173,7 +118,7 @@ export function ConfirmProvider({ children }: ConfirmProviderProps) {
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
-      {pending === null ? null : <ConfirmDialog pending={pending} settle={settle} />}
+      {pending === null ? null : <LazyConfirmDialog pending={pending} settle={settle} />}
     </ConfirmContext.Provider>
   );
 }

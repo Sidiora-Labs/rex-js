@@ -151,4 +151,49 @@ describe("budgets", () => {
     ]);
     expect(() => measureBudgetChunks([])).toThrow(/expected one entry chunk, found 0/);
   });
+
+  it("counts chunks the entry imports statically as first-paint code and the rest as lazy", () => {
+    const entryCode = 'import "./shared-c3.js"; export const runtime = "core";';
+    const sharedCode = "export const shared = " + JSON.stringify("y".repeat(200)) + ";";
+    const confirmCode = 'import "./shared-c3.js"; export const dialog = "confirm";';
+    const measured = measureBudgetChunks([
+      {
+        fileName: "entry.js",
+        isEntry: true,
+        code: entryCode,
+        imports: ["shared-c3.js", "confirm-dialog-d4.js"],
+        staticImports: ["shared-c3.js"],
+        moduleIds: [],
+      },
+      {
+        fileName: "shared-c3.js",
+        isEntry: false,
+        code: sharedCode,
+        imports: [],
+        staticImports: [],
+        moduleIds: [],
+      },
+      {
+        fileName: "confirm-dialog-d4.js",
+        isEntry: false,
+        code: confirmCode,
+        imports: ["shared-c3.js"],
+        staticImports: ["shared-c3.js"],
+        moduleIds: [],
+      },
+    ]);
+    expect(measured.entry).toEqual({
+      fileName: "entry.js",
+      raw: Buffer.byteLength(entryCode) + Buffer.byteLength(sharedCode),
+      gzip: gzipSync(entryCode).byteLength + gzipSync(sharedCode).byteLength,
+    });
+    expect(measured.firstPaint.map((chunk) => chunk.fileName)).toEqual(["entry.js", "shared-c3.js"]);
+    expect(measured.lazy).toEqual([
+      {
+        fileName: "confirm-dialog-d4.js",
+        raw: Buffer.byteLength(confirmCode),
+        gzip: gzipSync(confirmCode).byteLength,
+      },
+    ]);
+  });
 });

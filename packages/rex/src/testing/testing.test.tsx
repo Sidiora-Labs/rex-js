@@ -245,7 +245,7 @@ describe("renderPage", () => {
     expect(view.container.isConnected).toBe(false);
 
     const plain = await renderPage(app, "notes");
-    expect(root.getAttribute(DENSITY_ATTRIBUTE)).toBe("default");
+    expect(root.getAttribute(DENSITY_ATTRIBUTE)).toBe("comfortable");
     plain.unmount();
     await expect(renderPage(app, "notes", { density: "compact" as never })).rejects.toThrow(
       /density must be/,

@@ -120,7 +120,11 @@ describe("RegionBoundary", () => {
     const flaky = document.querySelector('[data-rex-region="fragile/flaky"]') as HTMLElement;
     const stable = document.querySelector('[data-rex-region="fragile/stable"]') as HTMLElement;
     expect(within(stable).getByText("stable content")).toBeTruthy();
-    const scoped = flaky.querySelector("[data-rex-region-error]");
+    const scoped = await waitFor(() => {
+      const found = flaky.querySelector("[data-rex-region-error]");
+      expect(found).not.toBeNull();
+      return found;
+    });
     expect(scoped?.getAttribute("data-rex-region-error")).toBe("fragile/flaky");
     expect(scoped?.getAttribute("data-rex-error-code")).toBe(REGION_ERROR_CODE);
     expect(within(flaky).getByRole("alert").textContent).toContain("Region failed: ledger unavailable");

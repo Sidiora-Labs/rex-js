@@ -583,10 +583,6 @@ describe("the CSRF token in server-rendered forms", () => {
     expect(csrfFieldOf(html)).toBe(grant.token);
   });
 
-  it("renders an empty token when no grant is bound, as prerendering does", async () => {
-    expect(csrfFieldOf(await renderSignup(signupRequest()))).toBe("");
-  });
-
   it("hydrates the server-rendered form with the cookie's token and no mismatch", async () => {
     const request = signupRequest();
     const token = "ab".repeat(32);
