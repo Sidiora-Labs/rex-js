@@ -270,6 +270,20 @@
     - Every file rex new writes passes the rex/prettier preset untouched (qualification.751): the dataTemplate in cli/commands/new.ts and any other template string that the preset would rewrite are written in their formatted form, so rex check on a fresh app reports no format/prettier finding and the zero-findings assertions in commands.test.ts and new.test.ts pass without change.
     - vite/prerender.ts creates its renderer with the resolved fonts, the same way the rex:render module does after 7.5, so prerendered ssg and static pages carry the font preloads and the font-display swap block; prerender.test.ts asserts a preload link for a fixture font.
     - _Requirements: 13.2, 28.2_
+  - [ ] 8.1 A full CI pipeline with the package smoke test, the release path and the repository hygiene files
+    - ci.yml becomes the full pipeline on push and pull_request: verify (install, typecheck, pnpm -C packages/rex test which includes the size budgets), demo (build rex, rex check, the demo test script that 6.2 made run check, unit, operability, nojs, axe and vitals, with Playwright browsers installed), docs (pnpm docs:check), supply-chain (pnpm audit --prod and node tools/license-review.mjs) and package (build, pnpm pack, publint and are-the-types-wrong on the tarball, then sh tools/smoke-package.sh); every job pins actions by major version, uses pnpm with caching and a timeout, and the workflow declares read-only permissions.
+    - tools/smoke-package.sh packs @sidioralabs/rex, runs rex new from the tarball's own bin into a temp directory, installs the tarball there, runs rex check and rex build, starts the built node server on a free port, fetches the home page (expects the data-rex-page attribute and the sidecar script), /rex/manifest (expects JSON with the pages) and one RPC POST with an Origin header (expects 200), stops the server and exits non-zero on any miss; pnpm smoke runs it locally.
+    - release.yml runs the same gates plus the smoke test before publishing with provenance, and creates a GitHub release whose body is the CHANGELOG section of the tag; docs/releasing.md documents the path: bump the version in packages/rex/package.json, write the CHANGELOG entry, land main, push the v<version> tag, and the trusted publisher settings npm needs (repository Sidiora-Labs/rex-js, workflow release.yml, environment npm).
+    - Repository hygiene: .github/CODEOWNERS (@dev-paxeer owns everything, with spec/ and .github/ called out), .github/dependabot.yml (npm weekly grouped minor and patch, github-actions weekly), .github/ISSUE_TEMPLATE with bug, feature and agent-operability reports and a config.yml pointing security to the advisory channel, .github/pull_request_template.md asking for the spec task id and the verify evidence line, README.md gains the CI, npm version and license badges and an Install from npm section, and packages/rex/package.json gains repository, homepage and bugs.
+    - _Requirements: 36.1, 36.3, 27.1_
+  - [ ] 8.2 Coverage thresholds and the one-to-one test ratio, measured and enforced
+    - packages/rex gains @vitest/coverage-v8 and vitest.config.ts enables coverage over src with the test, conformance, fixture, testing-helper and .d.ts files excluded and thresholds lines 90, statements 90, functions 90, branches 80; pnpm -C packages/rex test:coverage runs it and the CI verify job uses that script; tools/test-ratio.mjs counts non-blank lines of test code (*.test.ts and .tsx, *.conformance.ts, src/testing, src/cli/fixtures, examples/demo/e2e and the demo page test folders) against source lines (packages/rex/src without those, examples/demo/app and tools) and exits non-zero under 1.0, printing both counts; pnpm test:ratio runs it in the CI verify job.
+    - Bring the suite to the thresholds and the ratio to at least 1.0 with real tests on the least covered modules the coverage report names (list the ten lowest in the task report with before and after figures): real code paths, real servers and registries, no mocks; no threshold is lowered and no file is excluded to pass.
+    - _Requirements: 36.2, 16.1_
+  - [ ] 8.3 The repository lints and formats itself with the rex presets
+    - A root eslint.config.js applies the rex/eslint preset with jsx-a11y to examples/demo/app and typescript-eslint recommended to packages/rex/src, examples/demo/e2e and tools; .prettierrc is the string @sidioralabs/rex/prettier and .prettierignore lists dist, .rex, AGENTS.md, pnpm-lock.yaml, docs/api, e2e/report and generated manifests; the root scripts lint, format and format:check run them.
+    - One format sweep of the whole repository with the preset, committed on its own as the first commit of the task; then every lint finding is fixed in place without disabling a rule, except a generated file that gets a targeted eslint-disable with its reason; ci.yml gains the lint job running pnpm lint and pnpm format:check, and CONTRIBUTING.md names the two commands.
+    - _Requirements: 36.4, 17.1_
 
 ## Task Dependency Graph
 
@@ -283,7 +297,8 @@
     { "id": 4,  "tasks": ["4.1", "4.2", "4.3", "4.4", "4.5"] },
     { "id": 5,  "tasks": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9"] },
     { "id": 6,  "tasks": ["6.1", "6.2", "6.3"] },
-    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9", "7.10"] }
+    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9", "7.10"] },
+    { "id": 8,  "tasks": ["8.1", "8.2", "8.3"] }
   ]
 }
 ```

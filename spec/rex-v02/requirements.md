@@ -346,3 +346,12 @@ Rex 0.1 proved the convention and the agent contract. Rex 0.2 brings the framewo
 1. The demo adds a static About page, an ssg Tokens page with revalidate, a loader-driven portfolio, forms on send, a shared store, Img and fonts, a locale switch with two locales, and a web-component embed example; the walk, the no-JS walk, axe and vitals pass with zero failures.
 2. package version is 0.2.0, CHANGELOG has the 0.2.0 entry, README carries the standards table with no open gap, docs are regenerated, and the pack test passes.
 
+## Requirement 36: Continuous integration, coverage and the published package
+
+### Acceptance Criteria
+
+1. Every push and pull request runs typecheck, the unit tests with coverage, the size budgets, the demo check with its unit, operability, no-JS, axe and vitals walks, the docs link and API checks, the audit and license review, the lint and format check and the package smoke test; a v<version> tag publishes @sidioralabs/rex to npm with provenance after the same gates.
+2. The unit suite covers at least 90 percent of lines, statements and functions and 80 percent of branches of packages/rex/src, and the repository holds at least one line of test code for every line of source code; both are measured by scripts the CI pipeline runs and are never lowered to pass.
+3. The packed tarball installs into a fresh rex new app, which builds, serves its home page, its manifest and an RPC call from the built server, and the tarball passes publint and are-the-types-wrong; the README documents installation from npm.
+4. The repository is linted and formatted by its own rex/eslint and rex/prettier presets with zero findings, checked in CI.
+

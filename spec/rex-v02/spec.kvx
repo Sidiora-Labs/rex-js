@@ -173,6 +173,9 @@ s4_now = "gap: 15 runtime dependencies, UNLICENSED, no CI or release workflow"
 s4_tasks = ["0.4", "4.5"]
 
 [standard.testing]
+s4 = "Coverage thresholds and a one-to-one test-to-code ratio enforced in CI."
+s4_now = "partial: 0.96 lines of test code per line of source on 2026-10-04 (24,992 test and 2,441 fixture lines against 27,751 source lines in packages/rex/src), no coverage thresholds"
+s4_tasks = ["8.2"]
 s1 = "Testable with Vitest, Playwright and Testing Library."
 s1_now = "met for the framework; no helpers for apps"
 s1_tasks = ["2.4"]
@@ -184,6 +187,9 @@ s3_now = "partial: StrictMode in the entry; no presets"
 s3_tasks = ["2.5"]
 
 [standard.ecosystem]
+s6 = "A full CI pipeline and the package published to npm with provenance."
+s6_now = "partial: ci.yml runs typecheck, the unit tests, the operability walk, vitals and the supply-chain review and release.yml publishes on a v tag through OIDC provenance; no package smoke install, lint, coverage or docs job, no CODEOWNERS, dependabot or templates, main not yet landed"
+s6_tasks = ["8.1", "8.3"]
 s1 = "Semantic versioning, documented deprecations, codemods for breaking changes."
 s1_now = "gap"
 s1_tasks = ["5.4"]
@@ -481,6 +487,13 @@ title = "Demo and release 0.2.0"
 story = "As the Rex team, I want the demo to exercise every 0.2 capability and the package to be releasable."
 ac_1  = "The demo adds a static About page, an ssg Tokens page with revalidate, a loader-driven portfolio, forms on send, a shared store, Img and fonts, a locale switch with two locales, and a web-component embed example; the walk, the no-JS walk, axe and vitals pass with zero failures."
 ac_2  = "package version is 0.2.0, CHANGELOG has the 0.2.0 entry, README carries the standards table with no open gap, docs are regenerated, and the pack test passes."
+
+[req.36]
+title = "Continuous integration, coverage and the published package"
+ac_1  = "Every push and pull request runs typecheck, the unit tests with coverage, the size budgets, the demo check with its unit, operability, no-JS, axe and vitals walks, the docs link and API checks, the audit and license review, the lint and format check and the package smoke test; a v<version> tag publishes @sidioralabs/rex to npm with provenance after the same gates."
+ac_2  = "The unit suite covers at least 90 percent of lines, statements and functions and 80 percent of branches of packages/rex/src, and the repository holds at least one line of test code for every line of source code; both are measured by scripts the CI pipeline runs and are never lowered to pass."
+ac_3  = "The packed tarball installs into a fresh rex new app, which builds, serves its home page, its manifest and an RPC call from the built server, and the tarball passes publint and are-the-types-wrong; the README documents installation from npm."
+ac_4  = "The repository is linted and formatted by its own rex/eslint and rex/prettier presets with zero findings, checked in CI."
 
 [task.0.1]
 title = "Split the Vite plugin, server and client entry points into per-concern modules with registration lists"
@@ -1531,4 +1544,60 @@ max_builds = 1
 max_verify_runs = 1
 max_repair_cycles = 2
 time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.8.1]
+title = "A full CI pipeline with the package smoke test, the release path and the repository hygiene files"
+status = "pending"
+mode = "BUILD"
+wave = 8
+requires = ["6.3"]
+reqs = ["36.1", "36.3", "27.1"]
+do_1 = "ci.yml becomes the full pipeline on push and pull_request: verify (install, typecheck, pnpm -C packages/rex test which includes the size budgets), demo (build rex, rex check, the demo test script that 6.2 made run check, unit, operability, nojs, axe and vitals, with Playwright browsers installed), docs (pnpm docs:check), supply-chain (pnpm audit --prod and node tools/license-review.mjs) and package (build, pnpm pack, publint and are-the-types-wrong on the tarball, then sh tools/smoke-package.sh); every job pins actions by major version, uses pnpm with caching and a timeout, and the workflow declares read-only permissions."
+do_2 = "tools/smoke-package.sh packs @sidioralabs/rex, runs rex new from the tarball's own bin into a temp directory, installs the tarball there, runs rex check and rex build, starts the built node server on a free port, fetches the home page (expects the data-rex-page attribute and the sidecar script), /rex/manifest (expects JSON with the pages) and one RPC POST with an Origin header (expects 200), stops the server and exits non-zero on any miss; pnpm smoke runs it locally."
+do_3 = "release.yml runs the same gates plus the smoke test before publishing with provenance, and creates a GitHub release whose body is the CHANGELOG section of the tag; docs/releasing.md documents the path: bump the version in packages/rex/package.json, write the CHANGELOG entry, land main, push the v<version> tag, and the trusted publisher settings npm needs (repository Sidiora-Labs/rex-js, workflow release.yml, environment npm)."
+do_4 = "Repository hygiene: .github/CODEOWNERS (@dev-paxeer owns everything, with spec/ and .github/ called out), .github/dependabot.yml (npm weekly grouped minor and patch, github-actions weekly), .github/ISSUE_TEMPLATE with bug, feature and agent-operability reports and a config.yml pointing security to the advisory channel, .github/pull_request_template.md asking for the spec task id and the verify evidence line, README.md gains the CI, npm version and license badges and an Install from npm section, and packages/rex/package.json gains repository, homepage and bugs."
+touches = [".github", "tools/smoke-package.sh", "docs/releasing.md", "README.md", "packages/rex/package.json", "package.json"]
+verify_cmd = "node tools/check-links.mjs && pnpm -C packages/rex build && sh tools/smoke-package.sh"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 60
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.8.2]
+title = "Coverage thresholds and the one-to-one test ratio, measured and enforced"
+status = "pending"
+mode = "BUILD"
+wave = 8
+requires = ["8.1"]
+reqs = ["36.2", "16.1"]
+do_1 = "packages/rex gains @vitest/coverage-v8 and vitest.config.ts enables coverage over src with the test, conformance, fixture, testing-helper and .d.ts files excluded and thresholds lines 90, statements 90, functions 90, branches 80; pnpm -C packages/rex test:coverage runs it and the CI verify job uses that script; tools/test-ratio.mjs counts non-blank lines of test code (*.test.ts and .tsx, *.conformance.ts, src/testing, src/cli/fixtures, examples/demo/e2e and the demo page test folders) against source lines (packages/rex/src without those, examples/demo/app and tools) and exits non-zero under 1.0, printing both counts; pnpm test:ratio runs it in the CI verify job."
+do_2 = "Bring the suite to the thresholds and the ratio to at least 1.0 with real tests on the least covered modules the coverage report names (list the ten lowest in the task report with before and after figures): real code paths, real servers and registries, no mocks; no threshold is lowered and no file is excluded to pass."
+touches = ["packages/rex/vitest.config.ts", "packages/rex/package.json", "package.json", "tools/test-ratio.mjs", ".github/workflows/ci.yml", "packages/rex/src", "examples/demo/app"]
+verify_cmd = "pnpm -C packages/rex test:coverage && node tools/test-ratio.mjs"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 90
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.8.3]
+title = "The repository lints and formats itself with the rex presets"
+status = "pending"
+mode = "BUILD"
+wave = 8
+requires = ["8.2"]
+reqs = ["36.4", "17.1"]
+do_1 = "A root eslint.config.js applies the rex/eslint preset with jsx-a11y to examples/demo/app and typescript-eslint recommended to packages/rex/src, examples/demo/e2e and tools; .prettierrc is the string @sidioralabs/rex/prettier and .prettierignore lists dist, .rex, AGENTS.md, pnpm-lock.yaml, docs/api, e2e/report and generated manifests; the root scripts lint, format and format:check run them."
+do_2 = "One format sweep of the whole repository with the preset, committed on its own as the first commit of the task; then every lint finding is fixed in place without disabling a rule, except a generated file that gets a targeted eslint-disable with its reason; ci.yml gains the lint job running pnpm lint and pnpm format:check, and CONTRIBUTING.md names the two commands."
+touches = ["eslint.config.js", ".prettierrc", ".prettierignore", "package.json", ".github/workflows/ci.yml", "CONTRIBUTING.md", "packages/rex", "examples/demo", "tools", "docs"]
+verify_cmd = "pnpm lint && pnpm format:check && pnpm -C packages/rex test"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 60
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
