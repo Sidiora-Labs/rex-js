@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { unlink, writeFile } from "node:fs/promises";
 import { createServer as createHttpServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -12,11 +12,14 @@ import { DENSITY_HEADER, isApiPath, rex } from "./index.ts";
 import { loadRexConfig } from "../cli/config.ts";
 import { configPluginOptions } from "../cli/load.ts";
 import { chunkBudgets, resolveBudgets } from "./budgets.ts";
+import { MANIFEST_FILE } from "../manifest/scan.ts";
+import type { Manifest } from "../manifest/types.ts";
 import {
   PAGE_BUDGET_KB,
   chunkTable,
   formatChunkTable,
   pageChunkGroups,
+  pageChunkName,
   pageIdOfModule,
 } from "./split.ts";
 import {
@@ -312,10 +315,10 @@ describe("the demo client build", { timeout: DEMO_BUILD_TIMEOUT_MS }, () => {
     const chunks = items.filter((item) => item.type === "chunk");
     const appPath = normalizePath(join(demoRoot, "app"));
     const pageChunks = chunks.filter((chunk) => chunk.name.startsWith(PAGE_CHUNK_PREFIX));
-    expect(pageChunks.map((chunk) => chunk.name).sort()).toEqual([
-      "page-portfolio",
-      "page-send",
-    ]);
+    const demoManifest = JSON.parse(readFileSync(join(demoRoot, MANIFEST_FILE), "utf8")) as Manifest;
+    const expectedChunks = demoManifest.pages.map((entry) => pageChunkName(entry.id)).sort();
+    expect(expectedChunks.length).toBeGreaterThan(0);
+    expect(pageChunks.map((chunk) => chunk.name).sort()).toEqual(expectedChunks);
     for (const chunk of pageChunks) {
       const pageId = chunk.name.slice(PAGE_CHUNK_PREFIX.length);
       const outside = chunk.moduleIds
@@ -326,11 +329,9 @@ describe("the demo client build", { timeout: DEMO_BUILD_TIMEOUT_MS }, () => {
     const budgets = chunkBudgets(resolveBudgets(loaded.read));
     const rows = chunkTable(items, budgets);
     const pageRows = rows.filter((row) => row.name.startsWith(PAGE_CHUNK_PREFIX));
-    expect(pageRows.map((row) => [row.name, row.budget])).toEqual([
-      ["page-portfolio", budgets.page],
-      ["page-send", budgets.page],
-    ]);
+    expect(pageRows.map((row) => row.name).sort()).toEqual(expectedChunks);
     for (const row of pageRows) {
+      expect(row.budget, row.name).toBe(budgets.page);
       expect(row.gzip, `${row.name}\n${formatChunkTable(rows)}`).toBeLessThanOrEqual(
         budgets.page * 1024,
       );

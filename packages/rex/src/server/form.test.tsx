@@ -7,6 +7,12 @@ import { actor, anonymousActor, type Actor } from "../core/actor.ts";
 import { always, can, never } from "../core/policy.ts";
 import { boolean, integer, money, text } from "../schema/index.ts";
 import { toJsonSchema } from "../manifest/json-schema.ts";
+import { buildManifest } from "../manifest/build.ts";
+import { ActionForm } from "../client/form.tsx";
+import { region, view } from "../client/page.tsx";
+import { page as declarePage } from "../core/page.ts";
+import { createRegistry } from "../core/registry.ts";
+import { createRexRenderer, registerPageRenderer } from "./ssr.ts";
 import {
   ACTION_FIELD,
   CONFIRM_FIELD,
@@ -675,4 +681,142 @@ describe("POST /rex/form/<action>", () => {
 afterEach(() => {
   deposits.length = 0;
   sent.length = 0;
+});
+
+describe("an ActionForm on an ssr page without JavaScript", () => {
+  const sendPage = declarePage("send", {
+    route: "/send",
+    actions: [send],
+    chrome: { title: "Send" },
+    regions: ["form"],
+  });
+  const SendForm = region("form", () => <ActionForm action={send} />);
+  const registry = createRegistry().register(send, sendPage).freeze();
+  const states = {
+    Loading: () => <p>Loading</p>,
+    Empty: () => <p>Empty</p>,
+    Stale: () => <p>Stale</p>,
+    Partial: () => <p>Partial</p>,
+    Offline: () => <p>Offline</p>,
+    PermissionDenied: () => <p>Denied</p>,
+    RecoverableError: () => <p>Failed</p>,
+    TerminalError: () => <p>Unavailable</p>,
+  };
+  registerPageRenderer(
+    registry,
+    createRexRenderer({
+      bundle: {
+        registry,
+        manifest: buildManifest(registry, { app: "forms-ssr" }),
+        pages: [
+          {
+            page: sendPage,
+            view: view(() => <SendForm />),
+            states,
+            regions: { form: SendForm },
+            overlays: {},
+          },
+        ],
+      },
+    }),
+  );
+
+  function submittedFields(
+    inputs: Iterable<{ getAttribute(name: string): string | null }>,
+    values: Readonly<Record<string, string>>,
+  ): URLSearchParams {
+    const submitted = new URLSearchParams();
+    for (const input of inputs) {
+      const name = input.getAttribute("name") ?? "";
+      submitted.append(name, values[name] ?? input.getAttribute("value") ?? "");
+    }
+    return submitted;
+  }
+
+  it("renders the rex-csrf cookie's token into the form so the send flow posts, confirms and runs", async () => {
+    const ledger = memoryLedger();
+    const app = createRexServer({
+      registry,
+      ledger,
+      actor: resolveActor,
+      app: "forms-ssr",
+    });
+    const rendered = await app.request(`${ORIGIN}/send`, {
+      headers: { accept: "text/html", authorization: "Bearer alice" },
+    });
+    expect(rendered.status).toBe(200);
+    const token = setCookies(rendered).get(CSRF_COOKIE);
+    expect(token).toMatch(/^[0-9a-f]{64}$/);
+    const cookie = `${CSRF_COOKIE}=${token as string}`;
+
+    const window = new Window({ url: ORIGIN });
+    try {
+      const parsed = new window.DOMParser().parseFromString(
+        await rendered.text(),
+        "text/html",
+      );
+      const form = parsed.querySelector(`form[action="${formPath("send")}"]`);
+      expect(form?.getAttribute("method")).toBe("post");
+      expect(
+        form?.querySelector(`input[name="${CSRF_FIELD}"]`)?.getAttribute("value"),
+      ).toBe(token);
+      const submitted = submittedFields(form?.querySelectorAll("input") ?? [], {
+        to: "bob",
+        amount: "7.25",
+      });
+      expect(submitted.get(CSRF_FIELD)).toBe(token);
+      expect(submitted.get(ACTION_FIELD)).toBe("send");
+
+      const confirmation = await post(app, "send", submitted, {
+        cookie,
+        as: "alice",
+        referer: `${ORIGIN}/send`,
+      });
+      expect(confirmation.status).toBe(200);
+      expect(sent).toEqual([]);
+      const confirmPage = new window.DOMParser().parseFromString(
+        await confirmation.text(),
+        "text/html",
+      );
+      const confirmForm = confirmPage.querySelector('form[data-rex-form="send"]');
+      const confirmed = await post(
+        app,
+        "send",
+        submittedFields(confirmForm?.querySelectorAll("input") ?? [], {}),
+        { cookie, as: "alice", referer: `${ORIGIN}${FORM_PREFIX}/send` },
+      );
+      expect(confirmed.status).toBe(303);
+      expect(outcomeOf(confirmed)).toMatchObject({
+        actionId: "send",
+        ok: true,
+      });
+      expect(sent).toEqual([{ to: "bob", amount: "7.25" }]);
+      expect((await ledger.list()).map((record) => [record.actor, record.actionId, record.outcome])).toEqual([
+        ["alice", "send", "ok"],
+      ]);
+    } finally {
+      await window.happyDOM.close();
+    }
+  });
+
+  it("refuses the same post when the form carries no rendered token", async () => {
+    const app = createRexServer({
+      registry,
+      ledger: memoryLedger(),
+      actor: resolveActor,
+      app: "forms-ssr",
+    });
+    const rendered = await app.request(`${ORIGIN}/send`, {
+      headers: { accept: "text/html", authorization: "Bearer alice" },
+    });
+    const token = setCookies(rendered).get(CSRF_COOKIE) as string;
+    const refused = await post(
+      app,
+      "send",
+      fields({ to: "bob", amount: "7.25" }, ""),
+      { cookie: `${CSRF_COOKIE}=${token}`, as: "alice" },
+    );
+    expect(refused.status).toBe(403);
+    expect(sent).toEqual([]);
+  });
 });

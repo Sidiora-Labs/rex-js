@@ -20,6 +20,7 @@ import {
   type PrerenderMode,
   type StaticPageEntry,
 } from "../server/adapters/static-cache.ts";
+import { memoryLedger, type Ledger } from "../server/audit.ts";
 import { formPath } from "../server/form.ts";
 import type { RexPageRenderer } from "../server/routes/render.ts";
 import type { RexDocumentAssets, RexRendererOptions } from "../server/ssr.ts";
@@ -47,6 +48,7 @@ export interface PrerenderOptions {
   readonly clientDir: string;
   readonly origin?: string;
   readonly actor?: Actor;
+  readonly ledger?: Ledger;
 }
 
 export function prerenderMode(ssr: PrerenderRuntime, manifest: Manifest, declared: AnyPage): PrerenderMode | null {
@@ -129,11 +131,13 @@ export async function prerenderPages(
   const clientDir = resolve(options.clientDir);
   const origin = options.origin ?? PRERENDER_ORIGIN;
   const actor = options.actor ?? anonymousActor;
+  const ledger = options.ledger ?? memoryLedger();
   const rendererOptions = (pages: readonly PageModuleSet[]): RexRendererOptions => ({
     bundle: { ...bundle, pages },
     assets,
     ...(source.rootElement === undefined ? {} : { rootElement: source.rootElement }),
     fonts: source.fonts ?? [],
+    ledger,
   });
 
   const targets = bundle.pages

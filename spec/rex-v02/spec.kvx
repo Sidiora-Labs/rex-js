@@ -1774,7 +1774,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.15]
 title = "rex build prerenders through one runtime context, SSR carries the CSRF token, and ssg pages run their loaders"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 7
 requires = ["7.11"]
@@ -1782,7 +1782,7 @@ reqs = ["10.1", "10.2", "11.1", "25.2"]
 do_1 = "rex build from the installed dist CLI prerenders ssg and static pages inside the same page-runtime context the app's own imports resolve to (qualification.621): the prerender loads the app bundle and the SSR runtime through one module loader with one copy of rex/client, so REX306 and REX405 no longer fire for the demo's about and tokens pages; the demo rex build and the generated server start are proven in cli/commands.test.ts with a fixture that declares one ssg and one static page."
 do_2 = "SSR provides CsrfTokenContext and sets the rex-csrf cookie on the document response (qualification.622) so an ActionForm rendered on an ssr page posts a valid _csrf and the no-JS send flow succeeds; server/form.test.tsx and server/ssr.test.tsx prove the cookie and the token in the rendered form."
 do_3 = "ssg pages may declare loaders (qualification.623): prerender runs the page loaders through the action router the way SSR does and dehydrates them into the static document, with a prerender test; docs/recipes/loader.md points at the demo's current loader instead of the removed wallet-query.ts; server/router.test.ts follows the Standard Schema issue codes the router now emits and vite/vite.test.ts asserts the demo's page chunks by the manifest's page list rather than a count of two."
-touches = ["packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands.test.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/vite/prerender.ts", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/vite/ssr.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/routes/render.ts", "packages/rex/src/server/form.ts", "packages/rex/src/server/form.test.tsx", "packages/rex/src/server/loaders.ts", "packages/rex/src/server/router.test.ts", "packages/rex/src/client/form.tsx", "packages/rex/src/vite/vite.test.ts", "docs/recipes/loader.md"]
+touches = ["packages/rex/src/cli/commands.test.ts", "packages/rex/src/vite/prerender.ts", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/routes/render.ts", "packages/rex/src/server/form.ts", "packages/rex/src/server/form.test.tsx", "packages/rex/src/server/loaders.ts", "packages/rex/src/server/router.test.ts", "packages/rex/src/vite/vite.test.ts", "docs/recipes/loader.md"]
 verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/cli/commands.test.ts src/vite/prerender.test.ts src/vite/vite.test.ts src/server/ssr.test.tsx src/server/form.test.tsx src/server/router.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex build"
 gate_kind = "planned"
 max_builds = 1

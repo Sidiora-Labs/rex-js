@@ -9,6 +9,8 @@ import {
   createRexContext,
   type RexRequestContext,
 } from "../context.ts";
+import { bindCsrfGrant, ensureCsrfToken } from "../form.ts";
+import { loaderRunnerFor, withLoaderRunner } from "../loaders.ts";
 
 export const RENDER_STATUS = Object.freeze({
   page: 200,
@@ -99,13 +101,18 @@ export function installRenderRoute(app: Hono, setup: RexServerSetup): void {
       throw error;
     }
     if (cached) {
-      const hit = await cache.serve(c.req.raw, renderer, context.nonce);
+      const runner = loaderRunnerFor(c.req.raw);
+      const regenerator =
+        renderer === undefined || runner === undefined ? renderer : withLoaderRunner(renderer, runner);
+      const hit = await cache.serve(c.req.raw, regenerator, context.nonce);
       if (hit !== null) return staticResponse(hit, context.density);
     }
     if (renderer === undefined) {
       await next();
       return;
     }
+    const csrf = ensureCsrfToken(c.req.raw);
+    bindCsrfGrant(c.req.raw, csrf);
     const result = await renderer.render(c.req.raw, context);
     const headers = new Headers({
       "content-type": HTML_CONTENT_TYPE,
@@ -114,6 +121,7 @@ export function installRenderRoute(app: Hono, setup: RexServerSetup): void {
       [DENSITY_HEADER]: context.density,
     });
     if (result.page !== null) headers.set(RENDER_PAGE_HEADER, result.page);
+    if (csrf.setCookie !== null) headers.append("set-cookie", csrf.setCookie);
     return new Response(result.body, { status: RENDER_STATUS[result.kind], headers });
   });
 }

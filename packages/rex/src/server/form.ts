@@ -314,6 +314,21 @@ export function ensureCsrfToken(request: Request): CsrfGrant {
   return { token, setCookie: csrfCookie(token, request) };
 }
 
+const csrfGrants = new WeakMap<Request, CsrfGrant>();
+
+export function bindCsrfGrant(request: Request, grant: CsrfGrant): void {
+  if (!isCsrfToken(grant.token))
+    throw new RexError(
+      "REX400",
+      "bindCsrfGrant: token must be 64 hex characters",
+    );
+  csrfGrants.set(request, grant);
+}
+
+export function csrfGrantFor(request: Request): CsrfGrant | undefined {
+  return csrfGrants.get(request);
+}
+
 export function verifyCsrf(
   cookieToken: string | null,
   fieldToken: unknown,
