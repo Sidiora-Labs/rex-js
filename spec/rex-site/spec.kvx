@@ -25,6 +25,9 @@ hosting_gates  = "The built directory is served the way Pages serves it, by tool
 analytics      = "The site loads no third-party script, no analytics and no fonts from a CDN: it is content-security-policy clean, and it is the reference for the security defaults Rex claims."
 search         = "Search is a loader: the docs index page loads a search index (title, route, headings, first paragraph of every doc, recipe, error and API page) built by a read action at build time and dehydrated into the page; the search region filters it client side with the DesignX command item. The command palette lists every page as on any Rex app; there is no search service."
 findings       = "Every framework gap the site exposes (a missing export, a checker rule that rejects a legitimate pattern, a route shape page() cannot express, a build output the static host cannot serve, a runtime request a static host cannot answer) is one entry in spec/rex-site/qualification.kvx with the exact observation (the log is shared and outside every task's touches, so any task appends to it), and task 3.3 fixes each in packages/rex with a test, or records a [decision] here when the framework is right and the site adapts. The task report of 3.3 is the list of what the site taught the framework."
+action_folders = "app/actions may hold folders: every .ts file under app/actions, at any depth except test and fixture files, is an action module and is registered, classified and addressed exactly as a top-level one; the folder is organisation only and carries no meaning. app/server is the server-only role the convention already names for code that never reaches the client bundle: the checker classifies every module under app/server as server, actions and other server modules may import it, and a region, part, overlay, state, hook or view that imports it is a boundaries finding."
+static_navigation = "A static deployment navigates by documents: in a static build (the REX_STATIC_HOST define of task 2.5) every navigation to another page is a full document navigation to its prerendered HTML, so a page's loaders are read from its own dehydrated data and never fetched through /rex/rpc; loader queries never refetch on focus, reconnect or mount in a static build; the command palette, nav.to, the shell navigation, the back link and the recovery link all follow this rule, with their data-rex addresses unchanged; a form post in a static build goes to the apiOrigin when one is configured and is a checker finding otherwise, since a static host answers no POST."
+
 workflow       = "The site has its own GitHub Actions workflow .github/workflows/site.yml: verify (install, build the package, rex check, unit tests, the static build) on every push and pull request touching site/, docs/, packages/rex/, CHANGELOG.md or the workflow; e2e on the built directory; deploy to Pages on main only, with the pages and id-token permissions and concurrency so one deployment runs at a time. ci.yml is not touched by this feature."
 
 [design]
@@ -108,7 +111,7 @@ title = "The home page: hero, the four rules, features, install, the live sideca
 status = "implemented"
 mode = "BUILD"
 wave = 1
-requires = ["1.1"]
+requires = ["1.1", "2.7"]
 reqs = ["3.1", "3.2", "3.3", "1.2"]
 do_1 = "Fill the home page regions per [design] copy and [design] live_sidecar with DesignX parts (card, badge, button, kbd, typography, separator, tooltip): Hero with the mark and the tagline, Pitch with the four rules, Primitives with the five declarations and the manifest, HowItWorks with the data-rex attribute table and the four invocation routes, Install with the InstallBlock reading the version through a read action, Features as cards linking their doc pages, LiveSidecar, Footer."
 do_2 = "Read actions in app/actions/home for the version, the counts (error codes from the catalog, checker rules, the client budget) and the home sidecar; declare them in load; a test folder asserting every region renders, every number equals its source read directly in the test, the sidecar lists the copy action, and the prerendered LiveSidecar JSON equals the page sidecar; the site declares no i18n, so texts are plain English, and a checker finding on a text is a gap to record."
@@ -126,7 +129,7 @@ title = "The docs engine and the doc, recipe and docs index pages with search"
 status = "pending"
 mode = "BUILD"
 wave = 1
-requires = ["1.1"]
+requires = ["1.1", "2.7"]
 reqs = ["2.1", "1.2"]
 do_1 = "app/server/content/markdown.ts renders markdown with marked and shiki per [decision] markdown (heading ids, heading list, relative links between docs and recipes rewritten to /docs/<slug> and /docs/recipes/<slug>, links to repository files rewritten to the GitHub tree URL, code blocks highlighted server side with both color schemes through CSS variables); app/server/content/docs.ts lists and reads docs/*.md and docs/recipes/*.md (except README.md) with slug, title from the first heading, headings and the first paragraph; app/server/content/search.ts builds the index of [decision] search over docs, recipes and whatever the other readers expose through one function each reader exports."
 do_2 = "Pages doc (/docs/:slug, static, paths from the reader, load the article) and recipe (/docs/recipes/:slug) with Article (the Prose part through unsafeHtml) and Toc regions; page docs (/docs, ssg) with the Index region listing guides and recipes by section and the Search region filtering the loaded index with the DesignX command item; the Prose part's typography from the DesignX typography item; tests asserting the page set equals the file set, a known doc renders its headings and rewritten links, the search index contains every doc, and the sidecar of each page."
@@ -145,7 +148,7 @@ title = "The error catalog pages"
 status = "implemented"
 mode = "BUILD"
 wave = 1
-requires = ["1.1"]
+requires = ["1.1", "2.7"]
 reqs = ["2.2", "1.2"]
 do_1 = "app/server/content/errors.ts reads the catalog from the package (REX_ERROR_DOCS and the codes of core/errors.ts through the entry that exports them; if no public entry exports the catalog, record the gap in the qualification log and read it through the package's check entry or a documented path, never by copying the catalog); each entry carries code, area with its title, message, hint and the docs URL the framework emits; the read actions live in app/actions/errors."
 do_2 = "Page errors (/errors, ssg) with the Catalog region grouped by area and a filter on code or message text; page error (/errors/:code, static, paths from the catalog) with the Detail region (code as the heading, area badge, message, hint, a link to the area's doc page, previous and next code navigation); tests asserting every code is a path, a known code renders its message and hint, the docs URL of a RexError resolves to that page's route, and the sidecar of both pages."
@@ -163,7 +166,7 @@ title = "The standards, changelog and about pages"
 status = "implemented"
 mode = "BUILD"
 wave = 1
-requires = ["1.1"]
+requires = ["1.1", "2.7"]
 reqs = ["2.3", "1.2"]
 do_1 = "app/server/content/standards.ts parses spec/rex-v02/spec.kvx [standard.*] sections and the [task.*] statuses they map to; app/server/content/changelog.ts reads CHANGELOG.md and splits it into releases; page standards (/standards, static) with the Table region (DesignX table on desktop, card list on phone, one row per item with its status badge and owning tasks); page changelog (/changelog, static) with the Releases region rendered through the Prose part; page about (/about, static) with the Sidiora, License, Governance, Contributing and Security regions linking the repository files; the read actions live in app/actions/standards and app/actions/changelog."
 do_2 = "Tests asserting every [standard.*] item is a row, the statuses equal the spec, every release heading of CHANGELOG.md is rendered, the about links resolve to files that exist in the repository, and the sidecar of each page."
@@ -212,12 +215,48 @@ max_repair_cycles = 2
 time_limit_minutes = 60
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
 
+[task.2.7]
+title = "Action folders and the app/server role in the scanner and the checker"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["6.1", "1.1"]
+do_1 = "Implement [decision] action_folders: packages/rex/src/vite/scan.ts declarationFiles (and whatever the app module generator and rex manifest use to list actions) register every .ts module under app/actions at any depth except *.test.ts and fixtures; check/engine.ts classify gives those modules the action role and gives every module under app/server the server role; the boundaries import table lets actions and server modules import app/server and reports a client-side role that imports it; naming rules apply to nested action files as to flat ones. The qualification entries 211, 212, 221, 222, 231 to 235 and 241 to 244 are the observations; read them first and mark each resolved with the commit."
+do_2 = "Tests: a scan test with an app/actions/<folder>/<file>.ts action asserting it is registered and addressed like a flat one, a classify test for app/server/<file>.ts, a boundaries test with an action importing app/server (allowed) and a region importing it (finding); docs/convention.md documents both; the checker fixtures gain the two cases; rex check on examples/demo still reports zero findings."
+touches = ["packages/rex/src/vite/scan.ts", "packages/rex/src/vite/scan.test.ts", "packages/rex/src/vite/app-module.ts", "packages/rex/src/check/engine.ts", "packages/rex/src/check/engine.test.ts", "packages/rex/src/check/rules/boundaries.ts", "packages/rex/src/check/rules/boundaries.test.ts", "packages/rex/src/check/rules/naming.ts", "packages/rex/src/check/check.test.ts", "packages/rex/src/check/fixtures", "packages/rex/src/cli/commands/manifest.ts", "docs/convention.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/scan.test.ts src/check && pnpm -C examples/demo exec rex check && pnpm -C site check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 75
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.2.8]
+title = "A static deployment navigates by documents and never calls a server"
+status = "pending"
+mode = "BUILD"
+wave = 1
+requires = ["2.5"]
+reqs = ["4.2", "6.1"]
+do_1 = "Implement [decision] static_navigation in packages/rex: under the REX_STATIC_HOST define, nav.to and every shell navigation (the sidebar, dock and bar links, the palette's page entries, the back link, the recovery link, the breadcrumbs) perform a document navigation to the target route instead of a router transition, keeping every data-rex-nav and sidecar entry as it is; loader queries are configured with staleTime Infinity and refetchOnWindowFocus, refetchOnReconnect and refetchOnMount false in a static build; ActionForm posts to the configured apiOrigin, and rex check reports a mutating action on a page of an app whose build target is static and whose client.apiOrigin is unset (rule server/static-post). qualification.251 is the observation."
+do_2 = "Tests: a client test under the static define asserting a nav.to call sets window.location (or the Navigation API) instead of the router and that no fetch is issued; a loaders test asserting the static query defaults; a checker test for the new rule; examples/demo builds with --target static and its static walk makes no request (a Playwright-free node test serving dist/client with tools/serve-static.mjs and loading a page with happy-dom is acceptable when it asserts no failed request); docs/recipes/static-page.md and docs/platforms.md describe the behaviour."
+touches = ["packages/rex/src/client/nav.ts", "packages/rex/src/client/nav.test.tsx", "packages/rex/src/client/router.tsx", "packages/rex/src/client/router.test.tsx", "packages/rex/src/client/loaders.ts", "packages/rex/src/client/loaders.test.tsx", "packages/rex/src/client/shell/nav.tsx", "packages/rex/src/client/shell/header.tsx", "packages/rex/src/client/agent/palette.tsx", "packages/rex/src/client/form.tsx", "packages/rex/src/client/form.test.tsx", "packages/rex/src/client/static-host.ts", "packages/rex/src/client/static-host.test.tsx", "packages/rex/src/check/rules/render.ts", "packages/rex/src/check/rules/render.test.ts", "docs/recipes/static-page.md", "docs/platforms.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client src/check/rules/render.test.ts && pnpm -C examples/demo exec rex build --target static --no-check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 90
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
 [task.3.1]
 title = "The API reference pages from docs/api"
 status = "pending"
 mode = "BUILD"
 wave = 2
-requires = ["2.2"]
+requires = ["2.2", "2.7", "2.8"]
 reqs = ["2.3", "1.2"]
 do_1 = "app/server/content/api.ts lists docs/api/**/*.md with the path flattened to a dash-separated slug, the entry (package export path) and the title, and reads each through the markdown renderer with links between API files rewritten to /api/<slug>; page api (/api, ssg) with the Entries region listing every package entry with its exported symbols grouped by kind and a Search region over the API part of the index; page api-doc (/api/:slug, static, paths from the reader) with Article and Toc; the read actions live in app/actions/api."
 do_2 = "Tests asserting the page set equals the file set, every link in a rendered API page points at an existing slug or an external URL, the entries region lists every export path of packages/rex/package.json, and the sidecar of both pages."
