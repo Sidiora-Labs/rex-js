@@ -864,7 +864,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.6]
 title = "Tutorial, recipes, migration guide, versioning policy and generated API reference"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["1.2", "1.3", "1.6", "3.2", "3.5", "5.4", "5.6"]

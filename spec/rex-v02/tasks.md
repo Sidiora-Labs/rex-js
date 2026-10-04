@@ -106,7 +106,7 @@
     - Add cli/gen/lint.ts contributing eslint.config.js, .prettierrc and lint and format scripts to rex new through cli/generators.ts; add eslint, prettier and eslint-plugin-jsx-a11y as dev dependencies and optional peers; add the ./eslint and ./prettier exports.
     - Write src/eslint/eslint.test.ts running ESLint programmatically on a fixture with a boundary violation and an a11y violation.
     - _Requirements: 17.1, 17.2_
-  - [ ] 2.6 Tutorial, recipes, migration guide, versioning policy and generated API reference
+  - [x] 2.6 Tutorial, recipes, migration guide, versioning policy and generated API reference
     - Write docs/tutorial.md building the wallet demo from rex new step by step, docs/recipes/ with the eight recipes named in [req.18] ac_1, docs/migration.md and docs/versioning.md.
     - Add typedoc.json and tools/docs-api.mjs generating docs/api/ from the package entries with a --check mode that fails when stale; add tools/check-links.mjs validating local links in README.md and docs/; add root scripts docs:api and docs:check.
     - Generate and commit docs/api/.

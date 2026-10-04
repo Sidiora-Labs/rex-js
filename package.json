@@ -13,9 +13,13 @@
     "test": "pnpm -r test",
     "check": "pnpm --filter demo check",
     "dev": "pnpm --filter demo dev",
-    "docs:errors": "node tools/docs-errors.mjs"
+    "docs:errors": "node tools/docs-errors.mjs",
+    "docs:api": "node tools/docs-api.mjs",
+    "docs:check": "node tools/check-links.mjs && node tools/docs-api.mjs --check"
   },
   "devDependencies": {
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.13.1",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"
   }
