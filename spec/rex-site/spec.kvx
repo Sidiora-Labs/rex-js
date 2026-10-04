@@ -86,7 +86,7 @@ ac_2  = "README.md links the site and docs/releasing.md describes the site deplo
 
 [task.1.1]
 title = "Scaffold the site package on the DesignX standard with the Rex theme, the shell, the gates skeleton and its workflow"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = []
