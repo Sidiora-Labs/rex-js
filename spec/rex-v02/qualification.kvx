@@ -63,3 +63,11 @@ symbol = "REX450, RuntimeMissingError, RUNTIME_MISSING_CODE, entryBudgets"
 observed = "The catalog in core/errors.ts (outside the 1.5 touches) has no REX450 and RexError rejects uncatalogued codes, so the bun and deno adapters throw RuntimeMissingError carrying code REX450, hint, docs and runtime, following the REX330 precedent from 0.5; the edge entry budget in vite/budgets.ts still measures src/server/index.ts; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/server/fetch-only.test.ts src/server/adapters/adapters.test.ts src/server/node.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.5-private/logs/1.5-verify.log."
 assumption = "Task 2.1 adds REX450 to the catalog so RuntimeMissingError can become a RexError, and the owner of vite/budgets.ts may keep src/server/index.ts as the edge source since an edge worker bundles createRexServer plus the few lines of adapters/edge.ts."
 severity = "note"
+
+[qualification.371]
+task = "3.7"
+file = "examples/demo/app/pages/portfolio, packages/rex/src/vite/budgets.ts, packages/rex/src/core/schema.ts"
+symbol = "rex build page budget, buildDemo"
+observed = "The axe walk never reaches a page because rex build exits 1 with page-portfolio at 80.36 KB gzip over the 50 KB page budget (classic zod still bundled, see qualification.05); the committed demo manifest was also stale against a fresh build and was regenerated with rex manifest; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C examples/demo exec playwright test e2e/axe.spec.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.7-private/logs/3.7-verify.log."
+assumption = "Once the zod/mini move brings the portfolio page chunk under its budget the unchanged axe spec builds the demo and audits every page and overlay in both densities; any serious or critical violation it then reports is for 6.2; the budget was not relaxed and --no-check was not used."
+severity = "blocker"
