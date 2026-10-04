@@ -165,7 +165,7 @@
     - Add .github/workflows/ci.yml (install with frozen lockfile, typecheck, test, check, walk, vitals, pnpm audit --prod, license review) and .github/workflows/release.yml publishing on a v* tag with npm provenance through OIDC; add tools/license-review.mjs allowing MIT, ISC, BSD, Apache-2.0, 0BSD and CC0 and failing otherwise.
     - Extend tools/gate-lint.sh to run pnpm audit --prod and the license review.
     - _Requirements: 27.1, 27.2_
-  - [ ] 5.1 Img, Script and fonts with preloads and the raw-img rule
+  - [x] 5.1 Img, Script and fonts with preloads and the raw-img rule
     - Add client/media.tsx exporting Img and Script per [design] media_api; emit preload links for priority images and configured fonts plus the font-face block with font-display swap in server/ssr.ts; add check/rules/media.ts (media/no-raw-img) with fixtures and register it.
     - Write client/media.test.tsx and check/rules/media.test.ts, and an SSR case asserting the preload and font-face output.
     - _Requirements: 28.1, 28.2_

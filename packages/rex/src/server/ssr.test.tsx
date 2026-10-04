@@ -13,6 +13,7 @@ import {
   readRexData,
   type HydrationMismatch,
 } from "../client/hydrate.ts";
+import { Img, SCRIPT_ATTRIBUTE, Script } from "../client/media.tsx";
 import { region, view, type LazyPageModuleSet, type LoadedPageModules } from "../client/page.tsx";
 import { action } from "../core/action.ts";
 import { actor } from "../core/actor.ts";
@@ -73,6 +74,11 @@ const later = page("later", {
   chrome: { title: "Later" },
 });
 
+const gallery = page("gallery", {
+  route: "/gallery",
+  chrome: { title: "Gallery" },
+});
+
 const broken = page("broken", {
   route: "/broken",
   chrome: { title: "Broken" },
@@ -114,6 +120,17 @@ const HomeView = view(() => (
 ));
 
 const VaultView = view(() => <p>Vault contents</p>);
+const HERO_SRC = "/images/hero.avif";
+const HERO_SRCSET = "/images/hero-640.avif 640w, /images/hero-1200.avif 1200w";
+const HERO_SIZES = "(max-width: 640px) 100vw, 1200px";
+const WIDGET_SRC = "/vendor/widget.js";
+const GalleryView = view(() => (
+  <>
+    <Img src={HERO_SRC} srcSet={HERO_SRCSET} sizes={HERO_SIZES} alt="Harbour at dusk" width={1200} height={630} priority />
+    <Img src="/images/thumb.avif" alt="Thumbnail" width={320} height={180} />
+    <Script src={WIDGET_SRC} strategy="beforeHydration" />
+  </>
+));
 const LaterView = view(() => <p>Later body</p>);
 const BrokenView = view(() => {
   throw new Error("view exploded");
@@ -131,7 +148,7 @@ function lazySet(declared: AnyPage, loaded: LoadedPageModules): LazyPageModuleSe
   });
 }
 
-const registry = createRegistry().register(addNote, home, vault, later, broken).freeze();
+const registry = createRegistry().register(addNote, home, vault, later, gallery, broken).freeze();
 const manifest = buildManifest(registry, { app: "ssr-fixture" });
 const bundle: RexEntryBundle = {
   registry,
@@ -145,6 +162,7 @@ const bundle: RexEntryBundle = {
     }),
     lazySet(vault, { view: VaultView, states: statesFor("the vault") }),
     lazySet(later, { view: LaterView, states: statesFor("Later") }),
+    lazySet(gallery, { view: GalleryView, states: statesFor("the gallery") }),
     lazySet(broken, { view: BrokenView, states: statesFor("Broken page") }),
   ],
 };
@@ -158,6 +176,11 @@ const server = createRexServer({
 });
 
 let assets: RexDocumentAssets;
+
+const FONTS = [
+  { family: "Inter", src: "/fonts/inter.woff2", weight: "100 900" },
+  { family: 'Mono "Code"', src: "/fonts/mono.ttf", style: "italic", preload: false },
+] as const;
 
 async function buildFixtureAssets(): Promise<RexDocumentAssets> {
   rmSync(fixtureRoot, { recursive: true, force: true });
@@ -186,7 +209,7 @@ async function buildFixtureAssets(): Promise<RexDocumentAssets> {
 
 beforeAll(async () => {
   assets = await buildFixtureAssets();
-  registerPageRenderer(registry, createRexRenderer({ bundle, assets }));
+  registerPageRenderer(registry, createRexRenderer({ bundle, assets, fonts: FONTS }));
 }, BUILD_TIMEOUT_MS);
 
 afterAll(() => {
@@ -240,7 +263,9 @@ function mountDocument(html: string, path: string): HTMLElement {
 }
 
 function serverFetch(input: Request | string | URL, init?: RequestInit): Promise<Response> {
-  return Promise.resolve(server.fetch(new Request(input, init)));
+  const outgoing = new Request(input, init);
+  if (!outgoing.headers.has("origin")) outgoing.headers.set("origin", window.location.origin);
+  return Promise.resolve(server.fetch(outgoing));
 }
 
 async function hydrate(container: HTMLElement, mismatches: HydrationMismatch[]): Promise<StartedRex> {
@@ -432,5 +457,54 @@ describe("streaming server-side rendering", () => {
     const asset = await server.fetch(request("/favicon.ico"));
     expect(asset.status).toBe(404);
     expect(asset.headers.get("x-rex-render")).toBeNull();
+  });
+  it("emits priority image and font preloads, the font-face block and nonced scripts in the head", async () => {
+    const response = await server.fetch(request("/gallery"));
+    expect(response.status).toBe(RENDER_STATUS.page);
+    const html = await response.text();
+    const headEnd = html.indexOf("</head>");
+    const bodyAt = html.indexOf("<body>");
+    expect(headEnd).toBeGreaterThan(0);
+    const head = html.slice(0, headEnd);
+
+    const heroPreload = `<link rel="preload" as="image" href="${HERO_SRC}" imagesrcset="${HERO_SRCSET}" imagesizes="${HERO_SIZES}" fetchpriority="high">`;
+    expect(head).toContain(heroPreload);
+    expect(head).not.toContain('href="/images/thumb.avif"');
+    expect(head).toContain(
+      '<link rel="preload" as="font" href="/fonts/inter.woff2" type="font/woff2" crossorigin="">',
+    );
+    expect(head).not.toContain('as="font" href="/fonts/mono.ttf"');
+    expect(head).toContain(
+      '<style data-rex-fonts="">' +
+        '@font-face{font-family:"Inter";src:url("/fonts/inter.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}' +
+        '@font-face{font-family:"Mono \\"Code\\"";src:url("/fonts/mono.ttf") format("truetype");font-style:italic;font-display:swap}' +
+        "</style>",
+    );
+    const firstStylesheet = html.indexOf('<link rel="stylesheet"');
+    expect(html.indexOf(heroPreload)).toBeLessThan(firstStylesheet);
+    expect(html.indexOf("<style data-rex-fonts")).toBeLessThan(firstStylesheet);
+
+    const body = html.slice(bodyAt);
+    const parsed = new DOMParser().parseFromString(html, "text/html");
+    const hero = parsed.body.querySelector(`img[src="${HERO_SRC}"]`);
+    expect(hero?.getAttribute("fetchpriority")).toBe("high");
+    expect(hero?.getAttribute("loading")).toBe("eager");
+    expect(hero?.getAttribute("width")).toBe("1200");
+    expect(hero?.getAttribute("height")).toBe("630");
+    const thumb = parsed.body.querySelector('img[src="/images/thumb.avif"]');
+    expect(thumb?.getAttribute("loading")).toBe("lazy");
+    expect(thumb?.getAttribute("decoding")).toBe("async");
+    expect(thumb?.hasAttribute("fetchpriority")).toBe(false);
+
+    const nonce = /<script type="application\/rex\+data" id="rex-data" nonce="([^"]+)"/.exec(html)?.[1];
+    expect(nonce).toMatch(/^[0-9a-f]{32}$/);
+    const widget = parsed.body.querySelector(`script[src="${WIDGET_SRC}"]`);
+    expect(widget?.getAttribute(SCRIPT_ATTRIBUTE)).toBe("beforeHydration");
+    expect(widget?.getAttribute("nonce")).toBe(nonce);
+    expect(body.indexOf(`src="${WIDGET_SRC}"`)).toBeLessThan(body.indexOf(`src="${assets.scripts[0] as string}"`));
+
+    const other = await (await server.fetch(request("/"))).text();
+    expect(other).toContain('<style data-rex-fonts="">');
+    expect(other).not.toContain(heroPreload);
   });
 });

@@ -46,3 +46,4 @@ export type { ConfirmRequest as ConfirmDialogRequest } from "./agent/confirm.tsx
 export * from "./interop/index.ts";
 export * from "./i18n/index.ts";
 export * from "./loaders.ts";
+export * from "./media.tsx";
