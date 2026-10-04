@@ -28,6 +28,14 @@ function sheetOpen(view: RexRenderResult): boolean | undefined {
   return view.sidecar().overlays.find((entry) => entry.id === "HoldingsFilterSheet")?.open;
 }
 
+async function renderActions(): Promise<RexRenderResult> {
+  const view = await renderRegion(walletApp(owner), "portfolio", "actions");
+  await waitFor(() =>
+    expect(view.container.querySelector(`[data-rex-overlay-trigger="${SHEET}"]`)).not.toBeNull(),
+  );
+  return view;
+}
+
 async function click(element: Element): Promise<void> {
   await act(async () => {
     fireEvent.click(element);
@@ -36,7 +44,7 @@ async function click(element: Element): Promise<void> {
 
 describe("portfolio actions region", () => {
   it("renders the quick actions with no filter applied", async () => {
-    const view = await renderRegion(walletApp(owner), "portfolio", "actions");
+    const view = await renderActions();
     const scope = within(view.container);
     expect(scope.getByText("No filter applied")).toBeTruthy();
     expect(scope.getByRole("button", { name: "Send tokens" }).getAttribute("data-rex-nav")).toBe(
@@ -50,7 +58,7 @@ describe("portfolio actions region", () => {
   });
 
   it("opens the URL-bound filter sheet, applies a filter and closes", async () => {
-    const view = await renderRegion(walletApp(owner), "portfolio", "actions");
+    const view = await renderActions();
     await click(trigger(view));
     await waitFor(() => expect(sheet(view)).not.toBeNull());
     expect(search(view).getAll(OVERLAY_QUERY_KEY)).toEqual(["HoldingsFilterSheet"]);
@@ -73,7 +81,7 @@ describe("portfolio actions region", () => {
   });
 
   it("clears the filter from the sheet", async () => {
-    const view = await renderRegion(walletApp(owner), "portfolio", "actions");
+    const view = await renderActions();
     const draft = new URLSearchParams({ [DRAFT_QUERY_KEY]: JSON.stringify({ query: "pax" }) });
     draft.append(OVERLAY_QUERY_KEY, "HoldingsFilterSheet");
     act(() => view.navigate(`/?${draft.toString()}`));
@@ -93,7 +101,7 @@ describe("portfolio actions region", () => {
   });
 
   it("navigates to the send page", async () => {
-    const view = await renderRegion(walletApp(owner), "portfolio", "actions");
+    const view = await renderActions();
     await click(within(view.container).getByRole("button", { name: "Send tokens" }));
     await waitFor(() => expect(view.history.at(-1)).toBe("/send"));
   });
