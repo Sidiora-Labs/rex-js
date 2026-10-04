@@ -69,7 +69,7 @@
     - Add check/rules/render.ts reporting a static page that declares a shortcut action or a region-bound overlay (render/static-needs-js) with fixtures, registered in the rules list.
     - Write vite/prerender.test.ts, server/static-cache.test.ts and check/rules/render.test.ts.
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
-  - [ ] 1.4 Form post route with FormData coercion, CSRF, Origin check and server-rendered confirmation
+  - [x] 1.4 Form post route with FormData coercion, CSRF, Origin check and server-rendered confirmation
     - Add server/form.ts (FormData coercion against the input schema: numbers, booleans, arrays, nested dotted names) and server/routes/form.ts implementing [design] forms_protocol: CSRF double-submit cookie rex-csrf, Origin check, policy, action run, rex-outcome cookie, redirect, validation errors, and the server-rendered confirmation page for irreversible actions; register the route.
     - Write server/form.test.tsx (coercion, CSRF reject, Origin reject, confirm page, confirm post, redirect, errors cookie, audit record).
     - _Requirements: 11.2, 11.3, 11.4_

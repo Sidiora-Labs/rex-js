@@ -8,3 +8,5 @@ export { REX_ROUTES } from "./routes.ts";
 export { HEALTH_PATH, installHealthRoute } from "./routes/health.ts";
 export { MANIFEST_PATH, installManifestRoute } from "./routes/manifest.ts";
 export { RPC_PREFIX, installRpcRoute } from "./routes/rpc.ts";
+export * from "./form.ts";
+export { FORM_ROUTE, installFormRoute } from "./routes/form.ts";
