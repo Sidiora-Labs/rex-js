@@ -1,0 +1,442 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+/* ==========================================================================
+   Rex site theme on the DesignX tokens, derived from the Rex mark.
+   Dark: a warm near-black with the cream, gold and orange-red of the mark.
+   Light: a warm white with the navy, royal blue and cyan of the light mark.
+   Every token is a light-dark() pair, so the scheme follows the system with no
+   JavaScript; the theme toggle pins it with .light or .dark on <html>.
+   ========================================================================== */
+
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not(.light), :root:not(.light) *) {
+      @slot;
+    }
+  }
+}
+
+@theme inline {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 36px;
+
+  --ease-dx: cubic-bezier(0.2, 0, 0, 1);
+  --ease-dx-out: cubic-bezier(0.05, 0.7, 0.1, 1);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--background);
+  --color-container: var(--container);
+  --color-container-high: var(--container-high);
+  --color-container-higher: var(--container-higher);
+  --color-container-highest: var(--container-highest);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-container: var(--destructive-container);
+  --color-success: var(--success);
+  --color-success-container: var(--success-container);
+  --color-warning: var(--warning);
+  --color-warning-container: var(--warning-container);
+  --color-info: var(--info);
+  --color-info-container: var(--info-container);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-outline-variant: var(--outline-variant);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+}
+
+:root {
+  color-scheme: light dark;
+
+  --background: light-dark(#fbfaf7, #14110d);
+  --foreground: light-dark(#0b1433, #f8ecd2);
+  --container: light-dark(#f4f2ec, #1b1712);
+  --container-high: light-dark(#ece9e1, #241f18);
+  --container-higher: light-dark(#e3dfd5, #2f2920);
+  --container-highest: light-dark(#d9d4c8, #3d3529);
+  --card: light-dark(#ffffff, #1b1712);
+  --card-foreground: light-dark(#0b1433, #f8ecd2);
+  --popover: light-dark(#ffffff, #211c15);
+  --popover-foreground: light-dark(#0b1433, #f8ecd2);
+  --primary: light-dark(#0d2a8a, #f5c451);
+  --primary-foreground: light-dark(#ffffff, #1a1308);
+  --primary-fill: none;
+  --secondary: light-dark(#ece9e1, #241f18);
+  --secondary-foreground: light-dark(#0b1433, #f8ecd2);
+  --muted: light-dark(#f4f2ec, #1b1712);
+  --muted-foreground: light-dark(#454b60, #c8b994);
+  --accent: light-dark(#e6ecff, #2d2416);
+  --accent-foreground: light-dark(#0b1433, #f8ecd2);
+  --destructive: light-dark(#b42318, #ff6a45);
+  --destructive-foreground: light-dark(#ffffff, #1a1308);
+  --destructive-container: light-dark(#fdeceb, #3a140c);
+  --success: light-dark(#0b7a4b, #4cc38a);
+  --success-container: light-dark(#dcf5e8, #0f2e20);
+  --warning: light-dark(#b45309, #f5a524);
+  --warning-container: light-dark(#fdf1d8, #3a2708);
+  --info: light-dark(#1546d8, #7fb4ff);
+  --info-container: light-dark(#e3ebff, #16213f);
+  --border: light-dark(rgba(11, 20, 51, 0.12), rgba(248, 236, 210, 0.12));
+  --border-strong: light-dark(rgba(11, 20, 51, 0.24), rgba(248, 236, 210, 0.24));
+  --outline-variant: light-dark(rgba(11, 20, 51, 0.06), rgba(248, 236, 210, 0.06));
+  --input: light-dark(rgba(11, 20, 51, 0.18), rgba(248, 236, 210, 0.18));
+  --ring: light-dark(#1546d8, #f5a524);
+  --overlay: light-dark(rgba(11, 20, 51, 0.32), rgba(0, 0, 0, 0.56));
+  --chart-1: light-dark(#1546d8, #f5c451);
+  --chart-2: light-dark(#13a6e8, #f08a24);
+  --chart-3: light-dark(#0d2a8a, #ee4a1c);
+  --chart-4: light-dark(#5b7cff, #f8e3a8);
+  --chart-5: light-dark(#7fd3ff, #b8860b);
+  --sidebar: light-dark(#f4f2ec, #17130f);
+  --sidebar-foreground: light-dark(#0b1433, #f8ecd2);
+  --sidebar-primary: light-dark(#0d2a8a, #f5c451);
+  --sidebar-primary-foreground: light-dark(#ffffff, #1a1308);
+  --sidebar-accent: light-dark(#e6ecff, #2d2416);
+  --sidebar-accent-foreground: light-dark(#0b1433, #f8ecd2);
+  --sidebar-border: light-dark(rgba(11, 20, 51, 0.08), rgba(248, 236, 210, 0.08));
+  --sidebar-ring: light-dark(#1546d8, #f5a524);
+  --brand: light-dark(#1546d8, #f5c451);
+  --brand-strong: light-dark(#0d2a8a, #ee4a1c);
+  --brand-soft: light-dark(#13a6e8, #f8e3a8);
+
+  --state-hover: 0.05;
+  --state-press: 0.09;
+  --state-focus: 0.12;
+  --shadow-float:
+    0 1px 2px rgba(11, 20, 51, 0.06), 0 8px 24px -6px rgba(11, 20, 51, 0.14),
+    0 24px 56px -12px rgba(11, 20, 51, 0.1);
+
+  --scrollbar-thumb: color-mix(in srgb, var(--foreground) 16%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--foreground) 30%, transparent);
+  --scrollbar-thumb-active: color-mix(in srgb, var(--foreground) 42%, transparent);
+  --scrollbar-size: 12px;
+}
+
+:root.light {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+/* In the base layer so `scrollbar-none` / `scrollbar-hover` utilities can override it. */
+@layer base {
+  ::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
+    background: transparent;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    min-height: 40px;
+    min-width: 40px;
+    border: 3.5px solid transparent;
+    border-radius: 999px;
+    background-color: var(--scrollbar-thumb);
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    border-width: 2.5px;
+    background-color: var(--scrollbar-thumb-hover);
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background-color: var(--scrollbar-thumb-active);
+  }
+  ::-webkit-scrollbar-button {
+    display: none;
+  }
+  @supports (-moz-appearance: none) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Thumb stays hidden until the container is hovered or focused — for side
+   navs and panels where a permanent thumb would be noise. */
+@utility scrollbar-hover {
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent;
+  }
+  &:hover::-webkit-scrollbar-thumb,
+  &:focus-within::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+  }
+  &:hover::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+  @supports (-moz-appearance: none) {
+    scrollbar-color: transparent transparent;
+    &:hover,
+    &:focus-within {
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+  }
+}
+
+/* ---------- Utilities ---------- */
+
+/* Material-style state layer: overlays currentColor on hover / press / focus */
+@utility state-layer {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+    transition: opacity 150ms var(--ease-dx);
+  }
+  @media (hover: hover) {
+    &:hover:not([data-disabled]):not(:disabled)::before {
+      opacity: var(--state-hover);
+    }
+  }
+  &:focus-visible::before {
+    opacity: var(--state-focus);
+  }
+  &:active:not([data-disabled]):not(:disabled)::before,
+  &[data-popup-open]::before,
+  &[data-pressed]::before {
+    opacity: var(--state-press);
+  }
+}
+
+/* DX double focus ring: surface gap + ink ring */
+@utility focus-ring {
+  outline: none;
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px var(--ring);
+  }
+}
+
+@utility primary-fill {
+  background-image: var(--primary-fill);
+}
+
+@utility shadow-float {
+  box-shadow: var(--shadow-float);
+}
+
+/* Base UI popup animation: scale + fade from the trigger */
+@utility popup-motion {
+  transform-origin: var(--transform-origin);
+  transition:
+    opacity 160ms var(--ease-dx),
+    transform 180ms var(--ease-dx),
+    scale 180ms var(--ease-dx);
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* ---------- Rex surfaces on DesignX ----------
+   The shell, overlays, palette, confirmation, outcome region and ActionForm
+   controls are rendered by Rex; these rules put them on the site tokens. */
+
+@layer base {
+  html {
+    background: var(--background);
+  }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  .rex-page-header {
+    @apply flex flex-wrap items-end justify-between gap-3;
+  }
+  .rex-page-title {
+    @apply m-0 text-[clamp(1.75rem,3vw,2.25rem)] leading-[1.1] font-normal tracking-[-0.025em] text-foreground;
+  }
+  .rex-recovery {
+    @apply m-0;
+  }
+
+  .rex-outcome {
+    @apply flex flex-col gap-2 rounded-lg text-sm;
+  }
+  .rex-outcome:has([data-rex-outcome="none"]) {
+    @apply sr-only;
+  }
+  .rex-outcome [data-rex-outcome] {
+    @apply flex flex-col items-start gap-2 sm:flex-row sm:items-center;
+  }
+  .rex-outcome [data-rex-outcome] > [data-slot="alert"] {
+    @apply flex-1;
+  }
+
+  [data-rex-overlay],
+  [data-rex-palette],
+  [data-rex-confirm] {
+    @apply fixed inset-x-0 top-[12vh] z-50 mx-auto flex max-h-[76vh] w-[min(32rem,calc(100%-2rem))] flex-col gap-4 overflow-auto rounded-xl border border-border bg-popover p-6 text-popover-foreground shadow-float;
+    box-shadow:
+      0 0 0 100vmax var(--overlay),
+      var(--shadow-float);
+  }
+  [data-rex-overlay] > [data-rex-overlay-close] {
+    @apply self-end;
+  }
+
+  [data-rex-confirm] {
+    @apply w-[min(28rem,calc(100%-2rem))];
+  }
+  [data-rex-confirm] h2 {
+    @apply m-0 text-lg leading-tight font-medium tracking-[-0.01em];
+  }
+  [data-rex-confirm] p {
+    @apply m-0 text-sm text-muted-foreground;
+  }
+  [data-rex-confirm] code {
+    @apply rounded-xs bg-container px-1.5 py-0.5 font-mono text-[0.88em] text-foreground;
+  }
+  [data-rex-confirm] button {
+    @apply focus-ring state-layer inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium pointer-coarse:min-h-11;
+  }
+  [data-rex-confirm] [data-rex-confirm-accept] {
+    @apply bg-destructive text-destructive-foreground;
+  }
+  [data-rex-confirm] [data-rex-confirm-cancel] {
+    @apply border border-border bg-transparent text-foreground;
+  }
+
+  [data-rex-palette] {
+    @apply gap-0 p-0;
+  }
+  [data-rex-palette] [cmdk-input] {
+    @apply h-12 w-full border-0 border-b border-border bg-transparent px-4 text-[15px] outline-none;
+  }
+  [data-rex-palette] [cmdk-list] {
+    @apply max-h-[22rem] overflow-auto p-2;
+  }
+  [data-rex-palette] [cmdk-group-heading] {
+    @apply px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase;
+  }
+  [data-rex-palette] [cmdk-item] {
+    @apply flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm;
+  }
+  [data-rex-palette] [cmdk-item][data-selected="true"] {
+    @apply bg-container-high;
+  }
+  [data-rex-palette] [cmdk-item][data-disabled="true"] {
+    @apply cursor-not-allowed text-muted-foreground;
+  }
+  [data-rex-palette] [cmdk-empty] {
+    @apply p-6 text-center text-sm text-muted-foreground;
+  }
+
+  form[data-rex-form] {
+    @apply flex flex-col gap-4;
+  }
+  form[data-rex-form] [data-rex-field] {
+    @apply flex flex-col gap-1.5;
+  }
+  form[data-rex-form] [data-rex-field] label {
+    @apply text-sm font-medium text-foreground;
+  }
+  form[data-rex-form] [data-rex-field] :is(input:not([type="checkbox"]), textarea, select) {
+    @apply focus-ring w-full rounded-lg border border-input bg-transparent px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground;
+  }
+  form[data-rex-form] [data-rex-field-error] {
+    @apply m-0 text-sm text-destructive;
+  }
+  form[data-rex-form] > button[type="submit"] {
+    @apply focus-ring state-layer inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground sm:w-auto sm:self-start;
+  }
+  form[data-rex-form] > button[type="submit"]:disabled {
+    @apply opacity-40;
+  }
+}
+
+[data-rex-density="agent"] [data-site-frame] {
+  flex-direction: column;
+}
+[data-rex-density="agent"] [data-site-appbar] {
+  position: static;
+  backdrop-filter: none;
+}
+[data-rex-density="agent"] [data-site-dock] {
+  position: static;
+}
+[data-rex-density="agent"] .rex-outcome:has([data-rex-outcome="none"]) {
+  position: static;
+  inline-size: auto;
+  block-size: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}

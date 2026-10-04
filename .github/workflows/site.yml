@@ -1,0 +1,55 @@
+name: Site
+
+on:
+  push:
+    paths:
+      - "site/**"
+      - "docs/**"
+      - "packages/rex/**"
+      - "CHANGELOG.md"
+      - "tools/serve-static.mjs"
+      - "tools/serve-static.test.mjs"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/site.yml"
+  pull_request:
+    paths:
+      - "site/**"
+      - "docs/**"
+      - "packages/rex/**"
+      - "CHANGELOG.md"
+      - "tools/serve-static.mjs"
+      - "tools/serve-static.test.mjs"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/site.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Check, test and build the site
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - name: Static server tests
+        run: node --test tools/serve-static.test.mjs
+      - name: Check
+        run: pnpm -C site check
+      - name: Unit tests
+        run: pnpm -C site test:unit
+      - name: Build
+        run: pnpm -C site build
