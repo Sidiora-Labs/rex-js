@@ -91,7 +91,7 @@
     - Implement src/client/nav.ts: useNav() returning to(page, params), back(), replace(page, params) typed against the registry; params failing the schema are a compile error through the declaration types and a runtime validation outcome; draft state is serialized into the URL as declared by page.draft.
     - Write src/client/nav.test.tsx covering navigation, params validation, reload restoration from URL and the denied recovery path.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 2.3 Implement the act hook and the outcome store
+  - [x] 2.3 Implement the act hook and the outcome store
     - Implement src/client/outcome.ts: a small store holding the last outcome per page (actionId, ok, message, at) with subscribe and useOutcome.
     - Implement src/client/act.ts: useAct(action) returning {run(input), pending, allowed, reason, controlProps} where run performs the oRPC call through a TanStack mutation, invalidates the declared query keys, writes the outcome, and for irreversible actions requests a confirm token first; allowed comes from client-side policy evaluation against the current actor.
     - Write src/client/act.test.tsx with a mocked RPC link covering success, validation failure, forbidden, invalidation and the confirm step.
