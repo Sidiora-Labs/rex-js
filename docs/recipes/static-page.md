@@ -93,11 +93,32 @@ rex build: wrote dist/client/404.html (the shell document for unknown routes)
 
 Without `client.apiOrigin` the client reads the manifest inlined at build time and never requests `/rex/manifest`. To call a Rex server elsewhere, set `client.apiOrigin` in `rex.config.ts` and list the static host in the `security: { origins }` option of that server's `createRexServer`.
 
+## Navigation on a static host
+
+A static host answers files, not the Rex protocol, so a build without `client.apiOrigin` navigates by documents and never calls a server:
+
+- `nav.to`, `nav.replace` and `nav.back`, the shell navigation links (sidebar, dock and bar), the command palette's page entries, the header's back control and the recovery link load the target route as a new document (`location.assign`, or `location.replace` for `nav.replace`) instead of a router transition. Each page then starts from its own prerendered HTML and dehydrated loader data, so its loaders never run through `/rex/rpc`. Every `data-rex-nav` address and sidecar entry stays the same.
+- The client does not intercept Navigation API events, so links and history traversal are ordinary document loads.
+- Loader queries keep the data they were hydrated with: `staleTime` is `Infinity` and they never refetch on window focus, reconnect or mount.
+
+With `client.apiOrigin` set the client routes in place as on a server deployment and calls that origin, and every `ActionForm` posts to `<apiOrigin>/rex/form/<action>` once the page has hydrated.
+
+A static host answers no `POST`, so an action that changes data needs `client.apiOrigin`. `rex check` reports a page that declares a mutating action (`effect` `reversible` or `irreversible`) in an app whose `package.json` has a script running `rex build --target static`, whose `rex.config.ts` declares no `server` and sets no `client.apiOrigin`:
+
+```
+app/pages/help/page.ts
+  7:13  error    render/static-post  page "help" declares mutating action "request-callback" (effect "reversible"), but the app builds for a static host (script "build:static" runs rex build --target static) and rex.config.ts sets no client.apiOrigin, so the action posts to a host that answers no POST (declared in app/actions/request-callback.ts)
+          hint: Set client: { apiOrigin: "https://api.example.com" } in rex.config.ts to the Rex server that runs action "request-callback", or remove the action from page "help".
+```
+
+An app that declares `server` in `rex.config.ts` is deployed with that server; its static build is a secondary output and the check leaves it alone.
+
 ## Checks
 
 | Check                    | Reports                                                                                                                                                                                 |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `render/static-needs-js` | a static page that declares an action with a shortcut, or an overlay bound to region state; both need JavaScript                                                                        |
+| `render/static-post`     | a mutating action on a page of an app built with `rex build --target static`, with no `server` and no `client.apiOrigin` in `rex.config.ts`                                             |
 | `rex build`              | a static page that does not render one of its actions as a form: `renders static but action "<id>" is not rendered as a form; render it with ActionForm so it works without JavaScript` |
 
 Related: [cli.md](../cli.md#rex-build), [Load page data with a loader](loader.md).

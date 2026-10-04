@@ -235,14 +235,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.8]
 title = "A static deployment navigates by documents and never calls a server"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 1
 requires = ["2.5"]
 reqs = ["4.2", "6.1"]
 do_1 = "Implement [decision] static_navigation in packages/rex: under the REX_STATIC_HOST define, nav.to and every shell navigation (the sidebar, dock and bar links, the palette's page entries, the back link, the recovery link, the breadcrumbs) perform a document navigation to the target route instead of a router transition, keeping every data-rex-nav and sidecar entry as it is; loader queries are configured with staleTime Infinity and refetchOnWindowFocus, refetchOnReconnect and refetchOnMount false in a static build; ActionForm posts to the configured apiOrigin, and rex check reports a mutating action on a page of an app whose build target is static and whose client.apiOrigin is unset (rule server/static-post). qualification.251 is the observation."
 do_2 = "Tests: a client test under the static define asserting a nav.to call sets window.location (or the Navigation API) instead of the router and that no fetch is issued; a loaders test asserting the static query defaults; a checker test for the new rule; examples/demo builds with --target static and its static walk makes no request (a Playwright-free node test serving dist/client with tools/serve-static.mjs and loading a page with happy-dom is acceptable when it asserts no failed request); docs/recipes/static-page.md and docs/platforms.md describe the behaviour."
-touches = ["packages/rex/src/client/nav.ts", "packages/rex/src/client/nav.test.tsx", "packages/rex/src/client/router.tsx", "packages/rex/src/client/router.test.tsx", "packages/rex/src/client/loaders.ts", "packages/rex/src/client/loaders.test.tsx", "packages/rex/src/client/shell/nav.tsx", "packages/rex/src/client/shell/header.tsx", "packages/rex/src/client/agent/palette.tsx", "packages/rex/src/client/form.tsx", "packages/rex/src/client/form.test.tsx", "packages/rex/src/client/static-host.ts", "packages/rex/src/client/static-host.test.tsx", "packages/rex/src/check/rules/render.ts", "packages/rex/src/check/rules/render.test.ts", "docs/recipes/static-page.md", "docs/platforms.md"]
+touches = ["packages/rex/src/client/nav.test.tsx", "packages/rex/src/client/router.tsx", "packages/rex/src/client/router.test.tsx", "packages/rex/src/client/loaders.ts", "packages/rex/src/client/loaders.test.tsx", "packages/rex/src/client/form.tsx", "packages/rex/src/client/form.test.tsx", "packages/rex/src/client/static-host.ts", "packages/rex/src/client/static-host.test.tsx", "packages/rex/src/check/rules/render.ts", "packages/rex/src/check/rules/render.test.ts", "docs/recipes/static-page.md", "docs/platforms.md"]
 verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client src/check/rules/render.test.ts && pnpm -C examples/demo exec rex build --target static --no-check"
 gate_kind = "planned"
 max_builds = 1

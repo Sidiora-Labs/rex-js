@@ -223,3 +223,11 @@ symbol = "the errors reader's repository-path import of core/errors.docs.ts"
 observed = "With 2.7 merged the home half of the 2.1 verify_cmd passes on its own (pnpm -C site exec vitest run app/pages/home: exit 0, 16 tests passed, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.1-private/logs/2.1-vitest-4.log) and pnpm -C site exec tsc --noEmit -p tsconfig.json exits 0, but the verify_cmd stops at rex check on the one finding [qualification.272] already records, boundaries/import-table on app/server/content/errors.ts line 4 (task 2.3, outside the 2.1 touches); evidence: revision 6c24f85 plus the 2.1 test repairs, command pnpm -C site check && pnpm -C site exec vitest run app/pages/home, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.1-private/logs/2.1-verify-2.log."
 assumption = "Once 3.3 exports the error docs catalog from a public entry per [qualification.235] and the 2.3 reader imports it, rex check on the site reports no finding and the unchanged 2.1 verify_cmd passes, so 2.1 closes with cg spec done 2.1 on that revision."
 severity = "high"
+
+[qualification.281]
+task = "2.8"
+file = "packages/rex/src/server/ssr.ts, packages/rex/src/vite/prerender.ts, packages/rex/src/cli/commands/build.ts"
+symbol = "createRexEntry baseUrl in entryTree, prerenderBuild rex options, ActionForm useFormApiOrigin"
+observed = "2.8 makes a hydrated ActionForm post to <client.apiOrigin>/rex/form/<action> (the runtime that the static entry wires with baseUrl apiOrigin and apiFetch), but the server render and the static prerender build the runtime with baseUrl url.origin and buildApp passes the prerender pluginOptions without apiOrigin, so the prerendered HTML of a static build with client.apiOrigin still carries action=/rex/form/<action> until hydration, and a form submitted without JavaScript posts to the static host; read from ssr.ts entryTree and build.ts buildApp at revision f1e70bc plus the 2.8 changes."
+assumption = "Task 3.3 passes client.apiOrigin to the prerender (and the SSR runtime) so the server-rendered ActionForm action is the absolute apiOrigin URL, matching the hydrated form; the site has no mutating actions, so it does not meet this."
+severity = "low"

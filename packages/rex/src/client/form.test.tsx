@@ -27,7 +27,9 @@ import {
   CSRF_FIELD,
   CsrfTokenContext,
   formActionPath,
+  formActionUrl,
 } from "./form.tsx";
+import { apiFetch } from "./context.ts";
 import { createOutcomeStore, OutcomeProvider, type OutcomeStore } from "./outcome.ts";
 import { definePageModules, region, view, type PageModuleSet } from "./page.tsx";
 import { RexProviders } from "./providers.ts";
@@ -372,5 +374,47 @@ describe("ActionForm", () => {
       fields: { a: "x" },
     };
     expect(parseOutcomeCookie(encodeURIComponent(JSON.stringify(flat)))).toBeNull();
+  });
+});
+
+describe("ActionForm with client.apiOrigin", () => {
+  const API_ORIGIN = "https://api.rex.test";
+
+  function mountApiClient(fetch: RexFetch): void {
+    const RexApp = createRexApp({ registry, manifest, actor: owner, fetch, baseUrl: API_ORIGIN });
+    const memory = memoryLocation({ path: "/", record: true });
+    render(
+      <OutcomeProvider store={createOutcomeStore()}>
+        <RexApp>
+          <Router hook={memory.hook}>
+            <RexProviders>
+              <Shell pages={pages} outcome={OutcomeRegion} />
+            </RexProviders>
+          </Router>
+        </RexApp>
+      </OutcomeProvider>,
+    );
+  }
+
+  it("builds the post target from the API origin, or keeps the form route on its own origin", () => {
+    expect(formActionUrl("transfer", null)).toBe("/rex/form/transfer");
+    expect(formActionUrl("transfer", API_ORIGIN)).toBe("https://api.rex.test/rex/form/transfer");
+    expect(formActionUrl("wipe", `${API_ORIGIN}/`)).toBe("https://api.rex.test/rex/form/wipe");
+  });
+
+  it("posts every form to the configured API origin when the client calls it with the credentialed fetch", async () => {
+    mountApiClient(apiFetch);
+    await screen.findByRole("form", { name: "Transfer" });
+    expect(form("Transfer").getAttribute("action")).toBe("https://api.rex.test/rex/form/transfer");
+    expect(form("Wipe").getAttribute("action")).toBe("https://api.rex.test/rex/form/wipe");
+    expect(form("Transfer").getAttribute("method")).toBe("post");
+    expect(named(form("Transfer"), ACTION_FIELD).value).toBe("transfer");
+  });
+
+  it("keeps the form route when the client talks to its own server through another fetch", async () => {
+    const app = createTestApp({ registry, manifest, pages }, { actor: owner });
+    mountApiClient(testServer(app).fetch);
+    await screen.findByRole("form", { name: "Transfer" });
+    expect(form("Transfer").getAttribute("action")).toBe(formActionPath("transfer"));
   });
 });
