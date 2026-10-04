@@ -4,18 +4,21 @@ import type { AnyPage } from "../core/page.ts";
 import { validateStandardSync } from "../core/standard.ts";
 import { OutcomeRegion } from "./agent/outcome.tsx";
 import { PageInvokers } from "./agent/confirm.tsx";
-import { RexPalette } from "./agent/palette.tsx";
+import { PALETTE_LABEL, PALETTE_SHORTCUT, RexPalette } from "./agent/palette.tsx";
 import { RexShortcuts } from "./agent/shortcuts.ts";
 import { RexSidecar } from "./agent/sidecar.tsx";
 import { RexUrlInvoke } from "./agent/url-invoke.ts";
-import { useRegistry } from "./context.ts";
+import { useManifest, useRegistry } from "./context.ts";
 import type { PageModuleSet } from "./page.tsx";
 import { RexProviders } from "./providers.ts";
 import { RexRoutes, type RouteResolution } from "./router.tsx";
+import { useShellComponent, type ShellPaletteTriggerProps } from "./shell/components.ts";
+import { useNavLinks } from "./shell/nav.tsx";
 import { ShellOutcome, type OutcomeSlotProps } from "./shell/outcome-slot.tsx";
 import { SHELL_SLOTS, type ShellSlot } from "./shell/slots.ts";
 
 export { NOT_FOUND_TITLE } from "./shell/header.tsx";
+export { useNavLinks } from "./shell/nav.tsx";
 export { ShellOutcome, type OutcomeSlotProps } from "./shell/outcome-slot.tsx";
 export { SHELL_SLOTS, type ShellSlot, type ShellSlotProps } from "./shell/slots.ts";
 
@@ -36,20 +39,43 @@ interface FrameProps {
   readonly slots: readonly ShellSlot[];
 }
 
+export const PALETTE_TRIGGER_ADDRESS = "palette";
+
+export function openPalette(): void {
+  window.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "k", code: "KeyK", ctrlKey: true, cancelable: true }),
+  );
+}
+
+export function paletteTrigger(): ShellPaletteTriggerProps {
+  return {
+    label: PALETTE_LABEL,
+    shortcut: PALETTE_SHORTCUT,
+    address: PALETTE_TRIGGER_ADDRESS,
+    onOpen: openPalette,
+  };
+}
+
 function ShellFrame({ resolution, modules, navPages, Outcome, slots }: FrameProps) {
   const active = resolution.kind === "page" ? resolution.page : null;
+  const manifest = useManifest();
+  const links = useNavLinks(active, navPages);
+  const Frame = useShellComponent("Frame");
+  const palette = useMemo(() => (Outcome === AgentOutcome ? paletteTrigger() : null), [Outcome]);
   return (
     <div data-rex-shell="">
-      {slots.map(({ id, Component }) => (
-        <Component
-          key={id}
-          resolution={resolution}
-          active={active}
-          modules={modules}
-          navPages={navPages}
-          Outcome={Outcome}
-        />
-      ))}
+      <Frame appName={manifest.app.name} links={links} palette={palette}>
+        {slots.map(({ id, Component }) => (
+          <Component
+            key={id}
+            resolution={resolution}
+            active={active}
+            modules={modules}
+            navPages={navPages}
+            Outcome={Outcome}
+          />
+        ))}
+      </Frame>
     </div>
   );
 }
