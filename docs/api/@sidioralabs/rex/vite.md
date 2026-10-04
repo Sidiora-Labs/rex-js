@@ -147,6 +147,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
@@ -280,6 +283,14 @@ readonly locales: readonly LocaleModule[];
 
 ```ts
 readonly name: string;
+```
+
+<a id="prebuiltmanifest"></a>
+
+##### prebuiltManifest?
+
+```ts
+readonly optional prebuiltManifest?: boolean;
 ```
 
 <a id="shellcomponents"></a>

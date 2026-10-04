@@ -147,6 +147,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
@@ -399,6 +402,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
@@ -998,78 +1004,6 @@ readonly instance: string;
 
 ***
 
-<a id="flowgatestate"></a>
-
-### FlowGateState
-
-#### Properties
-
-<a id="id-1"></a>
-
-##### id
-
-```ts
-readonly id: string;
-```
-
-<a id="label-1"></a>
-
-##### label
-
-```ts
-readonly label: string;
-```
-
-***
-
-<a id="flowstate"></a>
-
-### FlowState
-
-#### Properties
-
-<a id="completed"></a>
-
-##### completed
-
-```ts
-readonly completed: number;
-```
-
-<a id="flow-1"></a>
-
-##### flow
-
-```ts
-readonly flow: string;
-```
-
-<a id="gate-1"></a>
-
-##### gate
-
-```ts
-readonly gate: FlowGateState | null;
-```
-
-<a id="instance-1"></a>
-
-##### instance
-
-```ts
-readonly instance: string;
-```
-
-<a id="status"></a>
-
-##### status
-
-```ts
-readonly status: FlowStateStatus;
-```
-
-***
-
 <a id="formerrorpageoptions"></a>
 
 ### FormErrorPageOptions
@@ -1350,6 +1284,12 @@ readonly sidecar: object;
 actions: object[];
 ```
 
+###### density?
+
+```ts
+optional density?: "comfortable" | "compact" | "agent";
+```
+
 ###### loaders?
 
 ```ts
@@ -1387,10 +1327,22 @@ page: string;
 params: Record<string, unknown>;
 ```
 
+###### pointer?
+
+```ts
+optional pointer?: "coarse" | "fine";
+```
+
 ###### regions?
 
 ```ts
 optional regions?: object[];
+```
+
+###### screen?
+
+```ts
+optional screen?: "phone" | "tablet" | "desktop" | "wide";
 ```
 
 ###### state
@@ -2225,7 +2177,7 @@ regenerate(
 serve(
    request, 
    renderer, 
-   nonce
+   context
 ): Promise<StaticHit | null>;
 ```
 
@@ -2239,9 +2191,9 @@ serve(
 
 [`RexPageRenderer`](#rexpagerenderer) \| `undefined`
 
-###### nonce
+###### context
 
-`string`
+[`RexRequestContext`](#rexrequestcontext)
 
 ###### Returns
 
@@ -2289,6 +2241,14 @@ readonly optional onError?: StaticCacheErrorHandler;
 
 ```ts
 readonly pages: readonly StaticPageEntry[];
+```
+
+<a id="screen"></a>
+
+##### screen
+
+```ts
+readonly screen: StaticScreenClassifier;
 ```
 
 <a id="store"></a>
@@ -2339,7 +2299,7 @@ readonly path: string;
 readonly setCookie: string | null;
 ```
 
-<a id="status-1"></a>
+<a id="status"></a>
 
 ##### status
 
@@ -2701,26 +2661,6 @@ type AuditOutcome = typeof AUDIT_OK | string & object;
 
 ***
 
-<a id="confirminput"></a>
-
-### ConfirmInput
-
-```ts
-type ConfirmInput = zm.input<typeof confirmInputSchema>;
-```
-
-***
-
-<a id="confirmoutput"></a>
-
-### ConfirmOutput
-
-```ts
-type ConfirmOutput = zm.output<typeof confirmOutputSchema>;
-```
-
-***
-
 <a id="confirmprocedure"></a>
 
 ### ConfirmProcedure
@@ -2737,16 +2677,6 @@ type ConfirmProcedure = Procedure<RexContext, RexContext, typeof confirmInputSch
 
 ```ts
 type FlowRouter = ReturnType<typeof buildFlowRouter>;
-```
-
-***
-
-<a id="flowstatestatus-1"></a>
-
-### FlowStateStatus
-
-```ts
-type FlowStateStatus = FlowStatus | "idle";
 ```
 
 ***
@@ -2821,16 +2751,6 @@ type RegistryRouterClient<R, C> = RexRouterClient<R["actions"][number], C>;
 
 ```ts
 type RenderKind = keyof typeof RENDER_STATUS;
-```
-
-***
-
-<a id="rexdensity"></a>
-
-### RexDensity
-
-```ts
-type RexDensity = typeof REX_DENSITIES[number];
 ```
 
 ***
@@ -2973,6 +2893,30 @@ type StaticCacheErrorHandler = (error, entry) => void;
 
 ***
 
+<a id="staticscreenclassifier"></a>
+
+### StaticScreenClassifier
+
+```ts
+type StaticScreenClassifier = (request, context) => ScreenState;
+```
+
+#### Parameters
+
+##### request
+
+`Request`
+
+##### context
+
+[`RexRequestContext`](#rexrequestcontext)
+
+#### Returns
+
+[`ScreenState`](client.md#screenstate)
+
+***
+
 <a id="staticservestatus"></a>
 
 ### StaticServeStatus
@@ -3083,34 +3027,6 @@ const CONFIRM_HEADER: "x-rex-confirm" = REX_CONFIRM_HEADER;
 
 ***
 
-<a id="confirminputschema"></a>
-
-### confirmInputSchema
-
-```ts
-const confirmInputSchema: ZodMiniObject<{
-  action: ZodMiniString<string>;
-  input: ZodMiniUnknown;
-}, $strict>;
-```
-
-***
-
-<a id="confirmoutputschema"></a>
-
-### confirmOutputSchema
-
-```ts
-const confirmOutputSchema: ZodMiniObject<{
-  action: ZodMiniString<string>;
-  expiresAt: ZodMiniISODateTime;
-  inputDigest: ZodMiniString<string>;
-  token: ZodMiniString<string>;
-}, $strict>;
-```
-
-***
-
 <a id="consolelogger"></a>
 
 ### consoleLogger
@@ -3211,16 +3127,6 @@ const DEFAULT_CONFIRM_TTL_MS: 60000 = 60_000;
 
 ***
 
-<a id="default_density"></a>
-
-### DEFAULT\_DENSITY
-
-```ts
-const DEFAULT_DENSITY: RexDensity = "default";
-```
-
-***
-
 <a id="default_security_headers"></a>
 
 ### DEFAULT\_SECURITY\_HEADERS
@@ -3277,42 +3183,6 @@ const ERROR_CODE_PATTERN: RegExp;
 
 ```ts
 const FLOW_DECISION_EFFECT: ActionEffect = "irreversible";
-```
-
-***
-
-<a id="flow_rpc_prefix"></a>
-
-### FLOW\_RPC\_PREFIX
-
-```ts
-const FLOW_RPC_PREFIX: "/rex/flow" = "/rex/flow";
-```
-
-***
-
-<a id="flowstateschema"></a>
-
-### flowStateSchema
-
-```ts
-const flowStateSchema: ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>;
 ```
 
 ***
@@ -3571,6 +3441,16 @@ const PRERENDER_NONCE: "rex-prerender-nonce" = "rex-prerender-nonce";
 
 ***
 
+<a id="prerender_screen"></a>
+
+### PRERENDER\_SCREEN
+
+```ts
+const PRERENDER_SCREEN: ScreenState;
+```
+
+***
+
 <a id="render_status"></a>
 
 ### RENDER\_STATUS
@@ -3582,16 +3462,6 @@ const RENDER_STATUS: Readonly<{
   not-found: 404;
   page: 200;
 }>;
-```
-
-***
-
-<a id="rex_densities"></a>
-
-### REX\_DENSITIES
-
-```ts
-const REX_DENSITIES: readonly ["default", "agent"];
 ```
 
 ***
@@ -3726,6 +3596,30 @@ const TRACE_ID_PATTERN: RegExp;
 
 ## Functions
 
+<a id="applyscreenattributes"></a>
+
+### applyScreenAttributes()
+
+```ts
+function applyScreenAttributes(html, state): string;
+```
+
+#### Parameters
+
+##### html
+
+`string`
+
+##### state
+
+[`ScreenState`](client.md#screenstate)
+
+#### Returns
+
+`string`
+
+***
+
 <a id="auditcode"></a>
 
 ### auditCode()
@@ -3743,6 +3637,30 @@ function auditCode(error): string;
 #### Returns
 
 `string`
+
+***
+
+<a id="bindcsrfgrant"></a>
+
+### bindCsrfGrant()
+
+```ts
+function bindCsrfGrant(request, grant): void;
+```
+
+#### Parameters
+
+##### request
+
+`Request`
+
+##### grant
+
+[`CsrfGrant`](#csrfgrant)
+
+#### Returns
+
+`void`
 
 ***
 
@@ -3849,81 +3767,19 @@ readonly [`AnyFlow`](../rex.md#anyflow)[]
 ##### decide
 
 ```ts
-decide: DecoratedProcedure<RexContext & Record<never, never>, RexContext, ZodMiniObject<{
-  decision: ZodMiniEnum<{
-     approve: "approve";
-     reject: "reject";
-  }>;
-  flow: ZodMiniString<string>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>, Record<never, never>>;
+decide: DecoratedProcedure<RexContext & Record<never, never>, RexContext, ProtocolSchema<FlowDecideInput>, ProtocolSchema<FlowState>, Record<never, never>, Record<never, never>>;
 ```
 
 ##### start
 
 ```ts
-start: DecoratedProcedure<RexContext & Record<never, never>, RexContext, ZodMiniObject<{
-  flow: ZodMiniString<string>;
-  input: ZodMiniOptional<ZodMiniUnknown>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>, Record<never, never>>;
+start: DecoratedProcedure<RexContext & Record<never, never>, RexContext, ProtocolSchema<FlowStartInput>, ProtocolSchema<FlowState>, Record<never, never>, Record<never, never>>;
 ```
 
 ##### status
 
 ```ts
-status: DecoratedProcedure<RexContext & Record<never, never>, RexContext, ZodMiniObject<{
-  flow: ZodMiniString<string>;
-  instance: ZodMiniString<string>;
-}, $strict>, ZodMiniObject<{
-  completed: ZodMiniInt;
-  flow: ZodMiniString<string>;
-  gate: ZodMiniNullable<ZodMiniObject<{
-     id: ZodMiniString<string>;
-     label: ZodMiniString<string>;
-  }, $strict>>;
-  instance: ZodMiniString<string>;
-  status: ZodMiniEnum<{
-     completed: "completed";
-     failed: "failed";
-     idle: "idle";
-     paused: "paused";
-     rejected: "rejected";
-     running: "running";
-  }>;
-}, $strict>, Record<never, never>, Record<never, never>>;
+status: DecoratedProcedure<RexContext & Record<never, never>, RexContext, ProtocolSchema<FlowInstanceInput>, ProtocolSchema<FlowState>, Record<never, never>, Record<never, never>>;
 ```
 
 ***
@@ -4033,6 +3889,30 @@ readonly `string`[]
 #### Returns
 
 `MiddlewareHandler`
+
+***
+
+<a id="createactionloaderrunner"></a>
+
+### createActionLoaderRunner()
+
+```ts
+function createActionLoaderRunner(source, options): LoaderRunner;
+```
+
+#### Parameters
+
+##### source
+
+[`ActionRouterSource`](#actionroutersource)\<[`AnyAction`](../rex.md#anyaction)\>
+
+##### options
+
+[`ActionRouterOptions`](#actionrouteroptions)
+
+#### Returns
+
+[`LoaderRunner`](#loaderrunner)
 
 ***
 
@@ -4266,6 +4146,26 @@ function csrfCookie(token, request): string;
 
 ***
 
+<a id="csrfgrantfor"></a>
+
+### csrfGrantFor()
+
+```ts
+function csrfGrantFor(request): CsrfGrant | undefined;
+```
+
+#### Parameters
+
+##### request
+
+`Request`
+
+#### Returns
+
+[`CsrfGrant`](#csrfgrant) \| `undefined`
+
+***
+
 <a id="decodeformoutcome"></a>
 
 ### decodeFormOutcome()
@@ -4478,7 +4378,7 @@ function flattenInput(value, prefix?): [string, string][];
 
 ***
 
-<a id="flowstate-1"></a>
+<a id="flowstate"></a>
 
 ### flowState()
 
@@ -4506,7 +4406,7 @@ function flowState(
 
 #### Returns
 
-[`FlowState`](#flowstate)
+[`FlowState`](../rex.md#flowstate)
 
 ***
 
@@ -5087,26 +4987,6 @@ function isPrerenderMode(value): value is "ssg" | "static";
 #### Returns
 
 value is "ssg" \| "static"
-
-***
-
-<a id="isrexdensity"></a>
-
-### isRexDensity()
-
-```ts
-function isRexDensity(value): value is "default" | "agent";
-```
-
-#### Parameters
-
-##### value
-
-`unknown`
-
-#### Returns
-
-value is "default" \| "agent"
 
 ***
 
@@ -5996,6 +5876,30 @@ function verifyCsrf(cookieToken, fieldToken): boolean;
 
 `boolean`
 
+***
+
+<a id="withloaderrunner"></a>
+
+### withLoaderRunner()
+
+```ts
+function withLoaderRunner(renderer, runner): RexPageRenderer;
+```
+
+#### Parameters
+
+##### renderer
+
+[`RexPageRenderer`](#rexpagerenderer)
+
+##### runner
+
+[`LoaderRunner`](#loaderrunner)
+
+#### Returns
+
+[`RexPageRenderer`](#rexpagerenderer)
+
 ## References
 
 <a id="confirm_procedure"></a>
@@ -6003,3 +5907,107 @@ function verifyCsrf(cookieToken, fieldToken): boolean;
 ### CONFIRM\_PROCEDURE
 
 Re-exports [CONFIRM_PROCEDURE](../rex.md#confirm_procedure)
+
+***
+
+<a id="confirminput"></a>
+
+### ConfirmInput
+
+Re-exports [ConfirmInput](../rex.md#confirminput)
+
+***
+
+<a id="confirminputschema"></a>
+
+### confirmInputSchema
+
+Re-exports [confirmInputSchema](../rex.md#confirminputschema)
+
+***
+
+<a id="confirmoutput"></a>
+
+### ConfirmOutput
+
+Re-exports [ConfirmOutput](../rex.md#confirmoutput)
+
+***
+
+<a id="confirmoutputschema"></a>
+
+### confirmOutputSchema
+
+Re-exports [confirmOutputSchema](../rex.md#confirmoutputschema)
+
+***
+
+<a id="default_density"></a>
+
+### DEFAULT\_DENSITY
+
+Re-exports [DEFAULT_DENSITY](../rex.md#default_density)
+
+***
+
+<a id="flow_rpc_prefix"></a>
+
+### FLOW\_RPC\_PREFIX
+
+Re-exports [FLOW_RPC_PREFIX](../rex.md#flow_rpc_prefix)
+
+***
+
+<a id="flowgatestate"></a>
+
+### FlowGateState
+
+Re-exports [FlowGateState](../rex.md#flowgatestate)
+
+***
+
+<a id="flowstate-3"></a>
+
+### FlowState
+
+Re-exports [FlowState](../rex.md#flowstate)
+
+***
+
+<a id="flowstateschema"></a>
+
+### flowStateSchema
+
+Re-exports [flowStateSchema](../rex.md#flowstateschema)
+
+***
+
+<a id="flowstatestatus"></a>
+
+### FlowStateStatus
+
+Re-exports [FlowStateStatus](../rex.md#flowstatestatus-1)
+
+***
+
+<a id="isrexdensity"></a>
+
+### isRexDensity
+
+Re-exports [isRexDensity](../rex.md#isrexdensity)
+
+***
+
+<a id="rex_densities"></a>
+
+### REX\_DENSITIES
+
+Re-exports [REX_DENSITIES](../rex.md#rex_densities)
+
+***
+
+<a id="rexdensity"></a>
+
+### RexDensity
+
+Re-exports [RexDensity](../rex.md#rexdensity)

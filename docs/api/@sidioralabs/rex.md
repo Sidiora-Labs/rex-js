@@ -291,6 +291,9 @@ new RexDeclarationError(
   \| `"REX506"`
   \| `"REX507"`
   \| `"REX508"`
+  \| `"REX509"`
+  \| `"REX510"`
+  \| `"REX511"`
   \| `"REX600"`
   \| `"REX601"`
   \| `"REX602"`
@@ -420,6 +423,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
@@ -658,6 +664,9 @@ new RexDeclarationOptionError(code, details): RexDeclarationOptionError;
   \| `"REX506"`
   \| `"REX507"`
   \| `"REX508"`
+  \| `"REX509"`
+  \| `"REX510"`
+  \| `"REX511"`
   \| `"REX600"`
   \| `"REX601"`
   \| `"REX602"`
@@ -791,6 +800,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
@@ -921,7 +933,7 @@ readonly line: number | null;
 - [`RexConfigError`](rex/config.md#rexconfigerror)
 - [`RexStartupError`](rex/client.md#rexstartuperror)
 - [`RexPageModuleError`](rex/client.md#rexpagemoduleerror)
-- [`MessageFormatError`](rex/client.md#messageformaterror)
+- [`MessageFormatError`](rex/client/i18n.md#messageformaterror)
 - [`RexDensityError`](rex/server.md#rexdensityerror)
 - [`RexStaticPageError`](rex/server.md#rexstaticpageerror)
 - [`RuntimeMissingError`](rex/server/bun.md#runtimemissingerror)
@@ -1048,6 +1060,9 @@ new RexError(
   \| `"REX506"`
   \| `"REX507"`
   \| `"REX508"`
+  \| `"REX509"`
+  \| `"REX510"`
+  \| `"REX511"`
   \| `"REX600"`
   \| `"REX601"`
   \| `"REX602"`
@@ -1187,6 +1202,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
@@ -1403,6 +1421,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
@@ -2154,6 +2175,94 @@ readonly label: string;
 
 ***
 
+<a id="confirmgrant"></a>
+
+### ConfirmGrant
+
+#### Properties
+
+<a id="expiresat"></a>
+
+##### expiresAt
+
+```ts
+readonly expiresAt: string;
+```
+
+<a id="token"></a>
+
+##### token
+
+```ts
+readonly token: string;
+```
+
+***
+
+<a id="confirminput"></a>
+
+### ConfirmInput
+
+#### Properties
+
+<a id="action-2"></a>
+
+##### action
+
+```ts
+readonly action: string;
+```
+
+<a id="input-6"></a>
+
+##### input?
+
+```ts
+readonly optional input?: unknown;
+```
+
+***
+
+<a id="confirmoutput"></a>
+
+### ConfirmOutput
+
+#### Properties
+
+<a id="action-3"></a>
+
+##### action
+
+```ts
+readonly action: string;
+```
+
+<a id="expiresat-1"></a>
+
+##### expiresAt
+
+```ts
+readonly expiresAt: string;
+```
+
+<a id="inputdigest"></a>
+
+##### inputDigest
+
+```ts
+readonly inputDigest: string;
+```
+
+<a id="token-1"></a>
+
+##### token
+
+```ts
+readonly token: string;
+```
+
+***
+
 <a id="entityconfig"></a>
 
 ### EntityConfig
@@ -2480,6 +2589,50 @@ readonly steps: readonly FlowStepConfig[];
 
 ***
 
+<a id="flowdecideinput"></a>
+
+### FlowDecideInput
+
+#### Extends
+
+- [`FlowInstanceInput`](#flowinstanceinput-1)
+
+#### Properties
+
+<a id="decision"></a>
+
+##### decision
+
+```ts
+readonly decision: FlowDecision;
+```
+
+<a id="flow"></a>
+
+##### flow
+
+```ts
+readonly flow: string;
+```
+
+###### Inherited from
+
+[`FlowInstanceInput`](#flowinstanceinput-1).[`flow`](#flow-1)
+
+<a id="instance"></a>
+
+##### instance
+
+```ts
+readonly instance: string;
+```
+
+###### Inherited from
+
+[`FlowInstanceInput`](#flowinstanceinput-1).[`instance`](#instance-1)
+
+***
+
 <a id="flowdeclaration"></a>
 
 ### FlowDeclaration
@@ -2534,6 +2687,30 @@ readonly steps: readonly FlowStep[];
 
 ***
 
+<a id="flowgatestate"></a>
+
+### FlowGateState
+
+#### Properties
+
+<a id="id-8"></a>
+
+##### id
+
+```ts
+readonly id: string;
+```
+
+<a id="label-6"></a>
+
+##### label
+
+```ts
+readonly label: string;
+```
+
+***
+
 <a id="flowinstance"></a>
 
 ### FlowInstance
@@ -2556,7 +2733,7 @@ readonly entries: readonly JournalEntry[];
 readonly flowId: string;
 ```
 
-<a id="input-6"></a>
+<a id="input-7"></a>
 
 ##### input
 
@@ -2582,6 +2759,35 @@ readonly status: FlowStatus;
 
 ***
 
+<a id="flowinstanceinput-1"></a>
+
+### FlowInstanceInput
+
+#### Extended by
+
+- [`FlowStartInput`](#flowstartinput)
+- [`FlowDecideInput`](#flowdecideinput)
+
+#### Properties
+
+<a id="flow-1"></a>
+
+##### flow
+
+```ts
+readonly flow: string;
+```
+
+<a id="instance-1"></a>
+
+##### instance
+
+```ts
+readonly instance: string;
+```
+
+***
+
 <a id="flowruncontext"></a>
 
 ### FlowRunContext
@@ -2596,7 +2802,7 @@ readonly status: FlowStatus;
 readonly actor: Actor;
 ```
 
-<a id="input-7"></a>
+<a id="input-8"></a>
 
 ##### input?
 
@@ -2620,7 +2826,7 @@ readonly optional input?: unknown;
 readonly gate: ApprovalStep | null;
 ```
 
-<a id="instance"></a>
+<a id="instance-2"></a>
 
 ##### instance
 
@@ -2644,7 +2850,7 @@ readonly status: FlowStatus;
 
 #### Properties
 
-<a id="id-8"></a>
+<a id="id-9"></a>
 
 ##### id
 
@@ -2658,6 +2864,98 @@ readonly id: string;
 
 ```ts
 readonly steps: readonly FlowStepSource[];
+```
+
+***
+
+<a id="flowstartinput"></a>
+
+### FlowStartInput
+
+#### Extends
+
+- [`FlowInstanceInput`](#flowinstanceinput-1)
+
+#### Properties
+
+<a id="flow-2"></a>
+
+##### flow
+
+```ts
+readonly flow: string;
+```
+
+###### Inherited from
+
+[`FlowInstanceInput`](#flowinstanceinput-1).[`flow`](#flow-1)
+
+<a id="input-9"></a>
+
+##### input?
+
+```ts
+readonly optional input?: unknown;
+```
+
+<a id="instance-3"></a>
+
+##### instance
+
+```ts
+readonly instance: string;
+```
+
+###### Inherited from
+
+[`FlowInstanceInput`](#flowinstanceinput-1).[`instance`](#instance-1)
+
+***
+
+<a id="flowstate"></a>
+
+### FlowState
+
+#### Properties
+
+<a id="completed"></a>
+
+##### completed
+
+```ts
+readonly completed: number;
+```
+
+<a id="flow-3"></a>
+
+##### flow
+
+```ts
+readonly flow: string;
+```
+
+<a id="gate-1"></a>
+
+##### gate
+
+```ts
+readonly gate: FlowGateState | null;
+```
+
+<a id="instance-4"></a>
+
+##### instance
+
+```ts
+readonly instance: string;
+```
+
+<a id="status-2"></a>
+
+##### status
+
+```ts
+readonly status: FlowStateStatus;
 ```
 
 ***
@@ -2676,7 +2974,7 @@ readonly steps: readonly FlowStepSource[];
 readonly actor: Actor;
 ```
 
-<a id="input-8"></a>
+<a id="input-10"></a>
 
 ##### input
 
@@ -2804,7 +3102,7 @@ record(instanceId, entry): Promise<FlowInstance>;
 readonly optional flowId?: string;
 ```
 
-<a id="status-2"></a>
+<a id="status-3"></a>
 
 ##### status?
 
@@ -2984,7 +3282,7 @@ readonly effect: ActionEffect;
 readonly form: ActionForm | null;
 ```
 
-<a id="id-9"></a>
+<a id="id-10"></a>
 
 ##### id
 
@@ -2992,7 +3290,7 @@ readonly form: ActionForm | null;
 readonly id: string;
 ```
 
-<a id="input-9"></a>
+<a id="input-11"></a>
 
 ##### input
 
@@ -3008,7 +3306,7 @@ readonly input: JsonSchema;
 readonly invalidates: readonly string[];
 ```
 
-<a id="label-6"></a>
+<a id="label-7"></a>
 
 ##### label
 
@@ -3112,7 +3410,7 @@ readonly title: string;
 readonly fields: readonly ManifestField[];
 ```
 
-<a id="id-10"></a>
+<a id="id-11"></a>
 
 ##### id
 
@@ -3184,7 +3482,7 @@ readonly required: boolean;
 
 #### Properties
 
-<a id="id-11"></a>
+<a id="id-12"></a>
 
 ##### id
 
@@ -3208,7 +3506,7 @@ readonly steps: readonly ManifestFlowStep[];
 
 #### Properties
 
-<a id="action-2"></a>
+<a id="action-4"></a>
 
 ##### action
 
@@ -3216,7 +3514,7 @@ readonly steps: readonly ManifestFlowStep[];
 readonly action: string;
 ```
 
-<a id="input-10"></a>
+<a id="input-12"></a>
 
 ##### input
 
@@ -3264,7 +3562,7 @@ readonly binding: OverlayBinding;
 readonly dismiss: OverlayDismiss;
 ```
 
-<a id="id-12"></a>
+<a id="id-13"></a>
 
 ##### id
 
@@ -3312,7 +3610,7 @@ readonly chrome: ManifestChrome;
 readonly draft: PageDraft;
 ```
 
-<a id="id-13"></a>
+<a id="id-14"></a>
 
 ##### id
 
@@ -3441,7 +3739,7 @@ readonly transition: "none" | "view";
 
 #### Properties
 
-<a id="id-14"></a>
+<a id="id-15"></a>
 
 ##### id
 
@@ -3533,7 +3831,7 @@ readonly binding: OverlayBinding;
 readonly dismiss: OverlayDismiss;
 ```
 
-<a id="id-15"></a>
+<a id="id-16"></a>
 
 ##### id
 
@@ -3869,7 +4167,7 @@ readonly chrome: PageChrome;
 readonly draft: PageDraft;
 ```
 
-<a id="id-16"></a>
+<a id="id-17"></a>
 
 ##### id
 
@@ -4015,7 +4313,7 @@ readonly transition: "none" | "view";
 
 #### Properties
 
-<a id="action-3"></a>
+<a id="action-5"></a>
 
 ##### action
 
@@ -4023,7 +4321,7 @@ readonly transition: "none" | "view";
 readonly action: AnyAction;
 ```
 
-<a id="input-11"></a>
+<a id="input-13"></a>
 
 ##### input
 
@@ -4061,7 +4359,7 @@ readonly name: string;
 
 #### Properties
 
-<a id="action-4"></a>
+<a id="action-6"></a>
 
 ##### action
 
@@ -4079,7 +4377,7 @@ readonly optional invalidatedBy?: readonly string[];
 
 #### Methods
 
-<a id="input-12"></a>
+<a id="input-14"></a>
 
 ##### input()?
 
@@ -4227,7 +4525,7 @@ readonly resolve: (actor) => Iterable<P>;
 
 #### Properties
 
-<a id="id-17"></a>
+<a id="id-18"></a>
 
 ##### id
 
@@ -4389,7 +4687,7 @@ register<D>(...declarations): Registry;
 
 #### Properties
 
-<a id="action-5"></a>
+<a id="action-7"></a>
 
 ##### action
 
@@ -4405,7 +4703,7 @@ action: AnyAction;
 entity: AnyEntity;
 ```
 
-<a id="flow"></a>
+<a id="flow-4"></a>
 
 ##### flow
 
@@ -4499,7 +4797,7 @@ readonly declaration: string;
 readonly field: string;
 ```
 
-<a id="id-18"></a>
+<a id="id-19"></a>
 
 ##### id
 
@@ -5083,6 +5381,16 @@ type FlowDecisionErrorCode =
 
 ***
 
+<a id="flowstatestatus-1"></a>
+
+### FlowStateStatus
+
+```ts
+type FlowStateStatus = FlowStatus | "idle";
+```
+
+***
+
 <a id="flowstatus"></a>
 
 ### FlowStatus
@@ -5150,6 +5458,16 @@ type InferEntity<E> = E extends EntityDeclaration<string, infer F, infer _K> ? E
 ##### E
 
 `E`
+
+***
+
+<a id="invocationroute"></a>
+
+### InvocationRoute
+
+```ts
+type InvocationRoute = typeof INVOCATION_ROUTES[number];
+```
 
 ***
 
@@ -5516,6 +5834,22 @@ type PredicateJson =
 
 ***
 
+<a id="protocolschema"></a>
+
+### ProtocolSchema
+
+```ts
+type ProtocolSchema<T> = StandardSchemaV1<T, T>;
+```
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+***
+
 <a id="reasoncode"></a>
 
 ### ReasonCode
@@ -5645,12 +5979,52 @@ type RexDataState = typeof REX_DATA_STATES[number];
 
 ***
 
+<a id="rexdensity"></a>
+
+### RexDensity
+
+```ts
+type RexDensity = typeof REX_DENSITIES[number];
+```
+
+***
+
 <a id="rexerrorcode-1"></a>
 
 ### RexErrorCode
 
 ```ts
 type RexErrorCode = keyof typeof REX_ERROR_CATALOG;
+```
+
+***
+
+<a id="rexpointer"></a>
+
+### RexPointer
+
+```ts
+type RexPointer = typeof REX_POINTERS[number];
+```
+
+***
+
+<a id="rexscreen"></a>
+
+### RexScreen
+
+```ts
+type RexScreen = typeof REX_SCREENS[number];
+```
+
+***
+
+<a id="rexscreendensity"></a>
+
+### RexScreenDensity
+
+```ts
+type RexScreenDensity = typeof REX_SCREEN_DENSITIES[number];
 ```
 
 ***
@@ -5865,6 +6239,36 @@ const CONFIRM_PROCEDURE: "_confirm" = "_confirm";
 
 ***
 
+<a id="confirmgrantschema"></a>
+
+### confirmGrantSchema
+
+```ts
+const confirmGrantSchema: ProtocolSchema<ConfirmGrant>;
+```
+
+***
+
+<a id="confirminputschema"></a>
+
+### confirmInputSchema
+
+```ts
+const confirmInputSchema: ProtocolSchema<ConfirmInput>;
+```
+
+***
+
+<a id="confirmoutputschema"></a>
+
+### confirmOutputSchema
+
+```ts
+const confirmOutputSchema: ProtocolSchema<ConfirmOutput>;
+```
+
+***
+
 <a id="declaration_error_codes"></a>
 
 ### DECLARATION\_ERROR\_CODES
@@ -5875,7 +6279,7 @@ const DECLARATION_ERROR_CODES: object;
 
 #### Type Declaration
 
-<a id="action-6"></a>
+<a id="action-8"></a>
 
 ##### action
 
@@ -5891,7 +6295,7 @@ readonly action: "REX212" = "REX212";
 readonly entity: "REX211" = "REX211";
 ```
 
-<a id="flow-1"></a>
+<a id="flow-5"></a>
 
 ##### flow
 
@@ -5935,6 +6339,16 @@ const DECLARATION_KINDS: readonly ["entity", "action", "page", "policy", "flow"]
 
 ***
 
+<a id="default_density"></a>
+
+### DEFAULT\_DENSITY
+
+```ts
+const DEFAULT_DENSITY: RexDensity = "default";
+```
+
+***
+
 <a id="default_page_size"></a>
 
 ### DEFAULT\_PAGE\_SIZE
@@ -5965,6 +6379,16 @@ const FLOW_DECISION_FORBIDDEN: "REX334" = "REX334";
 
 ***
 
+<a id="flow_decisions"></a>
+
+### FLOW\_DECISIONS
+
+```ts
+const FLOW_DECISIONS: readonly FlowDecision[];
+```
+
+***
+
 <a id="flow_no_pending_approval"></a>
 
 ### FLOW\_NO\_PENDING\_APPROVAL
@@ -5975,12 +6399,82 @@ const FLOW_NO_PENDING_APPROVAL: "REX333" = "REX333";
 
 ***
 
+<a id="flow_rpc_prefix"></a>
+
+### FLOW\_RPC\_PREFIX
+
+```ts
+const FLOW_RPC_PREFIX: "/rex/flow" = "/rex/flow";
+```
+
+***
+
+<a id="flow_state_statuses"></a>
+
+### FLOW\_STATE\_STATUSES
+
+```ts
+const FLOW_STATE_STATUSES: readonly FlowStateStatus[];
+```
+
+***
+
 <a id="flow_statuses"></a>
 
 ### FLOW\_STATUSES
 
 ```ts
 const FLOW_STATUSES: readonly FlowStatus[];
+```
+
+***
+
+<a id="flowdecideinputschema"></a>
+
+### flowDecideInputSchema
+
+```ts
+const flowDecideInputSchema: ProtocolSchema<FlowDecideInput>;
+```
+
+***
+
+<a id="flowinstanceinputschema"></a>
+
+### flowInstanceInputSchema
+
+```ts
+const flowInstanceInputSchema: ProtocolSchema<FlowInstanceInput>;
+```
+
+***
+
+<a id="flowstartinputschema"></a>
+
+### flowStartInputSchema
+
+```ts
+const flowStartInputSchema: ProtocolSchema<FlowStartInput>;
+```
+
+***
+
+<a id="flowstateschema"></a>
+
+### flowStateSchema
+
+```ts
+const flowStateSchema: ProtocolSchema<FlowState>;
+```
+
+***
+
+<a id="invocation_routes"></a>
+
+### INVOCATION\_ROUTES
+
+```ts
+const INVOCATION_ROUTES: readonly ["click", "key", "palette", "url"];
 ```
 
 ***
@@ -6161,6 +6655,16 @@ const REX_CONFIRM_HEADER: "x-rex-confirm" = "x-rex-confirm";
 
 ```ts
 const REX_DATA_STATES: readonly ["loading", "empty", "stale", "partial", "offline", "permission-denied", "recoverable-error", "terminal-error", "ready"];
+```
+
+***
+
+<a id="rex_densities"></a>
+
+### REX\_DENSITIES
+
+```ts
+const REX_DENSITIES: readonly ["default", "agent"];
 ```
 
 ***
@@ -7009,6 +7513,30 @@ readonly REX507: "Runtime check failed" = "Runtime check failed";
 readonly REX508: "Config value is not static" = "Config value is not static";
 ```
 
+<a id="rex509"></a>
+
+##### REX509
+
+```ts
+readonly REX509: "Raw element where the DesignX kit has a primitive" = "Raw element where the DesignX kit has a primitive";
+```
+
+<a id="rex510"></a>
+
+##### REX510
+
+```ts
+readonly REX510: "Pixel size on a part" = "Pixel size on a part";
+```
+
+<a id="rex511"></a>
+
+##### REX511
+
+```ts
+readonly REX511: "Control under the 44 px touch target" = "Control under the 44 px touch target";
+```
+
 <a id="rex600"></a>
 
 ##### REX600
@@ -7113,12 +7641,42 @@ const REX_MANIFEST_PATH: "/rex/manifest" = "/rex/manifest";
 
 ***
 
+<a id="rex_pointers"></a>
+
+### REX\_POINTERS
+
+```ts
+const REX_POINTERS: readonly ["coarse", "fine"];
+```
+
+***
+
 <a id="rex_rpc_prefix"></a>
 
 ### REX\_RPC\_PREFIX
 
 ```ts
 const REX_RPC_PREFIX: "/rex/rpc" = "/rex/rpc";
+```
+
+***
+
+<a id="rex_screen_densities"></a>
+
+### REX\_SCREEN\_DENSITIES
+
+```ts
+const REX_SCREEN_DENSITIES: readonly ["comfortable", "compact", "agent"];
+```
+
+***
+
+<a id="rex_screens"></a>
+
+### REX\_SCREENS
+
+```ts
+const REX_SCREENS: readonly ["phone", "tablet", "desktop", "wide"];
 ```
 
 ***
@@ -7143,6 +7701,36 @@ const SHORTCUT_MODIFIERS: readonly ["mod", "shift", "alt"];
 
 ***
 
+<a id="sidecar_element_id"></a>
+
+### SIDECAR\_ELEMENT\_ID
+
+```ts
+const SIDECAR_ELEMENT_ID: "rex-page" = "rex-page";
+```
+
+***
+
+<a id="sidecar_mime_type"></a>
+
+### SIDECAR\_MIME\_TYPE
+
+```ts
+const SIDECAR_MIME_TYPE: "application/rex+json" = "application/rex+json";
+```
+
+***
+
+<a id="sidecar_version"></a>
+
+### SIDECAR\_VERSION
+
+```ts
+const SIDECAR_VERSION: 1 = 1;
+```
+
+***
+
 <a id="state_export_names"></a>
 
 ### STATE\_EXPORT\_NAMES
@@ -7153,7 +7741,7 @@ const STATE_EXPORT_NAMES: { readonly [S in RexDataState]: StateExportName<S> };
 
 ## Functions
 
-<a id="action-7"></a>
+<a id="action-9"></a>
 
 ### action()
 
@@ -7623,6 +8211,9 @@ function deprecated(
   \| `"REX506"`
   \| `"REX507"`
   \| `"REX508"`
+  \| `"REX509"`
+  \| `"REX510"`
+  \| `"REX511"`
   \| `"REX600"`
   \| `"REX601"`
   \| `"REX602"`
@@ -7762,6 +8353,9 @@ function deprecationMessage(code, message): string;
   \| `"REX506"`
   \| `"REX507"`
   \| `"REX508"`
+  \| `"REX509"`
+  \| `"REX510"`
+  \| `"REX511"`
   \| `"REX600"`
   \| `"REX601"`
   \| `"REX602"`
@@ -7955,6 +8549,9 @@ function errorDocs(code): string;
   \| `"REX506"`
   \| `"REX507"`
   \| `"REX508"`
+  \| `"REX509"`
+  \| `"REX510"`
+  \| `"REX511"`
   \| `"REX600"`
   \| `"REX601"`
   \| `"REX602"`
@@ -8015,7 +8612,7 @@ function evaluate(predicate, actor): PolicyResult;
 
 ***
 
-<a id="flow-2"></a>
+<a id="flow-6"></a>
 
 ### flow()
 
@@ -8184,6 +8781,9 @@ function hasWarned(code): boolean;
   \| `"REX506"`
   \| `"REX507"`
   \| `"REX508"`
+  \| `"REX509"`
+  \| `"REX510"`
+  \| `"REX511"`
   \| `"REX600"`
   \| `"REX601"`
   \| `"REX602"`
@@ -8285,7 +8885,7 @@ function isPredicate(value): value is Predicate;
 ### isReservedQueryKey()
 
 ```ts
-function isReservedQueryKey(key): key is "input" | "act" | "draft" | "density";
+function isReservedQueryKey(key): key is "input" | "density" | "act" | "draft";
 ```
 
 #### Parameters
@@ -8296,7 +8896,7 @@ function isReservedQueryKey(key): key is "input" | "act" | "draft" | "density";
 
 #### Returns
 
-key is "input" \| "act" \| "draft" \| "density"
+key is "input" \| "density" \| "act" \| "draft"
 
 ***
 
@@ -8317,6 +8917,26 @@ function isRexDataState(value): value is "loading" | "empty" | "stale" | "partia
 #### Returns
 
 value is "loading" \| "empty" \| "stale" \| "partial" \| "offline" \| "permission-denied" \| "recoverable-error" \| "terminal-error" \| "ready"
+
+***
+
+<a id="isrexdensity"></a>
+
+### isRexDensity()
+
+```ts
+function isRexDensity(value): value is "default" | "agent";
+```
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+value is "default" \| "agent"
 
 ***
 
@@ -8345,7 +8965,7 @@ function isRexError(value): value is RexError;
 ### isRexErrorCode()
 
 ```ts
-function isRexErrorCode(value): value is "REX100" | "REX101" | "REX102" | "REX110" | "REX111" | "REX112" | "REX113" | "REX114" | "REX115" | "REX116" | "REX117" | "REX118" | "REX119" | "REX120" | "REX121" | "REX122" | "REX123" | "REX200" | "REX201" | "REX202" | "REX203" | "REX204" | "REX205" | "REX206" | "REX207" | "REX208" | "REX209" | "REX210" | "REX211" | "REX212" | "REX213" | "REX214" | "REX215" | "REX216" | "REX217" | "REX218" | "REX219" | "REX220" | "REX221" | "REX222" | "REX223" | "REX224" | "REX300" | "REX301" | "REX302" | "REX303" | "REX304" | "REX305" | "REX306" | "REX307" | "REX308" | "REX309" | "REX310" | "REX311" | "REX312" | "REX313" | "REX314" | "REX315" | "REX316" | "REX317" | "REX318" | "REX319" | "REX320" | "REX321" | "REX322" | "REX323" | "REX324" | "REX325" | "REX326" | "REX327" | "REX328" | "REX329" | "REX330" | "REX331" | "REX332" | "REX333" | "REX334" | "REX400" | "REX401" | "REX402" | "REX403" | "REX404" | "REX405" | "REX406" | "REX407" | "REX408" | "REX440" | "REX441" | "REX442" | "REX450" | "REX460" | "REX461" | "REX462" | "REX463" | "REX500" | "REX501" | "REX502" | "REX503" | "REX504" | "REX505" | "REX506" | "REX507" | "REX508" | "REX600" | "REX601" | "REX602" | "REX603" | "REX604" | "REX605" | "REX610" | "REX611" | "REX612";
+function isRexErrorCode(value): value is "REX100" | "REX101" | "REX102" | "REX110" | "REX111" | "REX112" | "REX113" | "REX114" | "REX115" | "REX116" | "REX117" | "REX118" | "REX119" | "REX120" | "REX121" | "REX122" | "REX123" | "REX200" | "REX201" | "REX202" | "REX203" | "REX204" | "REX205" | "REX206" | "REX207" | "REX208" | "REX209" | "REX210" | "REX211" | "REX212" | "REX213" | "REX214" | "REX215" | "REX216" | "REX217" | "REX218" | "REX219" | "REX220" | "REX221" | "REX222" | "REX223" | "REX224" | "REX300" | "REX301" | "REX302" | "REX303" | "REX304" | "REX305" | "REX306" | "REX307" | "REX308" | "REX309" | "REX310" | "REX311" | "REX312" | "REX313" | "REX314" | "REX315" | "REX316" | "REX317" | "REX318" | "REX319" | "REX320" | "REX321" | "REX322" | "REX323" | "REX324" | "REX325" | "REX326" | "REX327" | "REX328" | "REX329" | "REX330" | "REX331" | "REX332" | "REX333" | "REX334" | "REX400" | "REX401" | "REX402" | "REX403" | "REX404" | "REX405" | "REX406" | "REX407" | "REX408" | "REX440" | "REX441" | "REX442" | "REX450" | "REX460" | "REX461" | "REX462" | "REX463" | "REX500" | "REX501" | "REX502" | "REX503" | "REX504" | "REX505" | "REX506" | "REX507" | "REX508" | "REX509" | "REX510" | "REX511" | "REX600" | "REX601" | "REX602" | "REX603" | "REX604" | "REX605" | "REX610" | "REX611" | "REX612";
 ```
 
 #### Parameters
@@ -8356,7 +8976,7 @@ function isRexErrorCode(value): value is "REX100" | "REX101" | "REX102" | "REX11
 
 #### Returns
 
-value is "REX100" \| "REX101" \| "REX102" \| "REX110" \| "REX111" \| "REX112" \| "REX113" \| "REX114" \| "REX115" \| "REX116" \| "REX117" \| "REX118" \| "REX119" \| "REX120" \| "REX121" \| "REX122" \| "REX123" \| "REX200" \| "REX201" \| "REX202" \| "REX203" \| "REX204" \| "REX205" \| "REX206" \| "REX207" \| "REX208" \| "REX209" \| "REX210" \| "REX211" \| "REX212" \| "REX213" \| "REX214" \| "REX215" \| "REX216" \| "REX217" \| "REX218" \| "REX219" \| "REX220" \| "REX221" \| "REX222" \| "REX223" \| "REX224" \| "REX300" \| "REX301" \| "REX302" \| "REX303" \| "REX304" \| "REX305" \| "REX306" \| "REX307" \| "REX308" \| "REX309" \| "REX310" \| "REX311" \| "REX312" \| "REX313" \| "REX314" \| "REX315" \| "REX316" \| "REX317" \| "REX318" \| "REX319" \| "REX320" \| "REX321" \| "REX322" \| "REX323" \| "REX324" \| "REX325" \| "REX326" \| "REX327" \| "REX328" \| "REX329" \| "REX330" \| "REX331" \| "REX332" \| "REX333" \| "REX334" \| "REX400" \| "REX401" \| "REX402" \| "REX403" \| "REX404" \| "REX405" \| "REX406" \| "REX407" \| "REX408" \| "REX440" \| "REX441" \| "REX442" \| "REX450" \| "REX460" \| "REX461" \| "REX462" \| "REX463" \| "REX500" \| "REX501" \| "REX502" \| "REX503" \| "REX504" \| "REX505" \| "REX506" \| "REX507" \| "REX508" \| "REX600" \| "REX601" \| "REX602" \| "REX603" \| "REX604" \| "REX605" \| "REX610" \| "REX611" \| "REX612"
+value is "REX100" \| "REX101" \| "REX102" \| "REX110" \| "REX111" \| "REX112" \| "REX113" \| "REX114" \| "REX115" \| "REX116" \| "REX117" \| "REX118" \| "REX119" \| "REX120" \| "REX121" \| "REX122" \| "REX123" \| "REX200" \| "REX201" \| "REX202" \| "REX203" \| "REX204" \| "REX205" \| "REX206" \| "REX207" \| "REX208" \| "REX209" \| "REX210" \| "REX211" \| "REX212" \| "REX213" \| "REX214" \| "REX215" \| "REX216" \| "REX217" \| "REX218" \| "REX219" \| "REX220" \| "REX221" \| "REX222" \| "REX223" \| "REX224" \| "REX300" \| "REX301" \| "REX302" \| "REX303" \| "REX304" \| "REX305" \| "REX306" \| "REX307" \| "REX308" \| "REX309" \| "REX310" \| "REX311" \| "REX312" \| "REX313" \| "REX314" \| "REX315" \| "REX316" \| "REX317" \| "REX318" \| "REX319" \| "REX320" \| "REX321" \| "REX322" \| "REX323" \| "REX324" \| "REX325" \| "REX326" \| "REX327" \| "REX328" \| "REX329" \| "REX330" \| "REX331" \| "REX332" \| "REX333" \| "REX334" \| "REX400" \| "REX401" \| "REX402" \| "REX403" \| "REX404" \| "REX405" \| "REX406" \| "REX407" \| "REX408" \| "REX440" \| "REX441" \| "REX442" \| "REX450" \| "REX460" \| "REX461" \| "REX462" \| "REX463" \| "REX500" \| "REX501" \| "REX502" \| "REX503" \| "REX504" \| "REX505" \| "REX506" \| "REX507" \| "REX508" \| "REX509" \| "REX510" \| "REX511" \| "REX600" \| "REX601" \| "REX602" \| "REX603" \| "REX604" \| "REX605" \| "REX610" \| "REX611" \| "REX612"
 
 ***
 

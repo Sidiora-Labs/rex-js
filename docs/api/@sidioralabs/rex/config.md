@@ -133,6 +133,9 @@ new RexConfigError(
   \| `"REX506"`
   \| `"REX507"`
   \| `"REX508"`
+  \| `"REX509"`
+  \| `"REX510"`
+  \| `"REX511"`
   \| `"REX600"`
   \| `"REX601"`
   \| `"REX602"`
@@ -270,6 +273,9 @@ readonly code:
   | "REX506"
   | "REX507"
   | "REX508"
+  | "REX509"
+  | "REX510"
+  | "REX511"
   | "REX600"
   | "REX601"
   | "REX602"
