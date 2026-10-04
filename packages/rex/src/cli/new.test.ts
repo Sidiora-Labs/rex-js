@@ -11,11 +11,17 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { createElement, type ComponentType } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, describe, expect, it } from "vitest";
 import { defaultRules, runCheck } from "../check/index.ts";
 import { boundariesRule } from "../check/rules/boundaries.ts";
 import { REX_VERSION } from "../index.ts";
+import { REX_DATA_STATES, STATE_EXPORT_NAMES, type StateProps } from "../core/states.ts";
+import { SHELL_COMPONENT_NAMES } from "../client/shell/components.ts";
+import { DESIGNX_MAP } from "../designx/index.ts";
+import { DESIGNX_SHELL } from "./gen/designx.ts";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, run, type RexCliIO } from "./index.ts";
 import { APP_PEERS, appModuleTypesPath } from "./commands/new.ts";
 import {
@@ -29,7 +35,8 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
-const NEW_TEST_TIMEOUT_MS = 180_000;
+const demoRoot = join(packageRoot, "..", "..", "examples", "demo");
+const NEW_TEST_TIMEOUT_MS = 240_000;
 
 const APP_FILES = [
   ".prettierignore",
@@ -117,6 +124,30 @@ function installDependencies(root: string): void {
   }
 }
 
+function linkFromWorkspace(root: string): void {
+  const manifest = readJson<GeneratedPackage>(join(root, "package.json"));
+  for (const name of [
+    ...Object.keys(manifest.dependencies),
+    ...Object.keys(manifest.devDependencies),
+  ]) {
+    const source =
+      name === "@sidioralabs/rex"
+        ? packageRoot
+        : [packageRoot, demoRoot]
+            .map((base) => join(base, "node_modules", name))
+            .find((candidate) => existsSync(candidate));
+    expect(source, `${name} is installed for the rex package or the demo`).toBeDefined();
+    const destination = join(root, "node_modules", name);
+    mkdirSync(dirname(destination), { recursive: true });
+    symlinkSync(realpathSync(source ?? ""), destination, "dir");
+  }
+}
+
+function stateSlot(state: string): string {
+  const item = DESIGNX_MAP.states[state as keyof typeof DESIGNX_MAP.states];
+  return `data-slot="${item}"`;
+}
+
 async function generate(name: string): Promise<{ cwd: string; root: string; out: string }> {
   const cwd = tempDir();
   const captured = captureIO(cwd);
@@ -199,7 +230,7 @@ describe("rex new", { timeout: NEW_TEST_TIMEOUT_MS }, () => {
     expect(listFiles(join(cwd, "empty"))).toEqual(APP_FILES);
   });
 
-  it("installs the DesignX theme and base set from the registry by default", async () => {
+  it("installs the DesignX standard set by default and generates the shell, states and first region on it", async () => {
     const cwd = tempDir();
     const captured = captureIO(cwd);
     expect(await run(["new", "dx-app", "--no-install"], captured.io)).toBe(EXIT_OK);
@@ -209,19 +240,91 @@ describe("rex new", { timeout: NEW_TEST_TIMEOUT_MS }, () => {
     for (const name of DESIGNX_BASE) expect(files).toContain(`${DESIGNX_UI_DIR}/${name}.tsx`);
     expect(files).toContain(DESIGNX_THEME_FILE);
     expect(files).toContain(DESIGNX_CONFIG_FILE);
+    expect(files).toContain(DESIGNX_SHELL);
+    expect(files).toContain(`${DESIGNX_UI_DIR}/use-screen.ts`);
+    expect(files).not.toContain(`${DESIGNX_UI_DIR}/use-mobile.ts`);
     expect(captured.out()).toContain(`wrote dx-app/${DESIGNX_UI_DIR}/button.tsx\n`);
-    expect(readFileSync(join(root, "rex.config.ts"), "utf8")).toContain('ui: "designx"');
+    expect(captured.out()).toContain(`wrote dx-app/${DESIGNX_SHELL}\n`);
+    expect(readFileSync(join(root, "rex.config.ts"), "utf8")).toContain(
+      `ui: { kit: "designx", components: "${DESIGNX_SHELL}" },`,
+    );
     expect(readFileSync(join(root, "index.html"), "utf8")).toContain(
       `<link rel="stylesheet" href="${DESIGNX_STYLESHEET_HREF}" />`,
     );
     expect(readFileSync(join(root, "app/components/Button.tsx"), "utf8")).toContain(
       'from "./ui/button.tsx"',
     );
+    expect(readFileSync(join(root, DESIGNX_UI_DIR, "use-screen.ts"), "utf8")).toContain(
+      'import { useScreen } from "@sidioralabs/rex/client";',
+    );
+
+    const shell = readFileSync(join(root, DESIGNX_SHELL), "utf8");
+    for (const slot of ["Button", "Sheet", "PaletteItem", "Outcome", "Nav"]) {
+      expect(SHELL_COMPONENT_NAMES).toContain(slot);
+      expect(shell).toContain(`export function ${slot}(`);
+    }
+    for (const item of [
+      DESIGNX_MAP.button.default,
+      DESIGNX_MAP.sheet.dialog,
+      DESIGNX_MAP.sheet["bottom-sheet"],
+      DESIGNX_MAP.paletteItem.default,
+      DESIGNX_MAP.outcome.default,
+      DESIGNX_MAP.nav.bar,
+      DESIGNX_MAP.nav.sidebar,
+      DESIGNX_MAP.nav.dock,
+    ]) {
+      expect(shell).toContain(`from "./ui/${item}.tsx"`);
+    }
+    expect(shell).toContain('form === "bottom-sheet"');
+    expect(shell).toContain('form === "sidebar"');
+    expect(shell).toContain("data-rex-nav={link.address}");
+
+    const part = readFileSync(
+      join(root, "app/pages/home/regions/welcome/parts/Welcome.tsx"),
+      "utf8",
+    );
+    for (const item of ["card", "field", "input", "button"]) {
+      expect(part).toContain(`/components/ui/${item}.tsx"`);
+    }
+    const states = readFileSync(join(root, "app/pages/home/states.tsx"), "utf8");
+    for (const item of ["skeleton", "empty", "alert", "badge"]) {
+      expect(states).toContain(`/components/ui/${item}.tsx"`);
+    }
+
     const manifest = readJson<GeneratedPackage>(join(root, "package.json"));
     const declared = { ...manifest.dependencies, ...manifest.devDependencies };
     for (const name of TAILWIND_PACKAGES) expect(declared[name], name).toBeDefined();
     expect(manifest.dependencies["@sidioralabs/rex"]).toBe(`^${REX_VERSION}`);
     expect(existsSync(join(root, "node_modules"))).toBe(false);
+
+    linkFromWorkspace(root);
+    const result = await runCheck(root);
+    expect(result.findings).toEqual([]);
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toBe("No findings.\n");
+
+    const statesModule = (await import(
+      pathToFileURL(join(root, "app/pages/home/states.tsx")).href
+    )) as Readonly<Record<string, ComponentType<StateProps>>>;
+    const props: StateProps = {
+      params: {},
+      retry: () => undefined,
+      error: new Error("The notes service is down"),
+    };
+    for (const state of REX_DATA_STATES) {
+      if (state === "ready") continue;
+      const component = statesModule[STATE_EXPORT_NAMES[state]];
+      expect(component, state).toBeDefined();
+      const html = renderToStaticMarkup(
+        createElement(component as ComponentType<StateProps>, props),
+      );
+      expect(html, state).toContain(stateSlot(state));
+    }
+    const failed = renderToStaticMarkup(
+      createElement(statesModule.RecoverableError as ComponentType<StateProps>, props),
+    );
+    expect(failed).toContain("The notes service is down");
+    expect(failed).toContain("Try again");
   });
 });
 

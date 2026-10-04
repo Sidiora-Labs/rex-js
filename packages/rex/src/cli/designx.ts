@@ -1,10 +1,20 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, posix } from "node:path";
+import {
+  DESIGNX_ITEMS,
+  DESIGNX_PROVIDED,
+  DESIGNX_REGISTRY_URL,
+  DESIGNX_STANDARD,
+  isDesignxItem,
+  isDesignxProvided,
+  type DesignxProvidedName,
+} from "../designx/index.ts";
 import { rexPrettierConfig } from "../prettier.ts";
 import type { PlannedFile } from "./commands/make.ts";
+import { CLIENT_IMPORT } from "./templates.ts";
 
-export const DESIGNX_REGISTRY = "https://dxuireact.com/r";
+export const DESIGNX_REGISTRY = DESIGNX_REGISTRY_URL;
 export const DESIGNX_NAMESPACE = "@dx/";
 export const DESIGNX_THEME = "theme";
 export const DESIGNX_BASE = [
@@ -24,6 +34,7 @@ export const DESIGNX_BASE = [
   "kbd",
   "badge",
 ] as const;
+export const DESIGNX_STANDARD_SET = DESIGNX_STANDARD;
 export const DESIGNX_UI_DIR = "app/components/ui";
 export const DESIGNX_THEME_FILE = "app/theme.css";
 export const DESIGNX_CONFIG_FILE = "dx.json";
@@ -62,6 +73,7 @@ export interface DesignxItem {
 export interface DesignxInstall {
   readonly registry: string;
   readonly items: readonly DesignxItem[];
+  readonly provided: readonly DesignxProvidedName[];
   readonly files: readonly PlannedFile[];
   readonly dependencies: Readonly<Record<string, string>>;
   readonly devDependencies: Readonly<Record<string, string>>;
@@ -124,6 +136,11 @@ export function parseDesignxItem(value: unknown, expected: string): DesignxItem 
   if (typeof type !== "string" || !(ITEM_TYPES as readonly string[]).includes(type)) {
     throw new DesignxError(`DesignX item "${expected}" has the unsupported type ${String(type)}`);
   }
+  if (isDesignxItem(expected) && type !== `registry:${DESIGNX_ITEMS[expected]}`) {
+    throw new DesignxError(
+      `DesignX item "${expected}" is a ${type} item, but rex/designx maps it as registry:${DESIGNX_ITEMS[expected]}`,
+    );
+  }
   if (!Array.isArray(value.files) || value.files.length === 0) {
     throw new DesignxError(`DesignX item "${expected}" has no files`);
   }
@@ -180,7 +197,7 @@ export async function resolveDesignxItems(
   options: DesignxOptions = {},
 ): Promise<readonly DesignxItem[]> {
   const resolved = new Map<string, DesignxItem>();
-  let pending = [...new Set(names.map(registryName))];
+  let pending = [...new Set(names.map(registryName))].filter((name) => !isDesignxProvided(name));
   while (pending.length > 0) {
     const fetched = await Promise.all(pending.map((name) => fetchDesignxItem(name, options)));
     const next = new Set<string>();
@@ -188,12 +205,48 @@ export async function resolveDesignxItems(
       resolved.set(item.name, item);
       for (const dependency of item.registryDependencies) {
         const name = registryName(dependency);
+        if (isDesignxProvided(name)) continue;
         if (!resolved.has(name) && !pending.includes(name)) next.add(name);
       }
     }
     pending = [...next];
   }
   return [...resolved.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function providedDesignxNames(
+  names: readonly string[],
+  items: readonly DesignxItem[],
+): readonly DesignxProvidedName[] {
+  const provided = new Set<DesignxProvidedName>();
+  for (const name of [
+    ...names.map(registryName),
+    ...items.flatMap((item) => item.registryDependencies.map(registryName)),
+  ]) {
+    if (isDesignxProvided(name)) provided.add(name);
+  }
+  return [...provided].sort();
+}
+
+export function useScreenTemplate(): string {
+  return [
+    `import { useScreen } from "${CLIENT_IMPORT}";`,
+    "",
+    "export { useScreen };",
+    "",
+    "export function useIsMobile(): boolean {",
+    '  return useScreen().screen === "phone";',
+    "}",
+    "",
+  ].join("\n");
+}
+
+const PROVIDED_TEMPLATES: Readonly<Record<DesignxProvidedName, () => string>> = {
+  "use-mobile": useScreenTemplate,
+};
+
+export function providedDesignxPath(name: DesignxProvidedName): string {
+  return `${DESIGNX_UI_DIR}/${DESIGNX_PROVIDED[name].file}`;
 }
 
 function stripExtension(path: string): string {
@@ -245,8 +298,13 @@ export function rewriteImports(
 
 const THEME_PRELUDE = ['@import "tailwindcss";', '@import "tw-animate-css";', ""].join("\n");
 
-export function designxFiles(items: readonly DesignxItem[]): readonly PlannedFile[] {
-  const aliases = new Map<string, string>();
+export function designxFiles(
+  items: readonly DesignxItem[],
+  provided: readonly DesignxProvidedName[] = [],
+): readonly PlannedFile[] {
+  const aliases = new Map<string, string>(
+    provided.map((name) => [DESIGNX_PROVIDED[name].alias, providedDesignxPath(name)]),
+  );
   const placed: { readonly path: string; readonly file: DesignxFile }[] = [];
   for (const item of items) {
     for (const file of item.files) {
@@ -265,6 +323,12 @@ export function designxFiles(items: readonly DesignxItem[]): readonly PlannedFil
       ? `${THEME_PRELUDE}${file.content.trimEnd()}\n`
       : `${rewriteImports(file.content, path, aliases).trimEnd()}\n`;
     planned.push({ kind: "file", path, content });
+  }
+  for (const name of provided) {
+    const path = providedDesignxPath(name);
+    if (seen.has(path)) throw new DesignxError(`two DesignX files would be written to ${path}`);
+    seen.add(path);
+    planned.push({ kind: "file", path, content: PROVIDED_TEMPLATES[name]() });
   }
   return planned.sort((a, b) => a.path.localeCompare(b.path));
 }
@@ -332,7 +396,11 @@ export function designxDependencies(items: readonly DesignxItem[]): Record<strin
   ]);
 }
 
-export function designxConfig(items: readonly DesignxItem[], registry: string): string {
+export function designxConfig(
+  items: readonly DesignxItem[],
+  registry: string,
+  provided: readonly DesignxProvidedName[] = [],
+): string {
   return `${JSON.stringify(
     {
       registry: `${registry.replace(/\/+$/, "")}/{name}.json`,
@@ -340,6 +408,7 @@ export function designxConfig(items: readonly DesignxItem[], registry: string): 
       ui: DESIGNX_UI_DIR,
       tailwind: { plugin: TAILWIND_PACKAGES[0], css: DESIGNX_THEME_FILE },
       items: items.map((item) => item.name),
+      provided: Object.fromEntries(provided.map((name) => [name, providedDesignxPath(name)])),
     },
     null,
     2,
@@ -347,20 +416,22 @@ export function designxConfig(items: readonly DesignxItem[], registry: string): 
 }
 
 export async function fetchDesignx(
-  names: readonly string[] = [DESIGNX_THEME, ...DESIGNX_BASE],
+  names: readonly string[] = DESIGNX_STANDARD_SET,
   options: DesignxOptions = {},
 ): Promise<DesignxInstall> {
   const registry = options.registry ?? DESIGNX_REGISTRY;
   const items = await resolveDesignxItems(names, options);
+  const provided = providedDesignxNames(names, items);
   return {
     registry,
     items,
+    provided,
     files: [
-      ...(await formatDesignxFiles(designxFiles(items))),
+      ...(await formatDesignxFiles(designxFiles(items, provided))),
       {
         kind: "file",
         path: DESIGNX_CONFIG_FILE,
-        content: designxConfig(items, registry),
+        content: designxConfig(items, registry, provided),
       },
     ],
     dependencies: designxDependencies(items),
