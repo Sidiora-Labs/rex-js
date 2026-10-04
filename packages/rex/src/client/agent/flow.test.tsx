@@ -262,7 +262,7 @@ describe("useFlow", () => {
     await act(async () => {
       fireEvent.keyDown(window, { key: "k", code: "KeyK", ctrlKey: true });
     });
-    const palette = screen.getByRole("dialog", { name: "Command palette" });
+    const palette = await screen.findByRole("dialog", { name: "Command palette" });
     expect(
       within(palette)
         .getAllByRole("option")
@@ -301,7 +301,7 @@ describe("useFlow", () => {
     await act(async () => {
       fireEvent.keyDown(window, { key: "k", code: "KeyK", ctrlKey: true });
     });
-    const palette = screen.getByRole("dialog", { name: "Command palette" });
+    const palette = await screen.findByRole("dialog", { name: "Command palette" });
     await act(async () => {
       fireEvent.change(within(palette).getByRole("combobox"), { target: { value: "reject" } });
     });

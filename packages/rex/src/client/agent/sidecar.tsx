@@ -23,12 +23,14 @@ import {
   SIDECAR_MIME_TYPE,
   SIDECAR_VERSION,
   type InvocationRoute,
-  type SidecarAction,
-  type SidecarOutcome,
-  type SidecarOverlay,
-  type SidecarPayload,
-  type SidecarRegion,
-  type SidecarStores,
+} from "../../core/protocol.ts";
+import type {
+  SidecarAction,
+  SidecarOutcome,
+  SidecarOverlay,
+  SidecarPayload,
+  SidecarRegion,
+  SidecarStores,
 } from "../../manifest/sidecar.schema.ts";
 import type { Manifest } from "../../manifest/types.ts";
 import { actionLabel } from "../act.ts";

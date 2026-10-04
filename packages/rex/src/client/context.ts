@@ -9,6 +9,7 @@ import {
   REX_DENSITY_HEADER,
   REX_MANIFEST_PATH,
   REX_RPC_PREFIX,
+  type ConfirmGrant,
 } from "../core/protocol.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import type { Manifest } from "../manifest/types.ts";
@@ -53,10 +54,7 @@ export interface ConfirmRequest {
   readonly input: unknown;
 }
 
-export interface ConfirmGrant {
-  readonly token: string;
-  readonly expiresAt: string;
-}
+export type { ConfirmGrant };
 
 export interface RexRuntime {
   readonly registry: RegistrySnapshot;
@@ -64,6 +62,8 @@ export interface RexRuntime {
   readonly actor: Actor;
   readonly client: RexClient;
   readonly density: string | null;
+  readonly baseUrl?: string;
+  readonly fetch?: ApiFetch;
 }
 
 export const RexRuntimeContext = createContext<RexRuntime | null>(null);

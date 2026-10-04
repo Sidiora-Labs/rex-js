@@ -446,7 +446,7 @@ describe("prefix routing", () => {
     await act(async () => {
       fireEvent.keyDown(window, { key: "k", code: "KeyK", ctrlKey: true });
     });
-    const palette = screen.getByRole("dialog", { name: "Command palette" });
+    const palette = await screen.findByRole("dialog", { name: "Command palette" });
     expect(within(palette).getByText("Enviar fundos")).toBeTruthy();
     expect(within(palette).getByText("Go to Início")).toBeTruthy();
   });
