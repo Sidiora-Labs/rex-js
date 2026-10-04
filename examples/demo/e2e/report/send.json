@@ -1,0 +1,252 @@
+{
+  "page": "send",
+  "actor": "owner",
+  "densities": [
+    {
+      "density": "default",
+      "checks": [
+        {
+          "name": "page renders one ready sidecar",
+          "ok": true,
+          "detail": "3 actions, 2 overlays"
+        },
+        {
+          "name": "root density is default",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "page, region and outcome landmarks are addressed",
+          "ok": true,
+          "detail": "send/form, send/confirm, send/success"
+        },
+        {
+          "name": "sidecar lists exactly the present controls",
+          "ok": true,
+          "detail": "send/pick-contact, send/pick-token, send/send"
+        },
+        {
+          "name": "pick-contact by click",
+          "ok": true,
+          "detail": "Pick contact: SucceededPick contact succeededDismiss"
+        },
+        {
+          "name": "pick-contact by key",
+          "ok": true,
+          "detail": "Pick contact: SucceededPick contact succeededDismiss"
+        },
+        {
+          "name": "pick-contact by url",
+          "ok": true,
+          "detail": "Pick contact: SucceededPick contact succeededDismiss"
+        },
+        {
+          "name": "pick-contact by palette",
+          "ok": true,
+          "detail": "Pick contact: SucceededPick contact succeededDismiss"
+        },
+        {
+          "name": "pick-token by click",
+          "ok": true,
+          "detail": "Pick token: SucceededPick token succeededDismiss"
+        },
+        {
+          "name": "pick-token by key",
+          "ok": true,
+          "detail": "Pick token: SucceededPick token succeededDismiss"
+        },
+        {
+          "name": "pick-token by url",
+          "ok": true,
+          "detail": "Pick token: SucceededPick token succeededDismiss"
+        },
+        {
+          "name": "pick-token by palette",
+          "ok": true,
+          "detail": "Pick token: SucceededPick token succeededDismiss"
+        },
+        {
+          "name": "send by click",
+          "ok": true,
+          "detail": "Send: SucceededSend succeededDismiss"
+        },
+        {
+          "name": "send by key",
+          "ok": true,
+          "detail": "Send: SucceededSend succeededDismiss"
+        },
+        {
+          "name": "send by url",
+          "ok": true,
+          "detail": "Send: SucceededSend succeededDismiss"
+        },
+        {
+          "name": "send by palette",
+          "ok": true,
+          "detail": "Send: SucceededSend succeededDismiss"
+        },
+        {
+          "name": "overlay ContactPickerSheet dismisses by Escape",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay ContactPickerSheet dismisses by its control",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay ContactPickerSheet accepts typed input for its choices",
+          "ok": true,
+          "detail": "typed carol ran pick-contact"
+        },
+        {
+          "name": "overlay TokenSelectorSheet dismisses by Escape",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay TokenSelectorSheet dismisses by its control",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay TokenSelectorSheet accepts typed input for its choices",
+          "ok": true,
+          "detail": "typed usdc ran pick-token"
+        },
+        {
+          "name": "sidecar parity holds after the walk",
+          "ok": true,
+          "detail": "send/pick-contact, send/pick-token, send/send"
+        }
+      ]
+    },
+    {
+      "density": "agent",
+      "checks": [
+        {
+          "name": "page renders one ready sidecar",
+          "ok": true,
+          "detail": "3 actions, 2 overlays"
+        },
+        {
+          "name": "root density is agent",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "page, region and outcome landmarks are addressed",
+          "ok": true,
+          "detail": "send/form, send/confirm, send/success"
+        },
+        {
+          "name": "sidecar lists exactly the present controls",
+          "ok": true,
+          "detail": "send/pick-contact, send/pick-token, send/send"
+        },
+        {
+          "name": "agent density enlarges hit targets",
+          "ok": true,
+          "detail": "3 controls at least 44px"
+        },
+        {
+          "name": "pick-contact by click",
+          "ok": true,
+          "detail": "Pick contact: SucceededPick contact succeededDismiss"
+        },
+        {
+          "name": "pick-contact by key",
+          "ok": true,
+          "detail": "Pick contact: SucceededPick contact succeededDismiss"
+        },
+        {
+          "name": "pick-contact by url",
+          "ok": true,
+          "detail": "Pick contact: SucceededPick contact succeededDismiss"
+        },
+        {
+          "name": "pick-contact by palette",
+          "ok": true,
+          "detail": "Pick contact: SucceededPick contact succeededDismiss"
+        },
+        {
+          "name": "pick-token by click",
+          "ok": true,
+          "detail": "Pick token: SucceededPick token succeededDismiss"
+        },
+        {
+          "name": "pick-token by key",
+          "ok": true,
+          "detail": "Pick token: SucceededPick token succeededDismiss"
+        },
+        {
+          "name": "pick-token by url",
+          "ok": true,
+          "detail": "Pick token: SucceededPick token succeededDismiss"
+        },
+        {
+          "name": "pick-token by palette",
+          "ok": true,
+          "detail": "Pick token: SucceededPick token succeededDismiss"
+        },
+        {
+          "name": "send by click",
+          "ok": true,
+          "detail": "Send: SucceededSend succeededDismiss"
+        },
+        {
+          "name": "send by key",
+          "ok": true,
+          "detail": "Send: SucceededSend succeededDismiss"
+        },
+        {
+          "name": "send by url",
+          "ok": true,
+          "detail": "Send: SucceededSend succeededDismiss"
+        },
+        {
+          "name": "send by palette",
+          "ok": true,
+          "detail": "Send: SucceededSend succeededDismiss"
+        },
+        {
+          "name": "overlay ContactPickerSheet dismisses by Escape",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay ContactPickerSheet dismisses by its control",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay ContactPickerSheet accepts typed input for its choices",
+          "ok": true,
+          "detail": "typed carol ran pick-contact"
+        },
+        {
+          "name": "overlay TokenSelectorSheet dismisses by Escape",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay TokenSelectorSheet dismisses by its control",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay TokenSelectorSheet accepts typed input for its choices",
+          "ok": true,
+          "detail": "typed usdc ran pick-token"
+        },
+        {
+          "name": "sidecar parity holds after the walk",
+          "ok": true,
+          "detail": "send/pick-contact, send/pick-token, send/send"
+        }
+      ]
+    }
+  ],
+  "failures": []
+}

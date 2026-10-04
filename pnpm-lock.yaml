@@ -23,6 +23,9 @@ importers:
       '@sidioralabs/rex':
         specifier: workspace:*
         version: link:../../packages/rex
+      '@tanstack/react-query':
+        specifier: ^5.104.1
+        version: 5.104.1(react@19.3.0)
       react:
         specifier: ^19.3.0
         version: 19.3.0

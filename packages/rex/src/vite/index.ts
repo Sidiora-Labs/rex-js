@@ -1,12 +1,14 @@
 /// <reference path="./rex-app.d.ts" />
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { getRequestListener } from "@hono/node-server";
 import react from "@vitejs/plugin-react";
 import { normalizePath, type Plugin, type ViteDevServer } from "vite";
 import { DEFAULT_APP_NAME } from "../manifest/build.ts";
 import {
   APP_MODULE_ID,
+  CLIENT_SPECIFIER,
+  CORE_SPECIFIER,
   DEFAULT_APP_DIR,
   ENTRY_MODULE_ID,
   RESOLVED_APP_MODULE_ID,
@@ -20,6 +22,8 @@ import {
 
 export {
   APP_MODULE_ID,
+  CLIENT_SPECIFIER,
+  CORE_SPECIFIER,
   DECLARATION_FOLDERS,
   DEFAULT_APP_DIR,
   ENTRY_MODULE_ID,
@@ -27,10 +31,12 @@ export {
   RESOLVED_APP_MODULE_ID,
   RESOLVED_ENTRY_MODULE_ID,
   ROOT_ELEMENT_ID,
+  RUNTIME_STYLESHEETS,
   RexAppScanError,
   generateAppModule,
   generateEntryModule,
   runtimePaths,
+  runtimeStylesheets,
   scanApp,
 } from "./virtual.ts";
 export type {
@@ -97,6 +103,25 @@ export function forwardDensity(request: Request): Request {
   return new Request(request.url, init);
 }
 
+interface ResolveContext {
+  resolve(
+    source: string,
+    importer?: string,
+    options?: { skipSelf?: boolean },
+  ): Promise<{ readonly id: string; readonly external?: boolean | "absolute" | "relative" } | null>;
+}
+
+export async function resolveRuntimeEntry(
+  context: ResolveContext,
+  root: string,
+  specifier: string,
+  fallback: string,
+): Promise<string> {
+  const resolved = await context.resolve(specifier, join(root, "index.html"), { skipSelf: true });
+  if (resolved === null || resolved.external || !isAbsolute(resolved.id)) return fallback;
+  return normalizePath(resolved.id);
+}
+
 function mountServer(vite: ViteDevServer, source: RexServerSource): void {
   const listener = getRequestListener(
     async (request) => {
@@ -150,17 +175,19 @@ export function rex(options: RexPluginOptions = {}): Plugin[] {
       if (id === ENTRY_MODULE_ID) return RESOLVED_ENTRY_MODULE_ID;
       return null;
     },
-    load(id) {
+    async load(id) {
       if (id === RESOLVED_APP_MODULE_ID) {
+        const core = await resolveRuntimeEntry(this, root, CORE_SPECIFIER, paths.core);
         try {
-          return generateAppModule(scanApp(root, appDir), { name, core: paths.core });
+          return generateAppModule(scanApp(root, appDir), { name, core });
         } catch (error) {
           if (error instanceof RexAppScanError) this.error(error.message);
           throw error;
         }
       }
       if (id === RESOLVED_ENTRY_MODULE_ID) {
-        return generateEntryModule({ client: paths.client });
+        const client = await resolveRuntimeEntry(this, root, CLIENT_SPECIFIER, paths.client);
+        return generateEntryModule({ client });
       }
       return null;
     },

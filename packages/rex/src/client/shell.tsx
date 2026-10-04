@@ -1,5 +1,11 @@
 import { useMemo, type ComponentType, type MouseEvent, type ReactNode } from "react";
 import type { AnyPage } from "../core/page.ts";
+import { ConfirmProvider, PageInvokers } from "./agent/confirm.tsx";
+import { OutcomeRegion } from "./agent/outcome.tsx";
+import { RexPalette } from "./agent/palette.tsx";
+import { RexShortcuts } from "./agent/shortcuts.ts";
+import { RexSidecar } from "./agent/sidecar.tsx";
+import { RexUrlInvoke } from "./agent/url-invoke.ts";
 import { useRegistry } from "./context.ts";
 import { Page } from "./layout.tsx";
 import { useNav } from "./nav.ts";
@@ -138,5 +144,31 @@ export function Shell({ pages, outcome }: ShellProps) {
         <ShellFrame resolution={resolution} modules={modules} navPages={navPages} Outcome={Outcome} />
       )}
     />
+  );
+}
+
+export function AgentOutcome({ page }: OutcomeSlotProps) {
+  return (
+    <>
+      <OutcomeRegion page={page} />
+      <RexSidecar />
+      <PageInvokers>
+        <RexPalette />
+        <RexShortcuts />
+        <RexUrlInvoke />
+      </PageInvokers>
+    </>
+  );
+}
+
+export interface AgentShellProps {
+  readonly pages: readonly PageModuleSet[];
+}
+
+export function AgentShell({ pages }: AgentShellProps) {
+  return (
+    <ConfirmProvider>
+      <Shell pages={pages} outcome={AgentOutcome} />
+    </ConfirmProvider>
   );
 }

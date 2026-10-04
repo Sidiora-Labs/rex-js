@@ -1,0 +1,142 @@
+{
+  "page": "portfolio",
+  "actor": "owner",
+  "densities": [
+    {
+      "density": "default",
+      "checks": [
+        {
+          "name": "page renders one ready sidecar",
+          "ok": true,
+          "detail": "1 actions, 1 overlays"
+        },
+        {
+          "name": "root density is default",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "page, region and outcome landmarks are addressed",
+          "ok": true,
+          "detail": "portfolio/hero, portfolio/actions, portfolio/holdings"
+        },
+        {
+          "name": "sidecar lists exactly the present controls",
+          "ok": true,
+          "detail": "portfolio/toggle-hide-dust"
+        },
+        {
+          "name": "toggle-hide-dust by click",
+          "ok": true,
+          "detail": "Toggle hide dust: SucceededToggle hide dust succeededDismiss"
+        },
+        {
+          "name": "toggle-hide-dust by key",
+          "ok": true,
+          "detail": "Toggle hide dust: SucceededToggle hide dust succeededDismiss"
+        },
+        {
+          "name": "toggle-hide-dust by url",
+          "ok": true,
+          "detail": "Toggle hide dust: SucceededToggle hide dust succeededDismiss"
+        },
+        {
+          "name": "toggle-hide-dust by palette",
+          "ok": true,
+          "detail": "Toggle hide dust: SucceededToggle hide dust succeededDismiss"
+        },
+        {
+          "name": "overlay HoldingsFilterSheet dismisses by Escape",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay HoldingsFilterSheet dismisses by its control",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay HoldingsFilterSheet accepts typed input for its choices",
+          "ok": true,
+          "detail": "no choices; typed input present"
+        },
+        {
+          "name": "sidecar parity holds after the walk",
+          "ok": true,
+          "detail": "portfolio/toggle-hide-dust"
+        }
+      ]
+    },
+    {
+      "density": "agent",
+      "checks": [
+        {
+          "name": "page renders one ready sidecar",
+          "ok": true,
+          "detail": "1 actions, 1 overlays"
+        },
+        {
+          "name": "root density is agent",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "page, region and outcome landmarks are addressed",
+          "ok": true,
+          "detail": "portfolio/hero, portfolio/actions, portfolio/holdings"
+        },
+        {
+          "name": "sidecar lists exactly the present controls",
+          "ok": true,
+          "detail": "portfolio/toggle-hide-dust"
+        },
+        {
+          "name": "agent density enlarges hit targets",
+          "ok": true,
+          "detail": "1 controls at least 44px"
+        },
+        {
+          "name": "toggle-hide-dust by click",
+          "ok": true,
+          "detail": "Toggle hide dust: SucceededToggle hide dust succeededDismiss"
+        },
+        {
+          "name": "toggle-hide-dust by key",
+          "ok": true,
+          "detail": "Toggle hide dust: SucceededToggle hide dust succeededDismiss"
+        },
+        {
+          "name": "toggle-hide-dust by url",
+          "ok": true,
+          "detail": "Toggle hide dust: SucceededToggle hide dust succeededDismiss"
+        },
+        {
+          "name": "toggle-hide-dust by palette",
+          "ok": true,
+          "detail": "Toggle hide dust: SucceededToggle hide dust succeededDismiss"
+        },
+        {
+          "name": "overlay HoldingsFilterSheet dismisses by Escape",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay HoldingsFilterSheet dismisses by its control",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "overlay HoldingsFilterSheet accepts typed input for its choices",
+          "ok": true,
+          "detail": "no choices; typed input present"
+        },
+        {
+          "name": "sidecar parity holds after the walk",
+          "ok": true,
+          "detail": "portfolio/toggle-hide-dust"
+        }
+      ]
+    }
+  ],
+  "failures": []
+}
