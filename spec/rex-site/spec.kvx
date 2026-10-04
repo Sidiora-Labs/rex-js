@@ -178,14 +178,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.5]
 title = "rex build --target static produces a complete static deployment"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 1
 requires = []
 reqs = ["4.1", "4.2"]
 do_1 = "Implement [design] static_build in packages/rex: buildApp with target static runs the prerender pipeline for every page (ssg and static with their paths through the existing prerender, ssr and csr pages written as the shell document at their route), writes dist/client/rex/manifest as the JSON the manifest route answers, dist/client/<route>/index.md from the text renderer for every prerendered page, dist/client/404.html as the shell document, and dist/prerender.json; the client bundle of a static build reads the manifest inlined at build time and never requests /rex/manifest (follow how createRexApp accepts a manifest today); a page with no actions makes no request at all on load."
 do_2 = "Tests in packages/rex/src/cli (a static-target test on the fixture app asserting every output file, the manifest JSON equals the server route's body, index.md equals the text renderer, 404.html boots the shell, and the client chunk contains no fetch of the manifest path) and in src/vite/prerender.test.ts for the shell document output; the demo builds with --target static and examples/demo/package.json gains build:static; docs/cli.md, docs/recipes/static-page.md and docs/platforms.md describe the output; the CLI listing text of the build command names what the static target emits."
-touches = ["packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands.test.ts", "packages/rex/src/cli/static-target.test.ts", "packages/rex/src/cli/fixtures", "packages/rex/src/vite/prerender.ts", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/src/vite/app-module.ts", "packages/rex/src/client/app.tsx", "packages/rex/src/client/entry.tsx", "packages/rex/src/server/routes/pages-text.ts", "examples/demo/package.json", "docs/cli.md", "docs/recipes/static-page.md", "docs/platforms.md", "README.md", "spec/rex-site/qualification.kvx"]
+touches = ["packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands.test.ts", "packages/rex/src/cli/static-target.test.ts", "packages/rex/src/cli/fixtures", "packages/rex/src/vite/prerender.ts", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/src/client/app.tsx", "packages/rex/src/server/routes/pages-text.ts", "examples/demo/package.json", "docs/cli.md", "docs/recipes/static-page.md", "docs/platforms.md", "README.md", "spec/rex-site/qualification.kvx"]
 verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli src/vite/prerender.test.ts src/client/app.test.tsx && pnpm -C examples/demo exec rex build --target static --no-check"
 gate_kind = "planned"
 max_builds = 1
