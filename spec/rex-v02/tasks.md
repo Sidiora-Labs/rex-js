@@ -77,7 +77,7 @@
     - Move server/node.ts to server/adapters/node.ts (keeping a re-export), add server/adapters/bun.ts, deno.ts and edge.ts per [design] runtimes with REX450 when the runtime global is absent; add server/fetch-only.test.ts that bundles src/server/index.ts for the browser platform with Vite's build API and asserts no node: specifier remains; add the ./server/bun, ./server/deno and ./server/edge exports.
     - Write server/adapters/adapters.test.ts: node adapter passes the existing node tests, edge handler answers Request objects, bun and deno adapters throw REX450 here and hand the fetch handler to the runtime serve when a real global exists.
     - _Requirements: 12.1, 12.2_
-  - [ ] 1.6 ActionForm with JavaScript interception and cookie outcomes
+  - [x] 1.6 ActionForm with JavaScript interception and cookie outcomes
     - Add client/form.tsx exporting ActionForm (a real form posting to /rex/form/<action> with hidden _csrf and action fields, inputs derived from the input schema, field errors from the outcome) that intercepts submit through useAct when JavaScript runs; make client/agent/outcome.tsx show and clear a rex-outcome cookie outcome on the next render.
     - Write client/form.test.tsx (renders the real form markup, intercepts with JS through a real RPC handler, shows field errors from a cookie outcome).
     - _Requirements: 11.1, 11.4_
