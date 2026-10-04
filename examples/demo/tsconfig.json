@@ -5,5 +5,12 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["app", "server.ts", "rex.config.ts", "e2e", "playwright.config.ts"]
+  "include": [
+    "app",
+    "server.ts",
+    "rex.config.ts",
+    "e2e",
+    "playwright.config.ts",
+    "node_modules/@sidioralabs/rex/src/vite/rex-app.d.ts"
+  ]
 }

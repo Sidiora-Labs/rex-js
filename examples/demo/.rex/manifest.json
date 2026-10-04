@@ -1,0 +1,755 @@
+{
+  "actions": [
+    {
+      "effect": "read",
+      "id": "load-wallet",
+      "input": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {},
+        "type": "object"
+      },
+      "invalidates": [],
+      "label": "Load wallet",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "account": {
+            "additionalProperties": false,
+            "properties": {
+              "address": {
+                "minLength": 1,
+                "type": "string",
+                "x-rex-field": "text"
+              },
+              "hideDust": {
+                "type": "boolean",
+                "x-rex-field": "boolean"
+              },
+              "id": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                "type": "string",
+                "x-rex-field": "id"
+              },
+              "lastTransfer": {
+                "anyOf": [
+                  {
+                    "minLength": 1,
+                    "type": "string",
+                    "x-rex-field": "text"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "name": {
+                "minLength": 1,
+                "type": "string",
+                "x-rex-field": "text"
+              },
+              "sendContact": {
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                "type": "string",
+                "x-rex-field": "ref",
+                "x-rex-ref": "contact"
+              },
+              "sendToken": {
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                "type": "string",
+                "x-rex-field": "ref",
+                "x-rex-ref": "token"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "address",
+              "hideDust",
+              "sendToken",
+              "sendContact",
+              "lastTransfer"
+            ],
+            "type": "object"
+          },
+          "contacts": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "address": {
+                  "minLength": 1,
+                  "type": "string",
+                  "x-rex-field": "text"
+                },
+                "id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                  "type": "string",
+                  "x-rex-field": "id"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string",
+                  "x-rex-field": "text"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "address"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "tokens": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "balance": {
+                  "format": "decimal",
+                  "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+                  "type": "string",
+                  "x-rex-field": "money"
+                },
+                "dust": {
+                  "type": "boolean"
+                },
+                "id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                  "type": "string",
+                  "x-rex-field": "id"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string",
+                  "x-rex-field": "text"
+                },
+                "priceUsd": {
+                  "format": "decimal",
+                  "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+                  "type": "string",
+                  "x-rex-field": "money"
+                },
+                "symbol": {
+                  "maxLength": 12,
+                  "minLength": 1,
+                  "type": "string",
+                  "x-rex-field": "text"
+                },
+                "valueUsd": {
+                  "format": "decimal",
+                  "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+                  "type": "string",
+                  "x-rex-field": "money"
+                }
+              },
+              "required": [
+                "id",
+                "symbol",
+                "name",
+                "balance",
+                "priceUsd",
+                "valueUsd",
+                "dust"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "totalUsd": {
+            "format": "decimal",
+            "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+            "type": "string",
+            "x-rex-field": "money"
+          }
+        },
+        "required": [
+          "account",
+          "tokens",
+          "contacts",
+          "totalUsd"
+        ],
+        "type": "object"
+      },
+      "policy": {
+        "kind": "can",
+        "permission": "viewer.read",
+        "policy": "viewer"
+      },
+      "shortcut": null
+    },
+    {
+      "effect": "reversible",
+      "id": "pick-contact",
+      "input": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "contact": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string",
+            "x-rex-field": "id"
+          }
+        },
+        "type": "object"
+      },
+      "invalidates": [
+        "wallet"
+      ],
+      "label": "Pick contact",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "contact": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string",
+            "x-rex-field": "id"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          }
+        },
+        "required": [
+          "contact",
+          "name"
+        ],
+        "type": "object"
+      },
+      "policy": {
+        "kind": "can",
+        "permission": "wallet.manage",
+        "policy": "wallet"
+      },
+      "shortcut": "shift+c"
+    },
+    {
+      "effect": "reversible",
+      "id": "pick-token",
+      "input": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "token": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string",
+            "x-rex-field": "id"
+          }
+        },
+        "type": "object"
+      },
+      "invalidates": [
+        "wallet"
+      ],
+      "label": "Pick token",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "symbol": {
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          },
+          "token": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string",
+            "x-rex-field": "id"
+          }
+        },
+        "required": [
+          "token",
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "policy": {
+        "kind": "can",
+        "permission": "wallet.manage",
+        "policy": "wallet"
+      },
+      "shortcut": "shift+t"
+    },
+    {
+      "effect": "irreversible",
+      "id": "send",
+      "input": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "amount": {
+            "default": "0.001",
+            "format": "decimal",
+            "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+            "type": "string",
+            "x-rex-field": "money"
+          }
+        },
+        "type": "object"
+      },
+      "invalidates": [
+        "wallet"
+      ],
+      "label": "Send",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "balance": {
+            "format": "decimal",
+            "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+            "type": "string",
+            "x-rex-field": "money"
+          },
+          "transfer": {
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          }
+        },
+        "required": [
+          "transfer",
+          "balance"
+        ],
+        "type": "object"
+      },
+      "policy": {
+        "account": true,
+        "custody": null,
+        "kind": "requires",
+        "permissions": [
+          "wallet.send"
+        ],
+        "policy": "wallet",
+        "unlocked": true
+      },
+      "shortcut": "mod+enter"
+    },
+    {
+      "effect": "reversible",
+      "id": "toggle-hide-dust",
+      "input": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "hide": {
+            "type": "boolean",
+            "x-rex-field": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "invalidates": [
+        "wallet"
+      ],
+      "label": "Toggle hide dust",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "hideDust": {
+            "type": "boolean",
+            "x-rex-field": "boolean"
+          }
+        },
+        "required": [
+          "hideDust"
+        ],
+        "type": "object"
+      },
+      "policy": {
+        "kind": "can",
+        "permission": "wallet.manage",
+        "policy": "wallet"
+      },
+      "shortcut": "shift+d"
+    }
+  ],
+  "app": {
+    "name": "demo"
+  },
+  "entities": [
+    {
+      "fields": [
+        {
+          "kind": "id",
+          "name": "id",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "text",
+          "name": "name",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "text",
+          "name": "address",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "boolean",
+          "name": "hideDust",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "ref",
+          "name": "sendToken",
+          "ref": "token",
+          "required": true
+        },
+        {
+          "kind": "ref",
+          "name": "sendContact",
+          "ref": "contact",
+          "required": true
+        },
+        {
+          "kind": "text",
+          "name": "lastTransfer",
+          "ref": null,
+          "required": true
+        }
+      ],
+      "id": "account",
+      "key": "id",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          },
+          "hideDust": {
+            "type": "boolean",
+            "x-rex-field": "boolean"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string",
+            "x-rex-field": "id"
+          },
+          "lastTransfer": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string",
+                "x-rex-field": "text"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          },
+          "sendContact": {
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string",
+            "x-rex-field": "ref",
+            "x-rex-ref": "contact"
+          },
+          "sendToken": {
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string",
+            "x-rex-field": "ref",
+            "x-rex-ref": "token"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "address",
+          "hideDust",
+          "sendToken",
+          "sendContact",
+          "lastTransfer"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "fields": [
+        {
+          "kind": "id",
+          "name": "id",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "text",
+          "name": "name",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "text",
+          "name": "address",
+          "ref": null,
+          "required": true
+        }
+      ],
+      "id": "contact",
+      "key": "id",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string",
+            "x-rex-field": "id"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "address"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "fields": [
+        {
+          "kind": "id",
+          "name": "id",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "text",
+          "name": "symbol",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "text",
+          "name": "name",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "money",
+          "name": "balance",
+          "ref": null,
+          "required": true
+        },
+        {
+          "kind": "money",
+          "name": "priceUsd",
+          "ref": null,
+          "required": true
+        }
+      ],
+      "id": "token",
+      "key": "id",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "balance": {
+            "format": "decimal",
+            "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+            "type": "string",
+            "x-rex-field": "money"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string",
+            "x-rex-field": "id"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          },
+          "priceUsd": {
+            "format": "decimal",
+            "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+            "type": "string",
+            "x-rex-field": "money"
+          },
+          "symbol": {
+            "maxLength": 12,
+            "minLength": 1,
+            "type": "string",
+            "x-rex-field": "text"
+          }
+        },
+        "required": [
+          "id",
+          "symbol",
+          "name",
+          "balance",
+          "priceUsd"
+        ],
+        "type": "object"
+      }
+    }
+  ],
+  "flows": [],
+  "pages": [
+    {
+      "actions": [
+        "toggle-hide-dust"
+      ],
+      "chrome": {
+        "back": null,
+        "header": true,
+        "nav": true,
+        "title": "Portfolio"
+      },
+      "draft": "route",
+      "id": "portfolio",
+      "overlays": [
+        {
+          "binding": "url",
+          "dismiss": "both",
+          "id": "HoldingsFilterSheet"
+        }
+      ],
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {},
+        "type": "object"
+      },
+      "policy": {
+        "kind": "can",
+        "permission": "viewer.read",
+        "policy": "viewer"
+      },
+      "recovery": null,
+      "regions": [
+        "hero",
+        "actions",
+        "holdings"
+      ],
+      "route": "/",
+      "routeParams": [],
+      "states": [
+        "loading",
+        "empty",
+        "stale",
+        "partial",
+        "offline",
+        "permission-denied",
+        "recoverable-error",
+        "terminal-error",
+        "ready"
+      ]
+    },
+    {
+      "actions": [
+        "pick-contact",
+        "pick-token",
+        "send"
+      ],
+      "chrome": {
+        "back": "portfolio",
+        "header": true,
+        "nav": true,
+        "title": "Send"
+      },
+      "draft": "route",
+      "id": "send",
+      "overlays": [
+        {
+          "binding": "region",
+          "dismiss": "both",
+          "id": "ContactPickerSheet"
+        },
+        {
+          "binding": "region",
+          "dismiss": "both",
+          "id": "TokenSelectorSheet"
+        }
+      ],
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {},
+        "type": "object"
+      },
+      "policy": {
+        "kind": "can",
+        "permission": "viewer.read",
+        "policy": "viewer"
+      },
+      "recovery": "portfolio",
+      "regions": [
+        "form",
+        "confirm",
+        "success"
+      ],
+      "route": "/send",
+      "routeParams": [],
+      "states": [
+        "loading",
+        "empty",
+        "stale",
+        "partial",
+        "offline",
+        "permission-denied",
+        "recoverable-error",
+        "terminal-error",
+        "ready"
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "id": "viewer",
+      "permissions": [
+        "viewer.read"
+      ]
+    },
+    {
+      "id": "wallet",
+      "permissions": [
+        "wallet.send",
+        "wallet.manage"
+      ]
+    }
+  ],
+  "version": 1
+}
