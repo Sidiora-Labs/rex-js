@@ -3,7 +3,8 @@ import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts
 import { RexDeclarationOptionError, RexError, errorDetail } from "./errors.ts";
 import { isValidName } from "./ids.ts";
 import { isPredicate, type Predicate } from "./policy.ts";
-import { toJsonSchema, type JsonSchema, type z } from "./schema.ts";
+import { toJsonSchema, type JsonSchema } from "./schema.ts";
+import type { z } from "zod/mini";
 import {
   fromStandard,
   isStandardSchema,

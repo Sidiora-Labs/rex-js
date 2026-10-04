@@ -8,7 +8,7 @@ import { actor } from "../../core/actor.ts";
 import { page } from "../../core/page.ts";
 import { always } from "../../core/policy.ts";
 import { createRegistry } from "../../core/registry.ts";
-import { z } from "../../core/schema.ts";
+import { z } from "zod/mini";
 import { buildManifest } from "../../manifest/build.ts";
 import { createRexApp } from "../app.tsx";
 import basicPage, { greet } from "../fixtures/page-basic/page.ts";

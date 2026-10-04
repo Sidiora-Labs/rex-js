@@ -1,4 +1,5 @@
-import { id, page, z } from "@sidioralabs/rex";
+import { id, page } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 
 export default page("note", {
   route: "/notes/:noteId",

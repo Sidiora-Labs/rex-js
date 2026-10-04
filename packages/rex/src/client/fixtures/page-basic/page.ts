@@ -1,4 +1,5 @@
-import { action, boolean, can, never, page, text, z } from "../../../index.ts";
+import { action, boolean, can, never, page, text } from "../../../index.ts";
+import { z } from "zod/mini";
 
 export const greet = action("greet", {
   input: z.object({ name: text({ min: 1 }) }),

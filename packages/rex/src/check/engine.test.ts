@@ -236,7 +236,8 @@ describe("source loader", () => {
   it("parses every import form, export form and static declaration", () => {
     const root = writeApp({
       "app/actions/send.ts": [
-        'import { action, always, z } from "@sidioralabs/rex";',
+        'import { action, always } from "@sidioralabs/rex";',
+        'import { z } from "zod/mini";',
         'export const send = action("send", {',
         '  input: z.object({}), output: z.object({}), policy: always(), effect: "irreversible",',
         "  handler: () => ({}),",

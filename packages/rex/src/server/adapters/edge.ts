@@ -1,4 +1,6 @@
 import type { ExecutionContext } from "hono";
+import type { AnyAction } from "../../core/action.ts";
+import { mountRexServer, type PrebuiltRexServerOptions } from "../app.ts";
 
 export interface EdgeFetchApp {
   fetch(
@@ -25,4 +27,10 @@ export function createEdgeHandler(app: EdgeFetchApp): EdgeHandler {
   return {
     fetch: async (request, env, executionCtx) => app.fetch(request, env, executionCtx),
   };
+}
+
+export type EdgeServerOptions<A extends AnyAction> = PrebuiltRexServerOptions<A>;
+
+export function createEdgeServer<A extends AnyAction>(options: EdgeServerOptions<A>): EdgeHandler {
+  return createEdgeHandler(mountRexServer(options));
 }

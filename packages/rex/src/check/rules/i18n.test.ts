@@ -33,7 +33,8 @@ const PLAIN_CONFIG = [
 ].join("\n");
 
 const ACTION = [
-  'import { action, always, z } from "@sidioralabs/rex";',
+  'import { action, always } from "@sidioralabs/rex";',
+  'import { z } from "zod/mini";',
   "",
   'export const send = action("send", {',
   "  input: z.object({}),",
@@ -109,7 +110,8 @@ const TRANSLATED_REGION = [
 ].join("\n");
 
 const TRANSLATED_ACTION = [
-  'import { action, always, z } from "@sidioralabs/rex";',
+  'import { action, always } from "@sidioralabs/rex";',
+  'import { z } from "zod/mini";',
   "",
   'export const archive = action("archive", {',
   "  input: z.object({}),",

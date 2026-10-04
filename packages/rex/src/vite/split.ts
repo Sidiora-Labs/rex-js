@@ -20,6 +20,7 @@ export function pageIdOfModule(moduleId: string, appPath: string): string | null
 
 export interface PageChunkGroup {
   readonly name: (moduleId: string) => string | null;
+  readonly includeDependenciesRecursively: false;
 }
 
 export function pageChunkGroups(appPath: string): PageChunkGroup[] {
@@ -29,6 +30,7 @@ export function pageChunkGroups(appPath: string): PageChunkGroup[] {
         const pageId = pageIdOfModule(moduleId, appPath);
         return pageId === null ? null : pageChunkName(pageId);
       },
+      includeDependenciesRecursively: false,
     },
   ];
 }

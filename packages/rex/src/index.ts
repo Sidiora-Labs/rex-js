@@ -22,3 +22,4 @@ export * from "./core/protocol.ts";
 export * from "./manifest/types.ts";
 export * from "./manifest/build.ts";
 export * from "./manifest/sidecar.schema.ts";
+export { validateStandard, validateStandardSync, type StandardSchemaV1 } from "./core/standard.ts";

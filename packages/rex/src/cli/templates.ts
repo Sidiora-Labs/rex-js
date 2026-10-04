@@ -8,6 +8,7 @@ import {
 } from "../core/states.ts";
 
 export const CORE_IMPORT = "@sidioralabs/rex";
+export const SCHEMA_IMPORT = "zod/mini";
 export const CLIENT_IMPORT = "@sidioralabs/rex/client";
 export const SERVER_IMPORT = "@sidioralabs/rex/server";
 
@@ -120,9 +121,10 @@ export function pageTemplate(options: PageTemplateOptions): string {
     (options.actions ?? []).map((name) => validateName(name, "action id")),
   );
   const states = options.states === undefined ? undefined : statesList(options.states);
-  const coreNames = routeParams.length > 0 ? "id, page, z" : "page";
+  const coreNames = routeParams.length > 0 ? "id, page" : "page";
   const imports = [
     `import { ${coreNames} } from "${CORE_IMPORT}";`,
+    ...(routeParams.length > 0 ? [`import { z } from "${SCHEMA_IMPORT}";`] : []),
     ...actions.map((name) => `import { ${camelCase(name)} } from "../../actions/${name}.ts";`),
   ];
   const fields = [`  route: ${JSON.stringify(route)},`];
@@ -353,7 +355,8 @@ export interface DeclarationTemplateOptions {
 export function actionTemplate(options: DeclarationTemplateOptions): string {
   const id = validateName(options.name, "action id");
   return lines(
-    `import { action, always, boolean, z } from "${CORE_IMPORT}";`,
+    `import { action, always, boolean } from "${CORE_IMPORT}";`,
+    `import { z } from "${SCHEMA_IMPORT}";`,
     "",
     `export const ${camelCase(id)} = action(${JSON.stringify(id)}, {`,
     "  input: z.object({}),",

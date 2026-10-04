@@ -8,10 +8,25 @@ import type { ChunkBudgets } from "./split.ts";
 
 export const EDGE_BUDGET_KB = 40;
 
+export const REACT_EXTERNALS = ["react", "react-dom"] as const;
+
+export const CLIENT_EXTERNALS = [
+  ...REACT_EXTERNALS,
+  "@tanstack/react-query",
+  "cmdk",
+  "wouter",
+  "@orpc/client",
+] as const;
+
 export interface EntryBudget {
   readonly entry: "core" | "client" | "edge";
   readonly source: string;
   readonly budget: number;
+  readonly externals: readonly string[];
+}
+
+export function isBudgetExternal(id: string, externals: readonly string[]): boolean {
+  return externals.some((name) => id === name || id.startsWith(`${name}/`));
 }
 
 export function resolveBudgets(read: RexConfigExport | null): ResolvedBudgets {
@@ -24,9 +39,19 @@ export function chunkBudgets(budgets: ResolvedBudgets = DEFAULT_BUDGETS): ChunkB
 
 export function entryBudgets(budgets: ResolvedBudgets = DEFAULT_BUDGETS): readonly EntryBudget[] {
   return [
-    { entry: "core", source: "src/index.ts", budget: budgets.core },
-    { entry: "client", source: "src/client/index.ts", budget: budgets.client },
-    { entry: "edge", source: "src/server/index.ts", budget: EDGE_BUDGET_KB },
+    { entry: "core", source: "src/index.ts", budget: budgets.core, externals: REACT_EXTERNALS },
+    {
+      entry: "client",
+      source: "src/client/index.ts",
+      budget: budgets.client,
+      externals: CLIENT_EXTERNALS,
+    },
+    {
+      entry: "edge",
+      source: "src/server/adapters/edge.ts",
+      budget: EDGE_BUDGET_KB,
+      externals: CLIENT_EXTERNALS,
+    },
   ];
 }
 

@@ -32,7 +32,8 @@ import {
   isReservedQueryKey,
 } from "./protocol.ts";
 import { createRegistry } from "./registry.ts";
-import { money, text, z } from "./schema.ts";
+import { money, text } from "./schema.ts";
+import { z } from "zod/mini";
 
 const wallet = policy("wallet", {
   permissions: ["send"],

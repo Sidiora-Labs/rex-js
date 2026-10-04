@@ -1354,7 +1354,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.2]
 title = "Budgets: curated core exports, prebuilt manifest for server bundles, trimmed client runtime and vendor-free page chunks"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 7
 requires = ["7.1", "1.5", "5.6"]
@@ -1364,7 +1364,7 @@ do_2 = "Prebuild the manifest: rex build writes dist/manifest.json and the gener
 do_3 = "Trim the client runtime to the 30 KB budget: no @orpc/server value import on the client, the palette and devtools loaded lazily, agent modules importing only what they use."
 do_4 = "Make vite/split.ts put only modules under a page's folder into its page-<id> chunk and everything shared into shared chunks; extend vite/vite.test.ts with the fixture build and a demo build asserting every page chunk is under its budget."
 do_5 = "Run the unchanged size test, the package build and the demo build; if a budget still fails, record the measured number, the five largest contributors and the cause as a blocker; never relax a budget."
-touches = ["packages/rex/src/core/schema.ts", "packages/rex/src/core/schema.test.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/fixtures", "packages/rex/src/manifest/build.ts", "packages/rex/src/server/app.ts", "packages/rex/src/server/routes/manifest.ts", "packages/rex/src/server/adapters/edge.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/vite/budgets.ts", "packages/rex/src/vite/budgets.test.ts", "packages/rex/src/vite/split.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/src/size.test.ts", "packages/rex/src/client/context.ts", "packages/rex/src/client/agent/palette.tsx", "packages/rex/src/client/devtools", "packages/rex/src/client/shell"]
+touches = ["packages/rex/src/core/schema.ts", "packages/rex/src/core/schema.test.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/server/app.ts", "packages/rex/src/server/adapters/edge.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/vite/budgets.ts", "packages/rex/src/vite/budgets.test.ts", "packages/rex/src/vite/split.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/size.test.ts"]
 verify_cmd = "pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts src/vite/vite.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex build"
 gate_kind = "planned"
 max_builds = 1

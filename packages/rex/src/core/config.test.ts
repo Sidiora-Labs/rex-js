@@ -25,7 +25,8 @@ import { RexError, isRexError, type RexErrorCode } from "./errors.ts";
 import { page } from "./page.ts";
 import { always } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { text, z } from "./schema.ts";
+import { text } from "./schema.ts";
+import { z } from "zod/mini";
 import * as configEntry from "../config.ts";
 import * as rootEntry from "../index.ts";
 

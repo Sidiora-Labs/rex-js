@@ -22,6 +22,7 @@ import {
 import {
   CLIENT_IMPORT,
   CORE_IMPORT,
+  SCHEMA_IMPORT,
   actionTemplate,
   appPaths,
   camelCase,
@@ -43,6 +44,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
 const cliEntry = join(here, "index.ts");
 const coreEntry = join(here, "..", "index.ts");
+const schemaEntry = import.meta.resolve(SCHEMA_IMPORT);
 const packageVersion = (
   JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as { version: string }
 ).version;
@@ -271,7 +273,14 @@ function expectValid(code: string, fileName: string) {
 async function importDeclaration(root: string, path: string, code: string) {
   const file = join(root, path);
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, code.split(`"${CORE_IMPORT}"`).join(JSON.stringify(coreEntry)));
+  writeFileSync(
+    file,
+    code
+      .split(`"${CORE_IMPORT}"`)
+      .join(JSON.stringify(coreEntry))
+      .split(`"${SCHEMA_IMPORT}"`)
+      .join(JSON.stringify(schemaEntry)),
+  );
   return (await import(pathToFileURL(file).href)) as Record<string, unknown>;
 }
 
@@ -366,7 +375,7 @@ describe("canonical templates", () => {
     });
     const shape = expectValid(code, "page.ts");
     expect(shape.hasDefault).toBe(true);
-    expect(shape.imports).toEqual([CORE_IMPORT, "../../actions/pick-token.ts"]);
+    expect(shape.imports).toEqual([CORE_IMPORT, SCHEMA_IMPORT, "../../actions/pick-token.ts"]);
     expect(code).not.toMatch(/react/i);
 
     const root = tempDir("rex-templates-");

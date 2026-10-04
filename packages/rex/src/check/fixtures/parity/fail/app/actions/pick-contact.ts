@@ -1,4 +1,5 @@
-import { action, always, text, z } from "@sidioralabs/rex";
+import { action, always, text } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 
 export const pickContact = action("pick-contact", {
   input: z.object({ contact: text({ min: 1 }) }),

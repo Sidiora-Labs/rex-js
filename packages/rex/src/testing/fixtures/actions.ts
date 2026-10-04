@@ -1,4 +1,5 @@
-import { action, can, id, text, z } from "../../index.ts";
+import { action, can, id, text } from "../../index.ts";
+import { z } from "zod/mini";
 import { addRecord, listRecords } from "./data.ts";
 
 export const noteSchema = z.object({ id: id(), title: text({ min: 1 }) });

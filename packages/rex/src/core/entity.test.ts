@@ -10,8 +10,8 @@ import {
   ref,
   text,
   timestamp,
-  z,
 } from "./schema.ts";
+import { z } from "zod/mini";
 import { standardSource, type StandardSchemaV1 } from "./standard.ts";
 
 const account = entity("account", {

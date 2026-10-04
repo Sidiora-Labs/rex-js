@@ -1,4 +1,5 @@
-import { action, id, z } from "@sidioralabs/rex";
+import { action, id } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 import { note } from "../entities/note.ts";
 import { notes } from "../policies/notes.ts";
 import { archiveNote } from "../server/db.ts";

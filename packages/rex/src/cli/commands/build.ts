@@ -1,4 +1,4 @@
-import { rmSync } from "node:fs";
+import { rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { InvalidArgumentError, type RexCommand as Command } from "../args.ts";
@@ -21,6 +21,8 @@ import {
 } from "../../server/adapters/static-cache.ts";
 import type { RexDocumentAssets } from "../../server/ssr.ts";
 import { readSsrAssets } from "../../vite/ssr-css.ts";
+import { stableStringify } from "../../manifest/build.ts";
+import type { Manifest } from "../../manifest/types.ts";
 import {
   chunkTable,
   formatChunkTable,
@@ -39,6 +41,7 @@ import type { DeprecationWarn } from "../../core/deprecated.ts";
 export const DIST_DIR = "dist";
 export const CLIENT_DIR = "client";
 export const SERVER_FILE = "server.js";
+export const MANIFEST_OUTPUT = "manifest.json";
 export const DEFAULT_PORT = 3000;
 export const SERVER_ENTRY_ID = "rex:server";
 export const RESOLVED_SERVER_ENTRY_ID = "\0rex:server";
@@ -95,6 +98,7 @@ export interface ServerEntryOptions {
   readonly config: string;
   readonly runtime: ServerRuntimePaths;
   readonly target?: ServerTarget;
+  readonly manifest: string;
 }
 
 function appServerLines(options: ServerEntryOptions, appImport: boolean): string[] {
@@ -104,6 +108,7 @@ function appServerLines(options: ServerEntryOptions, appImport: boolean): string
     `import { configServer, readConfigExport } from ${JSON.stringify(runtime.config)};`,
     `import { anonymousActor } from ${JSON.stringify(runtime.actor)};`,
     `import exported from ${JSON.stringify(normalizePath(options.config))};`,
+    `import manifest from ${JSON.stringify(normalizePath(options.manifest))};`,
     ...(appImport ? [`import rexApp from ${JSON.stringify(APP_MODULE_ID)};`] : []),
     `import ${JSON.stringify(RENDER_MODULE_ID)};`,
     "",
@@ -113,6 +118,7 @@ function appServerLines(options: ServerEntryOptions, appImport: boolean): string
     "    ledger: memoryLedger(),",
     "    actor: () => anonymousActor,",
     "    app: app.name,",
+    "    manifest,",
     "  }),",
     ");",
   ];
@@ -212,6 +218,7 @@ export interface BuildResult {
   readonly outDir: string;
   readonly clientDir: string;
   readonly serverFile: string | null;
+  readonly manifestFile: string | null;
   readonly apiOrigin: string | null;
   readonly chunks: readonly ChunkRow[];
   readonly prerendered: readonly StaticPageEntry[];
@@ -224,6 +231,7 @@ export interface ServerBuildOptions {
   readonly config: string;
   readonly target: ServerTarget;
   readonly assets: RexDocumentAssets;
+  readonly manifest: string;
   readonly rex: RexPluginOptions;
   readonly logLevel: LogLevel;
 }
@@ -240,6 +248,7 @@ export async function buildServer(options: ServerBuildOptions): Promise<string> 
         config: options.config,
         runtime: serverRuntimePaths(),
         target: options.target,
+        manifest: options.manifest,
       }),
     ],
     ssr: { noExternal: true, target: options.target === "edge" ? "webworker" : "node" },
@@ -296,6 +305,22 @@ export async function prerenderBuild(
   return { list, file: writePrerenderList(options.outDir, list) };
 }
 
+export async function writeBuildManifest(
+  root: string,
+  outDir: string,
+  rex: RexPluginOptions,
+  logLevel?: LogLevel,
+): Promise<string> {
+  const manifest: Manifest = await withModuleLoader(
+    root,
+    async (loader) => (await loadAppBundle(loader)).manifest,
+    { rex, ...(logLevel === undefined ? {} : { logLevel }) },
+  );
+  const file = join(outDir, MANIFEST_OUTPUT);
+  writeFileSync(file, `${stableStringify(manifest)}\n`);
+  return file;
+}
+
 type BuildOutput = Awaited<ReturnType<typeof build>>;
 
 export function outputItems(result: BuildOutput): (OutputChunkLike | OutputAssetLike)[] {
@@ -345,21 +370,29 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
   const chunks = chunkTable(outputItems(client), chunkBudgets(budgets));
   const result = { target, outDir, clientDir, apiOrigin, chunks };
   if (target === "static") {
-    return { ...result, serverFile: null, prerendered: [], prerenderFile: null };
+    return {
+      ...result,
+      serverFile: null,
+      manifestFile: null,
+      prerendered: [],
+      prerenderFile: null,
+    };
   }
 
   const assets = readSsrAssets(clientDir, { root: appRoot });
+  const manifestFile = await writeBuildManifest(appRoot, outDir, pluginOptions, logLevel);
   const serverFile = await buildServer({
     root: appRoot,
     outDir,
     config,
     target,
     assets,
+    manifest: manifestFile,
     rex: pluginOptions,
     logLevel,
   });
   if (!usesStaticPages(target)) {
-    return { ...result, serverFile, prerendered: [], prerenderFile: null };
+    return { ...result, serverFile, manifestFile, prerendered: [], prerenderFile: null };
   }
 
   const prerendered = await prerenderBuild(appRoot, {
@@ -373,6 +406,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
   return {
     ...result,
     serverFile,
+    manifestFile,
     prerendered: prerendered.list.pages,
     prerenderFile: prerendered.file,
   };
@@ -418,6 +452,7 @@ export function register(program: Command, io: RexCliIO): void {
       const result = await buildApp(io.cwd, { warn: cliWarn(io), target: options.target });
       io.out(formatChunkTable(result.chunks));
       io.out(`rex build: wrote ${writtenLayout(result)} for the ${result.target} target\n`);
+      if (result.manifestFile !== null) io.out(`rex build: wrote ${DIST_DIR}/${MANIFEST_OUTPUT}\n`);
       if (result.prerenderFile !== null) {
         io.out(
           formatPrerenderList(

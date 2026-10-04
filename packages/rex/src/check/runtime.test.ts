@@ -83,7 +83,8 @@ function writeApp(name: string, files: Readonly<Record<string, string>>): string
   return root;
 }
 
-const GREET_ACTION = `import { action, always, text, z } from "@sidioralabs/rex";
+const GREET_ACTION = `import { action, always, text } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 
 export const greet = action("greet", {
   input: z.object({}),
@@ -103,7 +104,8 @@ export const vault = policy("vault", {
 });
 `;
 
-const OPEN_VAULT_ACTION = `import { action, text, z } from "@sidioralabs/rex";
+const OPEN_VAULT_ACTION = `import { action, text } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 import { vault } from "../policies/vault.ts";
 
 export const openVault = action("open-vault", {
@@ -197,7 +199,8 @@ export default region("controls", ({ act }) => {
 };
 
 const failApp = {
-  "app/actions/archive.ts": `import { action, always, text, z } from "@sidioralabs/rex";
+  "app/actions/archive.ts": `import { action, always, text } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 
 export const archive = action("archive", {
   input: z.object({}),
@@ -208,7 +211,8 @@ export const archive = action("archive", {
   handler: () => ({ done: "archived" }),
 });
 `,
-  "app/actions/publish.ts": `import { action, always, text, z } from "@sidioralabs/rex";
+  "app/actions/publish.ts": `import { action, always, text } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 
 export const publish = action("publish", {
   input: z.object({}),
