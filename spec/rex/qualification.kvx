@@ -7,3 +7,27 @@ symbol = "flow, runFlow, decide, FlowDecisionError, memoryJournal"
 observed = "Task 0.8 adds src/core/flow.ts and src/core/journal.ts but its touches exclude src/index.ts, so the package entry does not re-export them; evidence: revision 578db82390865bfc9689e62e74517836a792bca8, command pnpm -C packages/rex exec vitest run src/core/flow.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/0.8-done.log."
 assumption = "A later task that owns packages/rex/src/index.ts adds export * from ./core/journal.ts and ./core/flow.ts."
 severity = "note"
+
+[qualification.2]
+task = "4.1"
+file = "packages/rex/src/vite/virtual.ts"
+symbol = "RexAppBundle, rex:app"
+observed = "The rex:app bundle type is exported as RexAppBundle but an ambient declare module rex:app needs a .d.ts outside the 4.1 touches; evidence: revision edd85f6ab7ae800fe4c0b2284caa1dd88c5a7199, command pnpm -C packages/rex exec vitest run src/vite/vite.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/4.1-verify.log."
+assumption = "Task 4.4 (rex new) or the client entry task adds an app env.d.ts declaring module rex:app with default and named exports typed by RexAppBundle."
+severity = "note"
+
+[qualification.3]
+task = "4.2"
+file = "packages/rex/src/cli/templates.ts"
+symbol = "viewTemplate, regionTemplate, overlayTemplate, statesTemplate, flowTemplate"
+observed = "Templates import view, region, Page and overlay from @sidioralabs/rex/client (tasks 2.5, 2.6, 5.6, not yet built) and flow, memoryJournal from the core entry (qualification.1), and states.tsx exports the eight non-ready states because StatesModule excludes ready; evidence: revision cbb39af6c5ea136056bf1b39a6597fe54361e07e, command pnpm -C packages/rex exec vitest run src/cli/cli.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/4.2-verify.log."
+assumption = "The client exports view(render), region(name, render), Page.Stack with space and overlay(id, {dismiss, binding}, render) as specified, and task 4.4 reconciles any drift when rex new must pass runCheck."
+severity = "assumption"
+
+[qualification.4]
+task = "4.3"
+file = "packages/rex/src/cli/index.ts"
+symbol = "run, RexCliExit, commandModuleFiles"
+observed = "The CLI entry awaits run() at top level, so a command module that imports a value (not a type) from ../index.ts deadlocks when executed as the rex bin; make.ts therefore imports only types and fails through command.error with exit codes; evidence: revision 5a5a707146aeb3a4d9ce153cab92c9ad871060d7, command pnpm -C packages/rex exec vitest run src/cli/make.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/4.3-verify.log."
+assumption = "Tasks 4.4 and 4.5 follow the same type-only import rule, or a task owning src/cli/index.ts replaces the top-level await with run().then(...)."
+severity = "suspect"

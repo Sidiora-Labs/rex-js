@@ -153,18 +153,18 @@
 ## Wave 4
 
 - [ ] 4. CLI, generators and the Vite plugin
-  - [ ] 4.1 Implement the Vite plugin and the rex:app virtual module
+  - [x] 4.1 Implement the Vite plugin and the rex:app virtual module
     - Implement src/vite/index.ts: rex() Vite plugin resolving the virtual module rex:app that imports app/pages/*/page.ts, view.tsx, states.tsx, regions/*/region.tsx, overlays/*.tsx, app/actions/*.ts, app/entities/*.ts, app/policies/*.ts and app/flows/*.ts by glob and exports a typed app bundle; invalidates on file add and remove.
     - Add a dev middleware option that mounts a provided Hono app under /rex so one Vite process serves client and API, forwarding the x-rex-density header.
     - Write src/vite/vite.test.ts building a fixture app with the Vite JavaScript API and asserting the virtual module exports.
     - Resolve /@rex/entry, which the scaffolded index.html loads, to a generated client entry that mounts createRexApp with the rex:app bundle; the virtual entry is part of the plugin, not a file in the app.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 14.1, 14.2, 14.3_
-  - [ ] 4.2 Implement the CLI skeleton and the canonical templates
+  - [x] 4.2 Implement the CLI skeleton and the canonical templates
     - Implement src/cli/index.ts with commander: rex with version, new, make, promote, dev, build, check and manifest subcommands registered from src/cli/commands/*.ts; unknown commands exit 2.
     - Implement src/cli/templates.ts exporting one template function per file kind: page.ts, view.tsx, states.tsx (all nine exports), region.tsx, Part.tsx, Overlay.tsx, useHook.ts, action.ts, entity.ts, policy.ts, flow.ts; templates are the canonical shapes from [design] and contain no placeholders that fail rex check.
     - Write src/cli/cli.test.ts running the CLI through tsx for version, help and unknown command.
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
-  - [ ] 4.3 Implement rex make
+  - [x] 4.3 Implement rex make
     - Implement src/cli/commands/make.ts: rex make page <id> --regions a,b --overlays X,Y writing the full page folder; rex make region|part|overlay <page> <name>; rex make action|entity|policy|flow <name>; rex make hook <page> <name>; every command refuses to overwrite and reports each written path.
     - Write src/cli/make.test.ts generating into a temporary directory and asserting the exact file set, the page.ts declaration contents and the overwrite refusal.
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
