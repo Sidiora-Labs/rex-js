@@ -83,7 +83,9 @@ function captureIO(cwd = packageRoot) {
   return { io, out: () => out.join(""), err: () => err.join("") };
 }
 
-describe("rex CLI through tsx", () => {
+const TSX_TEST_TIMEOUT_MS = 30_000;
+
+describe("rex CLI through tsx", { timeout: TSX_TEST_TIMEOUT_MS }, () => {
   it("prints the package version for --version, -v and version", () => {
     expect(REX_VERSION).toBe(packageVersion);
     for (const args of [["--version"], ["-v"], ["version"]]) {

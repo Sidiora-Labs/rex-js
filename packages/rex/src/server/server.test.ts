@@ -9,7 +9,9 @@ import { always, never, policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
 import { boolean, id, money, ref, text, z } from "../core/schema.ts";
 import { buildManifest, stableStringify } from "../manifest/build.ts";
+import { REX_ACTOR_HEADER, REX_DENSITY_HEADER } from "../core/protocol.ts";
 import {
+  ACTOR_HEADER,
   CONFIRM_HEADER,
   DENSITY_HEADER,
   HEALTH_PATH,
@@ -146,6 +148,35 @@ describe("createRexServer", () => {
       "toggle-dust",
     ]);
     expect(await (await app.request(MANIFEST_PATH)).text()).toBe(body);
+  });
+
+  it("sets the resolved actor and density headers on the manifest response", async () => {
+    expect(ACTOR_HEADER).toBe(REX_ACTOR_HEADER);
+    expect(DENSITY_HEADER).toBe(REX_DENSITY_HEADER);
+    const response = await app.request(MANIFEST_PATH, {
+      headers: { authorization: "Bearer alice", [DENSITY_HEADER]: "agent" },
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get(REX_DENSITY_HEADER)).toBe("agent");
+    const encoded = response.headers.get(REX_ACTOR_HEADER);
+    expect(encoded).not.toBeNull();
+    expect(encoded).toBe(encodeURIComponent(encoded === null ? "" : decodeURIComponent(encoded)));
+    expect(JSON.parse(decodeURIComponent(encoded ?? ""))).toEqual({
+      id: "alice",
+      roles: [],
+      permissions: ["send"],
+      attributes: { unlocked: true },
+    });
+    const anonymous = await app.request(MANIFEST_PATH);
+    expect(anonymous.headers.get(REX_DENSITY_HEADER)).toBe("default");
+    expect(JSON.parse(decodeURIComponent(anonymous.headers.get(REX_ACTOR_HEADER) ?? ""))).toEqual({
+      id: "anonymous",
+      roles: [],
+      permissions: [],
+      attributes: {},
+    });
+    const invalid = await app.request(MANIFEST_PATH, { headers: { [DENSITY_HEADER]: "compact" } });
+    expect(invalid.status).toBe(400);
   });
 
   it("serves the same manifest from a frozen registry", async () => {

@@ -9,12 +9,16 @@ import { action, type AnyAction } from "../core/action.ts";
 import { actor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { always, evaluate, never, policy } from "../core/policy.ts";
+import {
+  CONFIRM_PROCEDURE,
+  REX_CONFIRM_HEADER as CONFIRM_HEADER,
+  REX_RPC_PREFIX as REX_RPC_PATH,
+} from "../core/protocol.ts";
 import { createRegistry } from "../core/registry.ts";
 import { money, text, z } from "../core/schema.ts";
 import { buildManifest, stableStringify } from "../manifest/build.ts";
 import { useAct, type ActHandle } from "./act.ts";
 import { createRexApp, type RexFetch } from "./app.tsx";
-import { CONFIRM_HEADER, CONFIRM_PROCEDURE, REX_RPC_PATH } from "./context.ts";
 import {
   APP_OUTCOME_KEY,
   createOutcomeStore,

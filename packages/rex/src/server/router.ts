@@ -3,6 +3,7 @@ import { ORPCError, os, type Procedure } from "@orpc/server";
 import type { AnyAction } from "../core/action.ts";
 import type { Actor } from "../core/actor.ts";
 import { evaluate } from "../core/policy.ts";
+import { CONFIRM_PROCEDURE } from "../core/protocol.ts";
 import { z } from "../core/schema.ts";
 import {
   AUDIT_OK,
@@ -14,7 +15,7 @@ import {
 } from "./audit.ts";
 import type { RexContext } from "./context.ts";
 
-export const CONFIRM_PROCEDURE = "_confirm";
+export { CONFIRM_PROCEDURE };
 export const DEFAULT_CONFIRM_TTL_MS = 60_000;
 export const PRECONDITION_REQUIRED = "PRECONDITION_REQUIRED";
 export const PRECONDITION_REQUIRED_STATUS = 428;
@@ -87,7 +88,7 @@ export type ConfirmProcedure = Procedure<
 
 export type ActionRouter<A extends AnyAction> = {
   readonly [K in A as ActionKey<K["id"]>]: ActionProcedure<K>;
-} & { readonly _confirm: ConfirmProcedure };
+} & { readonly [CONFIRM_PROCEDURE]: ConfirmProcedure };
 
 export interface ActionRouterSource<A extends AnyAction> {
   readonly actions: readonly A[];

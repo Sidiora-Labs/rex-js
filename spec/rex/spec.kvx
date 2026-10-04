@@ -798,7 +798,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.4.4]
 title = "Implement rex new and rex promote"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 4
 requires = ["4.3", "3.6"]
@@ -819,7 +819,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.4.5]
 title = "Implement rex dev, build, check and manifest commands"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 4
 requires = ["4.1", "4.2", "1.4", "2.7", "3.6"]
@@ -844,7 +844,7 @@ status  = "pending"
 
 [task.5.0]
 title = "Align the confirm protocol, header names and reserved query keys between client and server"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["1.3", "2.3"]
@@ -864,7 +864,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.1]
 title = "Implement stable addressing"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["2.7"]
@@ -882,7 +882,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.2]
 title = "Implement the affordance sidecar"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["5.1"]
@@ -900,7 +900,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.3]
 title = "Implement the outcome region"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["2.7"]
@@ -918,7 +918,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.4]
 title = "Implement the command palette, shortcuts, URL invocation and confirmation"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["5.0", "5.2", "5.3"]
@@ -938,7 +938,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.5]
 title = "Implement the density and motion preference"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["2.7"]
@@ -957,7 +957,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.6]
 title = "Implement overlays"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["5.2"]
@@ -976,7 +976,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.7]
 title = "Expose flow approval gates on the owning page"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["5.0", "5.2", "0.8"]
