@@ -8,7 +8,16 @@ import {
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
-import { Route, Switch, matchRoute, useLocation, useRouter, useSearch, type Parser } from "wouter";
+import {
+  Redirect,
+  Route,
+  Switch,
+  matchRoute,
+  useLocation,
+  useRouter,
+  useSearch,
+  type Parser,
+} from "wouter";
 import type { Actor } from "../core/actor.ts";
 import { parseRoute, type AnyPage, type PageTransition } from "../core/page.ts";
 import { evaluate, type PolicyResult } from "../core/policy.ts";
@@ -18,6 +27,8 @@ import type { JsonSchema } from "../core/schema.ts";
 import { issuePath, validateStandardSync, type StandardIssue } from "../core/standard.ts";
 import type { Manifest } from "../manifest/types.ts";
 import { useActor, useManifest, useRegistry } from "./context.ts";
+import { useI18n } from "./i18n/context.ts";
+import { localePrefix, localizeHref, stripLocalePrefix } from "./i18n/locale.ts";
 
 export { RESERVED_QUERY_KEYS };
 export const DRAFT_QUERY_KEY = "draft";
@@ -316,12 +327,26 @@ export function runRouteChange(
 
 export type RouteChange = (target: AnyPage, href: string, options: { readonly replace: boolean }) => void;
 
+export const RouteChangeContext = createContext<RouteChange | null>(null);
+RouteChangeContext.displayName = "RexRouteChange";
+
 export function useRouteChange(): RouteChange {
+  const routes = useContext(RouteChangeContext);
   const [, navigate] = useLocation();
-  return useCallback<RouteChange>(
+  const own = useCallback<RouteChange>(
     (target, href, { replace }) => runRouteChange(target.transition, () => navigate(href, { replace })),
     [navigate],
   );
+  return routes ?? own;
+}
+
+export function useLocaleHref(): (href: string) => string {
+  const { source, locale } = useI18n();
+  const prefixed = source !== null && source.settings.routing === "prefix";
+  return useCallback((href: string) => (prefixed ? localizeHref(href, locale) : href), [
+    prefixed,
+    locale,
+  ]);
 }
 
 export const ROUTE_FOCUS_SELECTORS = ["[data-rex-shell] h1", "main h1", "h1", "main"] as const;
@@ -384,11 +409,12 @@ export interface DestinationScope {
   readonly origin: string;
   readonly base: string;
   readonly parser: Parser;
+  readonly locales?: readonly string[] | null;
 }
 
 export function routableDestination(
   event: NavigateEventLike,
-  { pages, origin, base, parser }: DestinationScope,
+  { pages, origin, base, parser, locales = null }: DestinationScope,
 ): RoutableDestination | null {
   if (!event.canIntercept || event.hashChange || event.destination.sameDocument) return null;
   if (event.downloadRequest !== null || event.formData !== null) return null;
@@ -397,7 +423,9 @@ export function routableDestination(
   if (url.origin !== origin) return null;
   if (base !== "" && !url.pathname.toLowerCase().startsWith(base.toLowerCase())) return null;
   const path = url.pathname.slice(base.length) || "/";
-  const target = pages.find((declared) => matchRoute(parser, declared.route, path)[0]);
+  if (locales !== null && localePrefix(path, locales) === null) return null;
+  const routed = locales === null ? path : stripLocalePrefix(path, locales);
+  const target = pages.find((declared) => matchRoute(parser, declared.route, routed)[0]);
   if (target === undefined) return null;
   return { page: target, href: `${path}${url.search}${url.hash}` };
 }
@@ -406,11 +434,28 @@ export interface RexRoutesProps {
   readonly render: RouteRender;
 }
 
+interface LocaleRedirectProps {
+  readonly pages: readonly AnyPage[];
+  readonly locale: string;
+  readonly render: RouteRender;
+}
+
+function LocaleRedirect({ pages, locale, render }: LocaleRedirectProps) {
+  const router = useRouter();
+  const [path] = useLocation();
+  const search = useSearch();
+  const known = pages.some((declared) => matchRoute(router.parser, declared.route, path)[0]);
+  if (!known) return <NotFoundRoute render={render} />;
+  return <Redirect to={localizeHref(search === "" ? path : `${path}?${search}`, locale)} replace />;
+}
+
 export function RexRoutes({ render }: RexRoutesProps) {
   const registry = useRegistry();
   const router = useRouter();
   const [path] = useLocation();
   const change = useRouteChange();
+  const { source, locale } = useI18n();
+  const locales = source !== null && source.settings.routing === "prefix" ? source.settings.locales : null;
   const pages = useMemo(() => orderPages(registry.pages), [registry]);
   const [committed, setCommitted] = useState({ path, changes: 0 });
   const changes = committed.path === path ? committed.changes : committed.changes + 1;
@@ -429,6 +474,7 @@ export function RexRoutes({ render }: RexRoutesProps) {
       origin: globalThis.location.origin,
       base: router.base,
       parser: router.parser,
+      locales,
     };
     const onNavigate = (event: Event) => {
       const destination = routableDestination(event as NavigateEventLike, scope);
@@ -440,22 +486,41 @@ export function RexRoutes({ render }: RexRoutesProps) {
     };
     navigation.addEventListener("navigate", onNavigate);
     return () => navigation.removeEventListener("navigate", onNavigate);
-  }, [pages, router, change]);
+  }, [pages, router, change, locales]);
+
+  const routes = (
+    <Switch>
+      {pages.map((declared) => (
+        <Route key={declared.id} path={declared.route}>
+          {(routeParams: Record<string, string | undefined>) => (
+            <PageRoute page={declared} routeParams={routeParams} render={render} />
+          )}
+        </Route>
+      ))}
+      <Route>
+        <NotFoundRoute render={render} />
+      </Route>
+    </Switch>
+  );
 
   return (
     <RouteChangesContext.Provider value={changes}>
-      <Switch>
-        {pages.map((declared) => (
-          <Route key={declared.id} path={declared.route}>
-            {(routeParams: Record<string, string | undefined>) => (
-              <PageRoute page={declared} routeParams={routeParams} render={render} />
-            )}
-          </Route>
-        ))}
-        <Route>
-          <NotFoundRoute render={render} />
-        </Route>
-      </Switch>
+      <RouteChangeContext.Provider value={change}>
+        {locales === null ? (
+          routes
+        ) : (
+          <Switch>
+            {locales.map((prefix) => (
+              <Route key={prefix} path={`/${prefix}`} nest>
+                {routes}
+              </Route>
+            ))}
+            <Route>
+              <LocaleRedirect pages={pages} locale={locale} render={render} />
+            </Route>
+          </Switch>
+        )}
+      </RouteChangeContext.Provider>
     </RouteChangesContext.Provider>
   );
 }

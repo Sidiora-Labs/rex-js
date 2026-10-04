@@ -22,12 +22,16 @@ import {
   type PageModuleSet,
   type StateExportComponent,
 } from "../client/page.tsx";
+import { LocaleSeedContext, i18nFor, type I18nSource } from "../client/i18n/context.ts";
+import { stripLocalePrefix } from "../client/i18n/locale.ts";
+import { translate } from "../client/i18n/messages.ts";
 import { manifestParamsSchema, orderPages, resolvePage } from "../client/router.tsx";
 import { NOT_FOUND_TITLE } from "../client/shell.tsx";
 import { parseRoute, type AnyPage, type PageRender, type PageStatesModule } from "../core/page.ts";
 import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import type { Manifest } from "../manifest/types.ts";
 import type { RexRequestContext } from "./context.ts";
+import { resolveRequestLocale } from "./locale.ts";
 import type { RenderKind, RexPageRenderer, RexRenderResult } from "./routes/render.ts";
 
 export { registerPageRenderer } from "./routes/render.ts";
@@ -149,6 +153,7 @@ export function pageAssets(assets: RexDocumentAssets, page: string | null): RexP
 }
 
 interface DocumentParts {
+  readonly lang: string;
   readonly title: string;
   readonly nonce: string;
   readonly links: RexPageAssets;
@@ -169,7 +174,7 @@ function documentHead(options: Required<Omit<RexRendererOptions, "bundle">>, par
     : `<div id="${escapeHtml(options.rootElement)}">`;
   return [
     "<!doctype html>",
-    `<html lang="${escapeHtml(options.lang)}">`,
+    `<html lang="${escapeHtml(parts.lang)}">`,
     "<head>",
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
@@ -261,6 +266,22 @@ async function loadedModules(set: PageModuleSet): Promise<LoadedPageModules> {
   return isLazyPageModules(set) ? set.load() : set;
 }
 
+export function requestLocale(
+  source: I18nSource | null,
+  request: Request,
+  context: RexRequestContext,
+): string | null {
+  if (source === null) return null;
+  const known = context.locale;
+  if (known !== undefined && source.settings.locales.includes(known)) return known;
+  return resolveRequestLocale(request, source.settings).locale;
+}
+
+export function routedPathname(source: I18nSource | null, pathname: string): string {
+  if (source === null || source.settings.routing !== "prefix") return pathname;
+  return stripLocalePrefix(pathname, source.settings.locales);
+}
+
 export function createRexRenderer(options: RexRendererOptions): RexPageRenderer {
   const bundle = options.bundle;
   if (typeof bundle !== "object" || bundle === null || !Array.isArray(bundle.pages)) {
@@ -287,15 +308,20 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     context: RexRequestContext,
     pages: readonly PageModuleSet[],
     queryClient: QueryClient,
+    locale: string | null,
   ): ReactNode {
     const RexEntry = createRexEntry(
       { registry, manifest, pages },
       { actor: context.actor, baseUrl: url.origin, queryClient },
     );
+    const entry = createElement(StrictMode, null, createElement(RexEntry));
     return createElement(Router, {
       ssrPath: url.pathname,
       ssrSearch: url.search.replace(/^\?/, ""),
-      children: createElement(StrictMode, null, createElement(RexEntry)),
+      children:
+        locale === null
+          ? entry
+          : createElement(LocaleSeedContext.Provider, { value: locale }, entry),
     });
   }
 
@@ -304,10 +330,14 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     context: RexRequestContext,
     queryClient: QueryClient,
     hydrate: boolean,
+    locale: string | null,
   ): DocumentParts {
     const page = match === null ? null : match.page.id;
+    const source = i18nFor(registry);
+    const title = match === null ? NOT_FOUND_TITLE : match.page.chrome.title;
     return {
-      title: match === null ? NOT_FOUND_TITLE : match.page.chrome.title,
+      lang: locale ?? resolved.lang,
+      title: locale === null ? title : translate(source, locale, title),
       nonce: context.nonce,
       links: pageAssets(resolved.assets, page),
       data: {
@@ -346,9 +376,10 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     url: URL,
     match: PageMatch | null,
     context: RexRequestContext,
+    locale: string | null,
   ): Promise<RexRenderResult> {
     const queryClient = new QueryClient();
-    const head = documentHead(resolved, parts(match, context, queryClient, false));
+    const head = documentHead(resolved, parts(match, context, queryClient, false, locale));
     const tail = documentTail(resolved, context.nonce);
     let body: ReadableStream<Uint8Array> | null = null;
     if (match !== null) {
@@ -364,9 +395,12 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
           overlays: (loaded.overlays ?? {}) as Readonly<Record<string, ComponentType>>,
         });
         const pages = bundle.pages.map((entry) => (entry.page === match.page ? eager : entry));
-        const stream = await renderToReadableStream(entryTree(url, context, pages, queryClient), {
-          nonce: context.nonce,
-        });
+        const stream = await renderToReadableStream(
+          entryTree(url, context, pages, queryClient, locale),
+          {
+            nonce: context.nonce,
+          },
+        );
         await stream.allReady;
         body = stream;
       } catch {
@@ -382,7 +416,9 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
 
   async function render(request: Request, context: RexRequestContext): Promise<RexRenderResult> {
     const url = new URL(request.url);
-    const match = matchPage(registry.pages, url.pathname);
+    const source = i18nFor(registry);
+    const locale = requestLocale(source, request, context);
+    const match = matchPage(registry.pages, routedPathname(source, url.pathname));
     let kind: RenderKind = "not-found";
     if (match !== null) {
       const resolution = resolvePage(
@@ -398,7 +434,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         try {
           await loadedModules(sets.get(match.page.id) as PageModuleSet);
         } catch {
-          return failure(url, match, context);
+          return failure(url, match, context, locale);
         }
       }
     }
@@ -406,7 +442,7 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     const errors: unknown[] = [];
     let stream: Awaited<ReturnType<typeof renderToReadableStream>>;
     try {
-      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient), {
+      stream = await renderToReadableStream(entryTree(url, context, serverPages, queryClient, locale), {
         nonce: context.nonce,
         onError(error) {
           if (error instanceof RexClientRenderSignal) return CLIENT_RENDER_DIGEST;
@@ -415,18 +451,18 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
         },
       });
     } catch {
-      return failure(url, match, context);
+      return failure(url, match, context, locale);
     }
     await Promise.race([stream.allReady.catch(() => {}), nextTask()]);
     if (errors.length > 0) {
       await stream.cancel();
-      return failure(url, match, context);
+      return failure(url, match, context, locale);
     }
     return {
       kind,
       page: match === null ? null : match.page.id,
       body: documentStream(
-        documentHead(resolved, parts(match, context, queryClient, true)),
+        documentHead(resolved, parts(match, context, queryClient, true, locale)),
         stream,
         documentTail(resolved, context.nonce),
       ),

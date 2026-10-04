@@ -1,3 +1,4 @@
+import { useText } from "../i18n/context.ts";
 import { useNav } from "../nav.ts";
 import { PageHost, type PageModuleSet } from "../page.tsx";
 import type { ShellSlotProps } from "./slots.ts";
@@ -16,13 +17,14 @@ export function BodySlot({ resolution, modules }: ShellSlotProps) {
 
 export function RecoverySlot({ resolution }: ShellSlotProps) {
   const nav = useNav();
+  const text = useText();
   const recovery =
     resolution.kind === "page" && !resolution.policy.allowed ? resolution.recovery : null;
   if (recovery === null) return null;
   return (
     <p>
       <button type="button" data-rex-nav={recovery.id} onClick={() => nav.to(recovery)}>
-        Go to {recovery.chrome.title}
+        Go to {text(recovery.chrome.title)}
       </button>
     </p>
   );

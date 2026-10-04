@@ -1,10 +1,12 @@
 import type { MouseEvent } from "react";
 import type { AnyPage } from "../../core/page.ts";
+import { useText } from "../i18n/context.ts";
 import { useNav } from "../nav.ts";
 import type { ShellSlotProps } from "./slots.ts";
 
 export function NavSlot({ active, navPages }: ShellSlotProps) {
   const nav = useNav();
+  const text = useText();
   const showNav = active === null || active.chrome.nav;
   if (!showNav) return null;
 
@@ -26,7 +28,7 @@ export function NavSlot({ active, navPages }: ShellSlotProps) {
                 aria-current={target === active ? "page" : undefined}
                 onClick={follow(target)}
               >
-                {target.chrome.title}
+                {text(target.chrome.title)}
               </a>
             </li>
           );

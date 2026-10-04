@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { isPlainObject } from "../../core/entity.ts";
 import { actionLabel } from "../act.ts";
 import { useRegistry } from "../context.ts";
+import { useText } from "../i18n/context.ts";
 import { Page } from "../layout.tsx";
 import { useOutcome, useOutcomeStore, type Outcome } from "../outcome.ts";
 
@@ -89,15 +90,17 @@ export function outcomeStatusText(outcome: Pick<Outcome, "ok">): "Succeeded" | "
 
 function useOutcomeLabel(outcome: Outcome | null): string | null {
   const registry = useRegistry();
+  const text = useText();
   if (outcome === null) return null;
   const declared = registry.find("action", outcome.actionId);
-  return declared === undefined ? outcome.actionId : actionLabel(declared);
+  return declared === undefined ? outcome.actionId : text(actionLabel(declared));
 }
 
 export function OutcomeRegion({ page }: OutcomeRegionProps) {
   const store = useOutcomeStore();
   const outcome = useOutcome(page);
   const label = useOutcomeLabel(outcome);
+  const text = useText();
   useEffect(() => {
     const posted = takeOutcomeCookie();
     if (posted !== null) store.set(page, posted);
@@ -115,7 +118,7 @@ export function OutcomeRegion({ page }: OutcomeRegionProps) {
           <p>
             <strong>{label}</strong>: {outcomeStatusText(outcome)}
           </p>
-          <p>{outcome.message}</p>
+          <p>{text(outcome.message)}</p>
           <button
             type="button"
             data-rex-outcome-dismiss={page}

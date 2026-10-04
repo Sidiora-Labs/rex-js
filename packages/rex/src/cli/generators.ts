@@ -1,5 +1,6 @@
 import { baseAppPlan } from "./commands/new.ts";
 import type { PlannedEntry } from "./commands/make.ts";
+import { i18nGenerator } from "./gen/i18n.ts";
 
 export interface RexNewContext {
   readonly name: string;
@@ -15,7 +16,7 @@ export const appGenerator: RexNewGenerator = {
   contribute: (plan, context) => [...plan, ...baseAppPlan(context.name)],
 };
 
-export const REX_NEW_GENERATORS: readonly RexNewGenerator[] = [appGenerator];
+export const REX_NEW_GENERATORS: readonly RexNewGenerator[] = [appGenerator, i18nGenerator];
 
 export function runGenerators(
   context: RexNewContext,

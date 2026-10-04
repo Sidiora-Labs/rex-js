@@ -32,6 +32,7 @@ import {
 import type { Manifest } from "../../manifest/types.ts";
 import { actionLabel } from "../act.ts";
 import { useActor, useManifest } from "../context.ts";
+import { useText, type TextResolver } from "../i18n/context.ts";
 import { useOutcome, type Outcome } from "../outcome.ts";
 import { PageRuntimeContext, usePageQueries } from "../page.tsx";
 import { useActivePage, type PageResolution } from "../router.tsx";
@@ -305,15 +306,20 @@ export function manifestInputSchema(manifest: Manifest, declared: AnyAction): Js
   return listed.input;
 }
 
+function literalText(text: string): string {
+  return text;
+}
+
 export function sidecarAction(
   declared: AnyAction,
   subject: Actor,
   input: JsonSchema,
+  text: TextResolver = literalText,
 ): SidecarAction {
   const decision = evaluate(declared.policy, subject);
   return {
     id: declared.id,
-    label: actionLabel(declared),
+    label: text(actionLabel(declared)),
     allowed: decision.allowed,
     reason: decision.reason,
     effect: declared.effect,
@@ -322,9 +328,17 @@ export function sidecarAction(
   };
 }
 
-export function sidecarOutcome(outcome: Outcome | null): SidecarOutcome | null {
+export function sidecarOutcome(
+  outcome: Outcome | null,
+  text: TextResolver = literalText,
+): SidecarOutcome | null {
   if (outcome === null) return null;
-  return { action: outcome.actionId, ok: outcome.ok, message: outcome.message, at: outcome.at };
+  return {
+    action: outcome.actionId,
+    ok: outcome.ok,
+    message: text(outcome.message),
+    at: outcome.at,
+  };
 }
 
 export interface SidecarSource {
@@ -338,6 +352,7 @@ export interface SidecarSource {
   readonly failures?: readonly RegionFailure[];
   readonly outcome: Outcome | null;
   readonly stores?: Readonly<Record<string, unknown>>;
+  readonly text?: TextResolver;
 }
 
 export function sidecarRegions(
@@ -366,8 +381,9 @@ function jsonParams(params: Readonly<Record<string, unknown>>): Record<string, u
 
 export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
   const declared = source.page;
+  const text = source.text ?? literalText;
   const actions: SidecarAction[] = declared.actions.map((entry) =>
-    sidecarAction(entry, source.actor, manifestInputSchema(source.manifest, entry)),
+    sidecarAction(entry, source.actor, manifestInputSchema(source.manifest, entry), text),
   );
   const ids = new Set(actions.map((entry) => entry.id));
   for (const affordance of source.affordances ?? []) {
@@ -382,7 +398,7 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
     }
     actions.push({
       id: affordance.id,
-      label: affordance.label,
+      label: text(affordance.label),
       allowed: affordance.allowed,
       reason: affordance.allowed ? null : affordance.reason,
       effect: affordance.effect,
@@ -405,7 +421,7 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
     state: failures.length > 0 && source.state === "ready" ? "recoverable-error" : source.state,
     actions,
     overlays,
-    outcome: sidecarOutcome(source.outcome),
+    outcome: sidecarOutcome(source.outcome, text),
     ...(regions.length > 0 ? { regions: [...regions] } : {}),
     ...(stores === null ? {} : { stores }),
   };
@@ -433,6 +449,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
   const failures = useRegionFailures(resolution.page.id);
   const outcome = useOutcome(resolution.page.id);
   const stores = useExposedStores();
+  const text = useText();
   return useMemo(
     () =>
       buildSidecarPayload({
@@ -446,8 +463,20 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
         failures,
         outcome,
         stores,
+        text,
       }),
-    [manifest, resolution, state, subject, openOverlays, affordances, failures, outcome, stores],
+    [
+      manifest,
+      resolution,
+      state,
+      subject,
+      openOverlays,
+      affordances,
+      failures,
+      outcome,
+      stores,
+      text,
+    ],
   );
 }
 

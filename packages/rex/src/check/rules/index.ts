@@ -2,6 +2,7 @@ import { discoverApp, runRules, type CheckResult } from "../engine.ts";
 import { formatFindings } from "../report.ts";
 import type { Rule } from "../rule.ts";
 import { boundariesRule } from "./boundaries.ts";
+import { i18nRule } from "./i18n.ts";
 import { manifestRule } from "./manifest.ts";
 import { namingRule } from "./naming.ts";
 import { parityRule } from "./parity.ts";
@@ -21,6 +22,7 @@ export const defaultRules: readonly Rule[] = Object.freeze([
   tokensRule,
   manifestRule,
   securityRule,
+  i18nRule,
 ]);
 
 export interface RunCheckOptions {
