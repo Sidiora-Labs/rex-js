@@ -73,7 +73,7 @@
     - Implement src/server/node.ts: startNodeServer(app, {port, clientDir}) using @hono/node-server, serving clientDir assets and index.html fallback for page routes while leaving /rex/* to the API.
     - Write src/server/node.test.ts starting the server on an ephemeral port against a temporary client directory and asserting asset, fallback and API responses.
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 1.5 Implement the Drizzle store adapter against libsql
+  - [x] 1.5 Implement the Drizzle store adapter against libsql
     - Implement src/store/drizzle.ts: drizzleStore(entity, db) mapping entity fields to a Drizzle sqlite table definition, with get, list (filter, page, size), put and delete.
     - Write src/store/drizzle.test.ts running runStoreConformance against an in-memory libsql database created with @libsql/client.
     - _Requirements: 21.1, 21.2, 21.3_
