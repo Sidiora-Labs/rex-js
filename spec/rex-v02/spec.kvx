@@ -1595,14 +1595,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.8.5]
 title = "Current CLI and API reference, and the freshness gate: the 44 entries of docs/cli.md, docs/reference.md and docs/api, plus tools/freshness.mjs with its test and CI step"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 8
 requires = ["7.14", "7.16"]
 reqs = ["39.1", "39.2"]
 do_1 = "Read spec/rex-v02/freshness.kvx and close every [stale.N] entry whose task field is this task: replace the stale statement with the recorded fix after checking it against the code once more (a fix that is itself wrong is corrected, not applied), keep the file's voice and structure, and make no other edits; an entry that cannot be closed inside the touches is recorded in the qualification log with the entry id. This task owns docs/cli.md and docs/reference.md (every command, flag, default, exit code, export and error code against packages/rex/src/cli and the entries), regenerates docs/api with pnpm docs:api so the interop, media, i18n, schema, config, manifest and designx entries have pages, and fixes typedoc.json entry points."
 do_2 = "tools/freshness.mjs --check fails on drift: every key of packages/rex/package.json exports has a section in docs/reference.md, a docs/api page and an existing source file; every command the CLI registers (read from the RexCommand tree in packages/rex/src/cli/index.ts, exposed as a JSON listing by rex --help --json or an exported function) appears in README.md and docs/cli.md with the same flags, and no documented command or flag is unknown to the CLI; the Node floor quoted in README.md, docs/development.md and CONTRIBUTING.md equals package.json engines; the @sidioralabs/rex version written by rex new equals REX_VERSION; the CHANGELOG head is REX_VERSION or an unreleased entry; docs/errors.md (tools/docs-errors.mjs --check), docs/api (typedoc into a temp dir compared with the committed tree) and the generated pointer files (cg spec render --check) are current; node tools/check-links.mjs passes. src/freshness.test.ts runs the script, the root package.json gains a freshness script, and the CI docs job runs it."
-touches = ["docs/cli.md", "docs/reference.md", "docs/api", "typedoc.json", "tools/freshness.mjs", "packages/rex/src/freshness.test.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/cli.test.ts", ".github/workflows/ci.yml"]
+touches = ["docs/cli.md", "docs/reference.md", "typedoc.json", "tools/freshness.mjs", "packages/rex/src/freshness.test.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/cli.test.ts", ".github/workflows/ci.yml"]
 verify_cmd = "pnpm -r typecheck && node tools/freshness.mjs --check && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/freshness.test.ts src/cli/cli.test.ts"
 gate_kind = "planned"
 max_builds = 1

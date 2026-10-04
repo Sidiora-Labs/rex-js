@@ -30,6 +30,22 @@ jobs:
       - name: Test
         run: pnpm -C packages/rex test
 
+  docs:
+    name: Docs and freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Freshness (generated pointer files are checked where cg is installed)
+        run: node tools/freshness.mjs --check --skip pointers
+
   demo:
     name: Check, walk and vitals
     runs-on: ubuntu-latest
