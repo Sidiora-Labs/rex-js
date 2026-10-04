@@ -5,6 +5,7 @@ import type { ActionInput, ActionOutput, AnyAction } from "../core/action.ts";
 import { actionAddress } from "../core/ids.ts";
 import { evaluate, type ReasonCode } from "../core/policy.ts";
 import { z } from "../core/schema.ts";
+import { formatIssues, validateStandard } from "../core/standard.ts";
 import { CONFIRM_PROCEDURE } from "../core/protocol.ts";
 import {
   procedureOf,
@@ -63,14 +64,14 @@ export function describeError(error: unknown): { code: string; message: string }
   return { code: "ERROR", message: String(error) };
 }
 
-function describeIssues(error: z.ZodError): string {
-  return error.issues
-    .map((issue) => `${issue.path.map(String).join(".") || "input"} ${issue.message}`)
-    .join("; ");
-}
-
 export function actionLabel(declared: AnyAction): string {
   return declared.label ?? declared.id;
+}
+
+export async function inputProblem(declared: AnyAction, input: unknown): Promise<string | null> {
+  const checked = await validateStandard(declared.input, input);
+  if (checked.issues === undefined) return null;
+  return `${actionLabel(declared)}: invalid input: ${formatIssues(checked.issues)}`;
 }
 
 export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
@@ -94,11 +95,11 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
       const call = procedureOf(client, declared.id);
       const raw =
         confirmToken === undefined ? await call(input) : await call(input, { context: { confirmToken } });
-      const parsed = declared.output.safeParse(raw);
-      if (!parsed.success) {
-        throw new Error(`the server returned an invalid output: ${describeIssues(parsed.error)}`);
+      const parsed = await validateStandard(declared.output, raw);
+      if (parsed.issues !== undefined) {
+        throw new Error(`the server returned an invalid output: ${formatIssues(parsed.issues)}`);
       }
-      return parsed.data as ActionOutput<A>;
+      return parsed.value as ActionOutput<A>;
     },
     onSuccess: async () => {
       await Promise.all(
@@ -123,11 +124,13 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
     async (input: ActionInput<A>): Promise<ConfirmGrant> => {
       const request: ConfirmRequest = { action: declared.id, input };
       const raw = await procedureOf(client, CONFIRM_PROCEDURE)(request);
-      const parsed = confirmGrantSchema.safeParse(raw);
-      if (!parsed.success) {
-        throw new Error(`the confirm procedure returned an invalid grant: ${describeIssues(parsed.error)}`);
+      const parsed = await validateStandard(confirmGrantSchema, raw);
+      if (parsed.issues !== undefined) {
+        throw new Error(
+          `the confirm procedure returned an invalid grant: ${formatIssues(parsed.issues)}`,
+        );
       }
-      return parsed.data;
+      return parsed.value;
     },
     [client, declared],
   );
@@ -136,9 +139,9 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
   const run = useCallback(
     async (input: ActionInput<A>, options: RunOptions = {}): Promise<ActResult<A>> => {
       const label = actionLabel(declared);
-      const checked = declared.input.safeParse(input);
-      if (!checked.success) {
-        const message = `${label}: invalid input: ${describeIssues(checked.error)}`;
+      const problem = await inputProblem(declared, input);
+      if (problem !== null) {
+        const message = problem;
         record(false, message);
         return { ok: false, code: "BAD_REQUEST", message };
       }

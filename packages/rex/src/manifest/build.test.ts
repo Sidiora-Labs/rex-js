@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { action } from "../core/action.ts";
 import { RexError } from "../core/errors.ts";
+import type { StandardSchemaV1 } from "../core/standard.ts";
 import { entity } from "../core/entity.ts";
 import { page } from "../core/page.ts";
 import { always, policy } from "../core/policy.ts";
@@ -561,5 +562,104 @@ describe("sidecar schema", () => {
   it("rejects non-objects", () => {
     expect(validateSidecar(null).valid).toBe(false);
     expect(validateSidecar("{}").valid).toBe(false);
+  });
+});
+
+describe("Standard Schema declarations in the manifest", () => {
+  const code: StandardSchemaV1<{ code: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof (value as { code?: unknown } | null)?.code === "string"
+          ? { value: value as { code: string } }
+          : { issues: [{ message: "must carry a code", path: ["code"] }] },
+    },
+  };
+  const slug: StandardSchemaV1<string> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof value === "string" && /^[a-z-]+$/.test(value)
+          ? { value }
+          : { issues: [{ message: "must be a slug" }] },
+    },
+  };
+  const redeem = action("redeem", {
+    input: code,
+    output: z.object({ ok: boolean() }),
+    policy: always(),
+    effect: "reversible",
+    handler: () => ({ ok: true }),
+  });
+  const redeemDeclared = action("redeem-declared", {
+    input: code,
+    output: code,
+    policy: always(),
+    effect: "reversible",
+    jsonSchema: {
+      input: { type: "object", properties: { code: { type: "string" } }, required: ["code"] },
+      output: { type: "object", properties: { code: { type: "string" } }, required: ["code"] },
+    },
+    handler: (input) => input,
+  });
+  const article = entity("article", {
+    fields: { id: id(), slug, title: text({ min: 1 }) },
+    label: (record) => record.title,
+  });
+  const routeParams: StandardSchemaV1<{ slug: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof (value as { slug?: unknown } | null)?.slug === "string"
+          ? { value: value as { slug: string } }
+          : { issues: [{ message: "must name a slug", path: ["slug"] }] },
+    },
+  };
+  const reader = page("reader", { route: "/articles/:slug", params: routeParams });
+
+  function source(actions: ManifestSource["actions"]): ManifestSource {
+    return { entities: [article], actions, pages: [reader], policies: [] };
+  }
+
+  it("throws REX210 naming the declaration when a Standard Schema has no JSON Schema", () => {
+    let failure: unknown;
+    try {
+      buildManifest(source([redeem]));
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(RexError);
+    expect((failure as RexError).code).toBe("REX210");
+    expect((failure as RexError).message).toContain('action "redeem" input');
+    expect((failure as RexError).message).toContain("jsonSchema.input");
+  });
+
+  it("uses the declared JSON Schema for Standard Schema actions", () => {
+    const manifest = buildManifest(source([redeemDeclared]));
+    const described = manifest.actions.find((item) => item.id === "redeem-declared");
+    expect(described?.input).toEqual({
+      type: "object",
+      properties: { code: { type: "string" } },
+      required: ["code"],
+    });
+  });
+
+  it("marks Standard Schema entity fields and page params with their vendor", () => {
+    const manifest = buildManifest(source([redeemDeclared]));
+    const properties = manifest.entities[0]?.schema.properties as Record<string, unknown>;
+    expect(properties.slug).toEqual({ "x-rex-standard": "hand" });
+    expect(manifest.entities[0]?.fields.map((field) => [field.name, field.kind, field.required])).toEqual([
+      ["id", "id", true],
+      ["slug", null, true],
+      ["title", "text", true],
+    ]);
+    const params = manifest.pages[0]?.params as Record<string, unknown>;
+    expect(params["x-rex-standard"]).toBe("hand");
+    expect(params.required).toEqual(["slug"]);
+    expect(reader.params.safeParse({ slug: "intro" }).success).toBe(true);
+    expect(reader.params.safeParse({ slug: 3 }).success).toBe(false);
   });
 });

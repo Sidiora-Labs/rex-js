@@ -4,7 +4,16 @@ import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
 import { isValidName, validateName } from "./ids.ts";
 import { overlayDeclaration, type OverlayDeclaration } from "./overlay.ts";
 import { always, isPredicate, type Predicate } from "./policy.ts";
-import { toJsonSchema, z, type JsonSchema } from "./schema.ts";
+import * as zm from "zod/mini";
+import { STANDARD_VENDOR_KEY, schemaType, toJsonSchema, z, type JsonSchema } from "./schema.ts";
+import {
+  isStandardSchema,
+  isZodSchema,
+  issuePath,
+  validateStandardSync,
+  type StandardInferInput,
+  type StandardSchemaV1,
+} from "./standard.ts";
 import { REX_DATA_STATES, isRexDataState, type RexDataState, type StatesModule } from "./states.ts";
 
 declare module "./registry.ts" {
@@ -66,9 +75,9 @@ export interface PageCacheConfig {
   readonly staleTime: number;
 }
 
-export type PagePaths<P extends PageParamsSchema = PageParamsSchema> = () =>
-  | readonly z.input<P>[]
-  | Promise<readonly z.input<P>[]>;
+export type PagePaths<Params = Readonly<Record<string, unknown>>> = () =>
+  | readonly Params[]
+  | Promise<readonly Params[]>;
 
 export const LOADER_NAME = /^[a-z][a-zA-Z0-9]*$/;
 
@@ -114,8 +123,14 @@ export function parseRoute(route: string): ParsedRoute {
 
 export type PageParamsSchema = z.ZodObject<z.ZodRawShape>;
 
+export type AsPageParams<S extends StandardSchemaV1> = S extends PageParamsSchema
+  ? S
+  : S extends zm.ZodMiniObject<infer Shape>
+    ? z.ZodObject<Shape>
+    : PageParamsSchema;
+
 export interface PageConfig<
-  P extends PageParamsSchema,
+  P extends StandardSchemaV1,
   S extends readonly RexDataState[],
   R extends string,
   O extends string,
@@ -126,7 +141,7 @@ export interface PageConfig<
   readonly params?: P;
   readonly render?: PageRender;
   readonly revalidate?: number;
-  readonly paths?: PagePaths<P>;
+  readonly paths?: PagePaths<StandardInferInput<P>>;
   readonly load?: L;
   readonly cache?: PageCacheConfig;
   readonly transition?: PageTransition;
@@ -166,7 +181,7 @@ export interface PageDeclaration<
   readonly states: readonly S[];
   readonly render: PageRender | null;
   readonly revalidate: number | null;
-  readonly paths: PagePaths<P> | null;
+  readonly paths: PagePaths<z.input<P>> | null;
   readonly load: L;
   readonly loaders: readonly PageLoader[];
   readonly cache: PageCacheConfig | null;
@@ -242,9 +257,42 @@ function isComponentLike(value: unknown): boolean {
   );
 }
 
+function pageParamsSchema(
+  value: unknown,
+  routeParams: readonly string[],
+  fail: (field: string, problem: string) => never,
+): PageParamsSchema {
+  if (value === undefined) return z.object({});
+  if (value instanceof z.ZodObject) return value as PageParamsSchema;
+  if (isZodSchema(value)) {
+    if (schemaType(value) !== "object" || !("shape" in value)) {
+      return fail("params", "must be an object schema");
+    }
+    return z.object((value as zm.ZodMiniObject).shape);
+  }
+  if (!isStandardSchema(value)) {
+    return fail("params", "must be a Standard Schema object such as a zod object");
+  }
+  const routeShape = Object.fromEntries(routeParams.map((name) => [name, z.string()]));
+  const adapter = z.looseObject(routeShape).check((payload) => {
+    const result = validateStandardSync(value, payload.value);
+    if (result.issues === undefined) return;
+    for (const issue of result.issues) {
+      payload.issues.push({
+        code: "custom",
+        message: issue.message,
+        input: payload.value,
+        path: issuePath(issue) === "" ? [] : issuePath(issue).split("."),
+      });
+    }
+  });
+  zm.globalRegistry.add(adapter, { [STANDARD_VENDOR_KEY]: value["~standard"].vendor });
+  return adapter as unknown as PageParamsSchema;
+}
+
 export function page<
   const N extends string,
-  P extends PageParamsSchema = z.ZodObject<{}>,
+  P extends StandardSchemaV1 = z.ZodObject<{}>,
   const S extends readonly RexDataState[] = typeof REX_DATA_STATES,
   const R extends string = never,
   const O extends string = never,
@@ -253,7 +301,7 @@ export function page<
 >(
   name: N,
   config: PageConfig<P, S, R, O, A, L>,
-): PageDeclaration<N, P, S[number], R, O, A, L> {
+): PageDeclaration<N, AsPageParams<P>, S[number], R, O, A, L> {
   const id = declarationName("page", name);
   const fail = (field: string, problem: string): never => {
     throw new RexDeclarationError("page", id, field, problem);
@@ -275,8 +323,7 @@ export function page<
   }
   const route = parsedRoute as ParsedRoute;
 
-  const params = (config.params ?? z.object({})) as P;
-  if (!(params instanceof z.ZodObject)) fail("params", "must be a zod object schema");
+  const params = pageParamsSchema(config.params, route.params, fail) as AsPageParams<P>;
   const shape = params.shape as Record<string, z.ZodType>;
   for (const routeParam of route.params) {
     const paramSchema = shape[routeParam];
@@ -427,7 +474,7 @@ export function page<
     revalidate = config.revalidate;
   }
 
-  let paths: PagePaths<P> | null = null;
+  let paths: PagePaths<z.input<AsPageParams<P>>> | null = null;
   if (config.paths !== undefined) {
     if (typeof config.paths !== "function") reject("REX202", "paths", "must be a function");
     if (render !== "ssg" && render !== "static") {
@@ -436,7 +483,7 @@ export function page<
     if (route.params.length === 0) {
       reject("REX202", "paths", "is only allowed on a route with params");
     }
-    paths = config.paths;
+    paths = config.paths as PagePaths<z.input<AsPageParams<P>>>;
   }
 
   const loadConfig = (config.load ?? {}) as L;

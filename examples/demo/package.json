@@ -15,7 +15,8 @@
     "@sidioralabs/rex": "workspace:*",
     "@tanstack/react-query": "^5.104.1",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

@@ -1,4 +1,5 @@
-import { action, money, text, z } from "@sidioralabs/rex";
+import { action, money, text } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 import {
   DEFAULT_SEND_AMOUNT,
   accountIdOf,
@@ -12,7 +13,7 @@ import {
 import { wallet } from "../policies/wallet.ts";
 
 export const send = action("send", {
-  input: z.object({ amount: money().default(DEFAULT_SEND_AMOUNT) }),
+  input: z.object({ amount: z._default(money(), DEFAULT_SEND_AMOUNT) }),
   output: z.object({ transfer: text({ min: 1 }), balance: money() }),
   policy: wallet.requires({ unlocked: true, account: true, permissions: ["wallet.send"] }),
   effect: "irreversible",

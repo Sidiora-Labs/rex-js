@@ -353,11 +353,11 @@ export interface DeclarationTemplateOptions {
 export function actionTemplate(options: DeclarationTemplateOptions): string {
   const id = validateName(options.name, "action id");
   return lines(
-    `import { action, always, z } from "${CORE_IMPORT}";`,
+    `import { action, always, boolean, z } from "${CORE_IMPORT}";`,
     "",
     `export const ${camelCase(id)} = action(${JSON.stringify(id)}, {`,
     "  input: z.object({}),",
-    "  output: z.object({ ok: z.boolean() }),",
+    "  output: z.object({ ok: boolean() }),",
     "  policy: always(),",
     '  effect: "reversible",',
     `  label: ${JSON.stringify(titleFromId(id))},`,

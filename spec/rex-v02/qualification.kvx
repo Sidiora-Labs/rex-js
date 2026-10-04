@@ -1,0 +1,9 @@
+# rex-v02 qualification log. Format: sectioned KV (.kvx). String values are ALWAYS double-quoted.
+
+[qualification.01]
+task = "0.3"
+file = "packages/rex/src/client/router.tsx, client/nav.ts, client/shell.tsx, client/agent/sidecar.tsx, client/agent/confirm.tsx, core/flow.ts, store/drizzle.ts, cli/commands/new.ts"
+symbol = "z export, AnyPage.params, ActionDeclaration.inputJsonSchema, FieldKind, packageJsonTemplate"
+observed = "Finishing the zod/mini move needs files outside the 0.3 touches: the core still re-exports classic z, router.tsx, nav.ts and shell.tsx read params.shape so a non-zod Standard Schema page params only receives route params, sidecar.tsx reads declaration JSON Schema so declarations keep it beside the manifest copy, drizzle KIND_COLUMNS blocks real and json kinds, and rex new lists no zod dependency so templates keep the core z; evidence: revision c26b3a68c53cb6325ce2ac31e098b3e24c8a8f8d, command pnpm -C packages/rex exec vitest run src/core/standard.test.ts src/core/schema.test.ts src/core/entity.test.ts src/core/action.test.ts src/server/router.test.ts src/client/act.test.tsx src/manifest/build.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.3-verify.log."
+assumption = "A follow-up task owning those files switches the core z export to zod/mini, reads params and JSON Schema from Standard Schema and the manifest, adds real and json field kinds to the Drizzle store, and adds zod to the rex new package template (0.4 owns new.ts)."
+severity = "assumption"

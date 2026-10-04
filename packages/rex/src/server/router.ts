@@ -5,6 +5,7 @@ import type { Actor } from "../core/actor.ts";
 import { evaluate } from "../core/policy.ts";
 import { CONFIRM_PROCEDURE } from "../core/protocol.ts";
 import { z } from "../core/schema.ts";
+import { validateStandard } from "../core/standard.ts";
 import {
   AUDIT_OK,
   ERROR_CODE_PATTERN,
@@ -262,14 +263,14 @@ function confirmProcedure(
         });
       }
       forbidden(declared, context.actor);
-      const parsed = await declared.input.safeParseAsync(input.input);
-      if (!parsed.success) {
+      const parsed = await validateStandard(declared.input, input.input);
+      if (parsed.issues !== undefined) {
         throw new ORPCError("BAD_REQUEST", {
           message: "Input validation failed",
-          data: { action: declared.id, issues: parsed.error.issues },
+          data: { action: declared.id, issues: parsed.issues },
         });
       }
-      return confirmations.issue(declared, parsed.data, context.actor);
+      return confirmations.issue(declared, parsed.value, context.actor);
     });
 }
 

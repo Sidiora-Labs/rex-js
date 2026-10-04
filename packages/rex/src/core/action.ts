@@ -3,7 +3,17 @@ import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts
 import { RexDeclarationOptionError } from "./errors.ts";
 import { isValidName } from "./ids.ts";
 import { isPredicate, type Predicate } from "./policy.ts";
-import { toJsonSchema, z, type JsonSchema } from "./schema.ts";
+import { toJsonSchema, type JsonSchema, type z } from "./schema.ts";
+import {
+  fromStandard,
+  isStandardSchema,
+  standardSource,
+  type AsZodSchema,
+  type StandardInferInput,
+  type StandardInferOutput,
+  type StandardSchemaV1,
+  type ZodSchemaLike,
+} from "./standard.ts";
 
 export type ActionEffect = "reversible" | "irreversible" | "read";
 
@@ -117,7 +127,7 @@ export interface ActionContext {
   readonly actor: Actor;
 }
 
-export interface ActionConfig<I extends z.ZodType, O extends z.ZodType> {
+export interface ActionConfig<I extends StandardSchemaV1, O extends StandardSchemaV1> {
   readonly input: I;
   readonly output: O;
   readonly policy: Predicate;
@@ -127,13 +137,16 @@ export interface ActionConfig<I extends z.ZodType, O extends z.ZodType> {
   readonly invalidates?: readonly string[];
   readonly form?: ActionFormConfig;
   readonly jsonSchema?: ActionJsonSchemaConfig;
-  readonly handler: (input: z.output<I>, ctx: ActionContext) => z.input<O> | Promise<z.input<O>>;
+  readonly handler: (
+    input: StandardInferOutput<I>,
+    ctx: ActionContext,
+  ) => StandardInferInput<O> | Promise<StandardInferInput<O>>;
 }
 
 export interface ActionDeclaration<
   N extends string = string,
-  I extends z.ZodType = z.ZodType,
-  O extends z.ZodType = z.ZodType,
+  I extends ZodSchemaLike = ZodSchemaLike,
+  O extends ZodSchemaLike = ZodSchemaLike,
 > {
   readonly kind: "action";
   readonly id: N;
@@ -152,14 +165,14 @@ export interface ActionDeclaration<
   handler(input: z.output<I>, ctx: ActionContext): z.input<O> | Promise<z.input<O>>;
 }
 
-export type AnyAction = ActionDeclaration<string, z.ZodType, z.ZodType>;
+export type AnyAction = ActionDeclaration<string, ZodSchemaLike, ZodSchemaLike>;
 
 export type ActionInput<A> =
-  A extends ActionDeclaration<string, infer I, z.ZodType> ? z.input<I> : never;
+  A extends ActionDeclaration<string, infer I, ZodSchemaLike> ? z.input<I> : never;
 export type ActionParsedInput<A> =
-  A extends ActionDeclaration<string, infer I, z.ZodType> ? z.output<I> : never;
+  A extends ActionDeclaration<string, infer I, ZodSchemaLike> ? z.output<I> : never;
 export type ActionOutput<A> =
-  A extends ActionDeclaration<string, z.ZodType, infer O> ? z.output<O> : never;
+  A extends ActionDeclaration<string, ZodSchemaLike, infer O> ? z.output<O> : never;
 
 const ACTION_KEYS = new Set([
   "input",
@@ -176,10 +189,14 @@ const ACTION_KEYS = new Set([
 const FORM_KEYS = new Set(["redirect", "confirmTitle"]);
 const JSON_SCHEMA_KEYS = new Set(["input", "output"]);
 
-export function action<const N extends string, I extends z.ZodType, O extends z.ZodType>(
+export function action<
+  const N extends string,
+  I extends StandardSchemaV1,
+  O extends StandardSchemaV1,
+>(
   name: N,
   config: ActionConfig<I, O>,
-): ActionDeclaration<N, I, O> {
+): ActionDeclaration<N, AsZodSchema<I>, AsZodSchema<O>> {
   const id = declarationName("action", name);
   const fail = (field: string, problem: string): never => {
     throw new RexDeclarationError("action", id, field, problem);
@@ -192,8 +209,12 @@ export function action<const N extends string, I extends z.ZodType, O extends z.
   for (const property of Object.keys(config)) {
     if (!ACTION_KEYS.has(property)) fail(property, "is not part of the action declaration");
   }
-  if (!(config.input instanceof z.ZodType)) fail("input", "must be a zod schema");
-  if (!(config.output instanceof z.ZodType)) fail("output", "must be a zod schema");
+  if (!isStandardSchema(config.input)) fail("input", "must be a Standard Schema such as a zod schema");
+  if (!isStandardSchema(config.output)) {
+    fail("output", "must be a Standard Schema such as a zod schema");
+  }
+  const input = fromStandard(config.input);
+  const output = fromStandard(config.output);
   if (!isPredicate(config.policy)) fail("policy", "must be a policy predicate");
   if (!ACTION_EFFECTS.includes(config.effect)) {
     fail("effect", `must be one of ${ACTION_EFFECTS.join(", ")}`);
@@ -270,18 +291,18 @@ export function action<const N extends string, I extends z.ZodType, O extends z.
   let outputJsonSchema: JsonSchema = {};
   if (jsonSchema?.input != null) {
     inputJsonSchema = jsonSchema.input;
-  } else {
+  } else if (standardSource(input) === null) {
     try {
-      inputJsonSchema = toJsonSchema(config.input, "input");
+      inputJsonSchema = toJsonSchema(input, "input");
     } catch (error) {
       fail("input", `cannot be represented as JSON Schema: ${(error as Error).message}`);
     }
   }
   if (jsonSchema?.output != null) {
     outputJsonSchema = jsonSchema.output;
-  } else {
+  } else if (standardSource(output) === null) {
     try {
-      outputJsonSchema = toJsonSchema(config.output, "output");
+      outputJsonSchema = toJsonSchema(output, "output");
     } catch (error) {
       fail("output", `cannot be represented as JSON Schema: ${(error as Error).message}`);
     }
@@ -292,8 +313,8 @@ export function action<const N extends string, I extends z.ZodType, O extends z.
     kind: "action",
     id,
     name: id,
-    input: config.input,
-    output: config.output,
+    input,
+    output,
     policy: config.policy,
     effect: config.effect,
     label: config.label ?? null,
@@ -303,8 +324,10 @@ export function action<const N extends string, I extends z.ZodType, O extends z.
     jsonSchema,
     inputJsonSchema: Object.freeze(inputJsonSchema),
     outputJsonSchema: Object.freeze(outputJsonSchema),
-    handler(input: z.output<I>, ctx: ActionContext) {
-      return handler(input, ctx);
+    handler(value: z.output<AsZodSchema<I>>, ctx: ActionContext) {
+      return handler(value as StandardInferOutput<I>, ctx) as
+        | z.input<AsZodSchema<O>>
+        | Promise<z.input<AsZodSchema<O>>>;
     },
   });
 }

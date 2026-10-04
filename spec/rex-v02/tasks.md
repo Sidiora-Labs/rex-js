@@ -17,7 +17,7 @@
     - Add cli/config.ts that loads rex.config.ts through the existing Vite ssrLoadModule path, accepts a defineConfig result or a bare Hono app (emitting deprecation REX101 once through a deprecated() helper in core/deprecated.ts), and make dev, build, check and manifest commands use it; update the rex new template to defineConfig.
     - Write core/config.test.ts, extend core/page.test.ts, core/action.test.ts, manifest/build.test.ts and cli/commands.test.ts for every new option and error code.
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
-  - [ ] 0.3 Move validation to the Standard Schema interface and the field helpers to zod/mini
+  - [x] 0.3 Move validation to the Standard Schema interface and the field helpers to zod/mini
     - Add core/standard.ts with the StandardSchemaV1 types, validateStandard(schema, value) and isZodSchema; make entity(), action(), page(), the server router, useAct, the URL invoker and the palette validate through it.
     - Rebuild core/schema.ts field helpers on zod/mini keeping the x-rex-field tags and the same exported names; add integer, real and json where entity storage needs them.
     - Move JSON Schema generation into manifest/build.ts using z.toJSONSchema for zod schemas and the declared jsonSchema otherwise, throwing REX210 when neither applies; remove toJsonSchema calls from core.

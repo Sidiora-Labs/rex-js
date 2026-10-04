@@ -10,7 +10,14 @@ import {
 } from "../core/page.ts";
 import { predicateToJson, type AnyPolicy } from "../core/policy.ts";
 import { compareIds } from "../core/registry.ts";
-import { refTarget, type z } from "../core/schema.ts";
+import {
+  objectJsonSchema,
+  refTarget,
+  toJsonSchema,
+  type JsonSchema,
+  type z,
+} from "../core/schema.ts";
+import { standardSource, type ZodSchemaLike } from "../core/standard.ts";
 import {
   MANIFEST_VERSION,
   type FlowSource,
@@ -47,6 +54,45 @@ function sortedIds(items: readonly { readonly id: string }[]): string[] {
   return items.map((item) => item.id).sort();
 }
 
+function unrepresentable(subject: string, problem: string): RexError {
+  return new RexError("REX210", `buildManifest: ${subject} ${problem}`);
+}
+
+export function declaredJsonSchema(
+  schema: ZodSchemaLike,
+  override: JsonSchema | null,
+  io: "input" | "output",
+  subject: string,
+): JsonSchema {
+  if (override !== null) return override;
+  const source = standardSource(schema);
+  if (source !== null) {
+    throw unrepresentable(
+      subject,
+      `is a ${source["~standard"].vendor} Standard Schema; declare jsonSchema.${io} on the declaration`,
+    );
+  }
+  try {
+    return toJsonSchema(schema, io);
+  } catch (error) {
+    throw unrepresentable(
+      subject,
+      `cannot be represented as JSON Schema: ${(error as Error).message}`,
+    );
+  }
+}
+
+function entityJsonSchema(declared: AnyEntity): JsonSchema {
+  try {
+    return objectJsonSchema(declared.fields);
+  } catch (error) {
+    throw unrepresentable(
+      `entity "${declared.id}" fields`,
+      `cannot be represented as JSON Schema: ${(error as Error).message}`,
+    );
+  }
+}
+
 function entityManifest(declared: AnyEntity): ManifestEntity {
   return {
     id: declared.id,
@@ -57,7 +103,7 @@ function entityManifest(declared: AnyEntity): ManifestEntity {
       ref: refTarget(schema as z.ZodType) ?? null,
       required: !(schema as z.ZodType).safeParse(undefined).success,
     })),
-    schema: declared.jsonSchema,
+    schema: entityJsonSchema(declared),
   };
 }
 
@@ -70,8 +116,18 @@ function actionManifest(declared: AnyAction): ManifestAction {
     invalidates: [...declared.invalidates].sort(),
     form: declared.form === null ? null : { ...declared.form },
     policy: predicateToJson(declared.policy),
-    input: declared.inputJsonSchema,
-    output: declared.outputJsonSchema,
+    input: declaredJsonSchema(
+      declared.input,
+      declared.jsonSchema?.input ?? null,
+      "input",
+      `action "${declared.id}" input`,
+    ),
+    output: declaredJsonSchema(
+      declared.output,
+      declared.jsonSchema?.output ?? null,
+      "output",
+      `action "${declared.id}" output`,
+    ),
   };
 }
 
@@ -85,7 +141,7 @@ function pageManifest(declared: AnyPage, render: PageRender): ManifestPage {
     id: declared.id,
     route: declared.route,
     routeParams: [...declared.routeParams],
-    params: declared.paramsJsonSchema,
+    params: declaredJsonSchema(declared.params, null, "input", `page "${declared.id}" params`),
     policy: predicateToJson(declared.policy),
     recovery: declared.recovery,
     draft: declared.draft,

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useSearch } from "wouter";
-import { actionLabel } from "../act.ts";
+import { actionLabel, inputProblem } from "../act.ts";
 import { useOutcomeStore } from "../outcome.ts";
 import { useActivePage } from "../router.tsx";
 import { usePageInvokers } from "./confirm.tsx";
@@ -64,7 +64,23 @@ export function useUrlInvoke(): void {
       });
       return;
     }
-    void invokers.invoke(invocation.action, invocation.ok ? invocation.input : {});
+    if (declared === undefined) {
+      void invokers.invoke(invocation.action, invocation.ok ? invocation.input : {});
+      return;
+    }
+    const input = invocation.ok ? invocation.input : {};
+    void inputProblem(declared, input).then((problem) => {
+      if (problem === null) {
+        void invokers.invoke(declared.id, input);
+        return;
+      }
+      outcomes.set(pageId, {
+        actionId: declared.id,
+        ok: false,
+        message: problem,
+        at: new Date().toISOString(),
+      });
+    });
   }, [active, invokers, location, navigate, outcomes, search]);
 }
 
