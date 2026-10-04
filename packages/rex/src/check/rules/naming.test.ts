@@ -205,7 +205,7 @@ describe("naming rule", () => {
       "app/pages/index.tsx is a barrel; app/pages has no index files",
     ]);
     expect(result.findings[0]?.hint).toBe(
-      "Move ping.tsx to app/pages, app/actions, app/entities, app/policies, app/flows, app/components or app/data.",
+      "Move ping.tsx to app/pages, app/actions (at any depth, as a .ts file), app/entities, app/policies, app/flows, app/components, app/data or app/server.",
     );
     expect(result.findings[2]?.hint).toBe(
       "A page folder holds page.ts, view.tsx, states.tsx, hooks/, regions/<region>/region.tsx, regions/<region>/parts/, overlays/ and test/; move format.ts into one of them under app/pages/home/.",

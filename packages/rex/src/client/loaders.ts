@@ -19,6 +19,7 @@ import { formatIssues, validateStandard } from "../core/standard.ts";
 import { isPlainObject } from "../core/entity.ts";
 import { procedureOf, useRexClient, type RexClient } from "./context.ts";
 import { useActivePage } from "./router.tsx";
+import { STATIC_LOADER_DEFAULTS, isStaticHost } from "./static-host.ts";
 
 export const LOADER_QUERY_SCOPE = "loader";
 
@@ -268,6 +269,7 @@ export function loaderQueryOptions(source: LoaderQueryOptionsInput): LoaderQuery
     refetchOnMount: source.consumer === true ? false : refetchUnlessServerSeeded,
     enabled: source.enabled ?? true,
   };
+  if (isStaticHost()) return { ...options, ...STATIC_LOADER_DEFAULTS };
   return declared.cache === null ? options : { ...options, staleTime: declared.cache.staleTime };
 }
 

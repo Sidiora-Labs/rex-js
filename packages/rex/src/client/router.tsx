@@ -31,6 +31,7 @@ import { useActor, useManifest, useRegistry } from "./context.ts";
 import { useFallback } from "./fallback-host.ts";
 import { useI18n } from "./i18n/context.ts";
 import { localePrefix, localizeHref, stripLocalePrefix } from "./i18n/locale.ts";
+import { isStaticHost, navigateDocument } from "./static-host.ts";
 
 export { RESERVED_QUERY_KEYS };
 export const DRAFT_QUERY_KEY = "draft";
@@ -344,10 +345,16 @@ RouteChangeContext.displayName = "RexRouteChange";
 export function useRouteChange(): RouteChange {
   const routes = useContext(RouteChangeContext);
   const [, navigate] = useLocation();
+  const { base } = useRouter();
   const own = useCallback<RouteChange>(
-    (target, href, { replace }) =>
-      runRouteChange(target.transition, () => navigate(href, { replace })),
-    [navigate],
+    (target, href, { replace }) => {
+      if (isStaticHost()) {
+        navigateDocument(`${base}${href}`, { replace });
+        return;
+      }
+      runRouteChange(target.transition, () => navigate(href, { replace }));
+    },
+    [base, navigate],
   );
   return routes ?? own;
 }
@@ -481,7 +488,7 @@ export function RexRoutes({ render }: RexRoutesProps) {
 
   useEffect(() => {
     const navigation = navigationHost();
-    if (navigation === undefined) return;
+    if (navigation === undefined || isStaticHost()) return;
     const scope: DestinationScope = {
       pages,
       origin: globalThis.location.origin,
