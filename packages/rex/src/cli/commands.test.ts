@@ -662,17 +662,30 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
       const built = await buildApp(root, { logLevel: "silent", target: "static" });
       expect(built.target).toBe("static");
       expect(built.serverFile).toBeNull();
-      expect(built.prerenderFile).toBeNull();
+      expect(built.manifestFile).toBeNull();
+      expect(built.prerenderFile).toBe(join(root, DIST_DIR, PRERENDER_LIST_FILE));
       expect(built.apiOrigin).toBe(API_ORIGIN);
       expect(writtenLayout(built)).toBe(`${DIST_DIR}/${CLIENT_DIR}/`);
       expect(startHint(built)).toBe(
         `serve ${DIST_DIR}/${CLIENT_DIR}/ from any static host; the client calls ${API_ORIGIN}`,
       );
       const outDir = join(root, DIST_DIR);
-      expect(readdirSync(outDir)).toEqual([CLIENT_DIR]);
+      expect(readdirSync(outDir).sort()).toEqual([CLIENT_DIR, PRERENDER_LIST_FILE].sort());
       const clientDir = join(outDir, CLIENT_DIR);
       expect(existsSync(join(clientDir, "index.html"))).toBe(true);
+      expect(existsSync(join(clientDir, "404.html"))).toBe(true);
+      expect(existsSync(join(clientDir, "rex", "manifest"))).toBe(true);
       expect(entryScript(clientDir)).toMatch(/baseUrl:\s*(["`])https:\/\/api\.example\.test\1/);
+      expect(
+        readdirSync(clientDir, { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile() && entry.name.endsWith(".js"))
+          .some((entry) =>
+            /["'`]\/rex\/manifest["'`]/.test(
+              readFileSync(join(entry.parentPath, entry.name), "utf8"),
+            ),
+          ),
+        "a static client with client.apiOrigin asks its API server for the manifest and the actor",
+      ).toBe(true);
 
       const node = await buildApp(root, { logLevel: "silent", target: "node" });
       expect(node.serverFile).toBe(join(outDir, SERVER_FILE));

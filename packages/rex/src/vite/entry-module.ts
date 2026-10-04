@@ -15,6 +15,7 @@ import {
 declare module "./plugin.ts" {
   interface RexPluginOptions {
     readonly apiOrigin?: string | null;
+    readonly staticHost?: boolean;
   }
 }
 
@@ -25,6 +26,8 @@ export interface EntryModuleOptions {
 }
 
 export const API_FETCH_EXPORT = "apiFetch";
+export const STATIC_HOST_ENV_KEY = "REX_STATIC_HOST";
+export const STATIC_HOST_DEFINE = `import.meta.env.${STATIC_HOST_ENV_KEY}`;
 
 export function runtimeStylesheets(client: string): readonly string[] {
   const dir = dirname(client);
@@ -62,6 +65,11 @@ export function entryModuleHook(context: RexHookContext): Plugin {
   return {
     name: "rex:entry",
     enforce: "pre",
+    config: () => ({
+      define: {
+        [STATIC_HOST_DEFINE]: JSON.stringify(context.options.staticHost === true),
+      },
+    }),
     resolveId(id) {
       return id === ENTRY_MODULE_ID ? RESOLVED_ENTRY_MODULE_ID : null;
     },

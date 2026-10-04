@@ -30,6 +30,12 @@ import {
 import { OutcomeProvider, useOutcomeStore, type Outcome, type OutcomeStore } from "./outcome.ts";
 import { orderPages } from "./router.tsx";
 
+declare global {
+  interface ImportMetaEnv {
+    readonly REX_STATIC_HOST?: boolean;
+  }
+}
+
 export type RexFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
 
 export interface DensitySlotProps {
@@ -263,9 +269,17 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
   const Density = options.density ?? PassthroughDensity;
   const onOutcome = options.onOutcome;
   const onNavigate = options.onNavigate;
+  if (import.meta.env.REX_STATIC_HOST === true && options.manifest === undefined) {
+    throw new RexStartupError("a static build starts from the manifest inlined in its bundle");
+  }
   const provided: StartupValue | null =
-    options.manifest !== undefined && options.actor !== undefined
-      ? { manifest: checkManifest(options.manifest, registry), actor: options.actor, density: null }
+    options.manifest !== undefined &&
+    (options.actor !== undefined || import.meta.env.REX_STATIC_HOST === true)
+      ? {
+          manifest: checkManifest(options.manifest, registry),
+          actor: options.actor ?? anonymousActor,
+          density: null,
+        }
       : null;
 
   function RexApp({ children }: RexAppProps) {
@@ -280,7 +294,7 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
     );
 
     useEffect(() => {
-      if (provided !== null) return;
+      if (import.meta.env.REX_STATIC_HOST === true || provided !== null) return;
       const controller = new AbortController();
       setStartup({ status: "loading" });
       loadStartup(options, base, controller.signal).then(

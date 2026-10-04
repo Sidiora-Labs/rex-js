@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -45,12 +46,17 @@ import {
 import { useLoader } from "../client/loaders.ts";
 import { rex } from "./plugin.ts";
 import {
+  NOT_FOUND_FILE,
   type PrerenderRuntime,
   expandPagePaths,
   formatPrerenderList,
   prerenderPages,
+  prerenderedTextFile,
   routePath,
+  shellDocumentPages,
   stripHydration,
+  writeShellDocuments,
+  writeStaticManifest,
 } from "./prerender.ts";
 import { readClientManifest, readSsrAssets } from "./ssr-css.ts";
 
@@ -668,6 +674,97 @@ describe("prerender guards", () => {
           '@font-face{font-family:"Mono";src:url("/fonts/mono.ttf") format("truetype");font-style:normal;font-display:swap}' +
           "</style>",
       );
+    }
+  });
+});
+
+describe("static target shell documents", () => {
+  const SHELL =
+    '<!doctype html><html><body><div id="root"></div><script type="module" src="/assets/entry.js"></script></body></html>';
+
+  function shellApp() {
+    const home = page("home", { route: "/", regions: ["main"] });
+    const panel = page("console", {
+      route: "/console",
+      render: "csr",
+      regions: ["main"],
+    });
+    const item = page("item", {
+      route: "/items/:id",
+      params: z.object({ id: text({ min: 1, max: 40 }) }),
+      regions: ["main"],
+    });
+    const about = page("about", {
+      route: "/about",
+      render: "static",
+      regions: ["main"],
+    });
+    const news = page("news", {
+      route: "/news",
+      render: "ssg",
+      regions: ["main"],
+    });
+    return buildManifest(createRegistry().register(home, panel, item, about, news).freeze(), {
+      app: "shells",
+    });
+  }
+
+  it("names index.md beside every prerendered index.html", () => {
+    expect(prerenderedTextFile("/")).toBe("index.md");
+    expect(prerenderedTextFile("/about")).toBe("about/index.md");
+    expect(prerenderedTextFile("/guides/intro")).toBe("guides/intro/index.md");
+    expect(prerenderedTextFile("/guides/a%20b/")).toBe("guides/a b/index.md");
+  });
+
+  it("lists the ssr and csr pages without route params, in route order", () => {
+    expect(shellDocumentPages(shellApp())).toEqual([
+      { id: "home", route: "/" },
+      { id: "console", route: "/console" },
+    ]);
+  });
+
+  it("writes the shell at each listed route and as 404.html, never over a prerendered path", () => {
+    const dir = mkdtempSync(join(tmpdir(), "rex-shells-"));
+    try {
+      const prerendered = {
+        version: 1 as const,
+        pages: [
+          {
+            path: "/",
+            page: "landing",
+            render: "static" as const,
+            revalidate: null,
+            file: "index.html",
+            generatedAt: 0,
+          },
+        ],
+      };
+      writeFileSync(join(dir, "index.html"), "prerendered landing");
+      const written = writeShellDocuments(dir, SHELL, shellApp(), prerendered);
+      expect(written).toEqual([
+        { path: "/console", page: "console", file: "console/index.html" },
+        { path: null, page: null, file: NOT_FOUND_FILE },
+      ]);
+      expect(readFileSync(join(dir, "console", "index.html"), "utf8")).toBe(SHELL);
+      expect(readFileSync(join(dir, NOT_FOUND_FILE), "utf8")).toBe(SHELL);
+      expect(readFileSync(join(dir, "index.html"), "utf8")).toBe("prerendered landing");
+      expect(existsSync(join(dir, "items"))).toBe(false);
+      expect(existsSync(join(dir, "about"))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes the manifest body at rex/manifest", () => {
+    const dir = mkdtempSync(join(tmpdir(), "rex-static-manifest-"));
+    try {
+      const body = JSON.stringify(shellApp());
+      const file = writeStaticManifest(dir, body);
+      expect(file).toBe(join(dir, "rex", "manifest"));
+      expect(readFileSync(file, "utf8")).toBe(body);
+      expect(readdirSync(join(dir, "rex"))).toEqual(["manifest"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });
