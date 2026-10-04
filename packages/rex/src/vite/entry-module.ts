@@ -24,6 +24,8 @@ export interface EntryModuleOptions {
   readonly apiOrigin?: string | null;
 }
 
+export const API_FETCH_EXPORT = "apiFetch";
+
 export function runtimeStylesheets(client: string): readonly string[] {
   const dir = dirname(client);
   return RUNTIME_STYLESHEETS.map((file) => normalizePath(join(dir, file)));
@@ -32,13 +34,17 @@ export function runtimeStylesheets(client: string): readonly string[] {
 export function generateEntryModule(options: EntryModuleOptions): string {
   const rootElement = options.rootElement ?? ROOT_ELEMENT_ID;
   const apiOrigin = options.apiOrigin ?? null;
-  const baseUrl = apiOrigin === null ? null : `baseUrl: ${JSON.stringify(apiOrigin)}`;
+  const baseUrl =
+    apiOrigin === null ? null : `baseUrl: ${JSON.stringify(apiOrigin)}, fetch: ${API_FETCH_EXPORT}`;
   return [
     ...runtimeStylesheets(options.client).map((file) => `import ${JSON.stringify(file)};`),
     'import { StrictMode, createElement } from "react";',
     'import { createRoot } from "react-dom/client";',
     `import { createRexEntry } from ${JSON.stringify(options.client)};`,
     `import { startRexEntry } from ${JSON.stringify(options.client)};`,
+    ...(apiOrigin === null
+      ? []
+      : [`import { ${API_FETCH_EXPORT} } from ${JSON.stringify(options.client)};`]),
     `import app from ${JSON.stringify(APP_MODULE_ID)};`,
     "",
     `const container = document.getElementById(${JSON.stringify(rootElement)});`,

@@ -41,3 +41,5 @@ export {
 export * from "./adapters/static-cache.ts";
 export * from "./middleware/telemetry.ts";
 export * from "./loaders.ts";
+export * from "./middleware/cors.ts";
+export * from "./routes/pages-text.ts";
