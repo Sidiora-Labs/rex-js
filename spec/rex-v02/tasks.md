@@ -224,8 +224,11 @@
     - Run the unchanged size test, the package build and the demo build; if a budget still fails, record the measured number, the five largest contributors and the cause as a blocker; never relax a budget.
     - _Requirements: 3.4, 7.1, 7.2, 5.1, 5.4, 11.3_
   - [ ] 7.3 Re-qualify the tasks that ended implemented once their blockers are merged
-    - For each of 0.7, 0.8, 3.7, 5.2 and 5.5 (and 6.2 if it ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release.
-    - _Requirements: 7.1, 22.2, 29.1, 32.1, 3.4_
+    - For each of 0.7, 0.8, 2.7, 3.7, 5.2, 5.5 and 6.1 (and 6.2 if it ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release.
+    - _Requirements: 7.1, 22.2, 29.1, 32.1, 3.4, 16.2, 34.1_
+  - [ ] 7.4 rex/testing sends the request Origin and the demo page tests pass
+    - Make testServer and the helpers in src/testing send Origin: <server origin> on every request they issue (RPC, form and flow posts), the same header a browser sends, so the security middleware admits them; the Origin rule itself is not relaxed. Fix whatever else the demo page tests from 2.7 report inside src/testing or the demo tests, never by weakening an assertion; extend src/testing/testing.test.tsx with a case that proves a POST through the helpers is admitted and a foreign Origin is rejected.
+    - _Requirements: 16.1, 16.2, 25.2_
 
 ## Task Dependency Graph
 
@@ -239,7 +242,7 @@
     { "id": 4,  "tasks": ["4.1", "4.2", "4.3", "4.4", "4.5"] },
     { "id": 5,  "tasks": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9"] },
     { "id": 6,  "tasks": ["6.1", "6.2", "6.3"] },
-    { "id": 7,  "tasks": ["7.1", "7.2", "7.3"] }
+    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4"] }
   ]
 }
 ```
