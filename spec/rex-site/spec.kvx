@@ -196,14 +196,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.6]
 title = "The Pages deployment: the site workflow deploys the static build to rex.sidioralabs.com"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["1.1", "2.5"]
 reqs = ["4.3", "6.2"]
 do_1 = "site/package.json build:static runs rex build --target static; .github/workflows/site.yml gains the e2e job (Playwright browsers, pnpm -C site test:e2e on the built directory, reports uploaded as an artifact) and the deploy job on push to main only (actions/configure-pages, actions/upload-pages-artifact of site/dist/client, actions/deploy-pages, permissions pages write and id-token write, environment github-pages, concurrency group pages cancel-in-progress false); every action pinned by major version, pnpm with caching, timeouts and read-only default permissions."
 do_2 = "tools/site-verify.mjs checks a built directory: CNAME, robots.txt, 404.html, rex/manifest, sitemap.xml, og.png, index.html for every route the manifest lists and every path, and every internal href and src in every HTML file resolving to a built file; site/app/server/content/sitemap.ts or a build step writes sitemap.xml from the manifest routes and paths; docs/releasing.md gains the site deployment section (the workflow, the Pages settings: source GitHub Actions, custom domain rex.sidioralabs.com, enforce HTTPS, and the DNS CNAME record); README.md links https://rex.sidioralabs.com in its first paragraph."
-touches = ["site/package.json", "site/public", "site/app/server/content/sitemap.ts", "site/scripts", ".github/workflows/site.yml", "tools/site-verify.mjs", "docs/releasing.md", "README.md"]
+touches = ["site/package.json", "site/scripts", ".github/workflows/site.yml", "tools/site-verify.mjs", "docs/releasing.md", "README.md"]
 verify_cmd = "pnpm -C site build:static && node tools/site-verify.mjs site/dist/client && node tools/check-links.mjs"
 gate_kind = "planned"
 max_builds = 1
