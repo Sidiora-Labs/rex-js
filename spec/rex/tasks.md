@@ -168,7 +168,7 @@
     - Implement src/cli/commands/make.ts: rex make page <id> --regions a,b --overlays X,Y writing the full page folder; rex make region|part|overlay <page> <name>; rex make action|entity|policy|flow <name>; rex make hook <page> <name>; every command refuses to overwrite and reports each written path.
     - Write src/cli/make.test.ts generating into a temporary directory and asserting the exact file set, the page.ts declaration contents and the overwrite refusal.
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
-  - [ ] 4.4 Implement rex new and rex promote
+  - [x] 4.4 Implement rex new and rex promote
     - Implement src/cli/commands/new.ts: rex new <name> writing a complete app (package.json, tsconfig, index.html, rex.config.ts, app/ with one home page, one entity, one action, one policy, app/components, app/data) that passes rex check with zero findings.
     - Implement src/cli/commands/promote.ts: rex promote <page>/regions/<region>/parts/<Part> moving the file to app/components/<Part>.tsx and rewriting imports within the source page.
     - Add src/vite/rex-app.d.ts declaring the ambient module rex:app with default and named exports typed by RexAppBundle, reference it from src/vite/index.ts with a triple-slash directive, and have the generated app tsconfig include it so rex new passes typecheck (closes qualification.2 from wave 4).
