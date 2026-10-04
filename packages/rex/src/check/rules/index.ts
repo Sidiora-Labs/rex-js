@@ -3,6 +3,7 @@ import { formatFindings } from "../report.ts";
 import type { Rule } from "../rule.ts";
 import { a11yRule } from "./a11y.ts";
 import { boundariesRule } from "./boundaries.ts";
+import { formatRule } from "./format.ts";
 import { i18nRule } from "./i18n.ts";
 import { manifestRule } from "./manifest.ts";
 import { namingRule } from "./naming.ts";
@@ -27,6 +28,7 @@ export const defaultRules: readonly Rule[] = Object.freeze([
   a11yRule,
   renderRule,
   i18nRule,
+  formatRule,
 ]);
 
 export interface RunCheckOptions {
