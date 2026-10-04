@@ -11,6 +11,7 @@ import * as zm from "zod/mini";
 import type { JsonSchema } from "../core/schema.ts";
 import { REX_DATA_STATES } from "../core/states.ts";
 import { toJsonSchema } from "./json-schema.ts";
+import { REX_POINTERS, REX_SCREENS, REX_SCREEN_DENSITIES } from "./types.ts";
 
 export { INVOCATION_ROUTES, SIDECAR_ELEMENT_ID, SIDECAR_MIME_TYPE, SIDECAR_VERSION };
 export type { InvocationRoute };
@@ -67,6 +68,8 @@ export const sidecarLoaderSchema = zm.strictObject({
   invalidatedBy: uniqueList(nonEmpty()),
 });
 
+export const SIDECAR_SCREEN_FIELDS = ["screen", "pointer", "density"] as const;
+
 export const sidecarSchema = zm
   .strictObject({
     version: zm.literal(SIDECAR_VERSION),
@@ -79,6 +82,9 @@ export const sidecarSchema = zm
     regions: zm.optional(zm.array(sidecarRegionSchema).check(zm.minLength(1))),
     stores: zm.optional(sidecarStoresSchema),
     loaders: zm.optional(zm.array(sidecarLoaderSchema)),
+    screen: zm.optional(zm.enum(REX_SCREENS)),
+    pointer: zm.optional(zm.enum(REX_POINTERS)),
+    density: zm.optional(zm.enum(REX_SCREEN_DENSITIES)),
   })
   .check(
     zm.superRefine((payload, ctx) => {
@@ -126,6 +132,17 @@ export const sidecarSchema = zm
         }
         loaderNames.add(loader.name);
       });
+      const fit = SIDECAR_SCREEN_FIELDS.filter((field) => payload[field] !== undefined);
+      if (fit.length > 0) {
+        for (const field of SIDECAR_SCREEN_FIELDS) {
+          if (payload[field] !== undefined) continue;
+          ctx.addIssue({
+            code: "custom",
+            path: [field],
+            message: "screen, pointer and density appear together",
+          });
+        }
+      }
       if (payload.stores !== undefined && Object.keys(payload.stores).length === 0) {
         ctx.addIssue({
           code: "custom",

@@ -13,7 +13,8 @@ import {
   createOverlayRegistry,
   readSidecar,
 } from "./agent/sidecar.tsx";
-import { createRexApp } from "./app.tsx";
+import { DensityProvider } from "./agent/density.ts";
+import { createRexApp, type DensitySlotProps } from "./app.tsx";
 import * as client from "./index.ts";
 import {
   overlay,
@@ -24,7 +25,37 @@ import {
 } from "./overlay.tsx";
 import { definePageModules, region, view, type PageModuleSet } from "./page.tsx";
 import { RexRoutes } from "./router.tsx";
+import { createScreenSource, type MatchMedia, type ScreenSource } from "./screen.ts";
 import { Shell, ShellOutcome, type OutcomeSlotProps } from "./shell.tsx";
+import {
+  DEFAULT_SHELL_COMPONENTS,
+  ShellComponentsProvider,
+  type ShellComponents,
+  type ShellSheetProps,
+} from "./shell/components.ts";
+
+function stubMatchMedia(width: number, coarse: boolean): MatchMedia {
+  const matches = (media: string) =>
+    media.split(" and ").every((part) => {
+      const [, feature, value = ""] = /\(([a-z-]+):\s*([^)]+)\)/.exec(part) ?? [];
+      if (feature === "min-width") return width >= Number.parseFloat(value);
+      if (feature === "max-width") return width <= Number.parseFloat(value);
+      if (feature === "pointer") return (value === "coarse") === coarse;
+      return false;
+    });
+  return (media) =>
+    Object.assign(new EventTarget(), {
+      media,
+      matches: matches(media),
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+    }) as unknown as MediaQueryList;
+}
+
+function screenSource(width: number, coarse: boolean): ScreenSource {
+  return createScreenSource({ matchMedia: stubMatchMedia(width, coarse), width: () => width });
+}
 
 const TokenSheet = overlay("TokenSheet", { dismiss: "both", binding: "region" }, ({ close }) => (
   <div>
@@ -105,20 +136,54 @@ function Slot({ page: pageId }: OutcomeSlotProps) {
   );
 }
 
-function mount(path: string) {
+interface MountOptions {
+  readonly screen?: ScreenSource;
+  readonly components?: ShellComponents;
+}
+
+function mount(path: string, options: MountOptions = {}) {
   const memory = memoryLocation({ path, record: true });
   const overlays = createOverlayRegistry();
-  const RexApp = createRexApp({ registry, manifest, actor: viewer, baseUrl: "http://rex.test" });
+  const source = options.screen;
+  function Density({ children }: DensitySlotProps) {
+    return source === undefined ? (
+      children
+    ) : (
+      <DensityProvider search="" header={null} screen={source}>
+        {children}
+      </DensityProvider>
+    );
+  }
+  const RexApp = createRexApp({
+    registry,
+    manifest,
+    actor: viewer,
+    baseUrl: "http://rex.test",
+    density: Density,
+  });
+  const shell = <Shell pages={pages} outcome={Slot} />;
   render(
     <OverlayRegistryProvider registry={overlays}>
       <RexApp>
         <Router hook={memory.hook}>
-          <Shell pages={pages} outcome={Slot} />
+          {options.components === undefined ? (
+            shell
+          ) : (
+            <ShellComponentsProvider components={options.components}>
+              {shell}
+            </ShellComponentsProvider>
+          )}
         </Router>
       </RexApp>
     </OverlayRegistryProvider>,
   );
   return { memory, overlays };
+}
+
+function sidecarPayload(): SidecarPayload {
+  const result = validateSidecar(readSidecar(document));
+  if (!result.valid) throw new Error(JSON.stringify(result.issues));
+  return result.payload;
 }
 
 function sidecarOverlays(): SidecarPayload["overlays"] {
@@ -302,5 +367,75 @@ describe("URL-bound overlays", () => {
       memory.navigate("/");
     });
     expect(overlays.isOpen("send", "TokenSheet")).toBe(false);
+  });
+});
+
+describe("overlay forms by screen", () => {
+  it("renders the token Sheet as a dialog on desktop and tablet", async () => {
+    for (const [width, label] of [
+      [1440, "desktop"],
+      [820, "tablet"],
+    ] as const) {
+      mount("/send", { screen: screenSource(width, false) });
+      expect(sidecarPayload().screen).toBe(label);
+      await openWith("Choose token");
+      const sheet = dialog("TokenSheet") as HTMLElement;
+      expect(sheet.getAttribute("data-rex-overlay-form")).toBe("dialog");
+      expect(sheet.querySelector('[data-rex-sheet-form="dialog"]')).not.toBeNull();
+      expect(sheet.querySelector(".rex-sheet-handle")).toBeNull();
+      cleanup();
+    }
+  });
+
+  it("renders the token Sheet as a bottom sheet on phone with the same address, dismissal and sidecar entry", async () => {
+    const { memory } = mount("/send", { screen: screenSource(390, true) });
+    expect(sidecarPayload()).toMatchObject({ screen: "phone", pointer: "coarse" });
+    const trigger = await openWith("Choose token");
+    const sheet = dialog("TokenSheet") as HTMLElement;
+    expect(sheet.getAttribute("role")).toBe("dialog");
+    expect(sheet.getAttribute("data-rex-overlay-form")).toBe("bottom-sheet");
+    expect(sheet.getAttribute("data-rex-overlay-dismiss")).toBe("both");
+    const body = sheet.querySelector('[data-rex-sheet-form="bottom-sheet"]') as HTMLElement;
+    expect(body).not.toBeNull();
+    expect(body.querySelector(".rex-sheet-handle")?.getAttribute("aria-hidden")).toBe("true");
+    expect(within(sheet).getByRole("heading", { name: "Token sheet" })).toBeTruthy();
+    expect(trigger.getAttribute("data-rex-overlay-trigger")).toBe("send/TokenSheet");
+    expect(sidecarOverlays()).toContainEqual({ id: "TokenSheet", open: true, dismiss: "both" });
+    await act(async () => {
+      fireEvent.click(within(sheet).getByRole("button", { name: "Close" }));
+    });
+    expect(dialog("TokenSheet")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+
+    await openWith("Choose contact");
+    expect(memory.history.at(-1)).toBe("/send?overlay=ContactSheet");
+    const contact = dialog("ContactSheet") as HTMLElement;
+    expect(contact.getAttribute("data-rex-overlay-form")).toBe("bottom-sheet");
+    await key(within(contact).getByRole("textbox"), { key: "Escape" });
+    expect(dialog("ContactSheet")).toBeNull();
+    expect(sidecarOverlays()).toContainEqual({
+      id: "ContactSheet",
+      open: false,
+      dismiss: "escape",
+    });
+  });
+
+  it("passes the form to an overriding Sheet", async () => {
+    function FormSheet({ title, titleId, form, children }: ShellSheetProps) {
+      return (
+        <div data-testid="form-sheet" data-form={form}>
+          <h2 id={titleId}>{title}</h2>
+          {children}
+        </div>
+      );
+    }
+    const components: ShellComponents = { ...DEFAULT_SHELL_COMPONENTS, Sheet: FormSheet };
+    mount("/send", { screen: screenSource(390, true), components });
+    await openWith("Read note");
+    expect(screen.getByTestId("form-sheet").getAttribute("data-form")).toBe("bottom-sheet");
+    cleanup();
+    mount("/send", { screen: screenSource(1280, false), components });
+    await openWith("Read note");
+    expect(screen.getByTestId("form-sheet").getAttribute("data-form")).toBe("dialog");
   });
 });

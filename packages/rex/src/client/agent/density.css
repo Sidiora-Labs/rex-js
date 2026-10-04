@@ -28,3 +28,18 @@
   min-block-size: max(44px, var(--rex-hit-target));
   min-inline-size: max(44px, var(--rex-hit-target));
 }
+
+[data-rex-density="comfortable"] {
+  --rex-density-scale: 1;
+  --rex-density-text-scale: 1;
+}
+
+[data-rex-density="compact"] {
+  --rex-density-scale: 0.875;
+  --rex-density-text-scale: 0.9375;
+}
+
+[data-rex-density="agent"] {
+  --rex-density-scale: 1;
+  --rex-density-text-scale: 1;
+}

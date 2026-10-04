@@ -1,3 +1,4 @@
+import { installClientHints } from "./adapters/client-hints.ts";
 import type { RexServerInstaller } from "./app.ts";
 import { installLoaderRunner } from "./loaders.ts";
 import { installCorsMiddleware } from "./middleware/cors.ts";
@@ -9,4 +10,5 @@ export const REX_MIDDLEWARE: readonly RexServerInstaller[] = [
   installTelemetry,
   installLoaderRunner,
   installCorsMiddleware,
+  installClientHints,
 ];

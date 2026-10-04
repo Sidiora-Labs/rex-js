@@ -30,7 +30,12 @@ Other attributes the runtime renders:
 | `data-rex-confirm`, `data-rex-confirm-accept`, `data-rex-confirm-cancel` | the confirmation dialog and its buttons, each set to `<page>/<action>` |
 | `data-rex-palette`, `data-rex-palette-item="<page>/<action>"`, `data-rex-palette-page="<page>"` | the command palette and its entries |
 | `data-rex-sidecar="<page>"` | the sidecar script |
-| `data-rex-density` | on the document root: `default` or `agent` |
+| `data-rex-density` | on the document root: `comfortable`, `compact` or `agent` |
+| `data-rex-screen` | on the document root: `phone`, `tablet`, `desktop` or `wide` |
+| `data-rex-pointer` | on the document root: `coarse` or `fine` |
+| `data-rex-overlay-form` | on an open overlay: `dialog` or `bottom-sheet` |
+| `data-rex-sheet-form` | on the default Sheet inside an overlay: `dialog` or `bottom-sheet` |
+| `data-rex-nav-form` | on the shell navigation and the default frame: `bar`, `sidebar` or `dock` |
 | `data-rex-app-state` | `loading` or `error` while the app starts, `not-found` for an unknown route |
 | `data-rex-shell` | the shell container |
 
@@ -69,8 +74,13 @@ The payload shape is defined by `sidecarSchema` in `packages/rex/src/manifest/si
     dismiss: "escape" | "button" | "both",
   }>,
   outcome: { action: string, ok: boolean, message: string, at: string /* ISO datetime */ } | null,
+  screen?: "phone" | "tablet" | "desktop" | "wide",
+  pointer?: "coarse" | "fine",
+  density?: "comfortable" | "compact" | "agent",
 }
 ```
+
+`screen`, `pointer` and `density` are present together whenever the page runs under the runtime's screen provider (every app started with `createRexEntry` or rendered by the server); they carry the same values as the `data-rex-screen`, `data-rex-pointer` and `data-rex-density` attributes on the document root and change with them. `SIDECAR_SCREEN_FIELDS` names them, and the schema rejects a payload that carries only some of the three.
 
 Additional constraints checked by the schema: an allowed action has `reason: null`, a disallowed action has a non-null reason, and action ids and overlay ids are unique. `actions` lists the page's declared actions in declaration order, followed by registered affordances such as flow approval gates. `via` is `click`, `key`, `palette`, `url` for a declared action, without `key` when the action has no shortcut; flow gate affordances list `click` and `palette`.
 
@@ -138,7 +148,7 @@ Cancelling records `<label> cancelled` with code `CANCELLED`.
 
 ## Density
 
-The density preference is `default` or `agent` (`REX_DENSITIES` in `packages/rex/src/server/context.ts`). `DensityProvider`, which `createRexEntry` mounts at the root, resolves it in this order (`resolveDensity` in `packages/rex/src/client/agent/density.ts`):
+The density preference is `default` or `agent` on the wire (`REX_DENSITIES` in `packages/rex/src/server/context.ts`), and the client also accepts `comfortable` and `compact` (`DENSITY_PREFERENCES` in `packages/rex/src/client/agent/density.ts`). `DensityProvider`, which `createRexEntry` mounts at the root, resolves it in this order (`resolveDensity`):
 
 1. a value set at runtime with `useDensity().setDensity(...)`, which is also stored;
 2. the `density` query parameter of the page URL;
@@ -148,13 +158,32 @@ The density preference is `default` or `agent` (`REX_DENSITIES` in `packages/rex
 
 The server echoes `x-rex-density` on the manifest response only when the request carried that header, and sets it on every `/rex/rpc` response to the request's density (`default` when absent). A header value other than `default` or `agent` is answered with status 400 and `{ "code": "BAD_REQUEST" }`. In `rex dev`, the Vite plugin copies a `density` query parameter on a `/rex` request into the `x-rex-density` header (`forwardDensity`).
 
-The resolved density is written to `data-rex-density` on the document root. With `agent`:
+The resolved preference maps to the screen density (`screenDensity` in `packages/rex/src/client/screen.ts`): `default` and `comfortable` become `comfortable`, `compact` stays `compact` and `agent` stays `agent`. The screen density is written to `data-rex-density` on the document root and is the sidecar's `density`. `compact` scales the spacing tokens by 0.875 and the type tokens by 0.9375 (`density.css`). With `agent`:
 
 - `density.css` sets animation and transition durations and delays to 0 and `--rex-motion-duration` to `0ms`;
 - links, buttons, inputs, selects, textareas, summaries, `role="option"` elements and any `[data-rex]` element get a minimum block and inline size of 44px (`--rex-hit-target`);
 - every closed `<details>` element is opened, including ones added later (a `MutationObserver`), and `[data-rex-collapsible-content]` is shown.
 
 Density is an attribute on the same component tree, not a separate agent view.
+
+## Screen
+
+The runtime classifies the screen and the pointer and writes both on the document root next to the density (`packages/rex/src/client/screen.ts`):
+
+| Attribute | Values | Source |
+| --- | --- | --- |
+| `data-rex-screen` | `phone` under 600 px, `tablet` under 1024 px, `desktop` under 1600 px, `wide` | `SCREEN_QUERIES` through `matchMedia`, refreshed on every query change and by a `ResizeObserver` on the root |
+| `data-rex-pointer` | `coarse` or `fine` | `matchMedia("(pointer: coarse)")` |
+| `data-rex-density` | `comfortable`, `compact` or `agent` | the density preference above |
+
+The first server response already carries the three attributes on `<html>`: `screenFromRequest` in `packages/rex/src/server/ssr.ts` reads `Sec-CH-Viewport-Width` and `Sec-CH-UA-Mobile`, falls back to the `User-Agent` when no hint is sent, and takes the density from the `density` query parameter or the `x-rex-density` header. Every HTML response carries `Accept-CH: Sec-CH-UA-Mobile, Sec-CH-Viewport-Width` and the same names in `Vary` (`packages/rex/src/server/adapters/client-hints.ts`), so the browser sends the hints from the next request on; the node adapter's `index.html` fallback carries them too. On hydration the client starts from the server's attributes and then follows the live screen.
+
+`useScreen()` returns `{ screen, pointer, density }`. Under a coarse pointer every link, button, input, select, textarea, summary, `role="option"` element and `[data-rex]` control has a minimum block and inline size of 44px. The type (`--rex-text-1` to `--rex-text-6`) and space (`--rex-space-1` to `--rex-space-8`) tokens are `clamp()` ranges keyed by `data-rex-screen` and scaled by the density, and `Page.Grid` is an inline-size container whose columns collapse by its own width.
+
+The shell picks its forms from the screen without changing any address:
+
+- the navigation (`Nav` slot) is a `dock` fixed after the content on phone, a `bar` in the app bar on tablet and a `sidebar` beside the content on desktop and wide screens; its links keep `data-rex-nav`;
+- an overlay renders its `Sheet` slot as a `bottom-sheet` on phone and a `dialog` on tablet, desktop and wide screens; `data-rex-overlay`, `data-rex-overlay-trigger`, `data-rex-overlay-close`, the declared dismissal and the sidecar `overlays` entry are the same in both forms.
 
 ## Overlays
 

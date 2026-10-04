@@ -12,6 +12,15 @@ import type { RexDataState } from "../core/states.ts";
 
 export const MANIFEST_VERSION = 1;
 
+export const REX_SCREENS = ["phone", "tablet", "desktop", "wide"] as const;
+export type RexScreen = (typeof REX_SCREENS)[number];
+
+export const REX_POINTERS = ["coarse", "fine"] as const;
+export type RexPointer = (typeof REX_POINTERS)[number];
+
+export const REX_SCREEN_DENSITIES = ["comfortable", "compact", "agent"] as const;
+export type RexScreenDensity = (typeof REX_SCREEN_DENSITIES)[number];
+
 export interface ManifestApp {
   readonly name: string;
 }

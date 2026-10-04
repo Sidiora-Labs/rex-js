@@ -8,7 +8,8 @@ import { actor, type Actor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { createRegistry } from "../core/registry.ts";
 import { buildManifest } from "../manifest/build.ts";
-import { createRexApp } from "./app.tsx";
+import { DensityProvider } from "./agent/density.ts";
+import { createRexApp, type DensitySlotProps } from "./app.tsx";
 import basicPage, { greet } from "./fixtures/page-basic/page.ts";
 import MainRegion from "./fixtures/page-basic/regions/main/region.tsx";
 import * as basicStates from "./fixtures/page-basic/states.tsx";
@@ -19,6 +20,7 @@ import SecondView from "./fixtures/page-second/view.tsx";
 import { createOutcomeStore, OutcomeProvider, type OutcomeStore } from "./outcome.ts";
 import { definePageModules, view, type PageModuleSet } from "./page.tsx";
 import { RexProviders } from "./providers.ts";
+import { createScreenSource, type MatchMedia, type ScreenSource } from "./screen.ts";
 import { AgentOutcome, Shell, isNavigable, type OutcomeSlotProps } from "./shell.tsx";
 import {
   PALETTE_TRIGGER_ATTRIBUTE,
@@ -59,6 +61,30 @@ const stranger = actor({ id: "stranger" });
 interface MountOptions {
   readonly outcome?: ComponentType<OutcomeSlotProps>;
   readonly components?: ShellComponents;
+  readonly screen?: ScreenSource;
+}
+
+function stubMatchMedia(width: number, coarse: boolean): MatchMedia {
+  const matches = (media: string) =>
+    media.split(" and ").every((part) => {
+      const [, feature, value = ""] = /\(([a-z-]+):\s*([^)]+)\)/.exec(part) ?? [];
+      if (feature === "min-width") return width >= Number.parseFloat(value);
+      if (feature === "max-width") return width <= Number.parseFloat(value);
+      if (feature === "pointer") return (value === "coarse") === coarse;
+      return false;
+    });
+  return (media) =>
+    Object.assign(new EventTarget(), {
+      media,
+      matches: matches(media),
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+    }) as unknown as MediaQueryList;
+}
+
+function screenSource(width: number, coarse = false): ScreenSource {
+  return createScreenSource({ matchMedia: stubMatchMedia(width, coarse), width: () => width });
 }
 
 function mount(
@@ -78,12 +104,23 @@ function mount(
       },
     },
   });
+  const source = options.screen;
+  function Density({ children }: DensitySlotProps) {
+    return source === undefined ? (
+      children
+    ) : (
+      <DensityProvider search="" header={null} screen={source}>
+        {children}
+      </DensityProvider>
+    );
+  }
   const RexApp = createRexApp({
     registry,
     manifest,
     actor: subject,
     baseUrl: "http://rex.test",
     queryClient,
+    density: Density,
   });
   const shell =
     options.outcome === undefined ? (
@@ -264,7 +301,7 @@ describe("Shell", () => {
   });
 
   it("renders the default frame with the app bar, the primary navigation and the content landmarks", () => {
-    mount("/");
+    mount("/", viewer, pages, { screen: screenSource(820) });
     const frame = document.querySelector("[data-rex-shell] > [data-rex-frame]");
     expect(frame).not.toBeNull();
     const banner = screen.getByRole("banner");
@@ -345,5 +382,97 @@ describe("Shell", () => {
     expect(memory.history.at(-1)).toBe("/second");
     expect(heading()).toBe("Second");
     expect(navLinks()[1]?.getAttribute("aria-current")).toBe("page");
+  });
+});
+
+describe("navigation forms by screen", () => {
+  function addresses(nav: HTMLElement): (string | null)[] {
+    return within(nav)
+      .getAllByRole("link")
+      .map((link) => link.getAttribute("data-rex-nav"));
+  }
+
+  it("renders the Nav as a sidebar beside the content on desktop and wide screens", async () => {
+    for (const width of [1280, 1920]) {
+      const { memory } = mount("/", viewer, pages, { screen: screenSource(width) });
+      const frame = document.querySelector("[data-rex-frame]") as HTMLElement;
+      expect(frame.getAttribute("data-rex-nav-form")).toBe("sidebar");
+      const nav = screen.getByRole("navigation", { name: "Pages" });
+      expect(nav.getAttribute("data-rex-nav-form")).toBe("sidebar");
+      expect(screen.getByRole("banner").contains(nav)).toBe(false);
+      expect(nav.closest(".rex-frame-aside")?.parentElement?.className).toBe("rex-frame-body");
+      expect(addresses(nav)).toEqual(["home", "second"]);
+      const content = frame.querySelector(".rex-frame-content") as HTMLElement;
+      expect(content.contains(screen.getByRole("main"))).toBe(true);
+      expect(content.contains(nav)).toBe(false);
+      await click(navLinks()[1] as HTMLElement);
+      expect(memory.history.at(-1)).toBe("/second");
+      expect(navLinks()[1]?.getAttribute("aria-current")).toBe("page");
+      cleanup();
+    }
+  });
+
+  it("renders the Nav as a bar in the app bar on tablet", () => {
+    mount("/", viewer, pages, { screen: screenSource(820) });
+    const nav = within(screen.getByRole("banner")).getByRole("navigation", { name: "Pages" });
+    expect(nav.getAttribute("data-rex-nav-form")).toBe("bar");
+    expect(document.querySelector(".rex-frame-aside")).toBeNull();
+  });
+
+  it("renders the Nav as a dock after the content on phone with the same addresses", async () => {
+    const { memory } = mount("/", viewer, pages, { screen: screenSource(390, true) });
+    const frame = document.querySelector("[data-rex-frame]") as HTMLElement;
+    expect(frame.getAttribute("data-rex-nav-form")).toBe("dock");
+    const nav = screen.getByRole("navigation", { name: "Pages" });
+    expect(nav.getAttribute("data-rex-nav-form")).toBe("dock");
+    expect(nav.parentElement).toBe(frame);
+    expect(frame.lastElementChild).toBe(nav);
+    expect(screen.getByRole("banner").contains(nav)).toBe(false);
+    expect(addresses(nav)).toEqual(["home", "second"]);
+    expect(navLinks().map((link) => link.getAttribute("href"))).toEqual(["/", "/second"]);
+    await click(navLinks()[1] as HTMLElement);
+    expect(memory.history.at(-1)).toBe("/second");
+    expect(heading()).toBe("Second");
+    expect(navLinks()[1]?.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("keeps the content mounted when the screen changes the navigation form", async () => {
+    let width = 1280;
+    const lists: { list: EventTarget; media: string }[] = [];
+    const matchMedia: MatchMedia = (media) => {
+      const list = Object.defineProperties(new EventTarget(), {
+        media: { value: media },
+        matches: { get: () => stubMatchMedia(width, width < 600)(media).matches },
+        onchange: { value: null },
+        addListener: { value: () => {} },
+        removeListener: { value: () => {} },
+      });
+      lists.push({ list, media });
+      return list as unknown as MediaQueryList;
+    };
+    mount("/", viewer, pages, {
+      screen: createScreenSource({ matchMedia, width: () => width }),
+    });
+    const main = screen.getByRole("main");
+    expect(
+      screen.getByRole("navigation", { name: "Pages" }).getAttribute("data-rex-nav-form"),
+    ).toBe("sidebar");
+    await act(async () => {
+      width = 390;
+      for (const { list } of lists) list.dispatchEvent(new Event("change"));
+    });
+    expect(
+      screen.getByRole("navigation", { name: "Pages" }).getAttribute("data-rex-nav-form"),
+    ).toBe("dock");
+    expect(screen.getByRole("main")).toBe(main);
+  });
+
+  it("omits the sidebar when the page turns its navigation off", () => {
+    mount("/focus", viewer, pages, { screen: screenSource(1280) });
+    expect(screen.queryByRole("navigation")).toBeNull();
+    expect(document.querySelector(".rex-frame-aside")).toBeNull();
+    expect(document.querySelector("[data-rex-frame]")?.hasAttribute("data-rex-nav-form")).toBe(
+      false,
+    );
   });
 });
