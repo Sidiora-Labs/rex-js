@@ -1,6 +1,7 @@
 import type { AnyPage } from "@sidioralabs/rex";
 import {
   PALETTE_TRIGGER_ATTRIBUTE,
+  SHEET_FORM_ATTRIBUTE,
   ariaKeyShortcuts,
   outcomeStatusText,
   useActivePage,
@@ -57,7 +58,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
 } from "./ui/sidebar.tsx";
 import { ThemeProvider } from "./ui/theme-provider.tsx";
 
@@ -90,9 +90,13 @@ export function Button({ type = "button", ...props }: ShellButtonProps) {
   );
 }
 
-export function Sheet({ title, titleId, children }: ShellSheetProps) {
+export function Sheet({ title, titleId, form, children }: ShellSheetProps) {
   return (
-    <div data-slot="dialog-content" className="flex flex-col gap-4">
+    <div
+      data-slot="dialog-content"
+      className="flex flex-col gap-4"
+      {...{ [SHEET_FORM_ATTRIBUTE]: form }}
+    >
       <h2 id={titleId} className="m-0 text-lg leading-tight font-medium tracking-[-0.01em]">
         {title}
       </h2>
@@ -132,8 +136,8 @@ export function Outcome({ page }: ShellOutcomeProps) {
 export function Nav({ links, form }: ShellNavProps) {
   if (links.length === 0) return null;
   return (
-    <nav aria-label="Pages" data-rex-nav-form={form}>
-      <SidebarMenu>
+    <nav aria-label="Pages" data-rex-nav-form={form} className="min-w-0 flex-1">
+      <SidebarMenu className="in-data-[rex-screen=phone]:flex-row in-data-[rex-screen=phone]:justify-around in-data-[rex-screen=phone]:gap-0 in-data-[rex-screen=tablet]:w-auto in-data-[rex-screen=tablet]:flex-row in-data-[rex-screen=tablet]:gap-1">
         {links.map((link) => (
           <NavItem key={link.id} link={link} />
         ))}
@@ -145,9 +149,10 @@ export function Nav({ links, form }: ShellNavProps) {
 function NavItem({ link }: { readonly link: ShellNavLink }) {
   const Icon = PAGE_ICONS[link.id] ?? FileIcon;
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem className="in-data-[rex-screen=phone]:min-w-0 in-data-[rex-screen=phone]:flex-1">
       <SidebarMenuButton
         isActive={link.current}
+        className="in-data-[rex-screen=phone]:h-auto in-data-[rex-screen=phone]:min-h-14 in-data-[rex-screen=phone]:flex-col in-data-[rex-screen=phone]:justify-center in-data-[rex-screen=phone]:gap-1 in-data-[rex-screen=phone]:rounded-lg in-data-[rex-screen=phone]:px-1 in-data-[rex-screen=phone]:text-center in-data-[rex-screen=phone]:text-[11px] in-data-[rex-screen=tablet]:w-auto"
         render={
           <a
             href={link.href}
@@ -172,14 +177,14 @@ function PaletteTrigger({ label, shortcut, address, onOpen }: ShellPaletteTrigge
       type="button"
       variant="outline"
       size="sm"
-      className="text-muted-foreground"
+      className="text-muted-foreground in-data-[rex-screen=phone]:size-11 in-data-[rex-screen=phone]:px-0"
       {...{ [PALETTE_TRIGGER_ATTRIBUTE]: address }}
       aria-keyshortcuts={ariaKeyShortcuts(shortcut)}
       onClick={onOpen}
     >
       <SearchIcon aria-hidden="true" />
-      <span>{label}</span>
-      <Kbd>{keys}</Kbd>
+      <span className="in-data-[rex-screen=phone]:sr-only">{label}</span>
+      <Kbd className="in-data-[rex-screen=phone]:hidden">{keys}</Kbd>
     </DesignxButton>
   );
 }
@@ -192,7 +197,7 @@ function IdentityView({ name, address }: { readonly name: string; readonly addre
           {name.charAt(0).toUpperCase()}
         </AvatarFallback>
       </Avatar>
-      <span className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
+      <span className="flex min-w-0 flex-col">
         <span className="truncate text-sm font-medium">{name}</span>
         <code className="truncate font-mono text-xs text-muted-foreground" title={address}>
           {shortAddress(address)}
@@ -216,16 +221,23 @@ function WalletIdentity({ appName }: { readonly appName: string }) {
   return <LoadedIdentity page={active.page} fallback={appName} />;
 }
 
-export function Frame({ appName, links, palette, children }: ShellFrameProps) {
+export function Frame({ appName, links, navForm, palette, children }: ShellFrameProps) {
   const NavSlot = useShellComponent("Nav");
   const { density } = useDensity();
   const flat = density === "agent";
   const current = links.find((link) => link.current);
   return (
     <ThemeProvider>
-      <SidebarProvider data-demo-frame={flat ? "flat" : "sidebar"} className="bg-background">
-        <Sidebar collapsible={flat ? "none" : "icon"} aria-label="Wallet navigation">
-          <SidebarHeader>
+      <SidebarProvider
+        data-demo-frame={flat ? "flat" : navForm}
+        className="bg-background in-data-[rex-screen=phone]:flex-col in-data-[rex-screen=tablet]:flex-col"
+      >
+        <Sidebar
+          collapsible="none"
+          aria-label="Wallet navigation"
+          className="in-data-[rex-screen=phone]:order-last in-data-[rex-screen=phone]:h-auto in-data-[rex-screen=phone]:w-full in-data-[rex-screen=phone]:flex-row in-data-[rex-screen=phone]:border-t in-data-[rex-screen=phone]:border-sidebar-border in-data-[rex-screen=phone]:pb-[env(safe-area-inset-bottom)] in-data-[rex-screen=phone]:not-in-data-[rex-density=agent]:fixed in-data-[rex-screen=phone]:not-in-data-[rex-density=agent]:inset-x-0 in-data-[rex-screen=phone]:not-in-data-[rex-density=agent]:bottom-0 in-data-[rex-screen=phone]:not-in-data-[rex-density=agent]:z-20 in-data-[rex-screen=tablet]:h-auto in-data-[rex-screen=tablet]:w-full in-data-[rex-screen=tablet]:flex-row in-data-[rex-screen=tablet]:items-center in-data-[rex-screen=tablet]:gap-2 in-data-[rex-screen=tablet]:border-b in-data-[rex-screen=tablet]:border-sidebar-border in-data-[rex-screen=tablet]:px-2"
+        >
+          <SidebarHeader className="in-data-[rex-screen=phone]:hidden">
             <span className="flex items-center gap-2.5 px-1.5 py-1">
               <span
                 aria-hidden="true"
@@ -233,20 +245,22 @@ export function Frame({ appName, links, palette, children }: ShellFrameProps) {
               >
                 {appName.charAt(0).toUpperCase()}
               </span>
-              <span className="truncate text-[15px] font-semibold tracking-[-0.01em] group-data-[collapsible=icon]:hidden">
+              <span className="truncate text-[15px] font-semibold tracking-[-0.01em]">
                 {appName}
               </span>
             </span>
           </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-muted-foreground">Wallet</SidebarGroupLabel>
+          <SidebarContent className="in-data-[rex-screen=phone]:overflow-visible in-data-[rex-screen=tablet]:flex-row in-data-[rex-screen=tablet]:overflow-visible">
+            <SidebarGroup className="in-data-[rex-screen=phone]:p-1 in-data-[rex-screen=tablet]:p-0">
+              <SidebarGroupLabel className="text-muted-foreground in-data-[rex-screen=phone]:hidden in-data-[rex-screen=tablet]:hidden">
+                Wallet
+              </SidebarGroupLabel>
               <SidebarGroupContent>
-                <NavSlot links={links} form="sidebar" />
+                <NavSlot links={links} form={navForm} />
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter>
+          <SidebarFooter className="in-data-[rex-screen=phone]:hidden in-data-[rex-screen=tablet]:hidden">
             <Separator className="mb-1" />
             <WalletIdentity appName={appName} />
           </SidebarFooter>
@@ -254,27 +268,27 @@ export function Frame({ appName, links, palette, children }: ShellFrameProps) {
         <div className="flex min-w-0 flex-1 flex-col" data-demo-workspace="">
           <header
             data-demo-appbar=""
-            className="sticky top-0 z-20 flex min-h-14 items-center gap-3 border-b border-border bg-background/85 px-6 backdrop-blur-xl"
+            className="sticky top-0 z-20 flex min-h-14 items-center gap-3 border-b border-border bg-background/85 px-6 backdrop-blur-xl in-data-[rex-screen=phone]:gap-2 in-data-[rex-screen=phone]:px-4"
           >
-            {flat ? null : <SidebarTrigger aria-label="Toggle sidebar" />}
-            {flat ? null : <Separator orientation="vertical" className="h-5" />}
-            <Breadcrumb aria-label="Breadcrumb">
-              <BreadcrumbList>
-                <BreadcrumbItem>{appName}</BreadcrumbItem>
+            <Breadcrumb aria-label="Breadcrumb" className="min-w-0 flex-1">
+              <BreadcrumbList className="flex-nowrap">
+                <BreadcrumbItem className="shrink-0">{appName}</BreadcrumbItem>
                 <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{current?.label ?? "Page not found"}</BreadcrumbPage>
+                <BreadcrumbItem className="min-w-0">
+                  <BreadcrumbPage className="truncate">
+                    {current?.label ?? "Page not found"}
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
               {palette === null ? null : <PaletteTrigger {...palette} />}
               <ThemeToggle />
             </div>
           </header>
           <div
             data-demo-content=""
-            className="mx-auto flex w-full max-w-[72rem] min-w-0 flex-1 flex-col gap-6 px-6 pt-8 pb-16"
+            className="mx-auto flex w-full max-w-[72rem] min-w-0 flex-1 flex-col gap-6 px-6 pt-8 pb-16 in-data-[rex-screen=phone]:gap-5 in-data-[rex-screen=phone]:px-4 in-data-[rex-screen=phone]:pt-5 in-data-[rex-screen=phone]:pb-28"
           >
             {children}
           </div>
