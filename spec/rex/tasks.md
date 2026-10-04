@@ -39,7 +39,7 @@
     - Export the OverlayDeclaration type (id, dismiss: escape|button|both, binding: region|url) with no React dependency.
     - Write src/core/page.test.ts covering validation errors, default states, chrome defaults and the StatesModule type through expectTypeOf.
     - _Requirements: 1.1, 1.2, 1.3, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 6.1, 6.2, 6.3, 6.4, 6.5, 22.1, 22.2, 22.3_
-  - [ ] 0.7 Implement manifest types, the manifest builder and the sidecar JSON schema
+  - [x] 0.7 Implement manifest types, the manifest builder and the sidecar JSON schema
     - Implement src/manifest/types.ts: Manifest with version, app, entities, actions, pages (route, params JSON schema, chrome, regions, overlays, states, actions), policies, flows; every array sorted by id.
     - Implement src/manifest/build.ts: buildManifest(registry) producing a deterministic manifest and stableStringify for byte-identical output; implement src/manifest/sidecar.schema.ts exporting the JSON Schema for the application/rex+json payload and a validateSidecar function.
     - Write src/manifest/build.test.ts covering ordering determinism, JSON schema emission for params and inputs, and sidecar schema acceptance and rejection cases.
