@@ -28,6 +28,7 @@ export {
 export {
   appModuleHook,
   generateAppModule,
+  invalidateAppModule,
   watchApp,
   type AppModuleOptions,
   type RexAppBundle,
@@ -51,6 +52,16 @@ export {
   type RexFetchApp,
   type RexServerSource,
 } from "./dev-server.ts";
+export {
+  PAGE_DECLARATION_FILE,
+  PAGE_RELOAD_CODE,
+  REX_NOTICE_EVENT,
+  hmrHook,
+  invalidatePage,
+  pageIdOfDeclaration,
+  pageReloadNotice,
+  type RexHmrNotice,
+} from "./hmr.ts";
 export {
   REX_HOOKS,
   configHook,
