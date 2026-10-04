@@ -131,6 +131,9 @@ Every error Rex raises is a `RexError` carrying a code, a message naming the fil
 | [REX506](https://rex.sidioralabs.com/errors/REX506) | Unknown report format | Format findings as human or json. |
 | [REX507](https://rex.sidioralabs.com/errors/REX507) | Runtime check failed | Install happy-dom, pass at least one actor with a unique id, keep the app resolvable from index.html and let every page settle so rex check --runtime can mount it. |
 | [REX508](https://rex.sidioralabs.com/errors/REX508) | Config value is not static | Write the check field of rex.config.ts as a literal object so rex check can read it without running the config. |
+| [REX509](https://rex.sidioralabs.com/errors/REX509) | Raw element where the DesignX kit has a primitive | In an app whose ui.kit is designx, render buttons, inputs, selects, textareas, tables and dialogs in regions, parts and overlays with the DesignX primitive rex/designx maps the surface to (button, input, select, textarea, checkbox, radio-group, number-field, data-table or card, dialog or sheet), installed under app/components/ui. |
+| [REX510](https://rex.sidioralabs.com/errors/REX510) | Pixel size on a part | Let a part size to its container: drop pixel width, height, min-width and min-height and lay it out with Page.Stack or Page.Grid, or use a fluid value such as a percentage, a rem or ch range in clamp(), var(--rex-measure) or var(--rex-control-height). |
+| [REX511](https://rex.sidioralabs.com/errors/REX511) | Control under the 44 px touch target | Give the control min-height: var(--rex-hit-target) (min-h-(--rex-hit-target) or pointer-coarse:min-h-11 in Tailwind), or keep the DesignX primitive's own size, so it reaches 44 px on coarse pointers. |
 
 ## REX6xx CLI
 

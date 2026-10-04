@@ -1,0 +1,6 @@
+.chart {
+  max-width: 100%;
+  width: clamp(16rem, 50%, 40rem);
+  min-height: 0;
+  border-width: 1px;
+}
