@@ -27,7 +27,7 @@ import {
 import type { ActResult, RunOptions } from "./act.ts";
 import { AddressScope } from "./agent/address.tsx";
 import { ConfirmContext, ConfirmProvider, useInvoke, type InvokeHandle } from "./agent/confirm.tsx";
-import { PageStatesContext, RegionBoundary } from "./boundary.tsx";
+import { RegionBoundary } from "./boundary.tsx";
 import { pageLoaderQueryHashes, usePageLoaderQueries } from "./loaders.ts";
 import { useNav, type Nav } from "./nav.ts";
 import { useActivePage, type PageResolution } from "./router.tsx";
@@ -44,6 +44,9 @@ export interface PageRuntime {
 
 export const PageRuntimeContext = createContext<PageRuntime | null>(null);
 PageRuntimeContext.displayName = "RexPage";
+
+export const PageStatesContext = createContext<Readonly<Record<string, unknown>> | null>(null);
+PageStatesContext.displayName = "RexPageStates";
 
 export function usePageRuntime(): PageRuntime {
   const runtime = useContext(PageRuntimeContext);

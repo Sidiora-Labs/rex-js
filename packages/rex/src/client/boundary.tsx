@@ -1,6 +1,5 @@
 import {
   Component,
-  createContext,
   useCallback,
   useContext,
   useState,
@@ -13,12 +12,14 @@ import { STATE_EXPORT_NAMES, type StateProps } from "../core/states.ts";
 import { useRegionFailureRegistry } from "./agent/sidecar.tsx";
 import { useOutcomeStore } from "./outcome.ts";
 import { useFallback } from "./fallback-host.ts";
-import { DefaultState, usePageRuntime, type PageParamsValue } from "./page.tsx";
+import {
+  DefaultState,
+  PageStatesContext,
+  usePageRuntime,
+  type PageParamsValue,
+} from "./page.tsx";
 
 export const REGION_ERROR_CODE = "REX330";
-
-export const PageStatesContext = createContext<Readonly<Record<string, unknown>> | null>(null);
-PageStatesContext.displayName = "RexPageStates";
 
 export function regionFailureMessage(address: string, error: Error): string {
   return `${REGION_ERROR_CODE} region ${address} failed: ${error.message}`;
