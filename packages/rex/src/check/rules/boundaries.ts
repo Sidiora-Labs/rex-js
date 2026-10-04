@@ -169,12 +169,26 @@ export const IMPORT_TABLE: Readonly<Record<FileRole, RoleBoundary>> = {
     allowed: "app/data may import app/data, app/entities, app/actions, app/policies and packages.",
   },
   action: {
-    label: (file) => `action ${fileLabel(file)}`,
-    targets: [{ role: "entity" }, { role: "policy" }, { role: "action" }, { role: "data" }],
+    label: (file) => `action ${file.file.replace(/^app\/actions\//, "")}`,
+    targets: [
+      { role: "entity" },
+      { role: "policy" },
+      { role: "action" },
+      { role: "data" },
+      { role: "server" },
+    ],
     packages: "any",
     forbiddenPackages: DECLARATION_FORBIDDEN,
     allowed:
-      "actions may import app/entities, app/policies, app/actions, app/data and non-React packages; declarations never import React.",
+      "actions may import app/entities, app/policies, app/actions, app/data, app/server and non-React packages; declarations never import React.",
+  },
+  server: {
+    label: (file) => `server module ${file.file.replace(/^app\//, "")}`,
+    targets: [{ role: "server" }, { role: "data" }, { role: "entity" }, { role: "policy" }],
+    packages: "any",
+    forbiddenPackages: DECLARATION_FORBIDDEN,
+    allowed:
+      "app/server may import app/server, app/data, app/entities, app/policies and non-React packages; only actions and other app/server modules import it, never a page, view, region, part, overlay, states, hook or component.",
   },
   entity: {
     label: (file) => `entity ${fileLabel(file)}`,
@@ -398,7 +412,7 @@ function checkFile(app: RexApp, sources: SourceLoader, file: AppFile): Finding[]
       report(
         "import-table",
         ref,
-        `${label} imports "${ref.specifier}"; declarations never import React or the client runtime`,
+        `${label} imports "${ref.specifier}"; ${file.role === "server" ? "server modules" : "declarations"} never import React or the client runtime`,
         boundary.allowed,
       );
       continue;

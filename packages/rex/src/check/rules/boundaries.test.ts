@@ -37,7 +37,9 @@ describe("boundaries rule", () => {
     const summary = result.findings.map((entry) => [entry.file, entry.line, entry.rule]);
     expect(summary).toEqual([
       ["app/actions/send.ts", 1, "boundaries/import-table"],
+      ["app/actions/wallet/receive.ts", 1, "boundaries/import-table"],
       ["app/components/Api.tsx", 1, "boundaries/no-fetch"],
+      ["app/pages/portfolio/regions/holdings/region.tsx", 2, "boundaries/import-table"],
       ["app/pages/send/hooks/useTokens.ts", 2, "boundaries/import-table"],
       ["app/pages/send/overlays/TokenSheet.tsx", 1, "boundaries/no-fetch"],
       ["app/pages/send/page.ts", 2, "boundaries/import-table"],
@@ -54,6 +56,7 @@ describe("boundaries rule", () => {
       ["app/pages/send/view.tsx", 1, "boundaries/import-table"],
       ["app/pages/send/view.tsx", 2, "boundaries/import-table"],
       ["app/pages/send/view.tsx", 3, "boundaries/import-table"],
+      ["app/server/ledger.ts", 1, "boundaries/import-table"],
     ]);
     expect(result.exitCode).toBe(1);
     expect(result.findings.every((entry) => entry.severity === "error")).toBe(true);
@@ -130,6 +133,49 @@ describe("boundaries rule", () => {
     for (const entry of result.findings) {
       expect(entry.hint.length).toBeGreaterThan(10);
       expect(entry.column).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("lets actions at any depth import app/server and reports it from a client-side role", async () => {
+    const pass = discoverApp(path.join(fixtures, "pass"));
+    expect(pass.fileAt("app/actions/wallet/receive.ts")?.role).toBe("action");
+    expect(pass.fileAt("app/server/ledger.ts")?.role).toBe("server");
+    expect(pass.unclassified).toEqual([]);
+
+    const result = await runRules(discoverApp(path.join(fixtures, "fail")), [boundariesRule]);
+    const messages = (file: string) =>
+      result.findings
+        .filter((entry) => entry.file === `app/${file}`)
+        .map((entry) => [entry.line, entry.message, entry.hint]);
+    expect(messages("pages/portfolio/regions/holdings/region.tsx")).toEqual([
+      [
+        2,
+        'region.tsx imports "../../../../server/ledger.ts" (server module app/server/ledger.ts)',
+        IMPORT_TABLE.region.allowed,
+      ],
+    ]);
+    expect(messages("actions/wallet/receive.ts")).toEqual([
+      [
+        1,
+        'action wallet/receive.ts imports "react"; declarations never import React or the client runtime',
+        IMPORT_TABLE.action.allowed,
+      ],
+    ]);
+    expect(messages("server/ledger.ts")).toEqual([
+      [
+        1,
+        'server module server/ledger.ts imports "react"; server modules never import React or the client runtime',
+        IMPORT_TABLE.server.allowed,
+      ],
+    ]);
+    expect(IMPORT_TABLE.action.targets).toContainEqual({ role: "server" });
+    for (const role of FILE_ROLES) {
+      const targets = IMPORT_TABLE[role].targets;
+      if (targets === "any" || role === "action" || role === "server") continue;
+      expect(
+        targets.map((target) => target.role),
+        role,
+      ).not.toContain("server");
     }
   });
 
