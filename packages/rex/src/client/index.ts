@@ -23,3 +23,4 @@ export * from "./agent/density.ts";
 export * from "./agent/flow.tsx";
 export { DENSITY_HEADER, type ConfirmRequest } from "./context.ts";
 export type { ConfirmRequest as ConfirmDialogRequest } from "./agent/confirm.tsx";
+export * from "./interop/index.ts";
