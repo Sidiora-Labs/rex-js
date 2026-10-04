@@ -3,7 +3,6 @@ import {
   DEV_AUDIT_PATH,
   FORM_PREFIX,
   STEP_TIMEOUT,
-  buildDemo,
   committedManifest,
   isStaticPage,
   pageUrl,
@@ -34,7 +33,6 @@ let demo: RunningDemo | null = null;
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  buildDemo();
   demo = await startDemo(DEV_SERVER_ENV);
 });
 

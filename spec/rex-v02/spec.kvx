@@ -1797,7 +1797,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.9.4]
 title = "The demo on the standard: DesignX in every region, part, overlay and state, screen-fit walked on phone, tablet and desktop"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 9
 requires = ["6.2", "6.3", "6.4", "9.2", "9.3"]

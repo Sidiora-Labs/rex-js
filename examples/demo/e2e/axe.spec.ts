@@ -2,7 +2,6 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import {
   DENSITIES,
-  buildDemo,
   checkRootDensity,
   committedManifest,
   isStaticPage,
@@ -26,7 +25,6 @@ let served: WalkManifest | null = null;
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async ({ request }) => {
-  buildDemo();
   demo = await startDemo();
   const response = await request.get(new URL("/rex/manifest", demo.url).toString());
   expect(response.ok()).toBe(true);

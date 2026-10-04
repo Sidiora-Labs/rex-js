@@ -3,7 +3,6 @@ import {
   DENSITIES,
   Recorder,
   STEP_TIMEOUT,
-  buildDemo,
   checkForms,
   checkHitTargets,
   checkParity,
@@ -23,6 +22,7 @@ import {
   waitForOutcome,
   waitForSidecar,
   walkOverlay,
+  walkPopups,
   watchCsp,
   watchLoaderRequests,
   writeReport,
@@ -43,7 +43,6 @@ let served: WalkManifest | null = null;
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async ({ request }) => {
-  buildDemo();
   demo = await startDemo();
   const response = await request.get(new URL("/rex/manifest", demo.url).toString());
   expect(response.ok()).toBe(true);
@@ -143,6 +142,7 @@ async function walkDensity(
       checkHitTargets(page, pageInfo.id),
     );
   }
+  await walkPopups(recorder, page);
 
   for (const actionId of pageInfo.actions) {
     const declared = manifest.actions.find((entry) => entry.id === actionId);
@@ -218,6 +218,7 @@ async function walkStaticDensity(
   await recorder.check("sidecar lists exactly the present controls", () =>
     checkParity(page, pageInfo.id, { mirror: false }),
   );
+  await walkPopups(recorder, page);
   await recorder.check("the text renderer lists every sidecar action", async () =>
     checkTextRenderer(page, base, pageInfo.id, await readSidecar(page, { mirror: false })),
   );
@@ -229,7 +230,7 @@ async function walkStaticDensity(
 }
 
 for (const listed of committed.pages) {
-  test(`operability walk of page ${listed.id}`, async ({ page }) => {
+  test(`operability walk of page ${listed.id}`, async ({ page }, info) => {
     test.setTimeout(240_000);
     const { base, manifest } = running();
     const pageInfo = manifest.pages.find((entry) => entry.id === listed.id);
@@ -244,12 +245,14 @@ for (const listed of committed.pages) {
       report.densities.push({ density, checks: recorder.checks });
       failures.push(...recorder.failures(`[${density}]`));
     }
-    writeReport(pageInfo.id, { ...report, failures });
+    writeReport(pageInfo.id, { ...report, failures }, info.project.name);
     expect(failures).toEqual([]);
   });
 }
 
-test("a disallowed action is listed with its reason and does not execute", async ({ browser }) => {
+test("a disallowed action is listed with its reason and does not execute", async ({
+  browser,
+}, info) => {
   test.setTimeout(120_000);
   const { base, manifest } = running();
   const context = await browser.newContext();
@@ -299,12 +302,16 @@ test("a disallowed action is listed with its reason and does not execute", async
     await context.close();
   }
   const failures = recorder.failures("[guest]");
-  writeReport("guest", {
-    page: guarded.map((entry) => entry.id).join(","),
-    actor: "guest",
-    densities: [{ density: "default", checks: recorder.checks }],
-    failures,
-  });
+  writeReport(
+    "guest",
+    {
+      page: guarded.map((entry) => entry.id).join(","),
+      actor: "guest",
+      densities: [{ density: "default", checks: recorder.checks }],
+      failures,
+    },
+    info.project.name,
+  );
   expect(recorder.checks.length).toBeGreaterThan(0);
   expect(failures).toEqual([]);
 });
