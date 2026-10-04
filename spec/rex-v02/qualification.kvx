@@ -103,3 +103,11 @@ symbol = "SidecarSource.manifest, buildSidecarPayload"
 observed = "Merging 0.8 into feature/rex-v02 meets the sidecar escaping test that 4.1 added: serialize.test.ts line 81 calls buildSidecarPayload without the manifest field that 0.8 made required on SidecarSource, so tsc reports TS2345 there beside the qualification.082 errors; the test was not edited at merge; evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -r typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/fm-rex-v02-merge-0.8.log."
 assumption = "The follow-up that closes qualification.082 also passes a manifest built with buildManifest from the test's annotate action and notes page into that buildSidecarPayload call; no assertion changes."
 severity = "blocker"
+
+[qualification.111]
+task = "1.1"
+file = "packages/rex/src/server/adapters/node.ts, packages/rex/src/server/app.ts, packages/rex/src/core/errors.ts, packages/rex/src/vite/split.ts"
+symbol = "createNodeApp, RexServerOptions, REX310, pageChunkGroups"
+observed = "SSR is served by routes/render.ts for any registry with a renderer registered through registerPageRenderer (the rex:render module does this in dev and in the rex build server entry) because RexServerOptions in app.ts is outside the 1.1 touches; createNodeApp still answers page paths with dist/client/index.html before the app, so the built node server never reaches the SSR route; REX310 travels as the HYDRATION_MISMATCH_CODE string since the catalog has no REX3xx entries; the fixture client manifest shows the entry chunk statically importing page-home (and page-note importing page-home), so the home page CSS is an entry stylesheet; evidence: revision b285a9f2322adae9098dab5f36d1a4b9b564aea9, command pnpm -C packages/rex exec vitest run src/server/ssr.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.1-private/logs/1.1-verify.log."
+assumption = "The owner of adapters/node.ts forwards GET page paths to the app when a page renderer is registered (static assets first, no index.html fallback), 2.1 adds REX310 to the catalog, and the owner of vite/split.ts keeps shared modules out of page-<id> groups so each page chunk loads only on its route."
+severity = "note"

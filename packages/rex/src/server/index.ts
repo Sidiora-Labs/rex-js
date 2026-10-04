@@ -8,3 +8,13 @@ export { REX_ROUTES } from "./routes.ts";
 export { HEALTH_PATH, installHealthRoute } from "./routes/health.ts";
 export { MANIFEST_PATH, installManifestRoute } from "./routes/manifest.ts";
 export { RPC_PREFIX, installRpcRoute } from "./routes/rpc.ts";
+export {
+  RENDER_STATUS,
+  installRenderRoute,
+  isDocumentPath,
+  pageRendererFor,
+  registerPageRenderer,
+  type RenderKind,
+  type RexPageRenderer,
+  type RexRenderResult,
+} from "./routes/render.ts";

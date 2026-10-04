@@ -1,8 +1,20 @@
-import type { ComponentType } from "react";
+import { QueryClient } from "@tanstack/react-query";
+import { StrictMode, type ComponentType } from "react";
+import { createRoot, hydrateRoot, type Root } from "react-dom/client";
+import { actor as createActor } from "../core/actor.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import type { Manifest } from "../manifest/types.ts";
 import { DensityProvider } from "./agent/density.ts";
 import { createRexApp, type CreateRexAppOptions } from "./app.tsx";
+import {
+  REX_DATA_MIME_TYPE,
+  RexDataError,
+  hydrateQueries,
+  isServerRendered,
+  readRexData,
+  recoverableErrorHandler,
+  type HydrationReporter,
+} from "./hydrate.ts";
 import type { PageModuleSet } from "./page.tsx";
 import { RexProviders } from "./providers.ts";
 import { AgentOutcome, Shell } from "./shell.tsx";
@@ -40,4 +52,57 @@ export function createRexEntry(
   }
   RexEntry.displayName = "RexEntry";
   return RexEntry;
+}
+
+export interface StartRexOptions extends RexEntryOptions {
+  readonly dev?: boolean;
+  readonly onHydrationMismatch?: HydrationReporter;
+}
+
+export interface StartedRex {
+  readonly mode: "hydrate" | "render";
+  readonly root: Root;
+}
+
+export function startRexEntry(
+  container: Element,
+  bundle: RexEntryBundle,
+  options: StartRexOptions = {},
+): StartedRex {
+  const { dev = false, onHydrationMismatch, ...entryOptions } = options;
+  if (!isServerRendered(container)) {
+    const RexEntry = createRexEntry(bundle, entryOptions);
+    const root = createRoot(container);
+    root.render(
+      <StrictMode>
+        <RexEntry />
+      </StrictMode>,
+    );
+    return { mode: "render", root };
+  }
+  const data = readRexData(container.ownerDocument);
+  if (data === null) {
+    throw new RexDataError(
+      `the server-rendered root has no ${REX_DATA_MIME_TYPE} script to hydrate from`,
+    );
+  }
+  const queryClient = entryOptions.queryClient ?? new QueryClient();
+  hydrateQueries(queryClient, data);
+  const RexEntry = createRexEntry(bundle, {
+    ...entryOptions,
+    actor: createActor(data.actor),
+    queryClient,
+  });
+  const root = hydrateRoot(
+    container,
+    <StrictMode>
+      <RexEntry />
+    </StrictMode>,
+    {
+      onRecoverableError: recoverableErrorHandler(
+        onHydrationMismatch === undefined ? { dev } : { dev, report: onHydrationMismatch },
+      ),
+    },
+  );
+  return { mode: "hydrate", root };
 }

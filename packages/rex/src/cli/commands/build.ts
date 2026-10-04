@@ -5,6 +5,8 @@ import type { RexCommand as Command } from "../args.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
 import { rex, type RexPluginOptions } from "../../vite/index.ts";
 import { chunkBudgets, resolveBudgets } from "../../vite/budgets.ts";
+import { RENDER_MODULE_ID, renderModulePlugin } from "../../vite/ssr.ts";
+import { readSsrAssets } from "../../vite/ssr-css.ts";
 import {
   chunkTable,
   formatChunkTable,
@@ -68,6 +70,7 @@ export function generateServerEntry(options: ServerEntryOptions): string {
     `import { configServer, readConfigExport } from ${JSON.stringify(runtime.config)};`,
     `import { anonymousActor } from ${JSON.stringify(runtime.actor)};`,
     `import exported from ${JSON.stringify(normalizePath(options.config))};`,
+    `import ${JSON.stringify(RENDER_MODULE_ID)};`,
     "",
     "const server = configServer(readConfigExport(exported), (app) =>",
     "  createRexServer({",
@@ -152,15 +155,20 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     configFile: false,
     logLevel,
     plugins: rex(pluginOptions),
-    build: { outDir: clientDir, emptyOutDir: true },
+    build: { outDir: clientDir, emptyOutDir: true, manifest: true },
   });
   const chunks = chunkTable(outputItems(client), chunkBudgets(budgets));
+  const assets = readSsrAssets(clientDir, { root: appRoot });
 
   await build({
     root: appRoot,
     configFile: false,
     logLevel,
-    plugins: [...rex(pluginOptions), serverEntryPlugin({ config, runtime: serverRuntimePaths() })],
+    plugins: [
+      renderModulePlugin(() => assets),
+      ...rex(pluginOptions),
+      serverEntryPlugin({ config, runtime: serverRuntimePaths() }),
+    ],
     ssr: { noExternal: true, target: "node" },
     build: {
       ssr: true,
