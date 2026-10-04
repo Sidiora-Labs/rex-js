@@ -39,3 +39,35 @@ symbol = "rex() plugin options in vitest.config.ts, RexPluginOptions.shellCompon
 observed = "rex check, rex build and rex dev read ui.components from rex.config.ts through configPluginOptions, but a vitest.config.ts calls rex() with no options and nothing reads the config there, so renderPage renders the token shell instead of the app's Shell.tsx and a site test cannot assert its own frame, mark, navigation forms or theme toggle; the demo's tests have the same blind spot; the site passes rex({ shellComponents: \"app/components/Shell.tsx\" }) by hand, a second statement of ui.components; evidence: revision 4967803 plus the 1.1 changes, command pnpm -C site check && pnpm -C site test:unit && pnpm -C site build, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-1.1-private/logs/1.1-verify.log (home.test.tsx found no [data-site-mark] in the token frame)."
 assumption = "Task 3.3 makes rex() read rex.config.ts when it runs under vitest (or exports a rexTestPlugins() helper from rex/vite that does) so the app's shell components, fonts and ui options reach unit tests without restating them, and the site drops its explicit shellComponents option."
 severity = "medium"
+
+[qualification.221]
+task = "2.2"
+file = "packages/rex/src/vite/scan.ts, packages/rex/src/check/engine.ts"
+symbol = "declarationFiles (scanApp actions), classify TOP_LEVEL_ROLES"
+observed = "[design] module_layout puts the read actions in app/actions/<page>/ (2.2 writes app/actions/docs/list-docs.ts, read-doc.ts, load-search-index.ts), but scanApp lists only files directly in app/actions and classify gives the action role only to actions/<file>.ts, so rex:app never registers them and buildManifest throws REX209 (page \"doc\" loader \"article\" names action \"read-doc\" that is not registered); every page test importing rex:app fails the same way, so merging 2.2 (or 2.1, 2.3, 2.4 with their app/actions/<page>/ folders) into feature/rex-site breaks the home tests too; evidence: revision d1eac09 plus the 2.2 changes, command pnpm -C site check && pnpm -C site exec vitest run app/pages/docs app/pages/doc app/pages/recipe app/server/content, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.2-private/logs/2.2-verify-2.log."
+assumption = "The framework scans and classifies app/actions recursively (one action per file in any subfolder), or the spec moves read actions to app/actions/<action>.ts; this must land before the wave-1 site tasks merge, since 3.3 runs after them."
+severity = "high"
+
+[qualification.222]
+task = "2.2"
+file = "packages/rex/src/check/engine.ts, packages/rex/src/check/rules/boundaries.ts"
+symbol = "classify, IMPORT_TABLE.action"
+observed = "docs/convention.md lists app/server/ (server-only modules, never bundled for the client) and the rex:boundary plugin enforces APP_SERVER_DIR, but classify has no role for app/server/**, so rex check reports naming/unclassified for every reader in site/app/server/content (markdown.ts, docs.ts, search.ts) and boundaries/import-table for each action importing one (the action import table allows entity, policy, action and data only); read from the code at revision d1eac09, masked in the 2.2 gate by the REX209 abort of qualification.221; a diagnostic run of the reader tests alone passed 15 of 17 (log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-site-2.2-private/logs/2.2-content-probe.log after the 2.2 repair), the 2 failures being 2.2 test and reading-order bugs repaired in cycle 1 and not rerun, since the gate stops at REX209."
+assumption = "The checker gains a server role for app/server/** that actions, data and tests may import and no component role may, matching the boundary plugin."
+severity = "high"
+
+[qualification.223]
+task = "2.2"
+file = "packages/rex/src/core/page.ts, packages/rex/src/vite/prerender.ts"
+symbol = "PagePaths, expandPagePaths"
+observed = "paths() receives no context, and page.ts may not import app/server, so the doc and recipe pages list their slugs by calling the list-docs read action's handler directly (listDocs.handler({}, { actor: anonymousActor })), skipping policy, input validation and the audit a loader gets; the client bundle keeps the call with the stripped handler; read from site/app/pages/doc/page.ts and recipe/page.ts at revision d1eac09 plus the 2.2 changes."
+assumption = "paths accepts a read action (paths: { action, map }) or receives an invoke helper that runs the action through the router as the build actor, and the site switches to it."
+severity = "medium"
+
+[qualification.224]
+task = "2.2"
+file = "packages/rex/src/client/shell/header.tsx, packages/rex/src/server/ssr.ts, packages/rex/src/client/nav.ts"
+symbol = "HeaderSlot chrome.title, documentHead title, Nav.href"
+observed = "A page with route params can only show its static chrome.title, so every prerendered doc is titled Guide and every recipe Recipe in the h1 and the document title, and the markdown title renders as an h2 in the article; and a region cannot navigate to a page it may not import (no cross-page imports, Nav takes the declaration), so the docs Search region opens a result with window.location.assign(route) and the Index links are plain anchors built from loader routes; read from the 2.2 pages at revision d1eac09 plus the 2.2 changes."
+assumption = "Task 3.3 lets a page derive its title from a loader (for example chrome.title as a function of the loaded data, used by the header and the prerendered head) and lets Nav address a page by id and params, and the site adopts both."
+severity = "medium"
