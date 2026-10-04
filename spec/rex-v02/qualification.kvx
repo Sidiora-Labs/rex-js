@@ -782,3 +782,11 @@ symbol = "freshness api check run first by the demo test script"
 observed = "rex check reports no findings after the 9.4 changes, but the demo test script stops before Playwright because tools/freshness.mjs --check reports docs/api is stale (stale @sidioralabs/rex/client.md), so the operability, no-JS, axe, vitals, lighthouse, screenshot and screen-fit walks on phone, tablet and desktop never ran; evidence: revision 5dcc8a1a513698a11af94d172ce04ff4af9bff90 plus the 9.4 changes, command pnpm -C examples/demo exec rex check && pnpm -C examples/demo test, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-9.4-private/logs/9.4-verify-2.log (first run 9.4-verify.log failed on five i18n/literal loading labels, repaired in rex.config.ts)."
 assumption = "The docs/api owner regenerates docs/api with pnpm docs:api on feature/rex-v02; the unchanged 9.4 verify_cmd then reaches the walks, which is where 9.4 requalifies; no check was relaxed and docs/api was not touched here."
 severity = "high"
+
+[qualification.942]
+task       = "9.4"
+file       = "examples/demo/e2e/nojs.spec.ts, examples/demo/e2e/vitals.spec.ts"
+symbol     = "the send flow runs without JavaScript and writes its audit record; core web vitals of page embed"
+observed   = "revision 1feb4ad, pnpm -C examples/demo exec rex check && pnpm -C examples/demo test, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/rex-main-private/verify-94-demotest.log: 71 passed, 4 failed; the no-JS send flow finds no [data-rex-outcome=send] after the form redirect; finalizeVitals times out on the embed page on all three projects"
+assumption = "the per-render registries of 9.7 or the shell changes of 9.4 dropped the server-rendered outcome; the embed page no longer finalizes vitals; repaired by task 9.8"
+severity   = "high"
