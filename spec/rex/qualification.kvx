@@ -95,3 +95,11 @@ symbol = "Region, AddressScope, useAddress"
 observed = "useAddress reads the region from AddressScope in src/client/agent/address.tsx, but Region in src/client/page.tsx (outside the 5.1 touches) does not wrap its children in AddressScope, so useAddress().region is null inside region() bodies unless the region wraps itself; the router keeps its own RESERVED_QUERY_KEYS copy, asserted equal to core/protocol.ts by protocol.test.ts; evidence: revision 7a1643f8894e446d86ce160be7985da847ba8abb, command pnpm -C packages/rex exec vitest run src/client/agent/address.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/w-rex-5-private/logs/5.1-verify.log."
 assumption = "A later task owning src/client/page.tsx wraps Region children in <AddressScope region={name}> and imports RESERVED_QUERY_KEYS in router.tsx from core/protocol.ts."
 severity = "note"
+
+[qualification.51]
+task = "5.2"
+file = "packages/rex/src/client/shell.tsx"
+symbol = "RexSidecar, Shell, OverlayRegistry, AffordanceRegistry"
+observed = "RexSidecar renders inside the Shell outcome slot (Shell pages outcome prop) because shell.tsx is outside the 5.2 touches; sidecar.tsx also owns the overlay registry used by 5.6 and an affordance registry that 5.7 flow gates use to add approve and reject entries; evidence: revision 6863e76d296aa5ab72ebbfc087a284d8d29101b0, command pnpm -C packages/rex exec vitest run src/client/agent/sidecar.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/w-rex-5-private/logs/5.2-verify.log."
+assumption = "The task that composes the generated client entry or owns shell.tsx mounts RexSidecar once per page next to the outcome region, for example through the outcome slot."
+severity = "note"

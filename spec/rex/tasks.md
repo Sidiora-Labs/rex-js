@@ -195,7 +195,7 @@
     - Implement src/client/agent/address.tsx: useAddress() returning the current page and region ids; controlProps from useAct include data-rex=<page>/<action>; PageHost sets data-rex-page; Region sets data-rex-region; overlays set data-rex-overlay.
     - Write src/client/agent/address.test.tsx asserting every attribute on the fixture page and that attributes are unchanged when class names change.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ] 5.2 Implement the affordance sidecar
+  - [x] 5.2 Implement the affordance sidecar
     - Implement src/client/agent/sidecar.tsx: RexSidecar rendering one script element type application/rex+json id rex-page with the payload from [design] sidecar built from the active page, data state, act allowed results, overlay registry and outcome store; mirrors to window.__rex; updates on every change.
     - Write src/client/agent/sidecar.test.tsx validating the payload with validateSidecar, asserting updates after a state change, an overlay open and an action outcome, and asserting exactly one sidecar element per page.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
