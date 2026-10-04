@@ -4,7 +4,7 @@ import HeroRegion from "./regions/hero/region.tsx";
 import HoldingsRegion from "./regions/holdings/region.tsx";
 
 export default view(() => (
-  <Page.Stack space={4}>
+  <Page.Stack space={5}>
     <HeroRegion />
     <ActionsRegion />
     <HoldingsRegion />

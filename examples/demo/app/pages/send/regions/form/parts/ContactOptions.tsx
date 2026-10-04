@@ -39,10 +39,7 @@ export default function ContactOptions({
     if (first !== undefined) onPick(first.id);
   };
   return (
-    <form
-      onSubmit={submit}
-      style={{ display: "flex", flexDirection: "column", gap: "var(--rex-space-2)" }}
-    >
+    <form onSubmit={submit} className="flex flex-col gap-3">
       <Field
         label="Type a name or address, then press Enter"
         name="contact-query"
@@ -51,12 +48,14 @@ export default function ContactOptions({
         onChange={(event) => onQuery(event.target.value)}
       />
       {matches.length === 0 ? (
-        <p>No contact matches "{query}"</p>
+        <p className="m-0 text-sm text-muted-foreground">No contact matches "{query}"</p>
       ) : (
-        <ul>
+        <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
           {matches.map((entry) => (
             <li key={entry.id}>
               <Button
+                tone={entry.id === selected ? "primary" : "quiet"}
+                className="h-auto min-h-11 w-full justify-start py-2 text-left whitespace-normal"
                 {...control}
                 data-rex-choice={entry.id}
                 aria-pressed={entry.id === selected}

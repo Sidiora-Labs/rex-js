@@ -1,4 +1,5 @@
 import Card from "../../../../../components/Card.tsx";
+import { Typography } from "../../../../../components/ui/typography.tsx";
 
 export interface WatchedChip {
   readonly id: string;
@@ -14,11 +15,11 @@ export interface WatchedChipsProps {
 export default function WatchedChips({ heading, chips }: WatchedChipsProps) {
   return (
     <Card title={heading}>
-      <p>
+      <Typography variant="muted">
         Each chip below is the <code>TokenChip</code> component registered as the{" "}
         <code>&lt;demo-token-chip&gt;</code> custom element; the watchlist is a shared store, so
         watching a token on the tokens page adds its chip here.
-      </p>
+      </Typography>
       <ul className="flex flex-wrap gap-2">
         {chips.map((chip) => (
           <li key={chip.id}>
@@ -26,7 +27,7 @@ export default function WatchedChips({ heading, chips }: WatchedChipsProps) {
               tabIndex={0}
               symbol={chip.symbol}
               price={chip.priceUsd}
-              className="inline-flex h-11 min-w-32 items-center rounded-md border px-3"
+              className="inline-flex h-11 min-w-32 items-center rounded-full border border-border bg-container px-4 font-mono text-sm"
             />
           </li>
         ))}

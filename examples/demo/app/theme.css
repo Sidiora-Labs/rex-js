@@ -384,3 +384,159 @@
     transform: scale(0.96);
   }
 }
+
+/* ---------- Rex surfaces on DesignX ----------
+   The shell, overlays, palette, confirmation, outcome region and ActionForm
+   controls are rendered by Rex; these rules put them on the DX tokens. */
+
+@layer base {
+  html {
+    background: var(--background);
+  }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  .rex-page-header {
+    @apply flex flex-wrap items-end justify-between gap-3;
+  }
+  .rex-page-title {
+    @apply m-0 text-[clamp(1.75rem,3vw,2.25rem)] leading-[1.1] font-normal tracking-[-0.025em] text-foreground;
+  }
+  .rex-recovery {
+    @apply m-0;
+  }
+
+  .rex-outcome {
+    @apply flex flex-col gap-2 rounded-lg text-sm;
+  }
+  .rex-outcome:has([data-rex-outcome="none"]) {
+    @apply sr-only;
+  }
+  .rex-outcome [data-rex-outcome] {
+    @apply flex flex-col items-start gap-2 sm:flex-row sm:items-center;
+  }
+  .rex-outcome [data-rex-outcome] > [data-slot="alert"] {
+    @apply flex-1;
+  }
+
+  [data-rex-overlay],
+  [data-rex-palette],
+  [data-rex-confirm] {
+    @apply fixed inset-x-0 top-[12vh] z-50 mx-auto flex max-h-[76vh] w-[min(32rem,calc(100%-2rem))] flex-col gap-4 overflow-auto rounded-xl border border-border bg-popover p-6 text-popover-foreground shadow-float;
+    box-shadow:
+      0 0 0 100vmax var(--overlay),
+      var(--shadow-float);
+  }
+  [data-rex-overlay] > [data-rex-overlay-close] {
+    @apply self-end;
+  }
+
+  [data-rex-confirm] {
+    @apply w-[min(28rem,calc(100%-2rem))];
+  }
+  [data-rex-confirm] h2 {
+    @apply m-0 text-lg leading-tight font-medium tracking-[-0.01em];
+  }
+  [data-rex-confirm] p {
+    @apply m-0 text-sm text-muted-foreground;
+  }
+  [data-rex-confirm] code {
+    @apply rounded-xs bg-container px-1.5 py-0.5 font-mono text-[0.88em] text-foreground;
+  }
+  [data-rex-confirm] button {
+    @apply focus-ring state-layer inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium;
+  }
+  [data-rex-confirm] [data-rex-confirm-accept] {
+    @apply bg-destructive text-destructive-foreground;
+  }
+  [data-rex-confirm] [data-rex-confirm-cancel] {
+    @apply border border-border bg-transparent text-foreground;
+  }
+
+  [data-rex-palette] {
+    @apply gap-0 p-0;
+  }
+  [data-rex-palette] [cmdk-input] {
+    @apply h-12 w-full border-0 border-b border-border bg-transparent px-4 text-[15px] outline-none;
+  }
+  [data-rex-palette] [cmdk-list] {
+    @apply max-h-[22rem] overflow-auto p-2;
+  }
+  [data-rex-palette] [cmdk-group-heading] {
+    @apply px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase;
+  }
+  [data-rex-palette] [cmdk-item] {
+    @apply flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm;
+  }
+  [data-rex-palette] [cmdk-item][data-selected="true"] {
+    @apply bg-container-high;
+  }
+  [data-rex-palette] [cmdk-item][data-disabled="true"] {
+    @apply cursor-not-allowed text-muted-foreground;
+  }
+  [data-rex-palette] [cmdk-empty] {
+    @apply p-6 text-center text-sm text-muted-foreground;
+  }
+
+  form[data-rex-form] {
+    @apply flex flex-col gap-4;
+  }
+  form[data-rex-form] [data-rex-field] {
+    @apply flex flex-col gap-1.5;
+  }
+  form[data-rex-form] [data-rex-field] label {
+    @apply text-sm font-medium text-foreground;
+  }
+  form[data-rex-form] [data-rex-field] :is(input:not([type="checkbox"]), textarea, select) {
+    @apply focus-ring w-full rounded-lg border border-input bg-transparent px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground;
+  }
+  form[data-rex-form] [data-rex-field] textarea {
+    @apply min-h-28;
+  }
+  form[data-rex-form] [data-rex-field-error] {
+    @apply m-0 text-sm text-destructive;
+  }
+  form[data-rex-form] > button[type="submit"] {
+    @apply focus-ring state-layer primary-fill inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground sm:w-auto sm:self-start;
+  }
+  form[data-rex-form] > button[type="submit"]:disabled {
+    @apply opacity-40;
+  }
+}
+
+[data-rex-density="agent"] [data-demo-frame] {
+  flex-direction: column;
+}
+[data-rex-density="agent"] [data-demo-frame] [data-slot="sidebar"] {
+  inline-size: 100%;
+  block-size: auto;
+}
+[data-rex-density="agent"] [data-demo-appbar] {
+  position: static;
+  backdrop-filter: none;
+}
+[data-rex-density="agent"] .rex-outcome:has([data-rex-outcome="none"]) {
+  position: static;
+  inline-size: auto;
+  block-size: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+[data-rex-density="agent"] [data-demo-sticky] {
+  position: static;
+}
