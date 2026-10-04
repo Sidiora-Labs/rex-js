@@ -180,6 +180,66 @@ It declares the entities `account`, `token` and `contact`, the policies `wallet`
 
 Run it with `pnpm -C packages/rex build` and then `pnpm -C examples/demo test`, which runs `rex check` and then the Playwright operability walk, the no-JS walk (`e2e/nojs.spec.ts`), the axe pass (`e2e/axe.spec.ts`), the Core Web Vitals gate (`e2e/vitals.spec.ts`), Lighthouse (`e2e/lighthouse.ts`) and the screenshots spec; `pnpm -C examples/demo test:unit` runs the page tests with Vitest.
 
+## Standards
+
+Rex 0.2 is held to the framework standards list in `spec/rex-v02/spec.kvx` (the `[standard.*]` sections). Each row is one standard, its status and the tasks that own it: `met` when every owning task is done, `partial` while an owning task is still open, with what remains named and the open entry of `spec/rex-v02/qualification.kvx` that records it. Statuses are as of the 0.2.0 release commit.
+
+| Standard | Requirement | Status | Tasks |
+| --- | --- | --- | --- |
+| performance.s1 | Small runtime (under 10 to 15 KB gzipped for the core); unused code removable at build time. | partial: the core entry imports no zod and meets 15 KB, the edge entry meets 40 KB and `sideEffects` lists only CSS; the client first paint measures 34.02 KB gzip against its 30 KB budget (qualification.7201), so 0.7 and 7.9 are implemented, not done | 0.3, 0.4, 0.7, 7.8, 7.9 |
+| performance.s2 | Fine-grained reactivity or a compiler so updating one value does not re-render the whole page. | met: the React Compiler through the Vite plugin and the `store()` primitive | 0.6, 3.1 |
+| performance.s3 | Good Core Web Vitals out of the box: LCP, INP and CLS without extra tuning. | partial: `e2e/vitals.spec.ts` and `e2e/lighthouse.ts` gate the built demo, but the vitals walk times out on the about page (qualification.736) and `lighthouse.json` records performance 66 under 90 for the portfolio page, so 6.1 is implemented, not done | 6.1 |
+| performance.s4 | Streaming SSR, partial or lazy hydration, option to ship zero JS on static parts. | met: `renderToReadableStream` with hydration; `render: "static"` ships no page JavaScript | 1.1, 1.3 |
+| performance.s5 | Automatic code splitting per route. | met: one lazy chunk per page under Suspense | 0.5 |
+| rendering.s1 | SSR, SSG, CSR and incremental or on-demand regeneration, chosen per route. | met: `render` is `ssr`, `csr`, `ssg` or `static` per page, with `revalidate` for ssg | 0.2, 1.1, 1.3 |
+| rendering.s2 | Runs on edge runtimes as well as Node, Bun and Deno. | met: `rex/server/node`, `bun`, `deno` and `edge` adapters and `rex build --target` | 1.5 |
+| rendering.s3 | Data loading: loaders or server functions with caching, revalidation and request deduping. | met: `load` in `page.ts`, `useLoader` on TanStack Query | 1.2 |
+| rendering.s4 | Forms and mutations work without JavaScript. | met: `ActionForm` posts to `/rex/form/<action>` | 1.4 |
+| rendering.s5 | Built-in Suspense and error boundaries. | met: page Suspense and region error boundaries | 0.5 |
+| dx.s1 | TypeScript first with types inferred end to end: props, routes, loaders, server calls. | met | 1.2 |
+| dx.s2 | Fast HMR that keeps component state. | met | 2.2 |
+| dx.s3 | Vite-compatible tooling, no complex config to start. | met: `rex new`, one plugin, `defineConfig` | 0.2 |
+| dx.s4 | Clear error messages pointing at the exact source location. | met: `RexError` codes with file, line, hint and docs link ([docs/errors.md](docs/errors.md)) | 2.1 |
+| dx.s5 | Devtools for components, state and performance. | met: `rex/devtools` in dev | 2.3 |
+| dx.s6 | A small set of concepts learnable in a day. | met: six primitives, one folder convention, [docs/tutorial.md](docs/tutorial.md) | 2.6 |
+| architecture.s1 | Composable components with one-way data flow. | met: parts are props in, events out | - |
+| architecture.s2 | Built-in router: file-based or typed config, nested layouts, typed params. | met: typed page declarations and params; nested layouts via regions | - |
+| architecture.s3 | State primitives covering local, shared and server state without forcing a third-party library. | met: hooks, `store()` and loaders | 3.1 |
+| architecture.s4 | Interop with Web Components and the native DOM, with an escape hatch to plain JS. | met: `defineElement`, `mountRexPage` and `Native` in `rex/client/interop` | 3.2 |
+| architecture.s5 | Works with standard web APIs (fetch, Request, Response, FormData, URL). | met: fetch-only server and FormData form posts | 1.4 |
+| a11y_i18n.s1 | Semantic HTML by default, focus management on route changes, route announcements. | met | 3.3 |
+| a11y_i18n.s2 | Lint rules or warnings for common accessibility mistakes. | met: the `a11y/*` checker rules and the axe pass | 3.4 |
+| a11y_i18n.s3 | Hooks for i18n and locale-aware routing. | met: `useLocale`, `useT` and locale-prefixed routes | 3.5 |
+| screen_fit.s1 | Components size to the screen and the pointer: fluid type and space, container-driven layout, 44 px targets on touch, overlay and navigation forms chosen by screen class. | partial: the runtime classification, fluid tokens and screen-aware overlays are implemented (9.1, qualification.911 and qualification.912 open); the demo walk on phone, tablet and desktop (9.4) is pending | 9.1, 9.4 |
+| screen_fit.s2 | One standard component vocabulary (DesignX) across generated apps, the shell and the demo, enforced by the checker. | partial: `rex new` installs the DesignX standard set and the `ui/designx-primitive` rule is in the checker; the demo on DesignX everywhere (9.4) is pending | 9.2, 9.3, 9.4 |
+| styling.s1 | No lock-in: scoped CSS, CSS Modules, Tailwind and CSS-in-JS all work. | met | 3.6, 5.2 |
+| styling.s2 | No style flashes during SSR; critical CSS extracted. | met: SSR emits the page stylesheet links in the head | 1.1, 3.6 |
+| security.s1 | Escapes output by default; unsafe HTML needs explicit opt-in. | met: `unsafeHtml()` and the checker rule | 4.1 |
+| security.s2 | CSRF protection for server actions and Content Security Policy with nonces. | met | 4.2, 1.4 |
+| security.s3 | Clear server and client boundary so secrets cannot leak into the browser bundle. | met: handlers stripped from client builds, REX440 and the secret scan | 4.3 |
+| security.s4 | Few dependencies and supply-chain hygiene: provenance, signed releases. | met: four runtime dependencies, MIT, npm provenance from `release.yml` | 0.4, 4.5 |
+| testing.s1 | Testable with Vitest, Playwright and Testing Library. | met: `rex/testing` | 2.4 |
+| testing.s2 | Deterministic rendering; components testable in isolation. | met: `renderPage` and `renderRegion` | 2.4 |
+| testing.s3 | Strict mode, lint and format presets. | met: `rex/eslint` and `rex/prettier` | 2.5 |
+| testing.s4 | Coverage thresholds and a one-to-one test-to-code ratio enforced in CI. | partial: the first 51 unit test files toward the ratio are merged; the coverage thresholds and the ratio gate (8.2) are pending | 8.2 |
+| ecosystem.s1 | Semantic versioning, documented deprecations, codemods for breaking changes. | met: `deprecated()` and `rex migrate` ([docs/versioning.md](docs/versioning.md)) | 5.4 |
+| ecosystem.s2 | Real docs: tutorial, API reference, recipes, migration guide. | met: [docs/tutorial.md](docs/tutorial.md), [docs/api/README.md](docs/api/README.md), [docs/recipes/README.md](docs/recipes/README.md), [docs/migration.md](docs/migration.md) | 2.6 |
+| ecosystem.s3 | A component library approach, first-party or easy to adopt. | met: DesignX through `rex new --ui designx` | 5.2 |
+| ecosystem.s4 | Incremental adoption, one page or widget at a time inside an existing app. | met: `mountRexPage` and `defineElement` | 3.2 |
+| ecosystem.s5 | Open governance and a sustainable funding model. | met: [GOVERNANCE.md](GOVERNANCE.md) and [MAINTAINERS.md](MAINTAINERS.md) | 5.5 |
+| ecosystem.s6 | A full CI pipeline and the package published to npm with provenance. | partial: `ci.yml` and the provenance `release.yml` exist; the package smoke install, the lint and format job, CODEOWNERS, dependabot and templates (8.1, 8.3) are pending | 8.1, 8.3 |
+| cross_platform.s1 | A path to mobile and desktop through Capacitor, Tauri or Electron. | met: [docs/platforms.md](docs/platforms.md) and `rex build --target static` | 5.3 |
+| cross_platform.s2 | A rendering layer that can be swapped for canvas, native or terminal targets. | met: the markdown text renderer at `/rex/pages/<id>.md` | 5.3 |
+| modern.s1 | Built-in optimization for images, fonts and scripts. | met: `Img`, fonts in `rex.config` and `Script` | 5.1 |
+| modern.s2 | View transitions and the Navigation API. | met | 3.3 |
+| modern.s3 | Logging and tracing hooks that work with OpenTelemetry. | met: the `telemetry` server option | 4.4 |
+| modern.s4 | AI-friendly: predictable conventions and good type information. | met: the convention, the manifest and `AGENTS.md` | 2.1, 2.6 |
+| rex_01_gaps.s1 | Paged route for lists that load more on scroll (req 10.4 of rex). | met | 5.6 |
+| rex_01_gaps.s2 | Flow decisions written to the audit ledger. | met | 5.6 |
+| rex_01_gaps.s3 | Checker parity between sidecar and rendered DOM without a browser. | met: `rex check --runtime` | 5.6 |
+| rex_01_gaps.s4 | Drizzle adapter exported from the package. | met: `@sidioralabs/rex/store/drizzle` | 0.4 |
+| rex_01_gaps.s5 | Demo page test folders hold real tests. | met | 2.4 |
+
 ## Documentation
 
 - [docs/convention.md](docs/convention.md): page folder layout, file roles, import table, naming, checker rules.
