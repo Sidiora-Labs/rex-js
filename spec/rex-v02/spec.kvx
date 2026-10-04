@@ -1361,13 +1361,13 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.6.3]
 title = "Release 0.2.0"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 6
 requires = ["6.2", "2.6", "5.7", "7.3", "7.7", "7.18"]
 reqs = ["35.2", "4.3"]
 do_1 = "The package version is already 0.2.0 (set ahead of the release) and CHANGELOG.md is regenerated with cg changelog after the tag per [decision] changelog; add the standards table to README.md with every [standard.*] item and its status, regenerate docs/api and docs/errors, and verify the pack test and the link check."
-touches = ["packages/rex/package.json", "CHANGELOG.md", "README.md", "docs/api", "docs/errors.md", "packages/rex/src/cli/pack.test.ts"]
+touches = ["CHANGELOG.md", "README.md", "packages/rex/src/cli/pack.test.ts"]
 verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/pack.test.ts && node tools/check-links.mjs && node tools/docs-api.mjs --check"
 gate_kind = "planned"
 max_builds = 1

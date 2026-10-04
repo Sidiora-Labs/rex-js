@@ -758,3 +758,11 @@ symbol = "the Page.Outcome frame in page-outcome.tsx"
 observed = "7.18 renamed packages/rex/src/client/page-outcome.tsx to outcome-frame.tsx because Rolldown named its shared chunk page-outcome, which the page chunk prefix rule (split.ts chunkTable, ssr-css.ts) read as a page chunk and the demo client build test rejected; evidence: revision 4b2a82f178e0d13f040070055c248230f4328efb, command pnpm -C packages/rex test, exit 1 (vite.test.ts expected five page chunks, received page-outcome as a sixth), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.18-private/logs/rextest0.log."
 assumption = "The docs owner changes page-outcome.tsx to outcome-frame.tsx in docs/architecture.md:40, outside the 7.18 touches; any app module whose file name starts with page- can meet the same collision, which a follow-up owning split.ts may close by classifying page chunks by their page group rather than by name prefix."
 severity = "minor"
+
+[qualification.631]
+task = "6.3"
+file = "README.md"
+symbol = "the Standards table (req 35 ac_2 no open gap)"
+observed = "req 35.2 asks for a README standards table with no open gap, but at revision 58e5506 performance.s1, performance.s3, screen_fit.s1, screen_fit.s2, testing.s4 and ecosystem.s6 are owned by tasks 0.7, 7.9, 6.1 and 9.1 (implemented, not done; qualification.7201, 736, 911, 912) and 9.4, 8.1, 8.2 and 8.3 (pending), none of them in the 6.3 requires; the table reports these six as partial with what remains; no v0.2.0 tag exists, so CHANGELOG.md was generated with cg changelog --tag v0.2.0 (release.yml publishes on v* tags) from the shared repository's main history, which cg reads in place of the worktree branch."
+assumption = "The table is regenerated from the spec once 0.7, 7.9, 6.1, 9.1, 9.4, 8.1, 8.2 and 8.3 are done, and the release owner tags v0.2.0 on main and reruns cg changelog --tag v0.2.0 after landing; 6.3 does not mark an open standard met."
+severity = "major"

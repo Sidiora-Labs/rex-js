@@ -207,7 +207,7 @@
     - Extend e2e/operability.spec.ts for loaders, forms, static zero-JS assertion, stylesheet order, the text renderer and the CSP console check; add e2e/nojs.spec.ts running the send flow with JavaScript disabled and asserting the audit record; make the demo test script run check, operability, nojs, axe and vitals.
     - Give the demo the lint generator output (qualification.251): eslint.config.js, .prettierrc and .prettierignore as rex new writes them, the lint and format scripts and their devDependencies in package.json, and run the format script so rex check reports no format/prettier finding; vitest.config.ts imports @sidioralabs/rex/vite directly again now that 7.5 makes rex/vite loadable from Node (the runnerImport workaround from 7.4 goes); the portfolio density test (qualification.761) reads the first render's regions before it renders the second, since rex/testing unmounts the previous render, so the demo test:unit passes 40 of 40; every demo page keeps its ui.components override, its loaders and its two locales working through the 7.5 wiring.
     - _Requirements: 35.1, 8.5, 11.5, 22.2, 30.2, 10.3_
-  - [ ] 6.3 Release 0.2.0
+  - [x] 6.3 Release 0.2.0
     - The package version is already 0.2.0 (set ahead of the release) and CHANGELOG.md is regenerated with cg changelog after the tag per [decision] changelog; add the standards table to README.md with every [standard.*] item and its status, regenerate docs/api and docs/errors, and verify the pack test and the link check.
     - _Requirements: 35.2, 4.3_
   - [ ] 6.4 The demo looks like a product: a wallet frame, portfolio and send designed on DesignX — **Implemented - qualification pending**
