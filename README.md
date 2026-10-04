@@ -163,3 +163,13 @@ These parts of the specification are not met or not exercised by the code in thi
 - [docs/development.md](docs/development.md): working on Rex itself: workspace, tests, gates, the spec-driven workflow.
 - [docs/reference.md](docs/reference.md): index of the source types and test helpers.
 - [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
+
+## Governance and community
+
+Rex is MIT licensed ([LICENSE](LICENSE)) and stewarded by Sidiora Labs.
+
+- [GOVERNANCE.md](GOVERNANCE.md): roles, how decisions and spec changes are made, release authority, continuity and funding.
+- [MAINTAINERS.md](MAINTAINERS.md): the current maintainers, release managers and contacts.
+- [SECURITY.md](SECURITY.md): supported versions, how to report a vulnerability privately, and the disclosure timeline.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): the standards for everyone taking part, how to report a violation, and enforcement.
+- [.github/FUNDING.yml](.github/FUNDING.yml): sponsorship channels, shown as the Sponsor button on the repository.
