@@ -164,7 +164,7 @@
     - Implement src/cli/templates.ts exporting one template function per file kind: page.ts, view.tsx, states.tsx (all nine exports), region.tsx, Part.tsx, Overlay.tsx, useHook.ts, action.ts, entity.ts, policy.ts, flow.ts; templates are the canonical shapes from [design] and contain no placeholders that fail rex check.
     - Write src/cli/cli.test.ts running the CLI through tsx for version, help and unknown command.
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
-  - [ ] 4.3 Implement rex make
+  - [x] 4.3 Implement rex make
     - Implement src/cli/commands/make.ts: rex make page <id> --regions a,b --overlays X,Y writing the full page folder; rex make region|part|overlay <page> <name>; rex make action|entity|policy|flow <name>; rex make hook <page> <name>; every command refuses to overwrite and reports each written path.
     - Write src/cli/make.test.ts generating into a temporary directory and asserting the exact file set, the page.ts declaration contents and the overwrite refusal.
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
