@@ -2413,6 +2413,62 @@ write(path, html): Promise<void>;
 
 ***
 
+<a id="staticpagetextoptions"></a>
+
+### StaticPageTextOptions
+
+#### Properties
+
+<a id="actor-9"></a>
+
+##### actor
+
+```ts
+readonly actor: Actor;
+```
+
+<a id="ledger-4"></a>
+
+##### ledger
+
+```ts
+readonly ledger: Ledger;
+```
+
+<a id="manifest-2"></a>
+
+##### manifest
+
+```ts
+readonly manifest: Manifest;
+```
+
+<a id="page-7"></a>
+
+##### page
+
+```ts
+readonly page: AnyPage;
+```
+
+<a id="registry-1"></a>
+
+##### registry
+
+```ts
+readonly registry: RegistrySnapshot;
+```
+
+<a id="url"></a>
+
+##### url
+
+```ts
+readonly url: URL;
+```
+
+***
+
 <a id="telemetryspan"></a>
 
 ### TelemetrySpan
@@ -5571,6 +5627,26 @@ function renderPrerenderedHtml(
 #### Returns
 
 `Promise`\<[`RenderedStaticPage`](#renderedstaticpage)\>
+
+***
+
+<a id="renderstaticpagetext"></a>
+
+### renderStaticPageText()
+
+```ts
+function renderStaticPageText(options): Promise<string>;
+```
+
+#### Parameters
+
+##### options
+
+[`StaticPageTextOptions`](#staticpagetextoptions)
+
+#### Returns
+
+`Promise`\<`string`\>
 
 ***
 
