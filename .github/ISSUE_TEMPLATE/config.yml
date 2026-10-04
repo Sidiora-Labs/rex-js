@@ -1,0 +1,17 @@
+# Blank issues stay enabled: SECURITY.md tells a reporter who cannot use GitHub's private
+# reporting to ask for a private contact in a public issue without describing the vulnerability.
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/Sidiora-Labs/rex-js/security/advisories/new
+    about: >-
+      Vulnerabilities are reported privately through a security advisory, never in an issue.
+      SECURITY.md lists what to include and the response targets.
+  - name: Ask a question or start a discussion
+    url: https://github.com/Sidiora-Labs/rex-js/discussions
+    about: >-
+      Questions, ideas that are not yet a proposal, and anything that is neither a bug nor a
+      feature request.
+  - name: How decisions are made
+    url: https://github.com/Sidiora-Labs/rex-js/blob/main/GOVERNANCE.md
+    about: Who decides what, how spec changes are proposed and accepted, and who may cut a release.

@@ -21,7 +21,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: package.json
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -30,8 +30,8 @@ jobs:
       - name: Test
         run: pnpm -C packages/rex test
 
-  docs:
-    name: Docs and freshness
+  lint:
+    name: Lint and format check
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -39,12 +39,50 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: package.json
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
-      - name: Freshness (generated pointer files are checked where cg is installed)
-        run: node tools/freshness.mjs --check --skip pointers
+      - name: Lint the demo
+        run: pnpm -C examples/demo lint
+      - name: Lint with the root config, or every other package config until one exists
+        run: |
+          if [ -f eslint.config.js ]; then
+            pnpm exec eslint .
+          else
+            for config in packages/*/eslint.config.js examples/*/eslint.config.js; do
+              [ -f "$config" ] || continue
+              dir="$(dirname "$config")"
+              [ "$dir" = examples/demo ] && continue
+              pnpm -C "$dir" exec eslint .
+            done
+          fi
+      - name: Format check of packages/rex/src with the rex preset
+        run: pnpm -C packages/rex exec prettier --config src/prettier.ts --check src
+      - name: Format check of examples/demo with the rex preset
+        run: pnpm -C examples/demo exec prettier --config ../../packages/rex/src/prettier.ts --check .
+
+  coverage:
+    name: Coverage thresholds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Test with coverage
+        run: pnpm -C packages/rex exec vitest run --coverage
+      - name: Upload the coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage
+          path: packages/rex/coverage
 
   demo:
     name: Check, walk and vitals
@@ -55,20 +93,36 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: package.json
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
       - name: Build rex
         run: pnpm -C packages/rex build
-      - name: Check
-        run: pnpm -C examples/demo exec rex check
+      - name: Unit
+        run: pnpm -C examples/demo test:unit
       - name: Install browsers
         run: pnpm -C examples/demo exec playwright install --with-deps chromium
-      - name: Walk
-        run: pnpm -C examples/demo exec playwright test e2e/operability.spec.ts
-      - name: Vitals
-        run: pnpm -C examples/demo test:vitals
+      - name: Check and walk (operability, no-JS, axe, vitals, lighthouse, screenshots)
+        run: pnpm -C examples/demo test
+
+  docs:
+    name: Docs and freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Links and API pages
+        run: pnpm docs:check
+      - name: Freshness (generated pointer files are checked where cg is installed)
+        run: node tools/freshness.mjs --check --skip pointers
 
   supply-chain:
     name: Audit and license review
@@ -79,7 +133,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: package.json
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -87,3 +141,44 @@ jobs:
         run: pnpm audit --prod
       - name: License review
         run: node tools/license-review.mjs
+
+  package:
+    name: Pack and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - name: Pack
+        run: pnpm -C packages/rex pack --pack-destination "$RUNNER_TEMP/package"
+      - name: Smoke test the tarball in a fresh app
+        run: |
+          set -- "$RUNNER_TEMP"/package/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "expected exactly one tarball in $RUNNER_TEMP/package" >&2
+            exit 1
+          fi
+          sh tools/smoke-package.sh "$1"
+
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [verify, lint, coverage, demo, docs, supply-chain, package]
+    if: ${{ always() }}
+    steps:
+      - name: Report every job result
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: echo "$RESULTS"
+      - name: Fail unless every job succeeded
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        run: exit 1
