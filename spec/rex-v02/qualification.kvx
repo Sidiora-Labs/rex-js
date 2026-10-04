@@ -31,3 +31,11 @@ symbol = "rex(), RexPluginOptions.compiler, ResolvedRexOptions.compiler"
 observed = "The Vite plugin honours rex({ compiler }) (default on, client environment only, through reactCompilerPreset and @babel/core), but rex dev, rex build and the module loader call rex() without the resolved rex.config.ts compiler flag because those files are outside the 0.6 touches, so compiler: false in rex.config.ts does not yet reach the plugin; evidence: revision c806c05fcb19f5aa4233c30b464bc3337f27dcff, command pnpm -C packages/rex exec vitest run src/vite/compiler.test.ts src/client/compiler.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.6-verify.log."
 assumption = "The task that next owns the dev and build commands passes { compiler: config.compiler } from the loaded config into rex()."
 severity = "assumption"
+
+[qualification.05]
+task = "0.7"
+file = "packages/rex/src/core/schema.ts, core/page.ts, core/entity.ts, manifest/sidecar.schema.ts, server/router.ts, server/flow.ts, client/act.ts"
+symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowStateSchema, confirmGrantSchema"
+observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
+assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
+severity = "blocker"

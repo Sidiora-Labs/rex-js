@@ -340,6 +340,26 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     expect(restored).toEqual({ code: EXIT_OK, out: "[]\n", err: "" });
   });
 
+  it("rex build prints the chunk table and fails a page chunk over the rex.config page budget", async () => {
+    const built = await cli(root, "build", "--no-check");
+    expect(built.code).toBe(EXIT_OK);
+    expect(built.out.split("\n")[0]).toMatch(/^chunk\s+raw\s+gzip\s+budget$/);
+    expect(built.out).toMatch(/^page-home\s+[\d.]+ KB\s+[\d.]+ KB\s+50 KB$/m);
+
+    const configFile = join(root, "rex.config.ts");
+    const generated = readFileSync(configFile, "utf8");
+    try {
+      writeFileSync(configFile, generated.replace("  app,", "  app,\n  budgets: { page: 0.01 },"));
+      const over = await cli(root, "build", "--no-check");
+      expect(over.code).toBe(EXIT_FAILURE);
+      expect(over.out).toMatch(/^page-home\s+[\d.]+ KB\s+[\d.]+ KB\s+0\.01 KB OVER$/m);
+      expect(over.err).toContain("rex build: page-home (");
+      expect(over.err).toContain("budget 0.01 KB) over budget");
+    } finally {
+      writeFileSync(configFile, generated);
+    }
+  });
+
   it("rex manifest, dev and build fail with exit 1 outside a Rex app", async () => {
     const empty = mkdtempSync(join(tmpdir(), "rex-commands-empty-"));
     temporary.push(empty);

@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import type { RexCommand as Command } from "../args.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
 import { rex } from "../../vite/index.ts";
+import { chunkBudgets, resolveBudgets } from "../../vite/budgets.ts";
 import {
-  PAGE_BUDGET_KB,
   chunkTable,
   formatChunkTable,
   type ChunkRow,
@@ -16,6 +16,7 @@ import { loadRexConfig } from "../config.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
 import { ensureCheckPasses } from "./check.ts";
 import { appConfigPath, cliWarn, rexCliExit } from "./dev.ts";
+import type { ResolvedBudgets } from "../../core/config.ts";
 import type { DeprecationWarn } from "../../core/deprecated.ts";
 
 export const DIST_DIR = "dist";
@@ -129,10 +130,15 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
   const appRoot = resolve(root);
   const config = appConfigPath(appRoot);
   const logLevel = options.logLevel ?? "warn";
+  let budgets: ResolvedBudgets;
   try {
-    await loadRexConfig(appRoot, options.warn === undefined ? {} : { warn: options.warn });
+    const loaded = await loadRexConfig(
+      appRoot,
+      options.warn === undefined ? {} : { warn: options.warn },
+    );
+    budgets = resolveBudgets(loaded.read);
   } catch (error) {
-    rexCliExit(error);
+    return rexCliExit(error);
   }
   const outDir = join(appRoot, DIST_DIR);
   const clientDir = join(outDir, CLIENT_DIR);
@@ -145,7 +151,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     plugins: rex(),
     build: { outDir: clientDir, emptyOutDir: true },
   });
-  const chunks = chunkTable(outputItems(client), { page: PAGE_BUDGET_KB });
+  const chunks = chunkTable(outputItems(client), chunkBudgets(budgets));
 
   await build({
     root: appRoot,

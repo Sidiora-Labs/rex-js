@@ -40,7 +40,7 @@
     - Write vite/compiler.test.ts building the fixture app and asserting the compiler runtime import (react/compiler-runtime) appears in a compiled part, and that compiler false leaves it out.
     - Write client/compiler.test.tsx using React Profiler on the fixture page: update one store-like value read by one part and assert only that part commits again.
     - _Requirements: 6.1, 6.2_
-  - [ ] 0.7 Enforce size budgets for the core, the client runtime and page chunks
+  - [ ] 0.7 Enforce size budgets for the core, the client runtime and page chunks — **Implemented - qualification pending**
     - Add vite/budgets.ts resolving budgets from rex.config with the defaults in [design] budgets and make cli/commands/build.ts use it for the chunk table and the exit code.
     - Write src/size.test.ts that bundles the rex, rex/client and rex/server/edge entries (the edge entry is server/index.ts until 1.5 adds adapters) with Vite's build API, externalising react, react-dom, @tanstack/react-query, cmdk, wouter and @orpc/client, and asserts 15 KB, 30 KB and 40 KB gzipped respectively; the test prints the measured sizes.
     - _Requirements: 7.1, 7.2, 3.4_
