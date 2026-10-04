@@ -103,7 +103,6 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
       return parsed.value as ActionOutput<A>;
     },
     onSuccess: async () => {
-      if (declared.invalidates.length === 0) return;
       await Promise.all([
         ...declared.invalidates.map((name) => queryClient.invalidateQueries({ queryKey: [name] })),
         queryClient.invalidateQueries({

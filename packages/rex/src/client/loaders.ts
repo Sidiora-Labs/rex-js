@@ -168,7 +168,11 @@ export function loaderInvalidatedBy(
 ): boolean {
   const loader = declared.loaders.find((entry) => entry.name === loaderName);
   if (loader === undefined) return false;
-  return mutating.invalidates.includes(loader.name) || mutating.invalidates.includes(loader.action.id);
+  return (
+    mutating.invalidates.includes(loader.name) ||
+    mutating.invalidates.includes(loader.action.id) ||
+    loader.invalidatedBy.includes(mutating.id)
+  );
 }
 
 export function invalidatesLoaderQuery(

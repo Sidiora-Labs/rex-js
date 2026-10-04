@@ -51,7 +51,8 @@ export interface PageChrome {
 
 export interface PageLoaderInput<Act extends AnyAction = AnyAction> {
   readonly action: Act;
-  input(params: Readonly<Record<string, unknown>>): unknown;
+  input?(params: Readonly<Record<string, unknown>>): unknown;
+  readonly invalidatedBy?: readonly string[];
 }
 
 export type PageLoaderSpec = AnyAction | PageLoaderInput;
@@ -62,6 +63,7 @@ export interface PageLoader {
   readonly name: string;
   readonly action: AnyAction;
   readonly input: ((params: Readonly<Record<string, unknown>>) => unknown) | null;
+  readonly invalidatedBy: readonly string[];
 }
 
 export interface PageCacheConfig {
@@ -236,7 +238,24 @@ const PAGE_KEYS = new Set([
   "transition",
 ]);
 const CHROME_KEYS = new Set(["header", "nav", "back", "title"]);
-const LOADER_INPUT_KEYS = new Set(["action", "input"]);
+const LOADER_INPUT_KEYS = new Set(["action", "input", "invalidatedBy"]);
+
+function loaderInvalidatedByList(
+  value: unknown,
+  field: string,
+  reject: (code: RexErrorCode, field: string, problem: string) => never,
+): readonly string[] {
+  if (!Array.isArray(value)) return reject("REX203", field, "must be a list of action ids");
+  const ids = new Set<string>();
+  for (const [index, entry] of value.entries()) {
+    if (typeof entry !== "string" || !isValidName(entry)) {
+      reject("REX203", `${field}.${index}`, "must be an action id");
+    }
+    if (ids.has(entry)) reject("REX203", `${field}.${index}`, `repeats action "${entry}"`);
+    ids.add(entry);
+  }
+  return Object.freeze([...ids]);
+}
 
 function isActionDeclaration(value: unknown): value is AnyAction {
   return (
@@ -459,21 +478,32 @@ export function page<
     }
     let loaderAction: unknown = spec;
     let loaderInput: PageLoader["input"] = null;
+    let invalidatedBy: readonly string[] = Object.freeze([]);
     if (!isActionDeclaration(spec)) {
       if (!isPlainObject(spec as unknown)) {
-        reject("REX203", field, "must be a read action or { action, input }");
+        reject("REX203", field, "must be a read action or { action, input, invalidatedBy }");
       }
       for (const property of Object.keys(spec)) {
         if (!LOADER_INPUT_KEYS.has(property)) {
-          reject("REX203", `${field}.${property}`, "is not one of action, input");
+          reject("REX203", `${field}.${property}`, "is not one of action, input, invalidatedBy");
         }
       }
-      if (typeof spec.input !== "function") {
-        reject("REX203", `${field}.input`, "must be a function from the page params to the input");
+      if (spec.invalidatedBy !== undefined) {
+        invalidatedBy = loaderInvalidatedByList(spec.invalidatedBy, `${field}.invalidatedBy`, reject);
+      }
+      if (spec.input !== undefined || spec.invalidatedBy === undefined) {
+        const mapInput: unknown = spec.input;
+        if (typeof mapInput !== "function") {
+          return reject(
+            "REX203",
+            `${field}.input`,
+            "must be a function from the page params to the input",
+          );
+        }
+        const mapper = mapInput.bind(spec) as NonNullable<PageLoader["input"]>;
+        loaderInput = (params) => mapper(params);
       }
       loaderAction = spec.action;
-      const mapper = spec.input.bind(spec);
-      loaderInput = (params) => mapper(params);
     }
     if (!isActionDeclaration(loaderAction)) {
       reject("REX203", field, "must reference an action declaration");
@@ -482,7 +512,9 @@ export function page<
     if (declared.effect !== "read") {
       reject("REX203", field, `references action "${declared.id}" whose effect is not read`);
     }
-    loaders.push(Object.freeze({ name: loaderName, action: declared, input: loaderInput }));
+    loaders.push(
+      Object.freeze({ name: loaderName, action: declared, input: loaderInput, invalidatedBy }),
+    );
   }
 
   let cache: PageCacheConfig | null = null;

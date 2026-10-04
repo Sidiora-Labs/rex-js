@@ -88,7 +88,10 @@ export interface RenderPageOptions {
   readonly params?: Readonly<Record<string, unknown>>;
   readonly locale?: string;
   readonly density?: RexDensity;
+  readonly pageTimeout?: number;
 }
+
+export const DEFAULT_PAGE_TIMEOUT = 15_000;
 
 export interface RexRenderResult extends RenderResult {
   readonly app: TestApp;
@@ -230,6 +233,7 @@ interface RenderSetup {
   readonly queryClient: QueryClient;
   readonly outcomes: OutcomeStore;
   readonly memory: MemoryHistory;
+  readonly pageTimeout: number;
   readonly restoreLocale: () => void;
 }
 
@@ -252,9 +256,20 @@ function applyLocale(locale: string | undefined): () => void {
   };
 }
 
+function resolvePageTimeout(pageTimeout: number | undefined): number {
+  if (pageTimeout === undefined) return DEFAULT_PAGE_TIMEOUT;
+  if (typeof pageTimeout !== "number" || !Number.isFinite(pageTimeout) || pageTimeout <= 0) {
+    throw new RexTestingError(
+      `pageTimeout must be a positive number of milliseconds, received ${String(pageTimeout)}`,
+    );
+  }
+  return pageTimeout;
+}
+
 function prepare(app: TestApp, pageId: string, options: RenderPageOptions): RenderSetup {
   cleanupRex();
   const declared = app.page(pageId);
+  const pageTimeout = resolvePageTimeout(options.pageTimeout);
   const density = options.density ?? "default";
   if (!isRexDensity(density)) {
     throw new RexTestingError(`density must be "default" or "agent", received ${String(density)}`);
@@ -275,6 +290,7 @@ function prepare(app: TestApp, pageId: string, options: RenderPageOptions): Rend
     queryClient: new QueryClient({ defaultOptions: { queries: { retry: false } } }),
     outcomes: createOutcomeStore(),
     memory,
+    pageTimeout,
     restoreLocale: applyLocale(locale),
   };
 }
@@ -332,14 +348,19 @@ async function mount(
     setup.restoreLocale();
   };
   mounted.add(unmount);
-  const startup = await waitFor(() => {
-    const failed = container.querySelector('[data-rex-app-state="error"]');
-    if (failed !== null) return failed.textContent ?? "startup failed";
-    if (container.querySelector(pageSelector(setup.page.id)) === null) {
-      throw new RexTestingError(`page "${setup.page.id}" did not mount at ${setup.href}`);
-    }
-    return null;
-  });
+  const startup = await waitFor(
+    () => {
+      const failed = container.querySelector('[data-rex-app-state="error"]');
+      if (failed !== null) return failed.textContent ?? "startup failed";
+      if (container.querySelector(pageSelector(setup.page.id)) === null) {
+        throw new RexTestingError(
+          `page "${setup.page.id}" did not mount at ${setup.href} within ${setup.pageTimeout} ms`,
+        );
+      }
+      return null;
+    },
+    { timeout: setup.pageTimeout },
+  );
   if (startup !== null) {
     unmount();
     throw new RexTestingError(`the app failed to start: ${startup}`);

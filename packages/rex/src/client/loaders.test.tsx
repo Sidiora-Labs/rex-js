@@ -96,6 +96,20 @@ const addNote = action("add-note", {
   },
 });
 
+const archiveNote = action("archive-note", {
+  input: z.object({ id: text({ min: 1 }) }),
+  output: z.object({ archived: z.boolean() }),
+  policy: always(),
+  effect: "reversible",
+  label: "Archive note",
+  handler: (input) => {
+    const index = notes.findIndex((note) => note.id === input.id);
+    if (index === -1) return { archived: false };
+    notes.splice(index, 1);
+    return { archived: true };
+  },
+});
+
 const brokenFeed = action("broken-feed", {
   input: z.object({}),
   output: notesOutput,
@@ -140,6 +154,17 @@ const notePage = page("note", {
   params: z.object({ id: text({ min: 1 }) }),
   load: { note: { action: readNote, input: (params: Readonly<Record<string, unknown>>) => ({ id: String(params.id) }) } },
   chrome: { title: "Note" },
+});
+
+const boardPage = page("board", {
+  route: "/board",
+  actions: [archiveNote],
+  regions: ["main"],
+  load: {
+    notes: { action: listNotes, invalidatedBy: ["archive-note"] },
+    pinned: { action: readNote, input: () => ({ id: "n2" }) },
+  },
+  chrome: { title: "Board" },
 });
 
 const brokenPage = page("broken", {
@@ -236,6 +261,42 @@ function GoneFeedLength() {
   return <p>{query.data?.items.length ?? 0} feed items</p>;
 }
 
+function BoardLists() {
+  const all = useLoaders(boardPage);
+  return (
+    <>
+      <ul data-testid="board-notes">
+        {(all.notes.data?.items ?? []).map((note) => (
+          <li key={note.id}>{note.title}</li>
+        ))}
+      </ul>
+      <p data-testid="board-pinned">{all.pinned.data?.title}</p>
+    </>
+  );
+}
+
+const BoardMain = region("main", ({ act: useAct }) => {
+  const archive = useAct(archiveNote);
+  return (
+    <button
+      type="button"
+      {...archive.controlProps}
+      onClick={() => {
+        void archive.run({ id: "n1" });
+      }}
+    >
+      Archive first note
+    </button>
+  );
+});
+
+const BoardView = view(() => (
+  <>
+    <BoardLists />
+    <BoardMain />
+  </>
+));
+
 const BrokenView = view(() => <BrokenFeedLength />);
 const GoneView = view(() => <GoneFeedLength />);
 
@@ -244,11 +305,13 @@ const registry = createRegistry()
     listNotes,
     readNote,
     addNote,
+    archiveNote,
     brokenFeed,
     goneFeed,
     notesPage,
     freshPage,
     notePage,
+    boardPage,
     brokenPage,
     gonePage,
   )
@@ -277,6 +340,7 @@ const bundle: RexEntryBundle = {
     eager(notesPage, "Notes", NotesView, { main: NotesMain }),
     eager(freshPage, "Fresh", FreshView),
     eager(notePage, "Note", NoteView),
+    eager(boardPage, "Board", BoardView, { main: BoardMain }),
     eager(brokenPage, "Broken feed", BrokenView),
     eager(gonePage, "Gone feed", GoneView),
   ],
@@ -489,6 +553,52 @@ describe("page loaders", () => {
     );
     expect(calls.listNotes).toBe(2);
     expect(rpcCalls).toEqual(["list-notes", "add-note", "list-notes"]);
+  });
+
+  it("refetches a loader that names the mutating action in invalidatedBy and leaves an unrelated loader untouched", async () => {
+    resetData();
+    expect(archiveNote.invalidates).toEqual([]);
+    expect(boardPage.loaders.map((loader) => [loader.name, loader.invalidatedBy])).toEqual([
+      ["notes", ["archive-note"]],
+      ["pinned", []],
+    ]);
+    const queryClient = quietClient();
+    const container = await mount("/board", queryClient);
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="board-notes"]')?.textContent).toBe(
+        "First noteSecond note",
+      );
+      expect(container.querySelector('[data-testid="board-pinned"]')?.textContent).toBe(
+        "Second note",
+      );
+    });
+    expect(calls.listNotes).toBe(1);
+    expect(calls.readNote).toBe(1);
+    const pinnedKey = loaderQueryKey("board", "pinned", { id: "n2" });
+    const pinnedUpdatedAt = queryClient.getQueryState(pinnedKey)?.dataUpdatedAt;
+    expect(pinnedUpdatedAt).toBeGreaterThan(0);
+
+    const button = container.querySelector('[data-rex-region="board/main"] button');
+    expect(button).not.toBeNull();
+    await act(async () => {
+      (button as HTMLButtonElement).click();
+    });
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="board-notes"]')?.textContent).toBe(
+        "Second note",
+      ),
+    );
+    await settle();
+    expect(calls.listNotes).toBe(2);
+    expect(calls.readNote).toBe(1);
+    expect(queryClient.getQueryState(pinnedKey)?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryState(pinnedKey)?.dataUpdatedAt).toBe(pinnedUpdatedAt);
+    expect(rpcCalls.filter((name) => name !== "read-note")).toEqual([
+      "list-notes",
+      "archive-note",
+      "list-notes",
+    ]);
+    expect(rpcCalls.filter((name) => name === "read-note")).toHaveLength(1);
   });
 
   it("runs loaders in process during SSR, dehydrates them and hydrates the client without a request", async () => {

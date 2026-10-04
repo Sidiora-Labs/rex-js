@@ -4,10 +4,12 @@ import { DENSITY_ATTRIBUTE } from "../client/agent/density.ts";
 import { decodeActorHeader } from "../client/app.tsx";
 import { registerReset } from "../client/reset.ts";
 import { REX_ACTOR_HEADER } from "../core/protocol.ts";
+import { isLazyPageModules, type PageModuleSet } from "../client/page.tsx";
 import { memoryLedger } from "../server/audit.ts";
 import { notesApp } from "./fixtures/app.ts";
 import { SEED_NOTES, listRecords } from "./fixtures/data.ts";
 import {
+  DEFAULT_PAGE_TIMEOUT,
   RexTestingError,
   createTestApp,
   readSidecar,
@@ -23,6 +25,22 @@ setupRexTesting({ afterEach });
 
 const writer = { id: "writer", permissions: ["notes.read", "notes.write"] };
 const reader = { id: "reader", permissions: ["notes.read"] };
+
+const SLOW_PAGE_DELAY = 1_200;
+
+function slowNoteApp(): typeof notesApp {
+  const pages = notesApp.pages.map((modules): PageModuleSet => {
+    if (modules.page.id !== "note" || !isLazyPageModules(modules)) return modules;
+    return {
+      ...modules,
+      load: async () => {
+        await new Promise((resolve) => setTimeout(resolve, SLOW_PAGE_DELAY));
+        return modules.load();
+      },
+    };
+  });
+  return Object.freeze({ ...notesApp, pages });
+}
 
 function noteTitles(view: RexRenderResult): string[] {
   return [...view.container.querySelectorAll("[data-note]")].map((item) => item.textContent ?? "");
@@ -233,6 +251,35 @@ describe("renderPage", () => {
       /density must be/,
     );
     await expect(renderPage(app, "notes", { locale: "not a locale" })).rejects.toThrow(RangeError);
+  });
+});
+
+describe("page mount wait", () => {
+  it("waits for a slow lazy page past the Testing Library default instead of the clock", async () => {
+    expect(DEFAULT_PAGE_TIMEOUT).toBe(15_000);
+    const app = createTestApp(slowNoteApp(), { actor: reader });
+    const started = Date.now();
+    const detail = await renderPage(app, "note", { params: { noteId: "n2" } });
+    expect(Date.now() - started).toBeGreaterThan(1_000);
+    expect(detail.container.querySelector('[data-rex-page="note"]:not([data-rex-page-loading])')).not.toBeNull();
+    await waitFor(() =>
+      expect(detail.container.querySelector('[data-note-detail="n2"]')?.textContent).toBe(
+        "Call Ada",
+      ),
+    );
+  });
+
+  it("fails with the page and route once pageTimeout passes and rejects an invalid pageTimeout", async () => {
+    const app = createTestApp(slowNoteApp(), { actor: reader });
+    await expect(
+      renderPage(app, "note", { params: { noteId: "n1" }, pageTimeout: 100 }),
+    ).rejects.toThrow(/page "note" did not mount at \/notes\/n1 within 100 ms/);
+    await expect(renderPage(app, "notes", { pageTimeout: 0 })).rejects.toThrow(
+      /pageTimeout must be a positive number of milliseconds/,
+    );
+    await expect(renderRegion(app, "notes", "list", {}, { pageTimeout: Number.NaN })).rejects.toThrow(
+      RexTestingError,
+    );
   });
 });
 

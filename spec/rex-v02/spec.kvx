@@ -1436,7 +1436,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.6]
 title = "Loaders declare invalidatedBy so a mutating action refreshes the loaders that name it"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 7
 requires = []
