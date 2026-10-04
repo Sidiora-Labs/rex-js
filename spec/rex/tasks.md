@@ -134,7 +134,7 @@
     - Implement src/check/rules/states.ts: states.tsx exports one component per declared state, no extra exports, and view.tsx has a default export.
     - Create pass and fail fixtures and write src/check/rules/parity.test.ts covering each mismatch direction.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ] 3.4 Implement the naming, trap and token rules
+  - [x] 3.4 Implement the naming, trap and token rules
     - Implement src/check/rules/naming.ts: parts are PascalCase with one default export, hooks are camelCase starting with use with one named export, region files are region.tsx, overlay files are PascalCase.
     - Implement src/check/rules/traps.ts: onMouseEnter or onMouseOver without onFocus, draggable without a data-rex-alternative attribute, canvas without a data-rex-alternative attribute, and overlays without a declared dismiss.
     - Implement src/check/rules/tokens.ts: raw Tailwind color utilities, arbitrary value brackets and inline style color properties outside app/components.
