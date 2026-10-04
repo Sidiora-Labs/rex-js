@@ -8,25 +8,40 @@ Rex owns conventions, generators, the checker and the agent contract. It does no
 
 | Specifier | Workspace entry | Published entry | Contents |
 | --- | --- | --- | --- |
-| `@sidioralabs/rex` | `src/index.ts` | `dist/index.js` | core primitives (`entity`, `action`, `page`, `policy`, `flow`, field helpers, stores, registry, journal), the wire protocol constants, manifest types, `buildManifest`, the sidecar schema, `REX_VERSION` |
-| `@sidioralabs/rex/client` | `src/client/index.ts` | `dist/client/index.js` | `createRexApp`, `createRexEntry`, router, navigation, `useAct`, outcome store, data states, `view`, `region`, `PageHost`, `Page` layout primitives, `Shell`, `overlay`, and the agent modules (address, sidecar, outcome region, palette, shortcuts, URL invocation, confirmation, density, flow) |
+| `@sidioralabs/rex` | `src/index.ts` | `dist/index.js` | the declaration surface only: `entity`, `action`, `page`, `policy`, `flow`, `overlay` declarations, actors and policy predicates, the nine data states, stores (`Store`, `bind`, `memoryStore`), the registry, the journal, the id and address helpers (`core/ids.ts`), the serialize helpers, the error catalog, `deprecated`, the wire protocol constants, the manifest types, `validateStandard`/`isStandardSchema` and `REX_VERSION`; no zod, no field helpers (`@sidioralabs/rex/schema`), no `buildManifest`, `toJsonSchema` or sidecar schema (`@sidioralabs/rex/manifest`) |
+| `@sidioralabs/rex/client` | `src/client/index.ts` | `dist/client/index.js` | `createRexApp`, `createRexEntry`, router, navigation, `useAct`, outcome store, data states, `view`, `region`, `PageHost`, `Page` layout primitives, `Shell`, `overlay`, and the agent modules (address, sidecar, outcome region, palette, shortcuts, URL invocation, confirmation, density, flow), `startRexEntry` and `findRootElement` (hydration of a server-rendered root), the region error boundary (`RegionBoundary`), `useScreen` and the screen classification, `Page.List`, the `ShellComponents` slots with `registerShellComponents` and the token defaults, `RexProviders`, `store()`, `unsafeHtml`, `ActionForm`, `useLoader`/`useLoaders` and `registerI18n` |
 | `@sidioralabs/rex/client/interop` | `src/client/interop/index.ts` | `dist/client/interop/index.js` | `defineElement`, `mountRexPage` and `Native`, for custom elements and mounting Rex pages into foreign apps |
 | `@sidioralabs/rex/client/media` | `src/client/media/index.ts` | `dist/client/media/index.js` | `Img`, `Script` and `loadScript` |
 | `@sidioralabs/rex/client/i18n` | `src/client/i18n/index.ts` | `dist/client/i18n/index.js` | `useT`, `useLocale`, `t`, `formatMessage`, the locale resolution helpers and `defineI18n` |
 | `@sidioralabs/rex/server` | `src/server/index.ts` | `dist/server/index.js` | `createRexServer`, the audit ledger, the action router, the request context, flow procedures |
 | `@sidioralabs/rex/vite` | `src/vite/index.ts` | `dist/vite/index.js` | the `rex()` Vite plugin and the virtual module generators |
 | `@sidioralabs/rex/check` | `src/check/index.ts` | `dist/check/index.js` | the checker engine, rule helpers, formatters, `defaultRules` and `runCheck` |
+| `@sidioralabs/rex/config` | `src/config.ts` | `dist/config.js` | `defineConfig`, `RexConfig` and the config types, `RexConfigError` and the config error codes |
+| `@sidioralabs/rex/schema` | `src/schema/index.ts` | `dist/schema/index.js` | the zod/mini field helpers `id`, `text`, `money`, `integer`, `real`, `boolean`, `enumOf`, `ref`, `timestamp`, `json`, with `fieldKind` and `refTarget` |
+| `@sidioralabs/rex/manifest` | `src/manifest/index.ts` | `dist/manifest/index.js` | `buildManifest`, `toJsonSchema`, `stableStringify`, the manifest types, `sidecarSchema`, `sidecarJsonSchema`, `validateSidecar` |
+| `@sidioralabs/rex/server/node` | `src/server/node.ts` | `dist/server/node.js` | `startNodeServer`, `createNodeApp`, `installNodeStaticPages`, `createPrerenderedNodeApp`, `startPrerenderedNodeServer` |
+| `@sidioralabs/rex/server/bun` | `src/server/adapters/bun.ts` | `dist/server/adapters/bun.js` | `startBunServer` |
+| `@sidioralabs/rex/server/deno` | `src/server/adapters/deno.ts` | `dist/server/adapters/deno.js` | `startDenoServer` |
+| `@sidioralabs/rex/server/edge` | `src/server/adapters/edge.ts` | `dist/server/adapters/edge.js` | `createEdgeHandler`, `createEdgeServer` |
+| `@sidioralabs/rex/server-only` | `src/server-only.ts` | `dist/server-only.js` | the import that marks a module server-only for the boundary check |
+| `@sidioralabs/rex/store/drizzle` | `src/store/index.ts` | `dist/store/index.js` | `drizzleStore`, `entityTable`, `createTableStatement`, `columnSpecs`, `tableNameFor` |
+| `@sidioralabs/rex/testing` | `src/testing/index.ts` | `dist/testing/index.js` | the test app, server and render helpers (`createTestApp`, `testServer`, `renderPage`, `renderRegion`, `readSidecar`) |
+| `@sidioralabs/rex/devtools` | `src/client/devtools/index.ts` | `dist/client/devtools/index.js` | the dev-only devtools overlay, its panels and its provider |
+| `@sidioralabs/rex/eslint` | `src/eslint/index.ts` | `dist/eslint/index.js` | the `rex/eslint` plugin and preset |
+| `@sidioralabs/rex/prettier` | `src/prettier.ts` | `dist/prettier.js` | `rexPrettierConfig` |
+| `@sidioralabs/rex/designx` | `src/designx/index.ts` | `dist/designx/index.js` | `DESIGNX_MAP`, `DESIGNX_STANDARD`, `DESIGNX_ITEMS` |
+| `@sidioralabs/rex/package.json` | `package.json` | `package.json` | the package manifest |
 | `rex` (bin) | | `dist/cli/index.js` | the CLI |
 
 `@sidioralabs/rex/client` holds what every app needs: the runtime, router, `useAct`, loaders, data states, shell, sidecar, forms and screen classification. Interop, media and i18n message formatting are optional capabilities behind their own entries, so an app that does not import them never ships them; `registerI18n`, which the generated `rex:app` module calls when the app has `app/locales`, stays in `@sidioralabs/rex/client`. `rex migrate --from 0.1` moves those names out of `@sidioralabs/rex/client` imports (the `0.1-schema-entry` codemod).
 
-Budgets are measured on the first paint of each fully minified production entry (`bundleBudgetEntry` in `src/vite/budgets.ts`): the entry chunk plus every chunk it imports statically, against core 15 KB gzip, client 30 KB, edge 40 KB. Every chunk an entry loads lazily is measured on its own against 10 KB, since it never ships before first use. The client budget is measured on the runtime an app ships, `src/client/entry.tsx` (`createRexEntry` and `startRexEntry`, what the generated `rex:entry` module imports) plus its static imports, not on the whole `src/client/index.ts` export surface. `src/size.test.ts` prints every first-paint and lazy chunk and asserts both, and prints the export surface for information without a budget.
+Budgets are measured on the fully minified production first paint: the entry chunk plus every chunk it imports statically (`bundleBudgetEntry` builds and `measureBudgetChunks` sums them in `src/vite/budgets.ts`): core 15 KB gzip, client 30 KB, edge 40 KB, and 50 KB per page chunk at `rex build`. Every chunk an entry loads only through a dynamic import (the palette menu, the confirmation dialog, the overlay host, the flow gate, the error and not-found renderers, the message formatter, the `ActionForm` markup and the `Page.List` window) is measured on its own against 10 KB, since it never ships before first use. The client budget is measured on the runtime an app ships, `src/client/entry.tsx` (`createRexEntry` and `startRexEntry`, what the generated `rex:entry` module imports) plus its static imports, not on the whole `src/client/index.ts` export surface. `src/size.test.ts` prints every first-paint and lazy chunk and asserts both, and prints the export surface for information without a budget.
 
 Every surface `@sidioralabs/rex/client` only exports (overlay, flow, address, store, boundary, form, list) and every optional entry (interop, media, i18n message formatting) tree-shakes away from an app that does not import it: `src/vite/budgets.test.ts` bundles an app that imports only `createRexEntry` and `startRexEntry` and asserts none of their modules ships. The package marks its modules side-effect free, so a module ships only when the runtime uses one of its exports; a value the runtime needs therefore lives in a runtime module, never in a surface module (the store registry in `store-registry.ts`, the page states context in `page.tsx`, the `Page.Outcome` frame in `page-outcome.tsx`), and the message formatter reaches the i18n provider only through the `registerI18n` registration.
 
 The client's lazy surfaces all go through `lazyModule` and `useLazyModule` in `src/client/lazy.ts`: a surface suspends during SSR and hydration, so the server HTML and the forms-without-JS path are unchanged, and renders nothing on the client until its chunk loads; a chunk that fails to load reports REX326 through the outcome region. A lazy module is a leaf that imports only types from the runtime and receives runtime values as props, so splitting it never pulls runtime modules into a shared chunk. The lazy surfaces are the palette menu (`agent/palette-menu.tsx`), the confirmation dialog (`agent/confirm-dialog.tsx`), the overlay host (`overlay-surface.tsx`), the flow gate (`agent/flow-gate.ts`), the error and not-found renderers (`fallbacks.tsx`), the message formatter (`i18n/format.ts`), the `ActionForm` markup (`form-view.tsx`) and the `Page.List` window (`list-view.tsx`).
 
-The build (`pnpm -C packages/rex build`) runs `tsc -p tsconfig.build.json`, copies `client/tokens.css`, `client/agent/density.css` and `vite/rex-app.d.ts` into `dist/`, and reinstalls the workspace offline so the demo's `rex` bin links to `dist/cli/index.js`. `src/server/node.ts` (the Node server used by `rex build`) is the `@sidioralabs/rex/server/node` entry and `src/store/drizzle.ts` is re-exported by `@sidioralabs/rex/store/drizzle`; `rex build` imports `node.ts` by file path.
+The build (`pnpm -C packages/rex build`) runs `tsc -p tsconfig.build.json`, copies `client/tokens.css`, `client/agent/density.css` and `vite/rex-app.d.ts` into `dist/`, and reinstalls the workspace offline so the demo's `rex` bin links to `dist/cli/index.js`. `src/server/node.ts` is published as `@sidioralabs/rex/server/node` and `src/store/drizzle.ts` as `@sidioralabs/rex/store/drizzle` (through `src/store/index.ts`). The server entry written by `rex build` imports by resolved file path: `createRexServer` and `memoryLedger` from the file `@sidioralabs/rex/server` resolves to, the adapter for the target from the sibling `server/node` or `server/adapters/<bun|deno|edge>` file, `core/config` and `core/actor` (`serverRuntimePathsAt` in `src/cli/commands/build.ts`), plus the app's `rex.config.ts` and the prebuilt `manifest.json`.
 
 ## The wire protocol
 
@@ -41,8 +56,14 @@ The build (`pnpm -C packages/rex build`) runs `tsc -p tsconfig.build.json`, copi
 | `REX_ACTOR_HEADER` | `x-rex-actor` |
 | `REX_DENSITY_HEADER` | `x-rex-density` |
 | `RESERVED_QUERY_KEYS` | `act`, `input`, `draft`, `density` |
+| `FLOW_RPC_PREFIX` | `/rex/flow` |
+| `REX_DENSITIES` | `default`, `agent` |
+| `SIDECAR_MIME_TYPE` | `application/rex+json` |
+| `SIDECAR_ELEMENT_ID` | `rex-page` |
+| `SIDECAR_VERSION` | `1` |
+| `INVOCATION_ROUTES` | `click`, `key`, `palette`, `url` |
 
-The server adds `HEALTH_PATH` (`/rex/health`) and `FLOW_RPC_PREFIX` (`/rex/flow`).
+`protocol.ts` also declares the `_confirm` input and output schemas and the flow `status`, `start` and `decide` schemas. The server adds `HEALTH_PATH` (`/rex/health`, `server/routes/health.ts`).
 
 ## Server
 
@@ -55,6 +76,11 @@ createRexServer({
   actor,           // (request: Request) => Actor | Promise<Actor>
   app?,            // app name for the manifest
   confirmTtlMs?,   // confirm token lifetime, default 60000
+  manifest?,       // a manifest written by rex build; skips buildManifest
+  security?,       // { csp, origins, headers, secretNames } as in rex.config security
+  client?,         // { apiOrigin } for the CORS middleware when the client is served elsewhere
+  telemetry?,      // { tracer, logger }
+  dev?,            // true mounts GET /rex/dev/audit; default: NODE_ENV === "development"
 });
 ```
 
@@ -66,8 +92,14 @@ Routes:
 | `GET /rex/health` | `{"status":"ok"}` |
 | `/rex/rpc/*` | the oRPC `RPCHandler` over the action router; every matched response carries `x-rex-density` |
 | `/rex/flow/*` | the flow procedures `status`, `start` and `decide` (`mountFlows`) |
+| `POST /rex/form/<action>` | the FormData route with the CSRF cookie, the Origin check and the server-rendered confirmation page |
+| `GET /rex/dev/audit` | the audit tail, only when `dev` is true or, when `dev` is not set, `NODE_ENV` is `development` |
+| `GET <page route>` | the SSR render (the shell for a `csr` page) or a prerendered page from the static cache, with the `x-rex-render` header and status 200, 403, 404 or 500 |
+| `GET /rex/pages/<id>.md` | the markdown renderer |
 
-For each `/rex/rpc` and `/rex/flow` request, `createRexContext` builds the `RexContext`: the actor from the resolver, the density from `x-rex-density` (400 for an unknown value), and the confirm token from `x-rex-confirm`.
+Middleware runs before the routes in the order security, telemetry, loader runner, CORS, client hints (`REX_MIDDLEWARE` in `server/middleware.ts`).
+
+For each `/rex/rpc` and `/rex/flow` request, `createRexContext` builds the `RexContext`: the actor from the resolver, the density from `x-rex-density` (400 for an unknown value), the confirm token from `x-rex-confirm`, a per-request CSP `nonce` and, for a page render when the app configures `i18n`, the locale (URL prefix, `rex-locale` cookie, `Accept-Language`).
 
 `buildActionRouter` (`packages/rex/src/server/router.ts`) creates one procedure per action, named by the action id, plus `_confirm`. An action id equal to `_confirm` or a duplicate id throws. Each action procedure runs, in order:
 
@@ -78,35 +110,40 @@ For each `/rex/rpc` and `/rex/flow` request, `createRexContext` builds the `RexC
 5. the handler, called with the parsed input and `{ actor }`;
 6. output validation with the output schema.
 
-On Node, `startNodeServer(app, { port, clientDir, hostname? })` (`packages/rex/src/server/node.ts`) wraps the app: static files from `clientDir` for `GET` and `HEAD` outside `/rex`, an `index.html` fallback for paths without a file extension, and everything else to the app.
+On Node, `startNodeServer(app, { port, clientDir, hostname? })` (`packages/rex/src/server/adapters/node.ts`, re-exported by `server/node.ts`) wraps the app: a `GET` or `HEAD` request outside `/rex` for a path with a file extension is served from `clientDir`; a path without one goes to the app first and its response is returned when it carries `x-rex-render` (SSR, the csr shell or a prerendered page from the static cache), otherwise `clientDir` is tried and then `index.html` is sent with the client-hint headers; everything else goes to the app. `server/node.ts` adds `installNodeStaticPages` (reads the prerender list and registers the regenerating static cache), `createPrerenderedNodeApp` and `startPrerenderedNodeServer`, which `rex build`'s server entry uses.
 
 ## The Vite plugin and virtual modules
 
-`rex(options)` from `@sidioralabs/rex/vite` returns the Rex plugin followed by `@vitejs/plugin-react`. Options: `appDir` (default `app`), `name` (default: the `name` in the app's `package.json`, else `app`), and `server`, a fetch app or a function from the Vite dev server to one.
+`rex(options)` from `@sidioralabs/rex/vite` assembles its plugins from the ordered hook list in `src/vite/hooks.ts`: config, the `rex:app` module, the entry module, the dev server mount, SSR, the React Compiler, `@vitejs/plugin-react`, HMR, the CSP nonce, styles (CSS Modules and Tailwind), the server boundary, devtools, the error overlay and the shell components. Options: `appDir` (default `app`), `name` (default: the `name` in the app's `package.json`, else `app`), `server` (a fetch app or a function from the Vite dev server to one) and, filled from `rex.config.ts` by the CLI, `compiler`, `devtools`, `tailwind`, `ui`, `secretNames`, `shellComponents`, `fonts`, `i18n` and `apiOrigin`.
 
 It provides two virtual modules:
 
-- **`rex:app`** (resolved id `\0rex:app`). `scanApp(root, appDir)` lists the declaration files in `entities/`, `actions/`, `policies/` and `flows/` and every page folder (which must hold `page.ts`, `view.tsx` and `states.tsx`), with its `regions/<name>/region.tsx` files and `overlays/*.tsx` files. `generateAppModule` writes a module that imports all of them, collects every exported declaration of the right kind (a declaration file that exports none is an error), checks that each `page.ts` exports exactly one page whose id matches its folder, requires default exports from views, regions and overlays, and exports `entities`, `actions`, `policies`, `flows`, `pages`, `registry` (a frozen registry), `manifest` (`buildManifest(registry, { app: name })`), `app` and a default export of the same bundle (`RexAppBundle`). `rex-app.d.ts` types the module for apps.
-- **`/@rex/entry`** (resolved id `\0rex:entry`), the script `index.html` loads. `generateEntryModule` imports `tokens.css` and `agent/density.css`, finds `#root`, and renders `createRexEntry(app)` inside `StrictMode`.
+- **`rex:app`** (resolved id `\0rex:app`). `scanApp(root, appDir)` lists the declaration files in `entities/`, `actions/`, `policies/` and `flows/` and every page folder (which must hold `page.ts`, `view.tsx` and `states.tsx`), with its `regions/<name>/region.tsx` files and `overlays/*.tsx` files. `generateAppModule` writes a module that imports the declaration files and every `page.ts` statically and loads each page's `view.tsx`, `states.tsx`, regions and overlays through a dynamic `import()` so every page is its own chunk; it collects every exported declaration of the right kind (a declaration file that exports none is an error), checks that each `page.ts` exports exactly one page whose id matches its folder, requires default exports from views, regions and overlays, and exports `entities`, `actions`, `policies`, `flows`, `pages` (declaration plus lazy module loader), `registry` (a frozen registry), `manifest` (`buildManifest(registry, { app: name })` in dev; in a Vite build, which `rex build` runs, imported from the `rex:manifest` virtual module that `buildAppManifest` generates by loading the declarations), `config` (fonts and i18n), `app` and a default export of the same bundle (`RexAppBundle`). When `i18n` is configured it imports the `app/locales/<locale>.json` messages and calls `registerI18n` with them; with `ui.components` it registers the shell components module. `rex-app.d.ts` types the module for apps.
+- **`/@rex/entry`** (resolved id `\0rex:entry`), the script `index.html` loads. `generateEntryModule` imports `tokens.css` and `agent/density.css`, finds `#root`, and either hydrates it with `startRexEntry(container, app)` when the server-rendered root carries `data-rex-ssr` (reading the `application/rex+data` loader data into the QueryClient first), or renders `createRexEntry(app)` in a new root inside `StrictMode`. A build with `client.apiOrigin` passes it as `baseUrl` together with the credentialed `apiFetch`.
 
-In dev, the plugin watches `app/`: adding or removing a file or folder invalidates `rex:app` and sends a full reload. When `server` is set, requests whose path starts with `/rex` are passed to its `fetch`, after copying a `density` query parameter into the `x-rex-density` header.
+In dev, the plugin watches `app/`: adding or removing a file or folder invalidates `rex:app` and sends a full reload; editing a part, region, view or overlay is a normal HMR update that keeps component state; editing a `page.ts` invalidates `rex:app` and the page chunk and reloads with a `REX320` notice naming the page. When `server` is set, requests whose path starts with `/rex` are passed to its `fetch`, after copying a `density` query parameter into the `x-rex-density` header.
 
 ## Client runtime
 
-`createRexEntry(bundle, options?)` (`packages/rex/src/client/app.tsx`) is what the generated entry renders:
+`createRexEntry(bundle, options?)` (`packages/rex/src/client/entry.tsx`) is what the generated entry renders:
 
 ```
 RexApp                         createRexApp({ registry, manifest, density: DensityProvider })
   QueryClientProvider
     RexRuntimeContext          registry, manifest, actor, oRPC client, density header
-      DensityProvider          data-rex-density on <html>
-        AgentShell
-          ConfirmProvider      the confirmation dialog
-            Shell              header, nav, back, recovery, outcome slot
-              RexRoutes        one wouter <Route> per page, plus not-found
-                PageHost       data state, <main data-rex-page>, view or state component
-                  view -> Region (<section data-rex-region>) -> parts
-                AgentOutcome   OutcomeRegion, RexSidecar, PageInvokers { RexPalette, RexShortcuts, RexUrlInvoke }
+      (OutcomeProvider)        only when onOutcome is set
+        DensityProvider        data-rex-density on <html>
+          ScreenProvider       data-rex-screen and data-rex-pointer on <html>
+            RexProviders       I18nProvider, ConfirmProvider, DevtoolsProvider (dev)
+              Shell
+                RexRoutes      one wouter <Route> per page, plus not-found
+                  ShellFrame   <div data-rex-shell> and the Frame slot (app bar, nav, palette trigger)
+                    header     h1 title and back button
+                    outcome    AgentOutcome: OutcomeRegion, RexSidecar, PageInvokers { RexPalette, RexShortcuts, RexUrlInvoke }
+                    body       PageHost: Suspense + data state, <main data-rex-page>, view -> Region (error boundary, <section data-rex-region>) -> parts
+                    recovery   the recovery button
+                    announcer  the route announcer live region
+                    devtools   dev only
 ```
 
 **Startup.** `createRexApp` builds an oRPC client with an `RPCLink` to `/rex/rpc` that adds `x-rex-confirm` when a call carries a confirm token. Unless both a manifest and an actor are passed in, it fetches `GET /rex/manifest` at mount, takes the actor from `x-rex-actor` (the anonymous actor when the header is absent) and the density from `x-rex-density`, and checks that the manifest and the registry list the same pages and actions. While loading it renders "Loading app"; on failure it shows the error and a Retry button.
@@ -119,14 +156,14 @@ RexApp                         createRexApp({ registry, manifest, density: Densi
 
 **Regions and actions.** `region(name, render)` wraps its body in `Region`, which renders the addressed section, provides the address scope, and supplies a `ConfirmProvider` if none is above it. The render function's `act(declaration)` is `useRegionAct`: it returns the `useAct` handle (allowed, reason, pending, `controlProps`, the TanStack mutation) with `run` routed through the confirmation flow. `useAct` checks the input and the policy on the client, requests a confirm token for irreversible actions, calls the procedure, validates the output, invalidates the declared query keys, and writes the outcome.
 
-**Layout primitives.** `Page.Stack`, `Page.Grid`, `Page.Section` and `Page.Outcome` accept only token steps: `space` from 1 to 8 (default 3) and `columns` from 1 to 4 (default 2). They render classes such as `rex-stack rex-space-4` styled by `tokens.css`.
+**Layout primitives.** `Page.Stack`, `Page.Grid`, `Page.Section` and `Page.Outcome` accept only token steps: `space` from 1 to 8 (default 3) and `columns` from 1 to 4 (default 2). They render classes such as `rex-stack rex-space-4` styled by `tokens.css`; `Page.Grid` is an inline-size container whose columns collapse to fit its own width (one column under the agent density). `Page.List` renders a paged list driven by the `page` and `size` query params with a visible Load more control (`data-rex-list`, `data-rex-list-page`, `data-rex-list-size`, `data-rex-list-shown`, `data-rex-list-total`, `data-rex-list-more`).
 
 ## The life of an action
 
 Following a click on the demo's Send button (`examples/demo/app/pages/send/regions/confirm/region.tsx`):
 
-1. The confirm region calls `act(send)` and spreads `controlProps` on the button, which renders `data-rex="send/send"`, `data-rex-allowed` and `disabled` from evaluating `send.policy` for the current actor.
-2. The click calls `run({ amount })` (or `run({})` when the amount field is empty). A region's `run` without a confirm token calls `invoke`, which validates the input with `send.input` and checks the policy. A failure here writes the outcome and stops. Because `send` is irreversible, `invoke` continues with confirmation.
+1. The confirm region calls `act(send)` and, while the draft is valid, renders `ActionForm action={send}` with the amount as a hidden field; the form carries `data-rex-form="send/send"`, posts to `/rex/form/send` when JavaScript is off and, with JavaScript, is intercepted by its submit handler. Its submit button spreads `controlProps` (`data-rex="send/send"`, `data-rex-allowed`, `disabled` from evaluating `send.policy` for the current actor); while the draft is invalid the region renders a disabled button with the same `controlProps` instead.
+2. The submit reads the `FormData`, validates it against `send.input` and calls `invoke({ amount })` on the `useInvoke(send)` handle, the `useAct` handle wrapped with the confirmation flow that `act()` also uses. A region's `run` without a confirm token calls `invoke`, which validates the input with `send.input` and checks the policy. A failure here writes the outcome and stops. Because `send` is irreversible, `invoke` continues with confirmation.
 3. `invoke` asks the `ConfirmProvider` for confirmation. The dialog `data-rex-confirm="send/send"` opens. Cancel writes `Send cancelled`.
 4. On accept, the client calls `_confirm` with `{ action: "send", input }`. The server checks the action, policy and input and returns a token bound to the action, the input digest and the actor.
 5. The client calls the `send` procedure at `/rex/rpc/send` with the token in `x-rex-confirm`.
@@ -143,4 +180,4 @@ The shortcut, URL and palette routes join this sequence at step 2 through `PageI
 
 ## Manifest generation
 
-`scanManifest(root)` starts a child Node process with the `tsx` loader, imports the declaration files listed by `declarationFiles(root)`, registers every exported declaration and returns `buildManifest(registry, { app })`. Running in a child process keeps the CLI process free of the app's modules. `renderManifestFiles` produces the JSON (via `stableStringify`) and `AGENTS.md` (via `renderAgentsMd`); `writeManifest` writes both. The `manifest` checker rule uses the same functions to detect stale files.
+`scanManifest(root)` loads the declaration files listed by `declarationFiles(root)` in process through a Vite dev server in middleware mode (`withModuleLoader` in `src/cli/load.ts`, `ssrLoadModule`), resolving `@sidioralabs/rex` and `@sidioralabs/rex/manifest` the way the app does, registers every exported declaration and returns `buildManifest(registry, { app })`; a load failure is a `ManifestScanError` (`REX500`). `renderManifestFiles` produces the JSON (via `stableStringify`) and `AGENTS.md` (via `renderAgentsMd`); `writeManifest` writes both. The `manifest` checker rule uses the same functions to detect stale files.

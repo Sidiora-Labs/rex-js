@@ -8,7 +8,7 @@ Sources: `packages/rex/src/core/*.ts`, `packages/rex/src/manifest/*.ts`, `packag
 
 ## Client entries
 
-Components, hooks and the runtime come from `@sidioralabs/rex/client`. Optional capabilities have their own entries so the client entry stays within its 30 KB budget: `@sidioralabs/rex/client/interop` (`defineElement`, `mountRexPage`, `Native`), `@sidioralabs/rex/client/media` (`Img`, `Script`, `loadScript`) and `@sidioralabs/rex/client/i18n` (`useT`, `useLocale`, `t`, `formatMessage`). The checker's import table admits each of them wherever it admits `@sidioralabs/rex/client`, with the same rule for hooks. A budget is measured on the first paint of the fully minified production entry, the entry chunk plus every chunk it imports statically; each lazily loaded chunk is measured on its own against 10 KB. The client budget applies to the runtime an app ships (`createRexEntry` and `startRexEntry`), and every surface `@sidioralabs/rex/client` only exports (overlay, flow, address, store, boundary, form, list) tree-shakes away from an app that does not import it, so importing a primitive is what ships it.
+Components, hooks and the runtime come from `@sidioralabs/rex/client`. Optional capabilities have their own entries so the client entry stays within its 30 KB budget: `@sidioralabs/rex/client/interop` (`defineElement`, `mountRexPage`, `Native`), `@sidioralabs/rex/client/media` (`Img`, `Script`, `loadScript`) and `@sidioralabs/rex/client/i18n` (`useT`, `useLocale`, `t`, `formatMessage`). The checker's import table admits each of them in region.tsx, parts, hooks, overlays and states.tsx, with the same no-hooks rule as for `@sidioralabs/rex/client`; view.tsx imports only the layout primitives from `@sidioralabs/rex/client`. A budget is measured on the fully minified production first paint, the entry chunk plus the chunks it imports statically; each chunk loaded through a dynamic import is measured on its own against 10 KB. The client budget applies to the runtime an app ships (`createRexEntry` and `startRexEntry`), and every surface `@sidioralabs/rex/client` only exports (overlay, flow, address, store, boundary, form, list) tree-shakes away from an app that does not import it, so importing a primitive is what ships it.
 
 ## Names and ids
 
@@ -36,6 +36,8 @@ import { z } from "zod/mini";
 | `enumOf(values)` | one of the listed strings; duplicates throw |
 | `ref(target)` | id string referring to another entity (`target` is an entity name or an object with `id`) |
 | `timestamp()` | ISO datetime string |
+| `real(options?)` | number with optional `min` and `max` (`RealOptions`) |
+| `json()` | any JSON value |
 
 `FieldKind` is the union of the field kinds. `fieldKind(schema)` and `refTarget(schema)` read the tags back. Declarations accept any Standard Schema and validate through `~standard.validate`; JSON Schema is derived only when the manifest is built, by `toJsonSchema(schema, io?)` and `buildManifest` in `@sidioralabs/rex/manifest`. `defineConfig` lives in `@sidioralabs/rex/config`.
 
@@ -73,6 +75,8 @@ interface ActionConfig<I, O> {
   label?: string;              // non-empty; shown in the palette and outcome
   shortcut?: string;           // for example "shift+t" or "mod+enter"
   invalidates?: string[];      // TanStack query keys to invalidate after success
+  form?: { redirect?: string; confirmTitle?: string }; // the form route: where to redirect after a post, the confirmation page title
+  jsonSchema?: { input?: JsonSchema; output?: JsonSchema }; // JSON Schema override for a non-zod Standard Schema
   handler: (input, ctx: ActionContext) => output | Promise<output>;
 }
 
@@ -101,6 +105,12 @@ interface PageConfig {
   regions?: string[];                // region names, no repeats
   overlays?: { id: string; dismiss: "escape" | "button" | "both"; binding: "region" | "url" }[];
   states?: RexDataState[];           // must include "ready"; default all nine
+  render?: "ssr" | "csr" | "ssg" | "static"; // default: rex.config render.default, else ssr
+  revalidate?: number;               // seconds, ssg only
+  paths?: () => Params[] | Promise<Params[]>; // the param sets to prerender; ssg or static with route params
+  load?: Record<string, ActionDeclaration | { action: ActionDeclaration; input?: (params) => input; invalidatedBy?: string[] }>; // effect "read" actions only
+  cache?: { staleTime: number };     // milliseconds
+  transition?: "view" | "none";      // View Transitions on navigation; default "none"
 }
 ```
 
@@ -176,7 +186,7 @@ interface Store<T> {
 Pages start at 1; `size` defaults to 50 (`DEFAULT_PAGE_SIZE`) and may not exceed 500 (`MAX_PAGE_SIZE`). Filters match fields by equality. `bind(entity, store)` returns an `EntityStore` that validates ids, rejects unknown filter fields, and parses records with the entity schema on `put`.
 
 - **Memory.** `memoryStore(entity, seed?)` keeps records in a map keyed by `entity.keyOf`, returns copies, and lists in key order.
-- **Drizzle.** `drizzleStore(entity, db, { table?, createTable? })` in `packages/rex/src/store/drizzle.ts` maps an entity to a SQLite table on an async Drizzle database (libsql in the tests). The table name defaults to the entity id with dots and dashes replaced by underscores. Column types follow the field kind (`id`, `text`, `money`, `enum`, `ref`, `timestamp` as text, `integer` as integer, `boolean` as integer in boolean mode, other numbers as real, other values as JSON text). The key field is the primary key. Unless `createTable` is `false`, it runs `CREATE TABLE IF NOT EXISTS` before the first query. `put` is an upsert. A field that is both optional and nullable and a table name that is not lowercase snake_case are rejected with a `RexError` coded `REX329`, and a list filter on an undeclared field with `REX305`, as in the memory store. This module is not exposed by the package exports map in 0.1.0.
+- **Drizzle.** `drizzleStore(entity, db, { table?, createTable? })` in `packages/rex/src/store/drizzle.ts` maps an entity to a SQLite table on an async Drizzle database (libsql in the tests). The table name defaults to the entity id with dots and dashes replaced by underscores. Column types follow the field kind (`id`, `text`, `money`, `enum`, `ref`, `timestamp` as text, `integer` as integer, `boolean` as integer in boolean mode, other numbers as real, other values as JSON text). The key field is the primary key. Unless `createTable` is `false`, it runs `CREATE TABLE IF NOT EXISTS` before the first query. `put` is an upsert. A field that is both optional and nullable and a table name that is not lowercase snake_case are rejected with a `RexError` coded `REX329`, and a list filter on an undeclared field with `REX305`, as in the memory store. It is imported from `@sidioralabs/rex/store/drizzle`, which also exports `entityTable`, `createTableStatement`, `columnSpecs` and `tableNameFor`.
 
 Both adapters are tested against the shared conformance suite in `packages/rex/src/core/store.conformance.ts` (`runStoreConformance`).
 
@@ -194,8 +204,12 @@ interface AuditRecord {
   effect: "reversible" | "irreversible" | "read";
   durationMs: number;
   at: string;            // ISO timestamp of the call start
+  traceId?: string;      // 32 hex chars from the telemetry span, when a tracer is configured
+  spanId?: string;       // 16 hex chars
 }
 ```
+
+A flow decision through `/rex/flow` appends the same record with the gate action id (`<flow>.<gate>.approve` or `.reject`) and the digest of `{ flow, instance, gate, decision }`.
 
 Raw input is never stored; `digest(input)` hashes `canonicalJson(input)` (keys sorted) with Web Crypto. The `Ledger` interface is `append(entry)` and `list(filter?)`, where the filter has `actor`, `actionId`, `outcome` (`"ok"`, `"error"` for any failure, or a specific code), `from` (inclusive) and `to` (exclusive). `memoryLedger()` keeps records in memory and lists them by time. A handler failure, a policy denial and a validation error all write a record with the error code.
 
@@ -208,8 +222,8 @@ interface Manifest {
   version: 1;
   app: { name: string };
   entities: { id; key; fields: { name; kind; ref; required }[]; schema }[];
-  actions: { id; label; shortcut; effect; invalidates; policy; input; output }[];
-  pages: { id; route; routeParams; params; policy; recovery; draft; chrome; regions; overlays; states; actions }[];
+  actions: { id; label; shortcut; effect; invalidates; policy; form; input; output }[];
+  pages: { id; route; routeParams; params; policy; recovery; draft; render; revalidate; paths; loaders: { name; action; input: "params" | "mapped"; invalidatedBy }[]; cache; transition; chrome; regions; overlays; states; actions }[];
   policies: { id; permissions }[];
   flows: { id; steps: ({ kind: "action"; action } | { kind: "approval"; id; label; approvers })[] }[];
 }
@@ -217,7 +231,7 @@ interface Manifest {
 
 Every list is sorted by id, page actions are listed by id, and `stableStringify` writes keys in sorted order, so the output is deterministic. `buildManifest` throws when a page lists an unregistered action or names an unknown page in `recovery` or `chrome.back`.
 
-`rex manifest` writes the manifest to `.rex/manifest.json` and renders `AGENTS.md` from it (pages, actions, entities, policies, flows and the folder convention). `scanManifest(root)` loads the declaration files in a child Node process with `tsx` (60 second timeout); `writeManifest(root)` writes both files. The server serves the same manifest at `GET /rex/manifest`, and the client checks at startup that the manifest and the registry list the same pages and actions.
+`rex manifest` writes the manifest to `.rex/manifest.json` and renders `AGENTS.md` from it (pages, actions, entities, policies, flows and the folder convention). `scanManifest(root)` loads the declaration files in process through a Vite dev server in middleware mode (`withModuleLoader` in `src/cli/load.ts`, `ssrLoadModule`) and wraps a failure in `ManifestScanError` (`REX500`); `writeManifest(root)` writes both files. The server serves the same manifest at `GET /rex/manifest`, and the client checks at startup that the manifest and the registry list the same pages and actions.
 
 ## Shell components
 
@@ -229,10 +243,10 @@ The derived shell renders through six slots, the `ShellComponents` interface in 
 | `Sheet` | `ShellSheetProps`: `address`, `title`, `titleId`, `form` (`dialog` or `bottom-sheet`), `children` | `TokenSheet`, the overlay title and body |
 | `PaletteItem` | `ShellPaletteItemProps`: `kind`, `id`, `label`, `detail`, `shortcut`, `allowed`, `reason` | `TokenPaletteItem` |
 | `Outcome` | `ShellOutcomeProps`: `page` | `TokenOutcome`, the outcome message |
-| `Frame` | `ShellFrameProps`: `appName`, `links`, `palette`, `children` | `TokenFrame`, the app bar over the content area |
+| `Frame` | `ShellFrameProps`: `appName`, `links`, `navForm` (`bar`, `sidebar` or `dock`, picked from the screen), `palette`, `children` | `TokenFrame`, the app bar over the content area, with `data-rex-frame` and, when the page has links, `data-rex-nav-form`; it renders `Nav` in the bar for `bar`, beside the content for `sidebar` and after the content for `dock` |
 | `Nav` | `ShellNavProps`: `links`, `form` (`bar`, `sidebar` or `dock`) | `TokenNav`, a list of page links |
 
-`Frame` receives the app name from the manifest, the navigation links of the active page, the palette trigger and, as `children`, the page header (the `h1` with the page title and the back control), the outcome region, the page body with its `main` landmark, the recovery control and the route announcer. A `ShellNavLink` is `{ id, label, href, current, address, onClick }`: `current` marks the active page (render it as `aria-current="page"`), `address` is the page id for the `data-rex-nav` attribute (`NAV_ADDRESS_ATTRIBUTE`) and `onClick` performs the client-side navigation. `palette` is `{ label, shortcut, address, onOpen }` when the agent outcome mounts the command palette and `null` otherwise; render it as a button carrying `data-rex-palette-trigger` (`PALETTE_TRIGGER_ATTRIBUTE`) and the visible shortcut (`useShortcutText(shortcut)` gives `Ctrl K`, or `⌘K` on Apple platforms, and `ariaKeyShortcuts(shortcut)` the `aria-keyshortcuts` value). `onOpen` opens the palette through its `mod+k` keyboard path. Pages whose chrome sets `nav: false` receive no links, and the default `Nav` then renders nothing.
+`Frame` receives the app name from the manifest, the navigation links of the active page, the nav form for the current screen, the palette trigger and, as `children`, the page header (the `h1` with the page title and the back control), the outcome region, the page body with its `main` landmark, the recovery control and the route announcer. A `ShellNavLink` is `{ id, label, href, current, address, onClick }`: `current` marks the active page (render it as `aria-current="page"`), `address` is the page id for the `data-rex-nav` attribute (`NAV_ADDRESS_ATTRIBUTE`) and `onClick` performs the client-side navigation. `palette` is `{ label, shortcut, address, onOpen }` when the agent outcome mounts the command palette and `null` otherwise; render it as a button carrying `data-rex-palette-trigger` (`PALETTE_TRIGGER_ATTRIBUTE`) and the visible shortcut (`useShortcutText(shortcut)` gives `Ctrl K`, or `⌘K` on Apple platforms, and `ariaKeyShortcuts(shortcut)` the `aria-keyshortcuts` value). `onOpen` opens the palette through its `mod+k` keyboard path. Pages whose chrome sets `nav: false` receive no links, and the default `Nav` then renders nothing.
 
 The defaults are styled by `tokens.css`: `TokenFrame` renders a sticky `header` banner with the app mark and name, `Nav` in its `bar` form and the palette trigger, over a content column with a 72rem measure and fluid gutters; `TokenNav` renders `nav aria-label="Pages"` with `data-rex-nav-form` set to its form. The token sheet also gives documents that use the default frame a type scale, control, table, section and outcome styles, focus rings and the palette, overlay and confirmation surfaces. Under the agent density the bar is static and the navigation and palette label are laid out flat, in the same DOM.
 
