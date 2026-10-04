@@ -1,5 +1,5 @@
 import { rmSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { InvalidArgumentError, type RexCommand as Command } from "../args.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
@@ -11,7 +11,14 @@ import {
   writePrerenderList,
   type PrerenderRuntime,
 } from "../../vite/prerender.ts";
-import { RENDER_MODULE_ID, renderModulePlugin, ssrRuntimePath } from "../../vite/ssr.ts";
+import type { RexAppBundle, RexAppConfig } from "../../vite/app-module.ts";
+import { SERVER_SPECIFIER } from "../../vite/boundary.ts";
+import { resolveRuntimeEntry, type ResolveContext } from "../../vite/resolve.ts";
+import {
+  RENDER_MODULE_ID,
+  RESOLVED_RENDER_MODULE_ID,
+  generateRenderModule,
+} from "../../vite/ssr.ts";
 import { APP_MODULE_ID } from "../../vite/virtual.ts";
 import {
   PRERENDER_LIST_FILE,
@@ -32,7 +39,12 @@ import {
 } from "../../vite/split.ts";
 import { loadRexConfig } from "../config.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
-import { configPluginOptions, loadAppBundle, withModuleLoader } from "../load.ts";
+import {
+  configPluginOptions,
+  loadAppBundle,
+  withModuleLoader,
+  type ModuleLoader,
+} from "../load.ts";
 import { ensureCheckPasses } from "./check.ts";
 import { appConfigPath, cliWarn, rexCliExit } from "./dev.ts";
 import type { ResolvedBudgets } from "../../core/config.ts";
@@ -80,18 +92,42 @@ export interface ServerRuntimePaths {
   readonly server: string;
   readonly config: string;
   readonly actor: string;
+  readonly ssr: string;
+}
+
+export function serverRuntimePathsAt(serverEntry: string): ServerRuntimePaths {
+  const extension = extname(serverEntry);
+  const base = dirname(dirname(serverEntry));
+  const file = (...segments: string[]) => normalizePath(`${join(base, ...segments)}${extension}`);
+  return {
+    node: file("server", "node"),
+    bun: file("server", "adapters", "bun"),
+    deno: file("server", "adapters", "deno"),
+    edge: file("server", "adapters", "edge"),
+    server: normalizePath(serverEntry),
+    config: file("core", "config"),
+    actor: file("core", "actor"),
+    ssr: file("server", "ssr"),
+  };
 }
 
 export function serverRuntimePaths(from: string = import.meta.url): ServerRuntimePaths {
-  return {
-    node: nodeRuntimePath(from),
-    bun: sourcePath(from, "server", "adapters", `bun${MODULE_EXTENSION}`),
-    deno: sourcePath(from, "server", "adapters", `deno${MODULE_EXTENSION}`),
-    edge: sourcePath(from, "server", "adapters", `edge${MODULE_EXTENSION}`),
-    server: sourcePath(from, "server", `index${MODULE_EXTENSION}`),
-    config: sourcePath(from, "core", `config${MODULE_EXTENSION}`),
-    actor: sourcePath(from, "core", `actor${MODULE_EXTENSION}`),
-  };
+  return serverRuntimePathsAt(sourcePath(from, "server", `index${MODULE_EXTENSION}`));
+}
+
+export async function appServerRuntime(
+  context: ResolveContext,
+  root: string,
+): Promise<ServerRuntimePaths> {
+  const own = serverRuntimePaths();
+  return serverRuntimePathsAt(
+    await resolveRuntimeEntry(context, root, SERVER_SPECIFIER, own.server),
+  );
+}
+
+export function loaderResolveContext(loader: ModuleLoader): ResolveContext {
+  const container = loader.vite.environments.ssr.pluginContainer;
+  return { resolve: (source, importer) => container.resolveId(source, importer) };
 }
 
 export interface ServerEntryOptions {
@@ -196,15 +232,36 @@ export function generateServerEntry(options: ServerEntryOptions): string {
   return [...lines, ""].join("\n");
 }
 
-function serverEntryPlugin(options: ServerEntryOptions): Plugin {
+export interface ServerEntryPluginOptions extends Omit<ServerEntryOptions, "runtime"> {
+  readonly root: string;
+  readonly assets: RexDocumentAssets;
+}
+
+function serverEntryPlugin(options: ServerEntryPluginOptions): Plugin {
+  let runtime: Promise<ServerRuntimePaths> | null = null;
   return {
     name: "rex:server-entry",
     enforce: "pre",
-    resolveId(id) {
-      return id === SERVER_ENTRY_ID ? RESOLVED_SERVER_ENTRY_ID : null;
+    buildStart() {
+      runtime = null;
     },
-    load(id) {
-      return id === RESOLVED_SERVER_ENTRY_ID ? generateServerEntry(options) : null;
+    resolveId(id) {
+      if (id === SERVER_ENTRY_ID) return RESOLVED_SERVER_ENTRY_ID;
+      return id === RENDER_MODULE_ID ? RESOLVED_RENDER_MODULE_ID : null;
+    },
+    async load(id) {
+      if (id !== RESOLVED_SERVER_ENTRY_ID && id !== RESOLVED_RENDER_MODULE_ID) return null;
+      runtime ??= appServerRuntime(this, options.root);
+      const paths = await runtime;
+      if (id === RESOLVED_RENDER_MODULE_ID) {
+        return generateRenderModule({ ssr: paths.ssr, assets: options.assets });
+      }
+      return generateServerEntry({
+        config: options.config,
+        manifest: options.manifest,
+        runtime: paths,
+        ...(options.target === undefined ? {} : { target: options.target }),
+      });
     },
   };
 }
@@ -244,14 +301,14 @@ export async function buildServer(options: ServerBuildOptions): Promise<string> 
     configFile: false,
     logLevel: options.logLevel,
     plugins: [
-      renderModulePlugin(() => options.assets),
-      ...rex(options.rex),
       serverEntryPlugin({
+        root: options.root,
         config: options.config,
-        runtime: serverRuntimePaths(),
         target: options.target,
         manifest: options.manifest,
+        assets: options.assets,
       }),
+      ...rex(options.rex),
     ],
     ssr: { noExternal: true, target: options.target === "edge" ? "webworker" : "node" },
     build: {
@@ -294,9 +351,16 @@ export async function prerenderBuild(
   const list = await withModuleLoader(
     root,
     async (loader) => {
-      const bundle = await loadAppBundle(loader);
-      const ssr = await loader.load<PrerenderRuntime & Record<string, unknown>>(ssrRuntimePath());
-      return prerenderPages({ bundle, ssr, assets: options.assets }, { clientDir: options.clientDir });
+      const app = await loader.load<{
+        readonly default: RexAppBundle;
+        readonly config: RexAppConfig;
+      }>(APP_MODULE_ID);
+      const runtime = await appServerRuntime(loaderResolveContext(loader), loader.root);
+      const ssr = await loader.load<PrerenderRuntime & Record<string, unknown>>(runtime.ssr);
+      return prerenderPages(
+        { bundle: app.default, ssr, assets: options.assets, fonts: app.config.fonts },
+        { clientDir: options.clientDir },
+      );
     },
     {
       rex: options.rex,

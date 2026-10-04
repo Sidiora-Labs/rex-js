@@ -11,7 +11,7 @@ import { boolean, enumOf, integer, money, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import { AUDIT_OK, memoryLedger, type Ledger } from "../server/audit.ts";
-import { createRexServer } from "../server/index.ts";
+import { createTestApp, testServer } from "../testing/index.ts";
 import {
   OUTCOME_COOKIE,
   OutcomeRegion,
@@ -101,15 +101,14 @@ interface Mounted {
 
 function mount(csrf: string | null = null): Mounted {
   const ledger = memoryLedger();
-  const server = createRexServer({ registry, ledger, actor: () => owner });
-  const fetch: RexFetch = async (input, init) =>
-    server.fetch(input instanceof Request ? input : new Request(input, init));
+  const app = createTestApp({ registry, manifest, pages }, { actor: owner, server: { ledger } });
+  const fetch: RexFetch = testServer(app).fetch;
   const RexApp = createRexApp({
     registry,
     manifest,
     actor: owner,
     fetch,
-    baseUrl: "http://rex.test",
+    baseUrl: app.baseUrl,
   });
   const store = createOutcomeStore();
   const memory = memoryLocation({ path: "/", record: true });

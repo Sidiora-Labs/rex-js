@@ -12,7 +12,7 @@ import { text } from "../../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../../manifest/build.ts";
 import { memoryLedger, type Ledger } from "../../server/audit.ts";
-import { createRexServer } from "../../server/index.ts";
+import { ORIGIN_HEADER, createRexServer } from "../../server/index.ts";
 import { DEV_AUDIT_PATH } from "../../server/routes/dev.ts";
 import { readSidecar } from "../agent/sidecar.tsx";
 import { createRexEntry, type RexFetch } from "../app.tsx";
@@ -105,6 +105,7 @@ const viewer = actor({ id: "viewer", permissions: ["view"] });
 const CONTROLS = regionAddress("lab", "controls");
 
 const originalFetch = globalThis.fetch;
+const ORIGIN = "http://rex.test";
 
 interface Mounted {
   readonly ledger: Ledger;
@@ -113,8 +114,13 @@ interface Mounted {
 function mount(path: string): Mounted {
   const ledger = memoryLedger();
   const server = createRexServer({ registry, ledger, actor: () => viewer, dev: true });
-  const fetch: RexFetch = async (input, init) =>
-    server.fetch(input instanceof Request ? input : new Request(input, init));
+  const fetch: RexFetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      request.headers.set(ORIGIN_HEADER, ORIGIN);
+    }
+    return server.fetch(request);
+  };
   globalThis.fetch = fetch as typeof globalThis.fetch;
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } },
@@ -122,7 +128,7 @@ function mount(path: string): Mounted {
   window.history.replaceState(null, "", path);
   const RexEntry = createRexEntry(
     { registry, manifest, pages },
-    { fetch, baseUrl: "http://rex.test", queryClient },
+    { fetch, baseUrl: ORIGIN, queryClient },
   );
   render(<RexEntry />);
   return { ledger };
@@ -180,7 +186,7 @@ describe("RexDevtools registration", () => {
   it("registers the devtools provider and shell slot in dev mode with devtools enabled", () => {
     expect(import.meta.env.DEV).toBe(true);
     expect(import.meta.env.REX_DEVTOOLS).toBeUndefined();
-    expect(REX_PROVIDERS.map((entry) => entry.id)).toEqual(["confirm", "devtools"]);
+    expect(REX_PROVIDERS.map((entry) => entry.id)).toEqual(["i18n", "confirm", "devtools"]);
     expect(SHELL_SLOTS.map((entry) => entry.id)).toContain("devtools");
     expect(DEVTOOLS_AUDIT_PATH).toBe(DEV_AUDIT_PATH);
   });
@@ -230,9 +236,9 @@ describe("RexDevtools panels", () => {
     expect(JSON.parse(panel.querySelector("[data-rex-devtools-params]")?.textContent ?? "")).toEqual(
       { topic: "alpha" },
     );
-    const loader = panel.querySelector('[data-rex-devtools-loader="notes"]');
-    expect(loader?.textContent).toContain("notes");
-    expect(loader?.textContent).toContain("not loaded");
+    const loader = () => panel.querySelector('[data-rex-devtools-loader="notes"]');
+    expect(loader()?.textContent).toContain("notes");
+    await waitFor(() => expect(loader()?.textContent).toContain("success"));
   });
 
   it("shows the live sidecar JSON", async () => {
@@ -300,10 +306,12 @@ describe("RexDevtools panels", () => {
 
   it("shows the audit tail from the dev server", async () => {
     const { ledger } = mount("/lab/alpha");
+    const audited = async () => (await ledger.list()).map((entry) => entry.actionId);
     await ready();
+    await waitFor(async () => expect(await audited()).toEqual(["notes"]));
     await click("Ping");
-    await waitFor(async () => expect(await ledger.list()).toHaveLength(1));
-    const [record] = await ledger.list();
+    await waitFor(async () => expect(await audited()).toEqual(["notes", "ping"]));
+    const record = (await ledger.list()).find((entry) => entry.actionId === "ping");
 
     const panel = await showPanel("audit");
     await waitFor(() =>
@@ -313,9 +321,9 @@ describe("RexDevtools panels", () => {
     expect(shown?.textContent).toContain("viewer ping reversible ok");
 
     await click("Ping");
-    await waitFor(async () => expect(await ledger.list()).toHaveLength(2));
+    await waitFor(async () => expect(await audited()).toEqual(["notes", "ping", "ping"]));
     await click("Refresh audit");
-    await waitFor(() => expect(panel.querySelectorAll("[data-rex-devtools-audit]")).toHaveLength(2));
+    await waitFor(() => expect(panel.querySelectorAll("[data-rex-devtools-audit]")).toHaveLength(3));
   });
 });
 

@@ -20,6 +20,7 @@ import {
   ATTR_OUTCOME,
   ATTR_PAGE_ID,
   LOG_PREFIX,
+  ORIGIN_HEADER,
   SPAN_ACTION,
   SPAN_FORM,
   SPAN_LOADER,
@@ -78,6 +79,9 @@ const source = {
   policies: [],
 };
 
+const ORIGIN = "http://rex.test";
+const RPC_URL = `${ORIGIN}/rex/rpc`;
+
 const ada = actor({ id: "ada", roles: ["owner"], permissions: [] });
 
 function resolveActor(request: Request): Actor {
@@ -124,8 +128,8 @@ describe("createRexServer telemetry", () => {
     });
     client = createORPCClient(
       new RPCLink({
-        url: "http://rex.test/rex/rpc",
-        headers: { authorization: "Bearer ada" },
+        url: RPC_URL,
+        headers: { authorization: "Bearer ada", [ORIGIN_HEADER]: ORIGIN },
         fetch: async (request) => app.fetch(request),
       }),
     );
@@ -185,8 +189,9 @@ describe("createRexServer telemetry", () => {
   });
 
   it("wraps a form post in a rex.form span named after the action", async () => {
-    const response = await app.request("/rex/form/echo", {
+    const response = await app.request(`${ORIGIN}/rex/form/echo`, {
       method: "POST",
+      headers: { [ORIGIN_HEADER]: ORIGIN },
       body: new URLSearchParams({ text: "hi" }),
     });
     const [span] = spansNamed(exporter, SPAN_FORM);
@@ -246,7 +251,8 @@ describe("telemetry without a tracer", () => {
     const app = createRexServer({ registry: source, ledger, actor: resolveActor });
     const client: RegistryRouterClient<typeof source> = createORPCClient(
       new RPCLink({
-        url: "http://rex.test/rex/rpc",
+        url: RPC_URL,
+        headers: { [ORIGIN_HEADER]: ORIGIN },
         fetch: async (request) => app.fetch(request),
       }),
     );

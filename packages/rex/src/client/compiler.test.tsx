@@ -30,7 +30,7 @@ async function compileBoard(compiler: boolean): Promise<{ code: string; module: 
       rolldownOptions: {
         input: join(fixtureDir, "board.tsx"),
         external: [/^react(\/.*)?$/],
-        preserveEntrySignatures: "strict",
+        preserveEntrySignatures: "allow-extension",
         output: { format: "es" },
       },
     },
