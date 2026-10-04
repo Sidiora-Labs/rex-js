@@ -1,9 +1,7 @@
 import { overlay } from "@sidioralabs/rex/client";
 import { createContext, use } from "react";
 import Sheet from "../../../components/Sheet.tsx";
-import ContactOptions, {
-  type ContactOptionsProps,
-} from "../regions/form/parts/ContactOptions.tsx";
+import ContactOptions, { type ContactOptionsProps } from "../regions/form/parts/ContactOptions.tsx";
 
 export const ContactPickerContent = createContext<ContactOptionsProps | null>(null);
 

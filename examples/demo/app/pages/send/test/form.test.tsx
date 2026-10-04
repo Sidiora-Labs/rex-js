@@ -49,7 +49,9 @@ describe("send form region", () => {
     expect(scope.getByText("ETH (Ether), balance 25")).toBeTruthy();
     expect(scope.getByText("Alice (0xa11ce00000000000000000000000000000000001)")).toBeTruthy();
     expect(scope.getByLabelText("Amount in ETH")).toBeTruthy();
-    expect(scope.getByText("Available 25 ETH. Leave empty to send the default 0.001.")).toBeTruthy();
+    expect(
+      scope.getByText("Available 25 ETH. Leave empty to send the default 0.001."),
+    ).toBeTruthy();
     expect(view.container.querySelector('[data-rex-region="send/confirm"]')).toBeNull();
     expect(view.container.querySelector('[data-rex-region="send/success"]')).toBeNull();
   });

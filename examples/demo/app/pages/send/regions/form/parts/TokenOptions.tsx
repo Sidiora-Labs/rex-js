@@ -40,7 +40,10 @@ export default function TokenOptions({
     if (first !== undefined) onPick(first.id);
   };
   return (
-    <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "var(--rex-space-2)" }}>
+    <form
+      onSubmit={submit}
+      style={{ display: "flex", flexDirection: "column", gap: "var(--rex-space-2)" }}
+    >
       <Field
         label="Type a token symbol or name, then press Enter"
         name="token-query"

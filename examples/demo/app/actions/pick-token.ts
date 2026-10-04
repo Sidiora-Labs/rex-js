@@ -16,7 +16,8 @@ export const pickToken = action("pick-token", {
     const owner = await requireAccount(accountIdOf(ctx.actor.attributes));
     const held = (await tokens.list()).items;
     const chosen =
-      input.token ?? nextId(
+      input.token ??
+      nextId(
         held.map((entry) => entry.id),
         owner.sendToken,
       );

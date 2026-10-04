@@ -12,7 +12,9 @@ function summary(view: RexRenderResult): string | null {
 }
 
 function sendButton(view: RexRenderResult): HTMLButtonElement {
-  const found = view.container.querySelector('[data-rex-region="send/confirm"] [data-rex="send/send"]');
+  const found = view.container.querySelector(
+    '[data-rex-region="send/confirm"] [data-rex="send/send"]',
+  );
   expect(found).not.toBeNull();
   return found as HTMLButtonElement;
 }

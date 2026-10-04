@@ -8,7 +8,12 @@ export interface QuickActionsProps {
   readonly onSend: () => void;
 }
 
-export default function QuickActions({ filter, sheetTrigger, sendPage, onSend }: QuickActionsProps) {
+export default function QuickActions({
+  filter,
+  sheetTrigger,
+  sendPage,
+  onSend,
+}: QuickActionsProps) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--rex-space-2)" }}>
       {sendPage === null ? null : (

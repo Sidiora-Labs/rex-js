@@ -9,7 +9,11 @@ export default overlay("TokenSelectorSheet", { dismiss: "both", binding: "region
   const content = use(TokenSelectorContent);
   return (
     <Sheet description="Pick the token to send.">
-      {content === null ? <p>Open the token selector from the form.</p> : <TokenOptions {...content} />}
+      {content === null ? (
+        <p>Open the token selector from the form.</p>
+      ) : (
+        <TokenOptions {...content} />
+      )}
     </Sheet>
   );
 });

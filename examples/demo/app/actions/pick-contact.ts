@@ -16,7 +16,8 @@ export const pickContact = action("pick-contact", {
     const owner = await requireAccount(accountIdOf(ctx.actor.attributes));
     const known = (await contacts.list()).items;
     const chosen =
-      input.contact ?? nextId(
+      input.contact ??
+      nextId(
         known.map((entry) => entry.id),
         owner.sendContact,
       );

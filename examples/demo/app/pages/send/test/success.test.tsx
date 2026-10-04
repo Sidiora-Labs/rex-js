@@ -27,7 +27,10 @@ describe("send success region", () => {
     await waitFor(() => expect(receipt(view)?.getAttribute("data-demo-transfer")).toBe("none"));
     const server = testServer(app);
     const input = { amount: "1.5" };
-    const grant = (await procedureOf(server.client, CONFIRM_PROCEDURE)({
+    const grant = (await procedureOf(
+      server.client,
+      CONFIRM_PROCEDURE,
+    )({
       action: "send",
       input,
     })) as { readonly token: string };

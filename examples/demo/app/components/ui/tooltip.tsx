@@ -65,8 +65,17 @@ function TooltipContent({
   }) {
   return (
     <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Positioner className="z-50" side={side} sideOffset={sideOffset ?? (arrow ? 10 : 6)} align={align}>
-        <TooltipPrimitive.Popup data-slot="tooltip-content" className={cn(tooltipVariants({ variant }), className)} {...props}>
+      <TooltipPrimitive.Positioner
+        className="z-50"
+        side={side}
+        sideOffset={sideOffset ?? (arrow ? 10 : 6)}
+        align={align}
+      >
+        <TooltipPrimitive.Popup
+          data-slot="tooltip-content"
+          className={cn(tooltipVariants({ variant }), className)}
+          {...props}
+        >
           {children}
           {arrow && (
             <TooltipPrimitive.Arrow
