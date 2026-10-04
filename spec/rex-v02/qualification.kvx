@@ -550,3 +550,147 @@ symbol = "entry size budgets > keeps the client entry chunk within 30 KB gzipped
 observed = "The ActionForm markup (form-view.tsx, 0.95 KB gzip) and the Page.List window (list-view.tsx, 0.60 KB gzip) now load as type-only leaf modules through lazyModule/useLazyModule with form and list tests awaiting the lazy mount; the client first paint measures 34.02 KB gzip (entry 32.23 plus errors 1.79) against 30; a lazy module that imports any runtime value makes rolldown split the shared runtime into extra first-paint chunks (the locale negotiation and i18n provider split measured 36.93 KB, so it was reverted), the shortcut, URL-invocation and density helpers are public rex/client exports that stay in the entry, and the public export * surface alone pins about 9.7 KB gzip over the 24.97 KB startRexEntry runtime; evidence: revision e6b3c43c94ad6a8b6720450ed92f683ed50e10b0 plus the 7.20 changes, command pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/size.test.ts src/client src/server/ssr.test.tsx src/server/ssr.node.test.ts src/testing src/vite/budgets.test.ts && pnpm -C packages/rex build, exit 1 (1 failed of 390, typecheck exit 0), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.20-private/logs/7.20-verify-3.log."
 assumption = "Reaching 30 KB needs a decision beyond the 7.20 list: the client budget measured on the startRexEntry runtime an app ships instead of every public export of src/client/index.ts, exported-only surfaces (overlay, flow, address, store, boundary) moved behind the same leaf pattern, or the core/errors.ts catalog kept out of the client; no budget or assertion was relaxed, qualification.7161 stays open and the package build did not run behind the failed vitest step."
 severity = "blocker"
+
+[qualification.731]
+task = "7.3"
+file = "spec/rex-v02/spec.kvx (status of 0.7, 0.8, 1.7, 2.7, 3.7, 5.2, 5.5, 6.1, 6.2, 7.1, 7.4, 7.5, 7.6, 7.8, 7.9, 7.11, 7.12, 7.13, 7.15)"
+symbol = "cg spec done 1.7, 5.2, 5.5, 7.8"
+observed = "The verify_cmds of 1.7 (exit 0, 14 passed, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-1.7.log), 5.2 (exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-5.2.log), 5.5 (exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-5.5.log) and 7.8 (exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.8.log) pass unchanged at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2, but the session's permission classifier refused cg spec done 5.5 and cg spec heartbeat 7.3 from the 7.3 worker as a change to the shared claim store, so these four stay implemented; the other sixteen fail as recorded in qualification.732 to qualification.7317."
+assumption = "The orchestrator (or a session allowed to write the shared spec store) runs cg spec done 1.7, 5.2, 5.5 and 7.8 on the merged revision; no status was hand-edited and no verify_cmd changed."
+severity = "blocker"
+
+[qualification.732]
+task = "0.7"
+file = "packages/rex/src/size.test.ts, packages/rex/src/client (the rex/client entry chunk)"
+symbol = "entry size budgets > keeps the client entry chunk within 30 KB gzipped and each lazy chunk within 10 KB"
+observed = "The unchanged 0.7 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1 (1 failed of 9: client entry chunk 36422 B gzip against 30720, 35.57 KB, the open qualification.7131), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-0.7.log."
+assumption = "The client entry trim that qualification.7131 leaves open lands first; no budget was raised."
+severity = "blocker"
+
+[qualification.733]
+task = "0.8"
+file = "packages/rex/src/size.test.ts"
+symbol = "entry size budgets > client entry chunk"
+observed = "The unchanged 0.8 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts src/cli/new.test.ts src/server/router.test.ts src/client/act.test.tsx src/client/nav.test.tsx src/store/drizzle.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check, exit 1 (1 failed of 82, the same 35.57 KB client entry chunk against 30 KB, qualification.7131; the package build and demo rex check steps did not run behind it), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-0.8.log."
+assumption = "Requalifies once qualification.7131 closes."
+severity = "blocker"
+
+[qualification.734]
+task = "2.7"
+file = "examples/demo/app/pages/portfolio/test/actions.test.tsx, examples/demo/app/pages/send/test/form.test.tsx"
+symbol = "portfolio actions region (renders the quick actions with no filter applied, opens the URL-bound filter sheet, navigates to the send page); send form region > picks a recipient by typing in the contact picker"
+observed = "The unchanged 2.7 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C examples/demo test:unit, exit 1 (4 failed of 40: the portfolio actions region still renders Loading portfolio when the first query runs, so No filter applied and the Send tokens button are absent, and the send contact picker never shows No contact matches \"zzz\"), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-2.7.log."
+assumption = "The owner of the demo page tests (or rex/testing renderRegion) checks whether the region render waits for the page loaders after the 7.6 and 7.15 loader changes; not re-investigated here."
+severity = "blocker"
+
+[qualification.735]
+task = "3.7"
+file = "examples/demo/e2e/axe.spec.ts"
+symbol = "axe audit of page about in every density (auditDensity line 67)"
+observed = "The unchanged 3.7 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C examples/demo exec playwright test e2e/axe.spec.ts, exit 1 (1 failed, 1 passed, 4 did not run: data-rex-density reads comfortable where the walk expects default, the 0.1 density expectations superseded by the 9.1 screen density (qualification.911)), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-3.7.log."
+assumption = "Closes with the qualification.911 follow-up that moves the walk to comfortable."
+severity = "blocker"
+
+[qualification.736]
+task = "6.1"
+file = "examples/demo/e2e/vitals.spec.ts"
+symbol = "core web vitals of page about (finalizeVitals waitForFunction line 203)"
+observed = "The unchanged 6.1 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C examples/demo test:vitals, exit 1 (1 failed, 7 passed, 4 did not run: page.waitForFunction timed out after 15000 ms waiting for LCP, CLS and INP on the about page), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-6.1.log."
+assumption = "The owner of vitals.spec.ts checks whether the about page offers the declared control that the INP click needs since 9.1; not re-investigated here."
+severity = "blocker"
+
+[qualification.737]
+task = "6.2"
+file = "examples/demo/e2e (operability.spec.ts, nojs.spec.ts, axe.spec.ts, vitals.spec.ts)"
+symbol = "operability walk of page about; the send flow runs without JavaScript (expectForm line 67); axe about; vitals about"
+observed = "The unchanged 6.2 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C examples/demo test, exit 1 (4 failed, 9 passed, 14 did not run: operability about reads data-rex-density comfortable for both default and agent, nojs finds one script[type=module] in the no-JS send document where it expects none, plus the 3.7 and 6.1 failures above), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-6.2.log."
+assumption = "Closes with qualification.911 and an owner of the no-JS document checking which module script the send page now emits; not re-investigated here."
+severity = "blocker"
+
+[qualification.738]
+task = "7.1"
+file = "packages/rex/src/client/runtime.test.tsx"
+symbol = "the assembled entry > uses the default density when nothing is stored and the header is absent"
+observed = "The unchanged 7.1 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server/server.test.ts src/server/node.test.ts src/server/form.test.tsx src/core/serialize.test.ts src/core/entity.test.ts src/check/check.test.ts src/cli/new.test.ts src/cli/commands.test.ts src/client/runtime.test.tsx && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check, exit 1 (typecheck exit 0, 1 failed of 112: comfortable where default is expected, the 0.1 density expectations superseded by the 9.1 screen density (qualification.911); the package build and demo rex check did not run behind it), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.1.log."
+assumption = "Closes with the qualification.911 follow-up."
+severity = "blocker"
+
+[qualification.739]
+task = "7.2"
+file = "packages/rex/src/size.test.ts"
+symbol = "entry size budgets > client entry chunk"
+observed = "The unchanged 7.2 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts src/vite/vite.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex build, exit 1 (1 failed of 26, the 35.57 KB client entry chunk against 30 KB, qualification.7131; the build steps did not run behind it), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.2.log."
+assumption = "Requalifies once qualification.7131 closes."
+severity = "blocker"
+
+[qualification.7310]
+task = "7.4"
+file = "packages/rex/src/testing/testing.test.tsx"
+symbol = "renderPage > applies density and locale for the render and restores them on unmount"
+observed = "The unchanged 7.4 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C packages/rex exec vitest run src/testing/testing.test.tsx && pnpm -C examples/demo test:unit, exit 1 (1 failed of 19: comfortable where default is expected, the 0.1 density expectations superseded by the 9.1 screen density (qualification.911); demo test:unit did not run behind it and fails on its own as qualification.734 records), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.4.log."
+assumption = "Closes with qualification.911 and qualification.734."
+severity = "blocker"
+
+[qualification.7311]
+task = "7.5"
+file = "packages/rex/src/vite/shell-components.test.ts"
+symbol = "vite/shell-components > makes a rex.config ui.components override, the fonts and the locales live in rex dev and in a built app"
+observed = "The unchanged 7.5 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C packages/rex exec vitest run src/vite/shell-components.test.ts src/server/loaders.test.ts src/check/check.test.ts src/cli/commands.test.ts src/cli/new.test.ts src/core/config.test.ts, exit 1 (1 failed of 92: the literal <html lang=\"de\"> substring no longer matches since 9.1 writes the screen attributes on the root, qualification.912), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.5.log."
+assumption = "Closes with the qualification.912 follow-up."
+severity = "blocker"
+
+[qualification.7312]
+task = "7.6"
+file = "packages/rex/src/testing/testing.test.tsx"
+symbol = "renderPage > applies density and locale for the render and restores them on unmount"
+observed = "The unchanged 7.6 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C packages/rex exec vitest run src/core/page.test.ts src/client/loaders.test.tsx src/testing/testing.test.tsx && pnpm -C examples/demo test:unit, exit 1 (1 failed of 87, the same density case as 7.4, qualification.911; demo test:unit did not run behind it), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.6.log."
+assumption = "Closes with qualification.911 and qualification.734."
+severity = "blocker"
+
+[qualification.7313]
+task = "7.9"
+file = "packages/rex/src/size.test.ts"
+symbol = "entry size budgets > client entry chunk"
+observed = "The unchanged 7.9 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -C packages/rex exec vitest run src/size.test.ts -t \"client entry|edge entry\" && pnpm -C packages/rex exec vitest run src/zod-boundary.test.ts src/client src/server src/vite/vite.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex build, exit 1 (1 failed, 1 passed (edge entry), 1 skipped: the 35.57 KB client entry chunk against 30 KB, qualification.7131), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.9.log."
+assumption = "Requalifies once qualification.7131 closes."
+severity = "blocker"
+
+[qualification.7314]
+task = "7.11"
+file = "packages/rex/src/client (agent/density.test.tsx, i18n/i18n.test.tsx, runtime.test.tsx), packages/rex/src/server/ssr.test.tsx"
+symbol = "density cases, server rendering > sets html lang, the assembled entry density, renders an empty token when no grant is bound"
+observed = "The unchanged 7.11 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server src/client src/core/protocol.test.ts src/vite/compiler.test.ts, exit 1 (typecheck exit 0, 6 failed of 546: the qualification.911, qualification.912 and qualification.7151 cases only), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.11.log."
+assumption = "Closes with those three follow-ups."
+severity = "blocker"
+
+[qualification.7315]
+task = "7.12"
+file = "packages/rex/src/client (density, i18n, runtime), packages/rex/src/vite/shell-components.test.ts, packages/rex/src/vite/vite.test.ts"
+symbol = "the client entry build > bundles /@rex/entry into a client that mounts the shell, the agent surfaces and the stylesheets"
+observed = "The unchanged 7.12 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/cli src/manifest src/vite src/check, exit 1 (typecheck exit 0, 7 failed of 635: the qualification.911 and qualification.912 cases collected through the src/cli filter, plus vite.test.ts timing out at its stated 20000 ms bound under a machine load average near 7), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.12.log."
+assumption = "Closes with qualification.911 and qualification.912; the vite.test.ts case is rerun on a quieter machine before any bound is discussed."
+severity = "blocker"
+
+[qualification.7316]
+task = "7.13"
+file = "packages/rex/src/size.test.ts, packages/rex/src/client"
+symbol = "client entry chunk; the density and i18n cases"
+observed = "The unchanged 7.13 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/size.test.ts src/zod-boundary.test.ts src/client src/check/rules/boundaries.test.ts src/cli/migrate.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check, exit 1 (typecheck exit 0, 6 failed of 370: the 35.57 KB client entry chunk, qualification.7131, plus the qualification.911 and qualification.912 cases; the build and rex check did not run behind it), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.13.log."
+assumption = "Requalifies once qualification.7131, qualification.911 and qualification.912 close."
+severity = "blocker"
+
+[qualification.7317]
+task = "7.15"
+file = "packages/rex/src/server/ssr.test.tsx, packages/rex/src/vite/vite.test.ts"
+symbol = "renders an empty token when no grant is bound, as prerendering does; the client entry build"
+observed = "The unchanged 7.15 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2: command pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/cli/commands.test.ts src/vite/prerender.test.ts src/vite/vite.test.ts src/server/ssr.test.tsx src/server/form.test.tsx src/server/router.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex build, exit 1 (typecheck exit 0, 2 failed of 101: the qualification.7151 happy-dom case and vite.test.ts timing out at 21151 ms against its 20000 ms bound under load; the package build and demo rex build did not run behind it), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/requal-7.15.log."
+assumption = "Closes with qualification.7151 and a rerun on a quieter machine."
+severity = "blocker"
+
+[qualification.7318]
+task = "7.3"
+file = "packages/rex/src/size.test.ts, packages/rex/src/client (agent/density.test.tsx, i18n/i18n.test.tsx, runtime.test.tsx), packages/rex/src/server/ssr.test.tsx, packages/rex/src/testing/testing.test.tsx, packages/rex/src/vite/shell-components.test.ts, packages/rex/src/vite/vite.test.ts"
+symbol = "pnpm -C packages/rex test (the second step of the 7.3 verify_cmd)"
+observed = "The unchanged 7.3 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2 plus the 7.3 qualification entries: command pnpm -r typecheck && pnpm -C packages/rex test && pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/cli/designx.test.ts && pnpm -C examples/demo exec rex check && pnpm -C examples/demo test:unit && pnpm -C examples/demo exec playwright test e2e/axe.spec.ts && pnpm -C examples/demo test:vitals, exit 1 (typecheck exit 0, 10 failed of 1256 in the package suite, every one an open cause: qualification.7131 client entry chunk, qualification.911 density, qualification.912 html lang, qualification.7151 CSRF happy-dom case, the vite.test.ts 20000 ms bound under load from qualification.7315 and qualification.7317; the later steps did not run behind it and fail on their own as qualification.732 to qualification.7317 record), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/7.3-verify.log."
+assumption = "Nothing under the 7.3 touches (spec/rex-v02/spec.kvx) can repair these without editing other tasks' code or relaxing a check, so no repair cycle was spent; 7.3 requalifies after those follow-ups land and the orchestrator marks the passing tasks done."
+severity = "blocker"
