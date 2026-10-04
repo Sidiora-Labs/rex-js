@@ -69,7 +69,7 @@
     - Export the RouterClient type for the built router so the client package can type the oRPC client from the app registry.
     - Write src/server/server.test.ts exercising the app with app.request for manifest, health, an allowed action, a forbidden action and the density header.
     - _Requirements: 11.1, 11.2, 11.3, 14.1, 14.2, 14.3, 15.1, 15.2, 15.3_
-  - [ ] 1.4 Implement the Node server entry and static serving for builds
+  - [x] 1.4 Implement the Node server entry and static serving for builds
     - Implement src/server/node.ts: startNodeServer(app, {port, clientDir}) using @hono/node-server, serving clientDir assets and index.html fallback for page routes while leaving /rex/* to the API.
     - Write src/server/node.test.ts starting the server on an ephemeral port against a temporary client directory and asserting asset, fallback and API responses.
     - _Requirements: 14.1, 14.2, 14.3_
