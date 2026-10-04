@@ -1,5 +1,5 @@
 import type { ActionOutput } from "@sidioralabs/rex";
-import type { readStandards } from "../../../../../actions/read-standards.ts";
+import type { readStandards } from "../../../../../actions/standards/read-standards.ts";
 import {
   Table,
   TableBody,

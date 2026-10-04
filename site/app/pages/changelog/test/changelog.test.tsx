@@ -25,8 +25,11 @@ function siteApp() {
 async function releasesRegion(): Promise<HTMLElement> {
   const view = await renderRegion(siteApp(), "changelog", "releases");
   await waitFor(() => expect(view.sidecar().state).toBe("ready"));
-  const region = view.container.querySelector('[data-rex-region="changelog/releases"]');
-  expect(region).not.toBeNull();
+  const region = await waitFor(() => {
+    const found = view.container.querySelector('[data-rex-region="changelog/releases"]');
+    expect(found).not.toBeNull();
+    return found;
+  });
   await waitFor(() =>
     expect((region as HTMLElement).querySelectorAll("[data-site-release]").length).toBeGreaterThan(
       0,

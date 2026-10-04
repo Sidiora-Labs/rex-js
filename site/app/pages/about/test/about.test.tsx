@@ -26,8 +26,11 @@ function siteApp() {
 async function aboutPage() {
   const view = await renderPage(siteApp(), "about");
   await waitFor(() => expect(view.sidecar().state).toBe("ready"));
-  const main = view.container.querySelector('main[data-rex-page="about"]');
-  expect(main).not.toBeNull();
+  const main = await waitFor(() => {
+    const found = view.container.querySelector('main[data-rex-page="about"]');
+    expect(found).not.toBeNull();
+    return found;
+  });
   return { view, main: main as HTMLElement };
 }
 
