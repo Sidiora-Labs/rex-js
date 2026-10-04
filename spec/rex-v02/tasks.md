@@ -124,7 +124,7 @@
     - Extend check/rules/traps.ts with traps/custom-element allowing custom element tags that carry tabindex or a declared keyboard equivalent and reporting them otherwise, with fixtures.
     - Write client/interop/interop.test.tsx: a part as a custom element with attribute props, a Rex page mounted inside a plain document with other content, an action invoked through its data-rex address, clean unmount, Native ref access.
     - _Requirements: 20.1, 20.2, 20.3_
-  - [ ] 3.3 Focus management, route announcements, view transitions and the Navigation API
+  - [x] 3.3 Focus management, route announcements, view transitions and the Navigation API
     - Add client/shell/announcer.tsx (aria-live polite region with the page title after navigation) registered in slots.ts; make RexRoutes move focus to the page heading or main after commit; wrap route changes in document.startViewTransition when the page transition is view and the API exists; intercept same-origin window.navigation navigate events when present.
     - Write client/navigation.test.tsx with injected globals of the real shapes for startViewTransition and navigation: focus target, announcer text, transition invoked, navigate intercepted and routed.
     - _Requirements: 21.1, 21.2_

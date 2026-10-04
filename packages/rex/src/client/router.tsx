@@ -1,7 +1,16 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { Route, Switch, useLocation, useSearch } from "wouter";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { flushSync } from "react-dom";
+import { Route, Switch, matchRoute, useLocation, useRouter, useSearch, type Parser } from "wouter";
 import type { Actor } from "../core/actor.ts";
-import { parseRoute, type AnyPage } from "../core/page.ts";
+import { parseRoute, type AnyPage, type PageTransition } from "../core/page.ts";
 import { evaluate, type PolicyResult } from "../core/policy.ts";
 import { RESERVED_QUERY_KEYS, isReservedQueryKey } from "../core/protocol.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
@@ -285,26 +294,169 @@ function NotFoundRoute({ render }: { readonly render: RouteRender }) {
   );
 }
 
+export type ViewTransitionHost = Partial<Pick<Document, "startViewTransition">>;
+
+function documentHost(): ViewTransitionHost | undefined {
+  return typeof document === "undefined" ? undefined : document;
+}
+
+export function runRouteChange(
+  transition: PageTransition,
+  update: () => void,
+  host: ViewTransitionHost | undefined = documentHost(),
+): void {
+  if (transition === "view" && typeof host?.startViewTransition === "function") {
+    host.startViewTransition(() => {
+      flushSync(update);
+    });
+    return;
+  }
+  update();
+}
+
+export type RouteChange = (target: AnyPage, href: string, options: { readonly replace: boolean }) => void;
+
+export function useRouteChange(): RouteChange {
+  const [, navigate] = useLocation();
+  return useCallback<RouteChange>(
+    (target, href, { replace }) => runRouteChange(target.transition, () => navigate(href, { replace })),
+    [navigate],
+  );
+}
+
+export const ROUTE_FOCUS_SELECTORS = ["[data-rex-shell] h1", "main h1", "h1", "main"] as const;
+
+export function focusRouteTarget(root: ParentNode = document): HTMLElement | null {
+  for (const selector of ROUTE_FOCUS_SELECTORS) {
+    const target = root.querySelector<HTMLElement>(selector);
+    if (target === null) continue;
+    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+    target.focus();
+    return target;
+  }
+  return null;
+}
+
+export const RouteChangesContext = createContext(0);
+RouteChangesContext.displayName = "RexRouteChanges";
+
+export function useRouteChanges(): number {
+  return useContext(RouteChangesContext);
+}
+
+export type NavigationType = "push" | "replace" | "reload" | "traverse";
+
+export interface NavigationDestinationLike {
+  readonly url: string;
+  readonly sameDocument: boolean;
+}
+
+export interface NavigationInterceptOptions {
+  readonly handler?: () => Promise<void>;
+  readonly focusReset?: "after-transition" | "manual";
+  readonly scroll?: "after-transition" | "manual";
+}
+
+export interface NavigateEventLike extends Event {
+  readonly navigationType: NavigationType;
+  readonly canIntercept: boolean;
+  readonly hashChange: boolean;
+  readonly downloadRequest: string | null;
+  readonly formData: FormData | null;
+  readonly destination: NavigationDestinationLike;
+  intercept(options?: NavigationInterceptOptions): void;
+}
+
+export type NavigationLike = EventTarget;
+
+export function navigationHost(): NavigationLike | undefined {
+  const candidate = (globalThis as { navigation?: unknown }).navigation;
+  return candidate instanceof EventTarget ? candidate : undefined;
+}
+
+export interface RoutableDestination {
+  readonly page: AnyPage;
+  readonly href: string;
+}
+
+export interface DestinationScope {
+  readonly pages: readonly AnyPage[];
+  readonly origin: string;
+  readonly base: string;
+  readonly parser: Parser;
+}
+
+export function routableDestination(
+  event: NavigateEventLike,
+  { pages, origin, base, parser }: DestinationScope,
+): RoutableDestination | null {
+  if (!event.canIntercept || event.hashChange || event.destination.sameDocument) return null;
+  if (event.downloadRequest !== null || event.formData !== null) return null;
+  if (event.navigationType !== "push" && event.navigationType !== "replace") return null;
+  const url = new URL(event.destination.url);
+  if (url.origin !== origin) return null;
+  if (base !== "" && !url.pathname.toLowerCase().startsWith(base.toLowerCase())) return null;
+  const path = url.pathname.slice(base.length) || "/";
+  const target = pages.find((declared) => matchRoute(parser, declared.route, path)[0]);
+  if (target === undefined) return null;
+  return { page: target, href: `${path}${url.search}${url.hash}` };
+}
+
 export interface RexRoutesProps {
   readonly render: RouteRender;
 }
 
 export function RexRoutes({ render }: RexRoutesProps) {
   const registry = useRegistry();
+  const router = useRouter();
+  const [path] = useLocation();
+  const change = useRouteChange();
   const pages = useMemo(() => orderPages(registry.pages), [registry]);
+  const [committed, setCommitted] = useState({ path, changes: 0 });
+  const changes = committed.path === path ? committed.changes : committed.changes + 1;
+  if (committed.path !== path) setCommitted({ path, changes });
+
+  useEffect(() => {
+    if (changes === 0) return;
+    focusRouteTarget(document);
+  }, [changes]);
+
+  useEffect(() => {
+    const navigation = navigationHost();
+    if (navigation === undefined) return;
+    const scope: DestinationScope = {
+      pages,
+      origin: globalThis.location.origin,
+      base: router.base,
+      parser: router.parser,
+    };
+    const onNavigate = (event: Event) => {
+      const destination = routableDestination(event as NavigateEventLike, scope);
+      if (destination === null) return;
+      (event as NavigateEventLike).intercept({
+        focusReset: "manual",
+        handler: async () => change(destination.page, destination.href, { replace: true }),
+      });
+    };
+    navigation.addEventListener("navigate", onNavigate);
+    return () => navigation.removeEventListener("navigate", onNavigate);
+  }, [pages, router, change]);
+
   return (
-    <Switch>
-      {pages.map((declared) => (
-        <Route key={declared.id} path={declared.route}>
-          {(routeParams: Record<string, string | undefined>) => (
-            <PageRoute page={declared} routeParams={routeParams} render={render} />
-          )}
+    <RouteChangesContext.Provider value={changes}>
+      <Switch>
+        {pages.map((declared) => (
+          <Route key={declared.id} path={declared.route}>
+            {(routeParams: Record<string, string | undefined>) => (
+              <PageRoute page={declared} routeParams={routeParams} render={render} />
+            )}
+          </Route>
+        ))}
+        <Route>
+          <NotFoundRoute render={render} />
         </Route>
-      ))}
-      <Route>
-        <NotFoundRoute render={render} />
-      </Route>
-    </Switch>
+      </Switch>
+    </RouteChangesContext.Provider>
   );
 }
 

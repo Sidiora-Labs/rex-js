@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { AnyPage } from "../../core/page.ts";
 import type { PageModuleSet } from "../page.tsx";
 import type { RouteResolution } from "../router.tsx";
+import { AnnouncerSlot } from "./announcer.tsx";
 import { BodySlot, RecoverySlot } from "./body.tsx";
 import { HeaderSlot } from "./header.tsx";
 import { NavSlot } from "./nav.tsx";
@@ -26,4 +27,5 @@ export const SHELL_SLOTS: readonly ShellSlot[] = [
   { id: "body", Component: BodySlot },
   { id: "recovery", Component: RecoverySlot },
   { id: "outcome", Component: OutcomeSlot },
+  { id: "announcer", Component: AnnouncerSlot },
 ];
