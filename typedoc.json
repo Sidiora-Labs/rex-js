@@ -1,0 +1,32 @@
+{
+  "$schema": "https://typedoc-plugin-markdown.org/schema.json",
+  "name": "@sidioralabs/rex API",
+  "tsconfig": "packages/rex/tsconfig.json",
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": "docs/api",
+  "entryPointStrategy": "resolve",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "disableSources": true,
+  "disableGit": true,
+  "skipErrorChecking": true,
+  "hideGenerator": true,
+  "cleanOutputDir": true,
+  "sort": ["kind", "alphabetical"],
+  "outputFileStrategy": "modules",
+  "entryFileName": "README.md",
+  "hidePageHeader": true,
+  "useCodeBlocks": true,
+  "useHTMLAnchors": true,
+  "validation": {
+    "notExported": false,
+    "invalidLink": true,
+    "notDocumented": false,
+    "rewrittenLink": true,
+    "unusedMergeModuleWith": true
+  },
+  "logLevel": "Error"
+}
