@@ -1,5 +1,7 @@
 import type { Actor } from "../core/actor.ts";
+import type { I18nConfig } from "../core/config.ts";
 import { REX_ACTOR_HEADER, REX_CONFIRM_HEADER, REX_DENSITY_HEADER } from "../core/protocol.ts";
+import { resolveRequestLocale } from "./locale.ts";
 
 export const REX_DENSITIES = ["default", "agent"] as const;
 
@@ -31,12 +33,19 @@ class RequestContext implements RexRequestContext {
   readonly actor: Actor;
   readonly density: RexDensity;
   readonly confirm: string | undefined;
+  readonly locale: string | undefined;
   #nonce: string | null = null;
 
-  constructor(actor: Actor, density: RexDensity, confirm: string | undefined) {
+  constructor(
+    actor: Actor,
+    density: RexDensity,
+    confirm: string | undefined,
+    locale: string | undefined,
+  ) {
     this.actor = actor;
     this.density = density;
     this.confirm = confirm;
+    this.locale = locale;
   }
 
   get nonce(): string {
@@ -75,6 +84,7 @@ export function encodeActorHeaderValue(subject: Actor): string {
 export async function createRexContext(
   request: Request,
   resolveActor: ActorResolver,
+  i18n: I18nConfig | null = null,
 ): Promise<RexRequestContext> {
   const header = request.headers.get(DENSITY_HEADER);
   let density: RexDensity = DEFAULT_DENSITY;
@@ -84,5 +94,11 @@ export async function createRexContext(
   }
   const confirm = request.headers.get(CONFIRM_HEADER);
   const actor = await resolveActor(request);
-  return new RequestContext(actor, density, confirm === null || confirm === "" ? undefined : confirm);
+  const locale = i18n === null ? undefined : resolveRequestLocale(request, i18n).locale;
+  return new RequestContext(
+    actor,
+    density,
+    confirm === null || confirm === "" ? undefined : confirm,
+    locale,
+  );
 }

@@ -973,7 +973,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.5]
 title = "Internationalisation: messages, locale resolution, prefixed routing and the i18n rule"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 3
 requires = ["3.3"]

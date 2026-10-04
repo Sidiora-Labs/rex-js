@@ -5,6 +5,7 @@ import type { AnyPage } from "../../core/page.ts";
 import { evaluate } from "../../core/policy.ts";
 import { actionLabel, inputProblem } from "../act.ts";
 import { useActor, useManifest, useRegistry } from "../context.ts";
+import { useText } from "../i18n/context.ts";
 import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
 import { useNav } from "../nav.ts";
 import { useActivePage } from "../router.tsx";
@@ -48,6 +49,7 @@ function usePaletteEntries(): {
   const subject = useActor();
   const manifest = useManifest();
   const registry = useRegistry();
+  const text = useText();
   const affordances = useAffordances(active === null ? "" : active.page.id);
   const actions = useMemo<PaletteActionEntry[]>(() => {
     if (active === null) return [];
@@ -56,7 +58,7 @@ function usePaletteEntries(): {
       return {
         kind: "action",
         id: entry.id,
-        label: actionLabel(entry),
+        label: text(actionLabel(entry)),
         allowed: decision.allowed,
         reason: decision.reason,
         shortcut: entry.shortcut,
@@ -67,7 +69,7 @@ function usePaletteEntries(): {
     const extra = affordances.map((entry): PaletteActionEntry => ({
       kind: "action",
       id: entry.id,
-      label: entry.label,
+      label: text(entry.label),
       allowed: entry.allowed,
       reason: entry.allowed ? null : entry.reason,
       shortcut: null,
@@ -75,7 +77,7 @@ function usePaletteEntries(): {
       affordance: entry,
     }));
     return [...declared, ...extra];
-  }, [active, affordances, subject]);
+  }, [active, affordances, subject, text]);
   const pages = useMemo<PalettePageEntry[]>(() => {
     const entries: PalettePageEntry[] = [];
     for (const listed of manifest.pages) {
@@ -84,13 +86,13 @@ function usePaletteEntries(): {
       entries.push({
         kind: "page",
         id: listed.id,
-        title: listed.chrome.title,
+        title: text(listed.chrome.title),
         route: listed.route,
         page: declared,
       });
     }
     return entries;
-  }, [manifest, registry]);
+  }, [manifest, registry, text]);
   return { actions, pages };
 }
 
@@ -164,7 +166,7 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
       return;
     }
     const pending = active === null ? null : active.page.id;
-    const subject = { id: affordance.id, label: affordance.label, effect: affordance.effect };
+    const subject = { id: affordance.id, label: entry.label, effect: affordance.effect };
     void confirm({ page: pending, action: subject, input: PALETTE_INPUT }).then((accepted) =>
       accepted ? affordance.invoke({ ...PALETTE_INPUT }) : undefined,
     );

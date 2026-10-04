@@ -13,6 +13,7 @@ import {
   pageHref,
   paramKeyAccepted,
   useActivePage,
+  useLocaleHref,
   useRouteChange,
   type ParamIssue,
 } from "./router.tsx";
@@ -52,6 +53,7 @@ export function useNav(): Nav {
   const manifest = useManifest();
   const active = useActivePage();
   const change = useRouteChange();
+  const localize = useLocaleHref();
 
   const hrefFor = useCallback(
     (target: AnyPage, params: unknown): NavOutcome => {
@@ -62,9 +64,9 @@ export function useNav(): Nav {
       if (!result.ok) {
         return failure(target.id, describeIssues(target.id, result.issues), result.issues);
       }
-      return { ok: true, page: target.id, href: result.href };
+      return { ok: true, page: target.id, href: localize(result.href) };
     },
-    [manifest, registry],
+    [localize, manifest, registry],
   );
 
   return useMemo<Nav>(() => {

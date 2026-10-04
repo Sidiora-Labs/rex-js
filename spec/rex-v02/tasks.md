@@ -131,7 +131,7 @@
   - [x] 3.4 Accessibility checker rules
     - Add check/rules/a11y.ts with the rules in [design] a11y_rules, each with a passing and failing fixture, registered in the rules list; write check/rules/a11y.test.ts.
     - _Requirements: 22.1_
-  - [ ] 3.5 Internationalisation: messages, locale resolution, prefixed routing and the i18n rule
+  - [x] 3.5 Internationalisation: messages, locale resolution, prefixed routing and the i18n rule
     - Add client/i18n/ with useLocale, useT, t, the ICU-subset formatter (placeholders, plural and select through Intl.PluralRules) and msg: key resolution used by labels, titles, outcomes, the sidecar and the palette; add server/locale.ts resolving the locale from the URL prefix, the rex-locale cookie, Accept-Language and the default, setting RexContext.locale and html lang in SSR.
     - With i18n.routing prefix mount every page under /:locale in client/router.tsx and keep the prefix in nav.to and useNav.href.
     - Add check/rules/i18n.ts (i18n/literal with allow list) and cli/gen/i18n.ts contributing app/locales/<default>.json to rex new; write client/i18n/i18n.test.tsx and check/rules/i18n.test.ts.

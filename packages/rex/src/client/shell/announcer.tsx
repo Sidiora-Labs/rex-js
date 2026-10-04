@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { useText } from "../i18n/context.ts";
 import { useRouteChanges } from "../router.tsx";
 import { NOT_FOUND_TITLE } from "./header.tsx";
 import type { ShellSlotProps } from "./slots.ts";
@@ -14,7 +15,8 @@ const VISUALLY_HIDDEN: CSSProperties = {
 
 export function AnnouncerSlot({ active }: ShellSlotProps) {
   const changes = useRouteChanges();
-  const title = active === null ? NOT_FOUND_TITLE : active.chrome.title;
+  const text = useText();
+  const title = active === null ? NOT_FOUND_TITLE : text(active.chrome.title);
   const [message, setMessage] = useState("");
   useEffect(() => {
     setMessage(changes === 0 ? "" : title);

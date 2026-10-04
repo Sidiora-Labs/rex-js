@@ -13,6 +13,7 @@ import {
   type AnyPage,
   type ChromeComponentName,
 } from "../../core/page.ts";
+import { useText } from "../i18n/context.ts";
 import { Page } from "../layout.tsx";
 import { useOutcome } from "../outcome.ts";
 import type { OutcomeSlotProps } from "./outcome-slot.tsx";
@@ -68,10 +69,11 @@ export function TokenPaletteItem({ label, detail, shortcut, allowed, reason }: S
 
 export function TokenOutcome({ page }: ShellOutcomeProps) {
   const outcome = useOutcome(page);
+  const text = useText();
   return createElement(
     Page.Outcome,
     null,
-    outcome === null ? null : createElement("p", null, outcome.message),
+    outcome === null ? null : createElement("p", null, text(outcome.message)),
   );
 }
 
