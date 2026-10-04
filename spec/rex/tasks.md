@@ -157,6 +157,7 @@
     - Implement src/vite/index.ts: rex() Vite plugin resolving the virtual module rex:app that imports app/pages/*/page.ts, view.tsx, states.tsx, regions/*/region.tsx, overlays/*.tsx, app/actions/*.ts, app/entities/*.ts, app/policies/*.ts and app/flows/*.ts by glob and exports a typed app bundle; invalidates on file add and remove.
     - Add a dev middleware option that mounts a provided Hono app under /rex so one Vite process serves client and API, forwarding the x-rex-density header.
     - Write src/vite/vite.test.ts building a fixture app with the Vite JavaScript API and asserting the virtual module exports.
+    - Resolve /@rex/entry, which the scaffolded index.html loads, to a generated client entry that mounts createRexApp with the rex:app bundle; the virtual entry is part of the plugin, not a file in the app.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 14.1, 14.2, 14.3_
   - [ ] 4.2 Implement the CLI skeleton and the canonical templates
     - Implement src/cli/index.ts with commander: rex with version, new, make, promote, dev, build, check and manifest subcommands registered from src/cli/commands/*.ts; unknown commands exit 2.
@@ -210,6 +211,7 @@
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 22.1, 22.2, 22.3_
   - [ ] 5.7 Expose flow approval gates on the owning page
     - Implement src/client/agent/flow.tsx: useFlow(flow, instanceId) exposing status and, while paused at an approval gate, approve and reject actions that appear in the sidecar and the palette of the owning page and resume or terminate the flow through the server.
+    - Export flow, the Journal types, the memory journal, runFlow and decide from src/index.ts so apps import them from the core entry (closes qualification.1 from wave 0).
     - Write src/client/agent/flow.test.tsx covering pause, sidecar exposure, approve resume and reject termination.
     - _Requirements: 17.1, 17.2, 17.3_
 
