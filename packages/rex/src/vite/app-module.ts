@@ -1,5 +1,5 @@
 import { relative } from "node:path";
-import { normalizePath, type Plugin, type ViteDevServer } from "vite";
+import { normalizePath, type DevEnvironment, type Plugin, type ViteDevServer } from "vite";
 import type { AnyAction } from "../core/action.ts";
 import type { AnyEntity } from "../core/entity.ts";
 import type { AnyFlow } from "../core/flow.ts";
@@ -161,6 +161,18 @@ export function generateAppModule(scan: AppScan, options: AppModuleOptions): str
   ].join("\n");
 }
 
+export function invalidateAppModule(
+  environment: Pick<DevEnvironment, "moduleGraph">,
+  hmrTimestamp?: number,
+): boolean {
+  const graph = environment.moduleGraph;
+  const node = graph.getModuleById(RESOLVED_APP_MODULE_ID);
+  if (node === undefined) return false;
+  if (hmrTimestamp === undefined) graph.invalidateModule(node);
+  else graph.invalidateModule(node, new Set(), hmrTimestamp, true);
+  return true;
+}
+
 const WATCH_EVENTS = ["add", "unlink", "addDir", "unlinkDir"] as const;
 
 export function watchApp(vite: ViteDevServer, appPath: string): void {
@@ -170,11 +182,7 @@ export function watchApp(vite: ViteDevServer, appPath: string): void {
     if (normalized !== prefix.slice(0, -1) && !normalized.startsWith(prefix)) return;
     let invalidated = false;
     for (const environment of Object.values(vite.environments)) {
-      const node = environment.moduleGraph.getModuleById(RESOLVED_APP_MODULE_ID);
-      if (node !== undefined) {
-        environment.moduleGraph.invalidateModule(node);
-        invalidated = true;
-      }
+      if (invalidateAppModule(environment)) invalidated = true;
     }
     if (invalidated) vite.ws.send({ type: "full-reload" });
   };

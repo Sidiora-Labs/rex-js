@@ -7,6 +7,7 @@ import { appModuleHook } from "./app-module.ts";
 import { compilerHook } from "./compiler.ts";
 import { devServerHook } from "./dev-server.ts";
 import { entryModuleHook } from "./entry-module.ts";
+import { hmrHook } from "./hmr.ts";
 import type { RexPluginOptions } from "./plugin.ts";
 import type { RuntimePaths } from "./resolve.ts";
 
@@ -54,4 +55,5 @@ export const REX_HOOKS: readonly RexHook[] = [
   devServerHook,
   compilerHook,
   reactHook,
+  hmrHook,
 ];

@@ -89,7 +89,7 @@
     - Add vite/overlay.ts mapping RexError thrown while loading app modules to the Vite error overlay with file and line; add cli/frame.ts printing a source frame for errors with a location and make the CLI entry use it.
     - Add tools/docs-errors.mjs generating docs/errors.md from the catalog with --check; write core/errors.test.ts and cli/frame.test.ts.
     - _Requirements: 13.1, 13.2, 13.3_
-  - [ ] 2.2 Verified hot module replacement for parts, regions and page declarations
+  - [x] 2.2 Verified hot module replacement for parts, regions and page declarations
     - Add vite/hmr.ts: part and region edits flow through react-refresh as module updates; page.ts edits invalidate rex:app and the page chunk and send a full reload with a REX320 notice naming the page.
     - Write vite/hmr.test.ts starting the dev server on a copy of the fixture app, editing a part and asserting an update event for that module (not a full reload), then editing page.ts and asserting the full reload notice.
     - _Requirements: 14.1, 14.2_
