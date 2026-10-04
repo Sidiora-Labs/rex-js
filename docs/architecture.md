@@ -10,10 +10,17 @@ Rex owns conventions, generators, the checker and the agent contract. It does no
 | --- | --- | --- | --- |
 | `@sidioralabs/rex` | `src/index.ts` | `dist/index.js` | core primitives (`entity`, `action`, `page`, `policy`, `flow`, field helpers, stores, registry, journal), the wire protocol constants, manifest types, `buildManifest`, the sidecar schema, `REX_VERSION` |
 | `@sidioralabs/rex/client` | `src/client/index.ts` | `dist/client/index.js` | `createRexApp`, `createRexEntry`, router, navigation, `useAct`, outcome store, data states, `view`, `region`, `PageHost`, `Page` layout primitives, `Shell`, `overlay`, and the agent modules (address, sidecar, outcome region, palette, shortcuts, URL invocation, confirmation, density, flow) |
+| `@sidioralabs/rex/client/interop` | `src/client/interop/index.ts` | `dist/client/interop/index.js` | `defineElement`, `mountRexPage` and `Native`, for custom elements and mounting Rex pages into foreign apps |
+| `@sidioralabs/rex/client/media` | `src/client/media/index.ts` | `dist/client/media/index.js` | `Img`, `Script` and `loadScript` |
+| `@sidioralabs/rex/client/i18n` | `src/client/i18n/index.ts` | `dist/client/i18n/index.js` | `useT`, `useLocale`, `t`, `formatMessage`, the locale resolution helpers and `defineI18n` |
 | `@sidioralabs/rex/server` | `src/server/index.ts` | `dist/server/index.js` | `createRexServer`, the audit ledger, the action router, the request context, flow procedures |
 | `@sidioralabs/rex/vite` | `src/vite/index.ts` | `dist/vite/index.js` | the `rex()` Vite plugin and the virtual module generators |
 | `@sidioralabs/rex/check` | `src/check/index.ts` | `dist/check/index.js` | the checker engine, rule helpers, formatters, `defaultRules` and `runCheck` |
 | `rex` (bin) | | `dist/cli/index.js` | the CLI |
+
+`@sidioralabs/rex/client` holds what every app needs: the runtime, router, `useAct`, loaders, data states, shell, sidecar, forms and screen classification. Interop, media and i18n message formatting are optional capabilities behind their own entries, so an app that does not import them never ships them; `registerI18n`, which the generated `rex:app` module calls when the app has `app/locales`, stays in `@sidioralabs/rex/client`. `rex migrate --from 0.1` moves those names out of `@sidioralabs/rex/client` imports (the `0.1-schema-entry` codemod).
+
+Budgets are measured on the fully minified production entry chunk alone (`bundleBudgetEntry` in `src/vite/budgets.ts`): core 15 KB gzip, client 30 KB, edge 40 KB. Every chunk an entry loads lazily (the palette menu, devtools, overlay hosts) is measured on its own against 10 KB, since it never ships before first use. `src/size.test.ts` prints and asserts both.
 
 The build (`pnpm -C packages/rex build`) runs `tsc -p tsconfig.build.json`, copies `client/tokens.css`, `client/agent/density.css` and `vite/rex-app.d.ts` into `dist/`, and reinstalls the workspace offline so the demo's `rex` bin links to `dist/cli/index.js`. `src/server/node.ts` (the Node server used by `rex build`) and `src/store/drizzle.ts` are not re-exported by any entry; `rex build` imports `node.ts` by file path.
 

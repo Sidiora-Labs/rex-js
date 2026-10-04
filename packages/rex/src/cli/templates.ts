@@ -12,6 +12,9 @@ export const SCHEMA_IMPORT = "zod/mini";
 export const FIELDS_IMPORT = "@sidioralabs/rex/schema";
 export const CONFIG_IMPORT = "@sidioralabs/rex/config";
 export const CLIENT_IMPORT = "@sidioralabs/rex/client";
+export const INTEROP_IMPORT = "@sidioralabs/rex/client/interop";
+export const MEDIA_IMPORT = "@sidioralabs/rex/client/media";
+export const I18N_IMPORT = "@sidioralabs/rex/client/i18n";
 export const SERVER_IMPORT = "@sidioralabs/rex/server";
 
 export const TEMPLATE_KINDS = [

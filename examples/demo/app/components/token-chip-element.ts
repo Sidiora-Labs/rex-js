@@ -1,4 +1,4 @@
-import { defineElement } from "@sidioralabs/rex/client";
+import { defineElement } from "@sidioralabs/rex/client/interop";
 import type { DetailedHTMLProps, HTMLAttributes } from "react";
 import TokenChip from "./TokenChip.tsx";
 

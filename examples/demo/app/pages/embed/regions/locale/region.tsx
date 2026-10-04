@@ -1,4 +1,5 @@
-import { region, useLocale, useT } from "@sidioralabs/rex/client";
+import { region } from "@sidioralabs/rex/client";
+import { useLocale, useT } from "@sidioralabs/rex/client/i18n";
 import LocaleSwitch from "./parts/LocaleSwitch.tsx";
 
 export default region("locale", () => {

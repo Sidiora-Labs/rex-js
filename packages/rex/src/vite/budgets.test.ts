@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_BUDGETS, defineConfig, readConfigExport } from "../core/config.ts";
 import { resetDeprecations } from "../core/deprecated.ts";
@@ -6,11 +7,13 @@ import { createRegistry } from "../core/registry.ts";
 import {
   CLIENT_EXTERNALS,
   EDGE_BUDGET_KB,
+  LAZY_CHUNK_BUDGET_KB,
   REACT_EXTERNALS,
   SCHEMA_EXTERNALS,
   chunkBudgets,
   isBudgetExternal,
   entryBudgets,
+  measureBudgetChunks,
   resolveBudgets,
   withinBudget,
 } from "./budgets.ts";
@@ -60,7 +63,13 @@ describe("budgets", () => {
       "@orpc/client",
     ]);
     const core = entryBudgets()[0]!.externals;
-    for (const id of ["react", "react/jsx-runtime", "react-dom/client", "zod/mini", "zod/v4/core"]) {
+    for (const id of [
+      "react",
+      "react/jsx-runtime",
+      "react-dom/client",
+      "zod/mini",
+      "zod/v4/core",
+    ]) {
       expect(isBudgetExternal(id, core)).toBe(true);
     }
     for (const id of ["zodiac", "hono", "@orpc/client", "cmdk", "reactive"]) {
@@ -85,13 +94,61 @@ describe("budgets", () => {
   });
 
   it("flags page chunks over the configured page budget", () => {
-    const big = "export const data = " + JSON.stringify(Array.from({ length: 4000 }, (_, i) => `${i}-${Math.sin(i)}`)) + ";";
-    const rows = chunkTable([chunk("page-home", big), chunk("index", big)], chunkBudgets({ ...DEFAULT_BUDGETS, page: 1 }));
+    const big =
+      "export const data = " +
+      JSON.stringify(Array.from({ length: 4000 }, (_, i) => `${i}-${Math.sin(i)}`)) +
+      ";";
+    const rows = chunkTable(
+      [chunk("page-home", big), chunk("index", big)],
+      chunkBudgets({ ...DEFAULT_BUDGETS, page: 1 }),
+    );
     expect(rows.map((row) => [row.name, row.budget, row.over])).toEqual([
       ["index", null, false],
       ["page-home", 1, true],
     ]);
     expect(withinBudget(1024, 1)).toBe(true);
     expect(withinBudget(1025, 1)).toBe(false);
+  });
+
+  it("measures the entry chunk alone and every lazy chunk on its own 10 KB budget", () => {
+    const entryCode = "export const runtime = " + JSON.stringify("x".repeat(400)) + ";";
+    const paletteCode = 'export const palette = "menu";';
+    const devtoolsCode = 'export const devtools = "panels";';
+    const measured = measureBudgetChunks([
+      {
+        fileName: "palette-menu-a1.js",
+        isEntry: false,
+        code: paletteCode,
+        imports: [],
+        moduleIds: [],
+      },
+      { fileName: "entry.js", isEntry: true, code: entryCode, imports: [], moduleIds: [] },
+      {
+        fileName: "devtools-b2.js",
+        isEntry: false,
+        code: devtoolsCode,
+        imports: [],
+        moduleIds: [],
+      },
+    ]);
+    expect(LAZY_CHUNK_BUDGET_KB).toBe(10);
+    expect(measured.entry).toEqual({
+      fileName: "entry.js",
+      raw: Buffer.byteLength(entryCode),
+      gzip: gzipSync(entryCode).byteLength,
+    });
+    expect(measured.lazy).toEqual([
+      {
+        fileName: "devtools-b2.js",
+        raw: Buffer.byteLength(devtoolsCode),
+        gzip: gzipSync(devtoolsCode).byteLength,
+      },
+      {
+        fileName: "palette-menu-a1.js",
+        raw: Buffer.byteLength(paletteCode),
+        gzip: gzipSync(paletteCode).byteLength,
+      },
+    ]);
+    expect(() => measureBudgetChunks([])).toThrow(/expected one entry chunk, found 0/);
   });
 });
