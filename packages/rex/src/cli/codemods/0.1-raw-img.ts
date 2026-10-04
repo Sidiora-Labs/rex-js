@@ -4,6 +4,7 @@ import ts from "typescript";
 import { discoverApp } from "../../check/engine.ts";
 import { RAW_IMG_ROLES, rawImgSites } from "../../check/rules/media.ts";
 import { jsxAttributes, jsxElements } from "../../check/rules/tokens.ts";
+import { rexPrettierConfig } from "../../prettier.ts";
 import { CLIENT_IMPORT } from "../templates.ts";
 import {
   applyEdits,
@@ -21,6 +22,7 @@ import {
 export const IMG_COMPONENT = "Img";
 export const PLACEHOLDER_MARKER = "REX610 placeholder";
 export const PLACEHOLDER_SIZE = 1;
+export const PRINT_WIDTH = rexPrettierConfig.printWidth;
 
 const NUMERIC = /^\d+(\.\d+)?$/;
 
@@ -43,20 +45,70 @@ function sizeEdit(source: ts.SourceFile, attribute: ts.JsxAttribute | undefined)
   };
 }
 
-function elementEdits(source: ts.SourceFile, element: ts.JsxOpeningLikeElement): TextEdit[] {
-  const edits: TextEdit[] = [
-    { start: element.tagName.getStart(source), end: element.tagName.getEnd(), text: IMG_COMPONENT },
+function attributeText(
+  source: ts.SourceFile,
+  attribute: ts.JsxAttributeLike,
+  sizes: readonly TextEdit[],
+): string {
+  const start = attribute.getStart(source);
+  const end = attribute.getEnd();
+  const inside = sizes
+    .filter((edit) => edit.start >= start && edit.end <= end)
+    .map((edit) => ({ ...edit, start: edit.start - start, end: edit.end - start }));
+  return applyEdits(attribute.getText(source), inside);
+}
+
+function elementText(
+  source: ts.SourceFile,
+  element: ts.JsxOpeningLikeElement,
+  sizes: readonly TextEdit[],
+  missing: readonly (keyof typeof PLACEHOLDERS)[],
+): string | null {
+  const text = source.text;
+  const start = element.getStart(source);
+  const end = element.getEnd();
+  const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+  const lineBreak = text.indexOf("\n", end);
+  const lineEnd = lineBreak === -1 ? text.length : lineBreak;
+  const attributes = [
+    ...element.attributes.properties.map((attribute) => attributeText(source, attribute, sizes)),
+    ...missing.map((name) => PLACEHOLDERS[name]),
   ];
+  const selfClosing = ts.isJsxSelfClosingElement(element);
+  const single = `<${IMG_COMPONENT}${attributes.map((attribute) => ` ${attribute}`).join("")}${selfClosing ? " />" : ">"}`;
+  const fits = start - lineStart + single.length + (lineEnd - end) <= PRINT_WIDTH;
+  const multiline = text.slice(start, end).includes("\n");
+  if (fits) return multiline ? single : null;
+  const indent = /^[ \t]*/.exec(text.slice(lineStart, start))?.[0] ?? "";
+  return [
+    `<${IMG_COMPONENT}`,
+    ...attributes.map((attribute) => `${indent}  ${attribute}`),
+    `${indent}${selfClosing ? "/>" : ">"}`,
+  ].join("\n");
+}
+
+function elementEdits(source: ts.SourceFile, element: ts.JsxOpeningLikeElement): TextEdit[] {
+  const closing: TextEdit[] = [];
   if (ts.isJsxOpeningElement(element) && ts.isJsxElement(element.parent)) {
-    const closing = element.parent.closingElement.tagName;
-    edits.push({ start: closing.getStart(source), end: closing.getEnd(), text: IMG_COMPONENT });
+    const tag = element.parent.closingElement.tagName;
+    closing.push({ start: tag.getStart(source), end: tag.getEnd(), text: IMG_COMPONENT });
   }
   const attributes = jsxAttributes(element);
+  const sizes: TextEdit[] = [];
   for (const name of ["width", "height"] as const) {
     const edit = sizeEdit(source, attributes.get(name));
-    if (edit !== null) edits.push(edit);
+    if (edit !== null) sizes.push(edit);
   }
   const missing = REQUIRED.filter((name) => !attributes.has(name));
+  const whole = elementText(source, element, sizes, missing);
+  if (whole !== null) {
+    return [{ start: element.getStart(source), end: element.getEnd(), text: whole }, ...closing];
+  }
+  const edits: TextEdit[] = [
+    { start: element.tagName.getStart(source), end: element.tagName.getEnd(), text: IMG_COMPONENT },
+    ...closing,
+    ...sizes,
+  ];
   if (missing.length > 0) {
     const end = element.attributes.getEnd();
     edits.push({
