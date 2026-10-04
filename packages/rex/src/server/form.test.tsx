@@ -149,6 +149,12 @@ function setCookies(response: Response): Map<string, string> {
   return cookies;
 }
 
+function cookiePair(response: Response, name: string): string {
+  const line = response.headers.getSetCookie().find((entry) => entry.startsWith(`${name}=`));
+  expect(line).toBeDefined();
+  return (line as string).split(";")[0] as string;
+}
+
 function outcomeOf(response: Response): FormOutcome {
   const outcome = decodeFormOutcome(setCookies(response).get(OUTCOME_COOKIE));
   expect(outcome).not.toBeNull();
@@ -718,6 +724,71 @@ describe("an ActionForm on an ssr page without JavaScript", () => {
       expect(
         (await ledger.list()).map((record) => [record.actor, record.actionId, record.outcome]),
       ).toEqual([["alice", "send", "ok"]]);
+    } finally {
+      await window.happyDOM.close();
+    }
+  });
+
+  it("renders the posted outcome into the page the confirmed send redirects to and consumes the cookie", async () => {
+    const app = createRexServer({
+      registry,
+      ledger: memoryLedger(),
+      actor: resolveActor,
+      app: "forms-ssr",
+    });
+    const rendered = await app.request(`${ORIGIN}/send`, {
+      headers: { accept: "text/html", authorization: "Bearer alice" },
+    });
+    const csrfCookie = cookiePair(rendered, CSRF_COOKIE);
+    const window = new Window({ url: ORIGIN });
+    try {
+      const parsed = new window.DOMParser().parseFromString(await rendered.text(), "text/html");
+      expect(parsed.querySelector('[data-rex-outcome="none"]')).not.toBeNull();
+      const form = parsed.querySelector(`form[action="${formPath("send")}"]`);
+      const confirmation = await post(
+        app,
+        "send",
+        submittedFields(form?.querySelectorAll("input") ?? [], { to: "bob", amount: "7.25" }),
+        { cookie: csrfCookie, as: "alice", referer: `${ORIGIN}/send` },
+      );
+      expect(confirmation.status).toBe(200);
+      const confirmForm = new window.DOMParser()
+        .parseFromString(await confirmation.text(), "text/html")
+        .querySelector('form[data-rex-form="send"]');
+      const confirmed = await post(
+        app,
+        "send",
+        submittedFields(confirmForm?.querySelectorAll("input") ?? [], {}),
+        { cookie: csrfCookie, as: "alice", referer: `${ORIGIN}/send` },
+      );
+      expect(confirmed.status).toBe(303);
+      const location = confirmed.headers.get("location");
+      expect(location).toBe("/send");
+
+      const landed = await app.request(new URL(location as string, ORIGIN).toString(), {
+        headers: {
+          accept: "text/html",
+          authorization: "Bearer alice",
+          cookie: `${csrfCookie}; ${cookiePair(confirmed, OUTCOME_COOKIE)}`,
+        },
+      });
+      expect(landed.status).toBe(200);
+      expect(setCookies(landed).get(OUTCOME_COOKIE)).toBe("");
+      const page = new window.DOMParser().parseFromString(await landed.text(), "text/html");
+      const outcome = page.querySelector('[data-rex-outcome="send"]');
+      expect(outcome).not.toBeNull();
+      expect(outcome?.getAttribute("data-rex-outcome-ok")).toBe("true");
+      expect(outcome?.getAttribute("data-rex-outcome-at")).toBe(outcomeOf(confirmed).at);
+      expect(outcome?.textContent).toContain("Send succeeded");
+      expect(page.querySelector('[data-rex-outcome="none"]')).toBeNull();
+
+      const later = await app.request(`${ORIGIN}/send`, {
+        headers: { accept: "text/html", authorization: "Bearer alice", cookie: csrfCookie },
+      });
+      expect(setCookies(later).has(OUTCOME_COOKIE)).toBe(false);
+      const again = new window.DOMParser().parseFromString(await later.text(), "text/html");
+      expect(again.querySelector('[data-rex-outcome="send"]')).toBeNull();
+      expect(again.querySelector('[data-rex-outcome="none"]')).not.toBeNull();
     } finally {
       await window.happyDOM.close();
     }
