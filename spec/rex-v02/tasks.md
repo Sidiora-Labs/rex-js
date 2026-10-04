@@ -266,7 +266,7 @@
     - The palette is a lazily loaded module: client/agent/palette.tsx exports a thin trigger that imports the cmdk palette module on the first open (mod+k, the data-rex trigger or ?act=) and the open is awaited where client/runtime.test.tsx relied on it being synchronous; devtools are excluded from production builds.
     - The edge entry carries no config parser and no zod: server/app.ts takes resolved options with config parsing left to the CLI and the vite plugin, server/form.ts decodes form fields through the Standard Schema interface, and src/zod-boundary.test.ts gains the client and edge entries; the client entry passes 30 KB and the edge entry 40 KB with the unchanged assertions.
     - _Requirements: 3.2, 3.4, 7.1, 12.3_
-  - [ ] 7.10 Generated apps are formatted as generated and prerendered pages carry the font preloads
+  - [x] 7.10 Generated apps are formatted as generated and prerendered pages carry the font preloads
     - Every file rex new writes passes the rex/prettier preset untouched (qualification.751): the dataTemplate in cli/commands/new.ts and any other template string that the preset would rewrite are written in their formatted form, so rex check on a fresh app reports no format/prettier finding and the zero-findings assertions in commands.test.ts and new.test.ts pass without change.
     - vite/prerender.ts creates its renderer with the resolved fonts, the same way the rex:render module does after 7.5, so prerendered ssg and static pages carry the font preloads and the font-display swap block; prerender.test.ts asserts a preload link for a fixture font.
     - _Requirements: 13.2, 28.2_
