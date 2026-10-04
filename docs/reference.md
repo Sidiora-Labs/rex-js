@@ -97,12 +97,12 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 
 | Symbol | Kind | Line | Declaration |
 | --- | --- | --- | --- |
-| `DeclarationKind` | type | 22 | `export type DeclarationKind = (typeof DECLARATION_KINDS)[number];` |
-| `PlannedFile` | interface | 27 | `export interface PlannedFile` |
-| `PlannedDir` | interface | 33 | `export interface PlannedDir` |
-| `PlannedEntry` | type | 38 | `export type PlannedEntry = PlannedFile \| PlannedDir;` |
-| `MakeError` | class | 40 | `export class MakeError extends Error` |
-| `MakePageOptions` | interface | 112 | `export interface MakePageOptions` |
+| `DeclarationKind` | type | 23 | `export type DeclarationKind = (typeof DECLARATION_KINDS)[number];` |
+| `PlannedFile` | interface | 30 | `export interface PlannedFile` |
+| `PlannedDir` | interface | 36 | `export interface PlannedDir` |
+| `PlannedEntry` | type | 41 | `export type PlannedEntry = PlannedFile \| PlannedDir;` |
+| `MakeError` | class | 43 | `export class MakeError extends RexError` |
+| `MakePageOptions` | interface | 118 | `export interface MakePageOptions` |
 
 ### `packages/rex/src/cli/commands/new.ts`
 
@@ -114,17 +114,17 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 
 | Symbol | Kind | Line | Declaration |
 | --- | --- | --- | --- |
-| `PartLocation` | interface | 22 | `export interface PartLocation` |
-| `PromoteResult` | interface | 28 | `export interface PromoteResult` |
-| `SpecifierEdit` | interface | 34 | `interface SpecifierEdit` |
+| `PartLocation` | interface | 23 | `export interface PartLocation` |
+| `PromoteResult` | interface | 29 | `export interface PromoteResult` |
+| `SpecifierEdit` | interface | 35 | `interface SpecifierEdit` |
 
 ### `packages/rex/src/cli/index.ts`
 
 | Symbol | Kind | Line | Declaration |
 | --- | --- | --- | --- |
-| `RexCliIO` | interface | 23 | `export interface RexCliIO` |
-| `RexCommandModule` | interface | 29 | `export interface RexCommandModule` |
-| `RexCliExit` | class | 33 | `export class RexCliExit extends Error` |
+| `RexCliIO` | interface | 17 | `export interface RexCliIO` |
+| `RexCommandModule` | interface | 23 | `export interface RexCommandModule` |
+| `RexCliExit` | class | 27 | `export class RexCliExit extends Error` |
 
 ### `packages/rex/src/cli/templates.ts`
 
@@ -244,7 +244,7 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 | `RexAppComponent` | type | 52 | `export type RexAppComponent = ComponentType<RexAppProps>;` |
 | `StartupValue` | interface | 54 | `interface StartupValue` |
 | `Startup` | type | 60 | `type Startup =` |
-| `RexStartupError` | class | 65 | `export class RexStartupError extends Error` |
+| `RexStartupError` | class | 84 | `export class RexStartupError extends RexError` |
 | `RexEntryBundle` | interface | 271 | `export interface RexEntryBundle` |
 | `RexEntryOptions` | type | 277 | `export type RexEntryOptions = Omit<CreateRexAppOptions, "registry" \| "manifest" \| "density">;` |
 
@@ -309,7 +309,7 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 | `RegionProps` | interface | 89 | `export interface RegionProps` |
 | `StateExportComponent` | type | 140 | `export type StateExportComponent = ComponentType<StateProps<PageParamsValue>>;` |
 | `PageModuleSet` | interface | 142 | `export interface PageModuleSet<Pg extends AnyPage = AnyPage>` |
-| `RexPageModuleError` | class | 150 | `export class RexPageModuleError extends Error` |
+| `RexPageModuleError` | class | 178 | `export class RexPageModuleError extends RexError` |
 | `PageHostProps` | interface | 260 | `export interface PageHostProps` |
 
 ### `packages/rex/src/client/router.tsx`
@@ -370,11 +370,25 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 
 | Symbol | Kind | Line | Declaration |
 | --- | --- | --- | --- |
-| `RexDeclarationError` | class | 4 | `export class RexDeclarationError extends Error` |
+| `RexDeclarationError` | class | 31 | `export class RexDeclarationError extends RexError` |
 | `EntityFields` | type | 37 | `export type EntityFields = { readonly [field: string]: z.ZodType };` |
 | `EntityConfig` | interface | 48 | `export interface EntityConfig<F extends EntityFields, K extends StringFieldOf<F>>` |
 | `EntityDeclaration` | interface | 54 | `export interface EntityDeclaration<` |
 | `AnyEntity` | type | 72 | `export type AnyEntity = EntityDeclaration<string, EntityFields, string>;` |
+
+### `packages/rex/src/core/errors.ts`
+
+Every error Rex raises is a `RexError` whose `code` is a key of `REX_ERROR_CATALOG`; the codes, titles and hints are listed in [errors.md](errors.md).
+
+| Symbol | Kind | Line | Declaration |
+| --- | --- | --- | --- |
+| `RexErrorCode` | type | 118 | `export type RexErrorCode = keyof typeof REX_ERROR_CATALOG;` |
+| `RexErrorLocation` | interface | 130 | `export interface RexErrorLocation` |
+| `RexErrorOptions` | interface | 136 | `export interface RexErrorOptions extends RexErrorLocation` |
+| `RexError` | class | 143 | `export class RexError extends Error` |
+| `RexDeclarationErrorDetails` | interface | 175 | `export interface RexDeclarationErrorDetails` |
+| `RexDeclarationOptionError` | class | 182 | `export class RexDeclarationOptionError extends RexError` |
+| `RexStackFrame` | interface | 213 | `export interface RexStackFrame` |
 
 ### `packages/rex/src/core/flow.ts`
 
@@ -393,13 +407,13 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 | `AnyFlow` | type | 68 | `export type AnyFlow = FlowDeclaration<string>;` |
 | `FlowRunContext` | interface | 70 | `export interface FlowRunContext` |
 | `FlowRunResult` | interface | 75 | `export interface FlowRunResult` |
-| `FlowDecisionError` | class | 81 | `export class FlowDecisionError extends Error` |
+| `FlowDecisionError` | class | 94 | `export class FlowDecisionError extends RexError` |
 
 ### `packages/rex/src/core/ids.ts`
 
 | Symbol | Kind | Line | Declaration |
 | --- | --- | --- | --- |
-| `RexNameError` | class | 4 | `export class RexNameError extends Error` |
+| `RexNameError` | class | 6 | `export class RexNameError extends RexError` |
 
 ### `packages/rex/src/core/journal.ts`
 
@@ -511,7 +525,7 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 
 | Symbol | Kind | Line | Declaration |
 | --- | --- | --- | --- |
-| `ManifestScanError` | class | 26 | `export class ManifestScanError extends Error` |
+| `ManifestScanError` | class | 23 | `export class ManifestScanError extends RexError` |
 | `ManifestFiles` | interface | 36 | `export interface ManifestFiles` |
 | `WriteManifestResult` | interface | 41 | `export interface WriteManifestResult` |
 | `ChildMessage` | type | 157 | `type ChildMessage =` |
@@ -579,7 +593,7 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 | --- | --- | --- | --- |
 | `ActorResolver` | type | 33 | `export type ActorResolver = (request: Request) => Actor \| Promise<Actor>;` |
 | `RexServerOptions` | interface | 40 | `export interface RexServerOptions<A extends AnyAction>` |
-| `RexDensityError` | class | 60 | `export class RexDensityError extends Error` |
+| `RexDensityError` | class | 76 | `export class RexDensityError extends RexError` |
 
 ### `packages/rex/src/server/node.ts`
 
@@ -607,11 +621,11 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 
 | Symbol | Kind | Line | Declaration |
 | --- | --- | --- | --- |
-| `ColumnType` | type | 21 | `export type ColumnType = "text" \| "integer" \| "real" \| "boolean" \| "json";` |
-| `ColumnSpec` | interface | 23 | `export interface ColumnSpec` |
-| `DrizzleStoreOptions` | interface | 31 | `export interface DrizzleStoreOptions` |
-| `AsyncSQLiteDatabase` | type | 36 | `export type AsyncSQLiteDatabase = BaseSQLiteDatabase<"async", unknown, Record<string, unknown>>;` |
-| `T` | type | 147 | `type T = InferEntity<E>;` |
+| `ColumnType` | type | 23 | `export type ColumnType = "text" \| "integer" \| "real" \| "boolean" \| "json";` |
+| `ColumnSpec` | interface | 25 | `export interface ColumnSpec` |
+| `DrizzleStoreOptions` | interface | 33 | `export interface DrizzleStoreOptions` |
+| `AsyncSQLiteDatabase` | type | 38 | `export type AsyncSQLiteDatabase = BaseSQLiteDatabase<"async", unknown, Record<string, unknown>>;` |
+| `T` | type | 149 | `type T = InferEntity<E>;` |
 
 ### `packages/rex/src/vite/index.ts`
 
@@ -631,7 +645,7 @@ Public and module-internal types, classes and interfaces of `packages/rex/src`. 
 | `ScannedNamedFile` | interface | 53 | `export interface ScannedNamedFile` |
 | `ScannedPage` | interface | 58 | `export interface ScannedPage` |
 | `AppScan` | interface | 68 | `export interface AppScan` |
-| `RexAppScanError` | class | 78 | `export class RexAppScanError extends Error` |
+| `RexAppScanError` | class | 42 | `export class RexAppScanError extends RexError` |
 | `RuntimePaths` | interface | 166 | `export interface RuntimePaths` |
 | `AppModuleOptions` | interface | 180 | `export interface AppModuleOptions` |
 | `EntryModuleOptions` | interface | 281 | `export interface EntryModuleOptions` |

@@ -9,6 +9,7 @@ import {
   type SQLiteColumnBuilderBase,
 } from "drizzle-orm/sqlite-core";
 import type { AnyEntity, InferEntity } from "../core/entity.ts";
+import { RexError } from "../core/errors.ts";
 import { acceptsSync, fieldKind, schemaType, type FieldKind } from "../core/schema.ts";
 import type { StandardSchemaV1 } from "../core/standard.ts";
 import {
@@ -82,7 +83,8 @@ export function columnSpecs(declared: AnyEntity): readonly ColumnSpec[] {
     const optional = acceptsSync(schema, undefined);
     const nullable = acceptsSync(schema, null);
     if (optional && nullable) {
-      throw new TypeError(
+      throw new RexError(
+        "REX329",
         `drizzleStore ${declared.id}: field "${field}" is both optional and nullable, which one SQL NULL cannot distinguish`,
       );
     }
@@ -98,7 +100,10 @@ export function columnSpecs(declared: AnyEntity): readonly ColumnSpec[] {
 
 export function createTableStatement(declared: AnyEntity, table = tableNameFor(declared)): string {
   if (!TABLE_NAME_PATTERN.test(table)) {
-    throw new TypeError(`drizzleStore: table name "${table}" must be lowercase snake_case`);
+    throw new RexError(
+      "REX329",
+      `drizzleStore: table name "${table}" must be lowercase snake_case`,
+    );
   }
   const columns = columnSpecs(declared).map((spec) => {
     const constraints = `${spec.key ? " PRIMARY KEY" : ""}${
@@ -126,7 +131,10 @@ function columnBuilder(spec: ColumnSpec): SQLiteColumnBuilderBase {
 
 export function entityTable(declared: AnyEntity, table = tableNameFor(declared)) {
   if (!TABLE_NAME_PATTERN.test(table)) {
-    throw new TypeError(`drizzleStore: table name "${table}" must be lowercase snake_case`);
+    throw new RexError(
+      "REX329",
+      `drizzleStore: table name "${table}" must be lowercase snake_case`,
+    );
   }
   const columns: Record<string, SQLiteColumnBuilderBase> = {};
   for (const spec of columnSpecs(declared)) columns[spec.field] = columnBuilder(spec);
@@ -182,7 +190,7 @@ export function drizzleStore<E extends AnyEntity>(
     const column = columns[field];
     const spec = specByField.get(field);
     if (column === undefined || spec === undefined) {
-      throw new TypeError(`drizzleStore ${declared.id}: unknown filter field "${field}"`);
+      throw new RexError("REX305", `drizzleStore ${declared.id}: unknown filter field "${field}"`);
     }
     if (value === null) return spec.optional ? sql`0` : isNull(column);
     return eq(column, value);

@@ -10,8 +10,10 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { format } from "prettier";
 import { afterAll, describe, expect, it } from "vitest";
 import { runCheck } from "../check/index.ts";
+import { rexPrettierConfig } from "../prettier.ts";
 import {
   DESIGNX_BASE,
   DESIGNX_CONFIG_FILE,
@@ -129,6 +131,20 @@ describe("rex new --ui", { timeout: DESIGNX_TEST_TIMEOUT_MS }, () => {
       expect(captured.out()).toContain(`wrote dx-app/${DESIGNX_UI_DIR}/${name}.tsx\n`);
     }
     expect(existsSync(join(root, DESIGNX_UI_DIR, "utils.ts"))).toBe(true);
+    for (const file of [
+      ...DESIGNX_BASE.map((name) => `${DESIGNX_UI_DIR}/${name}.tsx`),
+      `${DESIGNX_UI_DIR}/utils.ts`,
+      DESIGNX_THEME_FILE,
+    ]) {
+      const written = readFileSync(join(root, file), "utf8");
+      expect(
+        await format(written, {
+          ...rexPrettierConfig,
+          filepath: join(root, file),
+        }),
+        file,
+      ).toBe(written);
+    }
     const theme = readFileSync(join(root, DESIGNX_THEME_FILE), "utf8");
     expect(theme.startsWith('@import "tailwindcss";\n@import "tw-animate-css";\n')).toBe(true);
     expect(theme).toContain("@theme inline");

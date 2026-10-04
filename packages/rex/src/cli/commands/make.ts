@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { RexError } from "../../core/errors.ts";
-import { ARGS_ERROR, type RexCommand as Command } from "../args.ts";
+import { errorDetail, RexError } from "../../core/errors.ts";
+import { ARGS_ERROR, RexArgsError, type RexCommand as Command } from "../args.ts";
 import type { RexCliIO } from "../index.ts";
 import {
   actionTemplate,
@@ -24,6 +24,8 @@ export type DeclarationKind = (typeof DECLARATION_KINDS)[number];
 
 export const MAKE_REFUSED = "rex.make.refused";
 export const INVALID_ARGUMENT = ARGS_ERROR.invalidArgument;
+export const MAKE_INVALID_CODE = "REX601";
+export const MAKE_REFUSED_CODE = "REX602";
 
 export interface PlannedFile {
   readonly kind: "file";
@@ -39,11 +41,14 @@ export interface PlannedDir {
 export type PlannedEntry = PlannedFile | PlannedDir;
 
 export class MakeError extends RexError {
+  override readonly code: typeof MAKE_INVALID_CODE | typeof MAKE_REFUSED_CODE;
   readonly cliCode: typeof MAKE_REFUSED | typeof INVALID_ARGUMENT;
   readonly exitCode: number;
 
   constructor(cliCode: typeof MAKE_REFUSED | typeof INVALID_ARGUMENT, message: string) {
-    super(cliCode === MAKE_REFUSED ? "REX602" : "REX601", message);
+    const code = cliCode === MAKE_REFUSED ? MAKE_REFUSED_CODE : MAKE_INVALID_CODE;
+    super(code, message);
+    this.code = code;
     this.name = "MakeError";
     this.cliCode = cliCode;
     this.exitCode = cliCode === MAKE_REFUSED ? 1 : 2;
@@ -62,7 +67,7 @@ function plan(build: () => readonly PlannedEntry[]): readonly PlannedEntry[] {
   try {
     return build();
   } catch (error) {
-    throw new MakeError(INVALID_ARGUMENT, (error as Error).message);
+    throw new MakeError(INVALID_ARGUMENT, errorDetail(error));
   }
 }
 
@@ -187,15 +192,17 @@ export function parseList(value: string): string[] {
     .filter((item) => item.length > 0);
 }
 
-function report(command: Command, io: RexCliIO, make: () => string[]): void {
+export function reportedMakeError(command: string, error: unknown): unknown {
+  if (!(error instanceof MakeError)) return error;
+  return new RexArgsError(`${command}: ${error.detail}`, error.cliCode, error.exitCode, error.code);
+}
+
+function report(io: RexCliIO, make: () => string[]): void {
   let written: string[];
   try {
     written = make();
   } catch (error) {
-    if (error instanceof MakeError) {
-      command.error(`rex make: ${error.detail}`, { code: error.cliCode, exitCode: error.exitCode });
-    }
-    throw error;
+    throw reportedMakeError("rex make", error);
   }
   for (const path of written) io.out(`wrote ${path}\n`);
 }
@@ -205,7 +212,7 @@ export function register(program: Command, io: RexCliIO): void {
     .command("make")
     .description("write the canonical skeleton for a page, page file or declaration");
 
-  const page: Command = make
+  make
     .command("page")
     .description(
       "write a page folder: page.ts, view.tsx, states.tsx, hooks/, regions, overlays and test/",
@@ -214,55 +221,59 @@ export function register(program: Command, io: RexCliIO): void {
     .option("--regions <names>", "comma-separated region names", parseList, [] as string[])
     .option("--overlays <names>", "comma-separated overlay names", parseList, [] as string[])
     .action((id: string, options: { regions: string[]; overlays: string[] }) => {
-      report(page, io, () =>
-        makePage(io.cwd, { id, regions: options.regions, overlays: options.overlays }),
+      report(io, () =>
+        makePage(io.cwd, {
+          id,
+          regions: options.regions,
+          overlays: options.overlays,
+        }),
       );
     });
 
-  const region: Command = make
+  make
     .command("region")
     .description("write regions/<name>/region.tsx in a page")
     .argument("<page>", "page id")
     .argument("<name>", "region name")
     .action((pageId: string, name: string) => {
-      report(region, io, () => makeRegion(io.cwd, pageId, name));
+      report(io, () => makeRegion(io.cwd, pageId, name));
     });
 
-  const part: Command = make
+  make
     .command("part")
     .description("write regions/<region>/parts/<Name>.tsx in a page")
     .argument("<page>", "page id")
     .argument("<name>", "PascalCase part name")
     .requiredOption("--region <region>", "region that owns the part")
     .action((pageId: string, name: string, options: { region: string }) => {
-      report(part, io, () => makePart(io.cwd, pageId, options.region, name));
+      report(io, () => makePart(io.cwd, pageId, options.region, name));
     });
 
-  const overlay: Command = make
+  make
     .command("overlay")
     .description("write overlays/<Name>.tsx in a page")
     .argument("<page>", "page id")
     .argument("<name>", "PascalCase overlay name")
     .action((pageId: string, name: string) => {
-      report(overlay, io, () => makeOverlay(io.cwd, pageId, name));
+      report(io, () => makeOverlay(io.cwd, pageId, name));
     });
 
-  const hook: Command = make
+  make
     .command("hook")
     .description("write hooks/<useName>.ts in a page")
     .argument("<page>", "page id")
     .argument("<name>", "hook name starting with use")
     .action((pageId: string, name: string) => {
-      report(hook, io, () => makeHook(io.cwd, pageId, name));
+      report(io, () => makeHook(io.cwd, pageId, name));
     });
 
   for (const kind of DECLARATION_KINDS) {
-    const declaration: Command = make
+    make
       .command(kind)
       .description(`write ${DECLARATION_TEMPLATES[kind].path("name")}`)
       .argument("<name>", `${kind} id`)
       .action((name: string) => {
-        report(declaration, io, () => makeDeclaration(io.cwd, kind, name));
+        report(io, () => makeDeclaration(io.cwd, kind, name));
       });
   }
 }
