@@ -9,17 +9,20 @@ export interface AreaSectionEntry {
 }
 
 export interface AreaSectionProps {
-  readonly id: string;
   readonly prefix: string;
   readonly title: string;
   readonly doc: { readonly title: string; readonly href: string };
   readonly entries: readonly AreaSectionEntry[];
 }
 
-export default function AreaSection({ id, prefix, title, doc, entries }: AreaSectionProps) {
-  const headingId = `errors-area-${id}`;
+export default function AreaSection({ prefix, title, doc, entries }: AreaSectionProps) {
+  const headingId = `errors-area-${prefix}`;
   return (
-    <section aria-labelledby={headingId} data-site-error-area={id} className="flex flex-col gap-4">
+    <section
+      aria-labelledby={headingId}
+      data-site-error-area={prefix}
+      className="flex flex-col gap-4"
+    >
       <div className="flex flex-wrap items-center gap-3">
         <Typography variant="h3" as="h2" id={headingId}>
           {prefix}xx {title}

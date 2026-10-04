@@ -1,10 +1,10 @@
 import { action, always } from "@sidioralabs/rex";
 import { z } from "zod/mini";
-import { errorCatalog } from "../server/content/errors.ts";
+import { errorCatalog } from "../../server/content/errors.ts";
 
 const errorEntry = z.object({
   code: z.string(),
-  area: z.string(),
+  prefix: z.string(),
   areaTitle: z.string(),
   message: z.string(),
   hint: z.string(),
@@ -20,7 +20,6 @@ export const errorsCatalog = action("errors-catalog", {
     count: z.number(),
     areas: z.array(
       z.object({
-        id: z.string(),
         prefix: z.string(),
         title: z.string(),
         doc: areaDoc,

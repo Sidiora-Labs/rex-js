@@ -62,8 +62,7 @@ export default region("catalog", ({ nav }) => {
       {areas.length === 0 ? <NoMatch query={filter.query} /> : null}
       {areas.map((area) => (
         <AreaSection
-          key={area.id}
-          id={area.id}
+          key={area.prefix}
           prefix={area.prefix}
           title={area.title}
           doc={area.doc}
