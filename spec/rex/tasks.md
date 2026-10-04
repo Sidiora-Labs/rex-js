@@ -171,6 +171,7 @@
   - [ ] 4.4 Implement rex new and rex promote
     - Implement src/cli/commands/new.ts: rex new <name> writing a complete app (package.json, tsconfig, index.html, rex.config.ts, app/ with one home page, one entity, one action, one policy, app/components, app/data) that passes rex check with zero findings.
     - Implement src/cli/commands/promote.ts: rex promote <page>/regions/<region>/parts/<Part> moving the file to app/components/<Part>.tsx and rewriting imports within the source page.
+    - Add src/vite/rex-app.d.ts declaring the ambient module rex:app with default and named exports typed by RexAppBundle, reference it from src/vite/index.ts with a triple-slash directive, and have the generated app tsconfig include it so rex new passes typecheck (closes qualification.2 from wave 4).
     - Write src/cli/new.test.ts generating an app into a temporary directory, running runCheck on it and asserting zero findings, then promoting a part and asserting the move and rewritten import.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 13.1, 13.2, 13.3, 13.4_
   - [ ] 4.5 Implement rex dev, build, check and manifest commands
@@ -182,6 +183,12 @@
 ## Wave 5
 
 - [ ] 5. Agent contract: addressing, sidecar, outcome, invocation, density, overlays
+  - [ ] 5.0 Align the confirm protocol, header names and reserved query keys between client and server
+    - Add src/core/protocol.ts exporting the single source of truth for the wire protocol: CONFIRM_PROCEDURE, the header names REX_CONFIRM_HEADER (x-rex-confirm), REX_ACTOR_HEADER (x-rex-actor), REX_DENSITY_HEADER (x-rex-density), the RPC prefix /rex/rpc and manifest path /rex/manifest, and RESERVED_QUERY_KEYS (act, input, draft, density); export it from src/index.ts.
+    - Make src/server/router.ts, src/server/context.ts, src/server/index.ts, src/client/context.ts and src/client/act.ts import those constants instead of their own literals (wave 1 named the confirm procedure _confirm while wave 2 used $confirm; one name must win, taken from protocol.ts).
+    - Make createRexServer set x-rex-actor (URI-encoded JSON of the resolved actor) and x-rex-density on the GET /rex/manifest response, which createRexApp already reads; add the assertion to src/server/server.test.ts.
+    - Add src/core/protocol.test.ts proving the client confirm path and the server confirm procedure agree by running useAct against a real RPCHandler built from buildActionRouter for an irreversible action.
+    - _Requirements: 2.1, 2.6, 6.4, 15.3_
   - [ ] 5.1 Implement stable addressing
     - Implement src/client/agent/address.tsx: useAddress() returning the current page and region ids; controlProps from useAct include data-rex=<page>/<action>; PageHost sets data-rex-page; Region sets data-rex-region; overlays set data-rex-overlay.
     - Write src/client/agent/address.test.tsx asserting every attribute on the fixture page and that attributes are unchanged when class names change.
@@ -239,7 +246,7 @@
     { "id": 2,  "tasks": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"] },
     { "id": 3,  "tasks": ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6"] },
     { "id": 4,  "tasks": ["4.1", "4.2", "4.3", "4.4", "4.5"] },
-    { "id": 5,  "tasks": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7"] },
+    { "id": 5,  "tasks": ["5.0", "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7"] },
     { "id": 6,  "tasks": ["6.1", "6.2"] }
   ]
 }
