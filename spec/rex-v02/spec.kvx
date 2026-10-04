@@ -1533,7 +1533,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.9]
 title = "The client and edge entries carry no server code, no zod and no build-time work, and meet their 30 KB and 40 KB budgets"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 7
 requires = ["7.7", "7.8", "7.5", "7.2"]
@@ -1542,7 +1542,7 @@ do_1 = "The client runtime carries no server module (qualification.721): FLOW_RP
 do_2 = "rex:app and the client entry read the prebuilt manifest: the vite plugin builds the manifest once per build and emits it as a virtual module that rex:app and client/agent/sidecar.tsx consume, neither bundle calls buildManifest or the JSON Schema generator, and the sidecar is validated with a zod-free structural check from rex/manifest types; the server bundles keep taking dist/manifest.json as 7.2 made them."
 do_3 = "The palette is a lazily loaded module: client/agent/palette.tsx exports a thin trigger that imports the cmdk palette module on the first open (mod+k, the data-rex trigger or ?act=) and the open is awaited where client/runtime.test.tsx relied on it being synchronous; devtools are excluded from production builds."
 do_4 = "The edge entry carries no config parser and no zod: server/app.ts takes resolved options with config parsing left to the CLI and the vite plugin, server/form.ts decodes form fields through the Standard Schema interface, and src/zod-boundary.test.ts gains the client and edge entries; the client entry passes 30 KB and the edge entry 40 KB with the unchanged assertions."
-touches = ["packages/rex/src/core/protocol.ts", "packages/rex/src/client", "packages/rex/src/server/app.ts", "packages/rex/src/server/form.ts", "packages/rex/src/server/context.ts", "packages/rex/src/server/flow.ts", "packages/rex/src/server/server.test.ts", "packages/rex/src/server/form.test.tsx", "packages/rex/src/vite/app-module.ts", "packages/rex/src/vite/virtual.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/src/vite/plugin.ts", "packages/rex/src/vite/rex-app.d.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/zod-boundary.test.ts"]
+touches = ["packages/rex/src/core/protocol.ts", "packages/rex/src/client", "packages/rex/src/server/app.ts", "packages/rex/src/server/context.ts", "packages/rex/src/server/flow.ts", "packages/rex/src/server/server.test.ts", "packages/rex/src/vite/app-module.ts", "packages/rex/src/vite/virtual.ts", "packages/rex/src/vite/rex-app.d.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/zod-boundary.test.ts"]
 verify_cmd = "pnpm -C packages/rex exec vitest run src/size.test.ts -t \"client entry|edge entry\" && pnpm -C packages/rex exec vitest run src/zod-boundary.test.ts src/client src/server src/vite/vite.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex build"
 gate_kind = "planned"
 max_builds = 1

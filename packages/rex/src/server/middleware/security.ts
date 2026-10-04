@@ -1,13 +1,6 @@
 import type { Context, Hono } from "hono";
 import type { AnyAction } from "../../core/action.ts";
-import {
-  resolveOptions,
-  type ClientConfig,
-  type CspMode,
-  type ResolvedSecurity,
-  type RexOptionsConfig,
-  type SecurityConfig,
-} from "../../core/config.ts";
+import type { ClientConfig, CspMode, ResolvedSecurity, SecurityConfig } from "../../core/config.ts";
 import type { RexServerSetup } from "../app.ts";
 import { requestNonce } from "../context.ts";
 
@@ -43,12 +36,17 @@ export interface SecurityPolicyInput {
   readonly client?: ClientConfig;
 }
 
+export const DEFAULT_CSP_MODE: CspMode = "strict";
+
 export function resolveSecurityPolicy(input: SecurityPolicyInput = {}): SecurityPolicy {
-  const options: { -readonly [K in keyof RexOptionsConfig]: RexOptionsConfig[K] } = {};
-  if (input.security !== undefined) options.security = input.security;
-  if (input.client !== undefined) options.client = input.client;
-  const resolved = resolveOptions(options);
-  return Object.freeze({ security: resolved.security, apiOrigin: resolved.client.apiOrigin });
+  const security = input.security ?? {};
+  const resolved: ResolvedSecurity = Object.freeze({
+    csp: security.csp ?? DEFAULT_CSP_MODE,
+    origins: Object.freeze([...(security.origins ?? [])]),
+    headers: Object.freeze({ ...security.headers }),
+    secretNames: Object.freeze([...(security.secretNames ?? [])]),
+  });
+  return Object.freeze({ security: resolved, apiOrigin: input.client?.apiOrigin ?? null });
 }
 
 export function isRexPath(path: string): boolean {

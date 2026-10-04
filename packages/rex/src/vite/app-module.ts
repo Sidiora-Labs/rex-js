@@ -1,6 +1,12 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
-import { normalizePath, type DevEnvironment, type Plugin, type ViteDevServer } from "vite";
+import {
+  normalizePath,
+  type DevEnvironment,
+  type Plugin,
+  type UserConfig,
+  type ViteDevServer,
+} from "vite";
 import type { AnyAction } from "../core/action.ts";
 import type { FontSpec, I18nConfig } from "../core/config.ts";
 import type { AnyEntity } from "../core/entity.ts";
@@ -10,6 +16,7 @@ import type { AnyPolicy } from "../core/policy.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import type { Manifest } from "../manifest/types.ts";
 import type { RexHookContext } from "./hooks.ts";
+import type { RexPluginOptions } from "./plugin.ts";
 import { resolveRuntimeEntry } from "./resolve.ts";
 import { DECLARATION_FOLDERS, RexAppScanError, scanApp, type AppScan } from "./scan.ts";
 import { configuredShellComponents, shellComponentsLines } from "./shell-components.ts";
@@ -18,7 +25,9 @@ import {
   APP_MODULE_ID,
   CLIENT_SPECIFIER,
   CORE_SPECIFIER,
+  MANIFEST_MODULE_ID,
   RESOLVED_APP_MODULE_ID,
+  RESOLVED_MANIFEST_MODULE_ID,
 } from "./virtual.ts";
 
 declare module "./plugin.ts" {
@@ -73,6 +82,7 @@ export interface AppModuleOptions {
   readonly config: RexAppConfig;
   readonly shellComponents: string | null;
   readonly locales: readonly LocaleModule[];
+  readonly prebuiltManifest?: boolean;
 }
 
 export function localeModules(appPath: string): readonly LocaleModule[] {
@@ -146,9 +156,12 @@ export function generateAppModule(scan: AppScan, options: AppModuleOptions): str
   const display = (file: string) => literal(normalizePath(relative(scan.root, file)));
   const shell = shellComponentsLines(options.shellComponents, options.client);
   const i18n = options.config.i18n;
+  const prebuilt = options.prebuiltManifest === true;
   const imports: string[] = [
     `import { RexError, createRegistry } from ${literal(options.core)};`,
-    `import { buildManifest } from ${literal(options.core.replace(/index(\.[cm]?[jt]s)$/, "manifest/index$1"))};`,
+    prebuilt
+      ? `import rexManifest from ${literal(MANIFEST_MODULE_ID)};`
+      : `import { buildManifest } from ${literal(options.core.replace(/index(\.[cm]?[jt]s)$/, "manifest/index$1"))};`,
     ...shell.imports,
   ];
   const messages: string[] = [];
@@ -217,7 +230,9 @@ export function generateAppModule(scan: AppScan, options: AppModuleOptions): str
     "export const registry = createRegistry()",
     "  .register(...entities, ...actions, ...policies, ...flows, ...pages.map((entry) => entry.page))",
     "  .freeze();",
-    `export const manifest = buildManifest(registry, { app: ${literal(options.name)} });`,
+    prebuilt
+      ? "export const manifest = rexManifest;"
+      : `export const manifest = buildManifest(registry, { app: ${literal(options.name)} });`,
     `export const config = Object.freeze({ fonts: Object.freeze(${JSON.stringify(options.config.fonts)}), i18n: ${JSON.stringify(i18n)} });`,
     ...shell.register,
     ...(i18n === null
@@ -229,6 +244,26 @@ export function generateAppModule(scan: AppScan, options: AppModuleOptions): str
     "export default app;",
     "",
   ].join("\n");
+}
+
+export function generateManifestModule(manifest: Manifest): string {
+  return [`const manifest = ${JSON.stringify(manifest)};`, "export default manifest;", ""].join(
+    "\n",
+  );
+}
+
+export async function buildAppManifest(
+  root: string,
+  options: RexPluginOptions,
+  resolve?: UserConfig["resolve"],
+): Promise<Manifest> {
+  const { loadAppBundle, withModuleLoader } = await import("../cli/load.ts");
+  const plugins: Plugin[] =
+    resolve === undefined ? [] : [{ name: "rex:manifest-resolve", config: () => ({ resolve }) }];
+  return withModuleLoader(root, async (loader) => (await loadAppBundle(loader)).manifest, {
+    rex: options,
+    plugins,
+  });
 }
 
 export function invalidateAppModule(
@@ -261,16 +296,31 @@ export function watchApp(vite: ViteDevServer, appPath: string): void {
 
 export function appModuleHook(context: RexHookContext): Plugin {
   let serverBuild = false;
+  let build = false;
+  let resolve: UserConfig["resolve"];
+  let manifest: Promise<Manifest> | null = null;
   return {
     name: "rex:app",
     enforce: "pre",
+    config(user) {
+      resolve = user.resolve;
+    },
     configResolved(config) {
       serverBuild = Boolean(config.build.ssr);
+      build = config.command === "build";
+    },
+    buildStart() {
+      manifest = null;
     },
     resolveId(id) {
-      return id === APP_MODULE_ID ? RESOLVED_APP_MODULE_ID : null;
+      if (id === APP_MODULE_ID) return RESOLVED_APP_MODULE_ID;
+      return id === MANIFEST_MODULE_ID ? RESOLVED_MANIFEST_MODULE_ID : null;
     },
     async load(id) {
+      if (id === RESOLVED_MANIFEST_MODULE_ID) {
+        manifest ??= buildAppManifest(context.state.root, context.options, resolve);
+        return generateManifestModule(await manifest);
+      }
       if (id !== RESOLVED_APP_MODULE_ID) return null;
       const { root, name } = context.state;
       const core = await resolveRuntimeEntry(this, root, CORE_SPECIFIER, context.paths.core);
@@ -284,6 +334,7 @@ export function appModuleHook(context: RexHookContext): Plugin {
           config,
           shellComponents: configuredShellComponents(context),
           locales: config.i18n === null ? [] : localeModules(context.appPath()),
+          prebuiltManifest: build,
         });
       } catch (error) {
         if (error instanceof RexAppScanError) this.error(error.message);

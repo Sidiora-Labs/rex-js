@@ -1,17 +1,19 @@
 import { ACTION_EFFECTS, type ActionEffect } from "../core/action.ts";
 import { OVERLAY_DISMISS, type OverlayDismiss } from "../core/overlay.ts";
+import {
+  INVOCATION_ROUTES,
+  SIDECAR_ELEMENT_ID,
+  SIDECAR_MIME_TYPE,
+  SIDECAR_VERSION,
+  type InvocationRoute,
+} from "../core/protocol.ts";
 import * as zm from "zod/mini";
 import type { JsonSchema } from "../core/schema.ts";
 import { REX_DATA_STATES } from "../core/states.ts";
 import { toJsonSchema } from "./json-schema.ts";
 
-export const SIDECAR_MIME_TYPE = "application/rex+json";
-export const SIDECAR_ELEMENT_ID = "rex-page";
-export const SIDECAR_VERSION = 1;
-
-export const INVOCATION_ROUTES = ["click", "key", "palette", "url"] as const;
-
-export type InvocationRoute = (typeof INVOCATION_ROUTES)[number];
+export { INVOCATION_ROUTES, SIDECAR_ELEMENT_ID, SIDECAR_MIME_TYPE, SIDECAR_VERSION };
+export type { InvocationRoute };
 
 const nonEmpty = () => zm.string().check(zm.minLength(1));
 

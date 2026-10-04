@@ -4,8 +4,13 @@ import type { AnyAction } from "../core/action.ts";
 import type { Actor } from "../core/actor.ts";
 import { RexError } from "../core/errors.ts";
 import { evaluate } from "../core/policy.ts";
-import { CONFIRM_PROCEDURE } from "../core/protocol.ts";
-import * as zm from "zod/mini";
+import {
+  CONFIRM_PROCEDURE,
+  confirmInputSchema,
+  confirmOutputSchema,
+  type ConfirmInput,
+  type ConfirmOutput,
+} from "../core/protocol.ts";
 import { validateStandard } from "../core/standard.ts";
 import {
   AUDIT_OK,
@@ -24,7 +29,8 @@ import {
   type RexTelemetry,
 } from "./middleware/telemetry.ts";
 
-export { CONFIRM_PROCEDURE };
+export { CONFIRM_PROCEDURE, confirmInputSchema, confirmOutputSchema };
+export type { ConfirmInput, ConfirmOutput };
 export const DEFAULT_CONFIRM_TTL_MS = 60_000;
 export const PRECONDITION_REQUIRED = "PRECONDITION_REQUIRED";
 export const PRECONDITION_REQUIRED_STATUS = 428;
@@ -70,21 +76,6 @@ export type ActionProcedure<A extends AnyAction> = Procedure<
   NoErrors,
   NoMeta
 >;
-
-export const confirmInputSchema = zm.strictObject({
-  action: zm.string().check(zm.minLength(1)),
-  input: zm.unknown(),
-});
-
-export const confirmOutputSchema = zm.strictObject({
-  token: zm.string().check(zm.minLength(1)),
-  action: zm.string().check(zm.minLength(1)),
-  inputDigest: zm.string().check(zm.minLength(1)),
-  expiresAt: zm.iso.datetime(),
-});
-
-export type ConfirmInput = zm.input<typeof confirmInputSchema>;
-export type ConfirmOutput = zm.output<typeof confirmOutputSchema>;
 
 export type ConfirmProcedure = Procedure<
   RexContext,

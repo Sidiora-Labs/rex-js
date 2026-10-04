@@ -20,9 +20,11 @@ import {
   HEALTH_PATH,
   MANIFEST_PATH,
   FLOW_RPC_PREFIX,
+  CSP_REPORT_ONLY_HEADER,
   createRexContext,
   createRexServer,
   memoryLedger,
+  mountRexServer,
   requestNonce,
   CSP_HEADER,
   type FlowRouter,
@@ -380,5 +382,76 @@ describe("createRexServer", () => {
       decision: "approve",
     });
     expect(approved).toMatchObject({ status: "completed", gate: null, completed: 2 });
+  });
+});
+
+describe("mountRexServer", () => {
+  const PARTNER = "https://partner.example";
+
+  it("serves a prebuilt manifest with resolved security and client options as given", async () => {
+    const ledger = memoryLedger();
+    const manifest = buildManifest(source, { app: "demo" });
+    const server = mountRexServer({
+      registry: source,
+      ledger,
+      actor: resolveActor,
+      manifest,
+      security: {
+        csp: "report",
+        origins: [PARTNER],
+        headers: { "x-frame-options": "DENY" },
+        secretNames: [],
+      },
+      client: { apiOrigin: "https://api.example" },
+    });
+    const response = await server.request(MANIFEST_PATH);
+    expect(await response.text()).toBe(stableStringify(manifest));
+    expect(response.headers.get(CSP_HEADER)).toBeNull();
+    expect(response.headers.get(CSP_REPORT_ONLY_HEADER)).toContain(
+      "connect-src 'self' https://api.example",
+    );
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+    const partner: RegistryRouterClient<typeof source> = createORPCClient(
+      new RPCLink({
+        url: `${ORIGIN}/rex/rpc`,
+        headers: { authorization: "Bearer alice", origin: PARTNER },
+        fetch: async (request) => server.fetch(request),
+      }),
+    );
+    await expect(partner["toggle-dust"]({ hide: true })).resolves.toEqual({
+      hide: true,
+      by: "alice",
+    });
+    expect((await ledger.list()).map((record) => record.actionId)).toEqual(["toggle-dust"]);
+  });
+
+  it("refuses a manifest that rex build did not write", () => {
+    expect(() =>
+      mountRexServer({
+        registry: source,
+        ledger: memoryLedger(),
+        actor: resolveActor,
+        manifest: {} as ReturnType<typeof buildManifest>,
+      }),
+    ).toThrow(/REX400/);
+  });
+
+  it("leaves config validation to createRexServer", () => {
+    expect(() =>
+      createRexServer({
+        registry: source,
+        ledger: memoryLedger(),
+        actor: resolveActor,
+        security: { origins: [`${PARTNER}/path`] },
+      }),
+    ).toThrow(/REX115/);
+    expect(() =>
+      createRexServer({
+        registry: source,
+        ledger: memoryLedger(),
+        actor: resolveActor,
+        client: { apiOrigin: "ftp://api.example" },
+      }),
+    ).toThrow(/REX121/);
   });
 });

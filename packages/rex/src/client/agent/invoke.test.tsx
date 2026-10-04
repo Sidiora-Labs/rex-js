@@ -151,7 +151,7 @@ async function press(init: KeyboardEventInit & { key: string }) {
 
 async function openPalette(): Promise<HTMLElement> {
   await press({ key: "k", code: "KeyK", ctrlKey: true });
-  return screen.getByRole("dialog", { name: "Command palette" });
+  return screen.findByRole("dialog", { name: "Command palette" });
 }
 
 async function search(palette: HTMLElement, value: string) {

@@ -25,6 +25,7 @@ import {
   PAGE_CHUNK_PREFIX,
   RESOLVED_APP_MODULE_ID,
   RESOLVED_ENTRY_MODULE_ID,
+  RESOLVED_MANIFEST_MODULE_ID,
   RexAppScanError,
   generateEntryModule,
   runtimePaths,
@@ -43,6 +44,7 @@ const fixtureRoot = join(here, "fixtures", "app");
 const coreEntry = join(here, "..", "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
 const fixture = (path: string) => normalizePath(join(fixtureRoot, path));
+const MANIFEST_BUILDERS = /\/src\/manifest\/(build|json-schema|sidecar\.schema)\.ts$/;
 
 const BUNDLE_EXPORTS = [
   "actions",
@@ -158,6 +160,8 @@ describe("rex() with the Vite build API", () => {
     expect([...(entry?.exports ?? [])].sort()).toEqual(BUNDLE_EXPORTS);
     const modules = chunks.flatMap((chunk) => chunk.moduleIds.map(normalizePath));
     expect(modules).toContain(RESOLVED_APP_MODULE_ID);
+    expect(modules).toContain(RESOLVED_MANIFEST_MODULE_ID);
+    expect(modules.filter((id) => MANIFEST_BUILDERS.test(id))).toEqual([]);
     for (const file of [
       "app/entities/note.ts",
       "app/policies/notes.ts",
@@ -197,6 +201,9 @@ describe("the client entry build", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
     const modules = chunks.flatMap((chunk) => chunk.moduleIds.map(normalizePath));
     expect(modules).toContain(RESOLVED_ENTRY_MODULE_ID);
     expect(modules).toContain(RESOLVED_APP_MODULE_ID);
+    expect(modules).toContain(RESOLVED_MANIFEST_MODULE_ID);
+    expect(modules.filter((id) => MANIFEST_BUILDERS.test(id))).toEqual([]);
+    expect(modules).not.toContain(normalizePath(join(here, "..", "core", "config.ts")));
     for (const file of [
       "shell.tsx",
       "app.tsx",

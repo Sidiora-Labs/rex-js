@@ -307,6 +307,8 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
               actor: startup.value.actor,
               client,
               density: startup.value.density,
+              baseUrl: base,
+              ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
             }
           : null,
       [startup],

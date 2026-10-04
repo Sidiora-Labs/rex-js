@@ -17,10 +17,11 @@ import type { AnyFlow, ApprovalStep } from "../../core/flow.ts";
 import { actionAddress } from "../../core/ids.ts";
 import type { FlowDecision } from "../../core/journal.ts";
 import { evaluate, type PolicyResult } from "../../core/policy.ts";
-import { FLOW_RPC_PREFIX, type FlowRouter, type FlowState } from "../../server/flow.ts";
+import { FLOW_RPC_PREFIX, type FlowState } from "../../core/protocol.ts";
+import type { FlowRouter } from "../../server/flow.ts";
 import { describeError } from "../act.ts";
 import type { RexFetch } from "../app.tsx";
-import { useActor } from "../context.ts";
+import { RexRuntimeContext, useActor } from "../context.ts";
 import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
 import { useActivePage } from "../router.tsx";
 import { useConfirm } from "./confirm.tsx";
@@ -64,7 +65,18 @@ export function FlowClientProvider({ client, children }: FlowClientProviderProps
 
 export function useFlowClient(): FlowClient {
   const provided = useContext(FlowClientContext);
-  return useMemo(() => provided ?? createFlowClient(), [provided]);
+  const runtime = useContext(RexRuntimeContext);
+  const baseUrl = runtime?.baseUrl;
+  const fetchImpl = runtime?.fetch;
+  return useMemo(
+    () =>
+      provided ??
+      createFlowClient({
+        ...(baseUrl === undefined ? {} : { baseUrl }),
+        ...(fetchImpl === undefined ? {} : { fetch: fetchImpl }),
+      }),
+    [provided, baseUrl, fetchImpl],
+  );
 }
 
 export function gateAffordanceId(declared: AnyFlow, gate: string, decision: FlowDecision): string {
