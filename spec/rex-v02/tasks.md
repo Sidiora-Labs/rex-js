@@ -73,7 +73,7 @@
     - Add server/form.ts (FormData coercion against the input schema: numbers, booleans, arrays, nested dotted names) and server/routes/form.ts implementing [design] forms_protocol: CSRF double-submit cookie rex-csrf, Origin check, policy, action run, rex-outcome cookie, redirect, validation errors, and the server-rendered confirmation page for irreversible actions; register the route.
     - Write server/form.test.tsx (coercion, CSRF reject, Origin reject, confirm page, confirm post, redirect, errors cookie, audit record).
     - _Requirements: 11.2, 11.3, 11.4_
-  - [ ] 1.5 Runtime adapters for Node, Bun, Deno and edge with the fetch-only guarantee
+  - [x] 1.5 Runtime adapters for Node, Bun, Deno and edge with the fetch-only guarantee
     - Move server/node.ts to server/adapters/node.ts (keeping a re-export), add server/adapters/bun.ts, deno.ts and edge.ts per [design] runtimes with REX450 when the runtime global is absent; add server/fetch-only.test.ts that bundles src/server/index.ts for the browser platform with Vite's build API and asserts no node: specifier remains; add the ./server/bun, ./server/deno and ./server/edge exports.
     - Write server/adapters/adapters.test.ts: node adapter passes the existing node tests, edge handler answers Request objects, bun and deno adapters throw REX450 here and hand the fetch handler to the runtime serve when a real global exists.
     - _Requirements: 12.1, 12.2_

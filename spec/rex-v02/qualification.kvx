@@ -39,3 +39,11 @@ symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowSt
 observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
 assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
 severity = "blocker"
+
+[qualification.151]
+task = "1.5"
+file = "packages/rex/src/core/errors.ts, packages/rex/src/server/adapters/runtime.ts, packages/rex/src/vite/budgets.ts"
+symbol = "REX450, RuntimeMissingError, RUNTIME_MISSING_CODE, entryBudgets"
+observed = "The catalog in core/errors.ts (outside the 1.5 touches) has no REX450 and RexError rejects uncatalogued codes, so the bun and deno adapters throw RuntimeMissingError carrying code REX450, hint, docs and runtime, following the REX330 precedent from 0.5; the edge entry budget in vite/budgets.ts still measures src/server/index.ts; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/server/fetch-only.test.ts src/server/adapters/adapters.test.ts src/server/node.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.5-private/logs/1.5-verify.log."
+assumption = "Task 2.1 adds REX450 to the catalog so RuntimeMissingError can become a RexError, and the owner of vite/budgets.ts may keep src/server/index.ts as the edge source since an edge worker bundles createRexServer plus the few lines of adapters/edge.ts."
+severity = "note"

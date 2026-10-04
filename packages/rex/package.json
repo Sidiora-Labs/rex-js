@@ -19,6 +19,9 @@
     "./client": "./src/client/index.ts",
     "./server": "./src/server/index.ts",
     "./server/node": "./src/server/node.ts",
+    "./server/bun": "./src/server/adapters/bun.ts",
+    "./server/deno": "./src/server/adapters/deno.ts",
+    "./server/edge": "./src/server/adapters/edge.ts",
     "./store/drizzle": "./src/store/index.ts",
     "./vite": "./src/vite/index.ts",
     "./check": "./src/check/index.ts",
@@ -47,6 +50,18 @@
       "./server/node": {
         "types": "./dist/server/node.d.ts",
         "import": "./dist/server/node.js"
+      },
+      "./server/bun": {
+        "types": "./dist/server/adapters/bun.d.ts",
+        "import": "./dist/server/adapters/bun.js"
+      },
+      "./server/deno": {
+        "types": "./dist/server/adapters/deno.d.ts",
+        "import": "./dist/server/adapters/deno.js"
+      },
+      "./server/edge": {
+        "types": "./dist/server/adapters/edge.d.ts",
+        "import": "./dist/server/adapters/edge.js"
       },
       "./store/drizzle": {
         "types": "./dist/store/index.d.ts",

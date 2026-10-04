@@ -11,7 +11,7 @@ import { always } from "../core/policy.ts";
 import { boolean, z } from "../core/schema.ts";
 import { buildManifest, stableStringify } from "../manifest/build.ts";
 import { createRexServer, memoryLedger, type RegistryRouterClient } from "./index.ts";
-import { isApiPath, isPageRoutePath, startNodeServer, type RunningNodeServer } from "./node.ts";
+import { isApiPath, isPageRoutePath, startNodeServer, type RunningNodeServer } from "./adapters/node.ts";
 
 const INDEX_HTML = '<!doctype html><html><body><div id="root"></div></body></html>';
 const APP_JS = 'console.log("rex");';
