@@ -237,6 +237,7 @@
     "@types/react-dom": "^19.3.0",
     "@typescript-eslint/parser": "^8.71.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "cmdk": "^1.1.1",
     "drizzle-orm": "^0.45.3",
