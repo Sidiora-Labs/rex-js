@@ -485,7 +485,7 @@ status  = "pending"
 
 [task.2.1]
 title = "Implement the client app provider"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 2
 requires = ["0.7"]

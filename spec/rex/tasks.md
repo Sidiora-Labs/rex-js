@@ -81,7 +81,7 @@
 ## Wave 2
 
 - [ ] 2. Client runtime: providers, router, nav, act, view and regions, states, layout, shell
-  - [ ] 2.1 Implement the client app provider
+  - [x] 2.1 Implement the client app provider
     - Implement src/client/app.tsx: createRexApp({registry, manifest, link}) returning a RexApp component that mounts QueryClientProvider, the oRPC client built from RPCLink at /rex/rpc, the manifest context, the actor context (fetched from /rex/manifest headers or provided) and the density provider slot.
     - Implement src/client/context.ts exposing useManifest, useActor, useRexClient and useRegistry hooks.
     - Write src/client/app.test.tsx rendering RexApp with a mocked fetch of the manifest and asserting the hooks resolve.
