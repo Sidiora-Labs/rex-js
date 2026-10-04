@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { AnyAction } from "../core/action.ts";
+import type { CommandListing } from "./args.ts";
 import type { AnyEntity } from "../core/entity.ts";
 import type { AnyPage } from "../core/page.ts";
 import type { AnyPolicy } from "../core/policy.ts";
@@ -17,6 +18,7 @@ import {
   EXIT_OK,
   EXIT_USAGE,
   USAGE_ERROR_CODES,
+  commandListing,
   commandModuleFiles,
   createProgram,
   run,
@@ -159,6 +161,20 @@ describe("rex CLI as a node process without tsx", { timeout: SPAWN_TEST_TIMEOUT_
       const name = basename(file).replace(/\.(ts|js)$/, "");
       expect(result.stdout).toMatch(new RegExp(`^\\s+${name}\\b`, "m"));
     }
+  });
+
+  it("prints the command tree as JSON for --help --json", () => {
+    const result = rex("--help", "--json");
+    expect(result.status).toBe(EXIT_OK);
+    expect(result.stderr).toBe("");
+    const listing = JSON.parse(result.stdout) as CommandListing;
+    expect(listing.path).toBe("rex");
+    expect(listing.commands.map((command) => command.name).sort()).toEqual(
+      [
+        "version",
+        ...commandModuleFiles().map((file) => basename(file).replace(/\.(ts|js)$/, "")),
+      ].sort(),
+    );
   });
 
   it("exits 2 on an unknown command and names it on stderr", () => {
@@ -314,6 +330,82 @@ describe("run and createProgram", () => {
 
   it("finds no command modules in a missing directory", () => {
     expect(commandModuleFiles(join(tempDir("rex-commands-"), "absent"))).toEqual([]);
+  });
+
+  it("lists every registered command, argument and option as JSON", async () => {
+    const listing = await commandListing();
+    const json = captureIO();
+    expect(await run(["--help", "--json"], json.io)).toBe(EXIT_OK);
+    expect(JSON.parse(json.out()) as CommandListing).toEqual(listing);
+    expect(listing.name).toBe("rex");
+    expect(listing.options).toEqual([
+      {
+        flags: "-v, --version",
+        long: "--version",
+        short: "-v",
+        value: null,
+        negate: false,
+        required: false,
+        description: "print the rex version",
+      },
+    ]);
+    const command = (path: string): CommandListing => {
+      let node = listing;
+      for (const name of path.split(" ")) {
+        const next = node.commands.find((candidate) => candidate.name === name);
+        if (next === undefined) throw new Error(`rex ${path} is not registered`);
+        node = next;
+      }
+      return node;
+    };
+    expect(command("version").options).toEqual([]);
+    expect(command("make").commands.map((sub) => sub.name)).toEqual([
+      "page",
+      "region",
+      "part",
+      "overlay",
+      "hook",
+      "action",
+      "entity",
+      "policy",
+      "flow",
+    ]);
+    expect(command("make part").path).toBe("rex make part");
+    expect(command("make part").arguments.map((argument) => argument.name)).toEqual([
+      "page",
+      "name",
+    ]);
+    expect(command("make part").options).toMatchObject([
+      { long: "--region", value: "region", required: true },
+    ]);
+    expect(command("make page").options).toMatchObject([
+      { long: "--regions", value: "names", default: [] },
+      { long: "--overlays", value: "names", default: [] },
+    ]);
+    expect(command("build").options).toMatchObject([
+      { long: "--target", value: "target", default: "node" },
+      { long: "--no-check", value: null, negate: true },
+    ]);
+    expect(command("build").options[1]).not.toHaveProperty("default");
+    expect(command("new").options.map((option) => option.long)).toEqual(["--ui", "--no-install"]);
+    expect(command("check").options.map((option) => option.long)).toEqual(["--json", "--runtime"]);
+    expect(command("migrate").options).toMatchObject([
+      { long: "--from", value: "version", default: "0.1" },
+      { long: "--list", value: null, negate: false },
+    ]);
+
+    const sub = captureIO();
+    expect(await run(["make", "page", "--help", "--json"], sub.io)).toBe(EXIT_OK);
+    expect(JSON.parse(sub.out()) as CommandListing).toEqual(command("make page"));
+    const checkJson = captureIO();
+    expect(await run(["check", "--json", "--help"], checkJson.io)).toBe(EXIT_OK);
+    expect(JSON.parse(checkJson.out()) as CommandListing).toEqual(command("check"));
+
+    const text = captureIO();
+    expect(await run(["--help"], text.io)).toBe(EXIT_OK);
+    expect(text.out()).toMatch(
+      /^\s+-h, --help\s+display help for command \(with --json, the command tree as JSON\)$/m,
+    );
   });
 });
 

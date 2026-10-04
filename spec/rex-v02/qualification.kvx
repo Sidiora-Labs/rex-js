@@ -694,3 +694,19 @@ symbol = "pnpm -C packages/rex test (the second step of the 7.3 verify_cmd)"
 observed = "The unchanged 7.3 verify_cmd fails at revision c047b8f3ed4da0b000cb516dd2d0cf495d80fbd2 plus the 7.3 qualification entries: command pnpm -r typecheck && pnpm -C packages/rex test && pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/cli/designx.test.ts && pnpm -C examples/demo exec rex check && pnpm -C examples/demo test:unit && pnpm -C examples/demo exec playwright test e2e/axe.spec.ts && pnpm -C examples/demo test:vitals, exit 1 (typecheck exit 0, 10 failed of 1256 in the package suite, every one an open cause: qualification.7131 client entry chunk, qualification.911 density, qualification.912 html lang, qualification.7151 CSRF happy-dom case, the vite.test.ts 20000 ms bound under load from qualification.7315 and qualification.7317; the later steps did not run behind it and fail on their own as qualification.732 to qualification.7317 record), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.3-private/logs/7.3-verify.log."
 assumption = "Nothing under the 7.3 touches (spec/rex-v02/spec.kvx) can repair these without editing other tasks' code or relaxing a check, so no repair cycle was spent; 7.3 requalifies after those follow-ups land and the orchestrator marks the passing tasks done."
 severity = "blocker"
+
+[qualification.851]
+task = "8.5"
+file = "README.md, docs/tutorial.md"
+symbol = "tools/freshness.mjs --check: the cli check on README.md and the links check"
+observed = "The 8.5 verify_cmd fails with the 8.5 changes on 20603147229e022295683fd044413bc5db5a64bd (task/rex-v02/8.5): command pnpm -r typecheck && node tools/freshness.mjs --check && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/freshness.test.ts src/cli/cli.test.ts, exit 1 (typecheck exit 0; freshness exports, node, versions, errors, api and pointers ok and docs/cli.md matches the CLI, but README.md lacks 20 commands or flags: rex version, manifest, migrate, make region/part/overlay/hook/action/entity/policy/flow, new --ui/--no-install, dev --port/--host/--no-check, build --target/--no-check, check --json/--runtime; and docs/tutorial.md:718 links the missing HoldingRow.tsx, stale.138), log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-8.5-private/logs/8.5-verify.log."
+assumption = "Both files are outside the 8.5 touches: README.md (8.4) needs a CLI summary with one usage line per registered command and all its flags, and 8.7 closes stale.138; the tests behind the failing step did not run, and 8.5 requalifies once both land."
+severity = "blocker"
+
+[qualification.852]
+task = "8.5"
+file = "examples/demo/package.json"
+symbol = "scripts.test"
+observed = "req 39 ac_2 says the demo test script runs tools/freshness.mjs --check; on 20603147229e022295683fd044413bc5db5a64bd the demo test script is rex check && playwright test ..., and changing it is an edit of an existing script, which [design] shared_lists does not allow (append only) and the 8.5 touches do not cover."
+assumption = "A follow-up owning examples/demo/package.json prefixes the test script with node ../../tools/freshness.mjs --check &&; the root freshness script, src/freshness.test.ts and the CI docs job already run the gate."
+severity = "minor"
