@@ -1,8 +1,9 @@
 import { region } from "@sidioralabs/rex/client";
-import { Typography } from "../../../../components/ui/typography.tsx";
+import { useHomeMeta } from "../../hooks/useHomeMeta.ts";
+import Install from "./parts/Install.tsx";
 
-export default region("install", () => (
-  <Typography variant="h2" as="h2">
-    Install
-  </Typography>
-));
+export default region("install", () => {
+  const meta = useHomeMeta();
+  if (meta.data === undefined) return null;
+  return <Install version={meta.data.version} />;
+});
