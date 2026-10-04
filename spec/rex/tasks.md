@@ -111,7 +111,7 @@
     - Implement src/client/tokens.css defining spacing, radius, motion and hit-target tokens, with agent density overrides keyed on data-rex-density=agent.
     - Write src/client/layout.test.tsx asserting element semantics, token class output and rejection of non-token props at the type level.
     - _Requirements: 20.1, 20.2, 20.3_
-  - [ ] 2.7 Implement the derived shell
+  - [x] 2.7 Implement the derived shell
     - Implement src/client/shell.tsx: Shell rendering the header (title and back target from the active page chrome), the navigation (pages with chrome.nav visible), the outcome slot, and the page host; no per-page switch statements.
     - Render the permission-denied state with a control navigating to the page's recovery target.
     - Write src/client/shell.test.tsx with two fixture pages asserting header, nav membership, back behaviour and recovery.

@@ -7,3 +7,19 @@ symbol = "flow, runFlow, decide, FlowDecisionError, memoryJournal"
 observed = "Task 0.8 adds src/core/flow.ts and src/core/journal.ts but its touches exclude src/index.ts, so the package entry does not re-export them; evidence: revision 578db82390865bfc9689e62e74517836a792bca8, command pnpm -C packages/rex exec vitest run src/core/flow.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/0.8-done.log."
 assumption = "A later task that owns packages/rex/src/index.ts adds export * from ./core/journal.ts and ./core/flow.ts."
 severity = "note"
+
+[qualification.2]
+task = "2.7"
+file = "packages/rex/src/client/index.ts"
+symbol = "useNav, RexRoutes, useAct, useOutcome, useDataState, PageHost, view, region, Page, Shell"
+observed = "Only task 2.1 lists src/client/index.ts in its touches, so the rex/client entry exports context.ts and app.tsx but not the 2.2-2.7 modules; evidence: revision 314a3fb, command pnpm -C packages/rex exec vitest run src/client/shell.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/2.7-verify-r1.log."
+assumption = "A later task that owns packages/rex/src/client/index.ts adds export * for router.tsx, nav.ts, outcome.ts, act.ts, states.ts, page.tsx, layout.tsx and shell.tsx."
+severity = "note"
+
+[qualification.3]
+task = "2.3"
+file = "packages/rex/src/client/act.ts"
+symbol = "CONFIRM_PROCEDURE, CONFIRM_HEADER, ACTOR_HEADER"
+observed = "The client asks the $confirm procedure for {action, input} and gets back {token, expiresAt}; it sends the token in the x-rex-confirm header and reads the actor from the x-rex-actor header (URI-encoded JSON) on GET /rex/manifest; wave 1 router and server were not on this branch; evidence: revision a390960, command pnpm -C packages/rex exec vitest run src/client/act.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/2.3-verify.log."
+assumption = "Tasks 1.2 and 1.3 implement these exact names, or the integrator aligns one side when the waves merge."
+severity = "assumption"
