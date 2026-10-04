@@ -109,7 +109,10 @@ describe("parseConfig", () => {
     expect(resolved.compiler).toBe(true);
     expect(resolved.devtools).toBe(true);
     expect(resolved.tailwind).toBe(false);
-    expect(resolved.check).toEqual({ tokens: { colors: [], spacing: [], classes: [] } });
+    expect(resolved.check).toEqual({
+      tokens: { colors: [], spacing: [], classes: [] },
+      i18n: { allow: [] },
+    });
     const { app: _app, server: _server, ...options } = resolved;
     expect(options).toEqual(DEFAULT_OPTIONS);
     expect(Object.isFrozen(resolved)).toBe(true);
@@ -147,7 +150,7 @@ describe("parseConfig", () => {
         compiler: false,
         devtools: false,
         tailwind: true,
-        check: { tokens: { colors: ["transparent"], classes: ["bg-*"] } },
+        check: { tokens: { colors: ["transparent"], classes: ["bg-*"] }, i18n: { allow: ["Rex", "USD"] } },
       }),
     );
     expect(resolved.server).toBe(serverFor);
@@ -177,6 +180,7 @@ describe("parseConfig", () => {
     expect(resolved.client.apiOrigin).toBe("https://api.example.com");
     expect([resolved.compiler, resolved.devtools, resolved.tailwind]).toEqual([false, false, true]);
     expect(resolved.check.tokens).toEqual({ colors: ["transparent"], spacing: [], classes: ["bg-*"] });
+    expect(resolved.check.i18n).toEqual({ allow: ["Rex", "USD"] });
     expect(resolved.i18n?.routing).toBe("prefix");
     expect(resolveOptions({ i18n: { locales: ["en"], default: "en" } }).i18n?.routing).toBe("none");
   });
@@ -230,6 +234,10 @@ describe("parseConfig", () => {
     [{ app, tailwind: null }, "REX122", "tailwind"],
     [{ app, check: { tokens: { colors: "red" } } }, "REX123", "check.tokens.colors"],
     [{ app, check: { naming: {} } }, "REX123", "check.naming"],
+    [{ app, check: { i18n: [] } }, "REX123", "check.i18n"],
+    [{ app, check: { i18n: { allow: "Rex" } } }, "REX123", "check.i18n.allow"],
+    [{ app, check: { i18n: { allow: ["Rex", ""] } } }, "REX123", "check.i18n.allow.1"],
+    [{ app, check: { i18n: { deny: ["Rex"] } } }, "REX123", "check.i18n.deny"],
   ] as const)("rejects %j with %s naming %s", (value, code, field) => {
     const failure = rejection(() => parseConfig(value));
     expect(failure.code).toBe(code);

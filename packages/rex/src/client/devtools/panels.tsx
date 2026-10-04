@@ -3,11 +3,10 @@ import { useCallback, useEffect, useReducer, useState, type ReactNode } from "re
 import type { AuditRecord } from "../../server/audit.ts";
 import { usePageDataState, useSidecarPayload } from "../agent/sidecar.tsx";
 import { useManifest } from "../context.ts";
+import { LOADER_QUERY_SCOPE } from "../loaders.ts";
 import type { PageResolution } from "../router.tsx";
 import { DEVTOOLS_AUDIT_PATH } from "./env.ts";
 import type { DevtoolsSnapshot } from "./store.ts";
-
-export const LOADER_QUERY_SCOPE = "loader";
 
 function json(value: unknown): string {
   try {

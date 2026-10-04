@@ -32,8 +32,10 @@ export {
   watchApp,
   type AppModuleOptions,
   type RexAppBundle,
+  type RexAppConfig,
   type RexPageModule,
 } from "./app-module.ts";
+export { shellComponentsHook } from "./shell-components.ts";
 export {
   entryModuleHook,
   generateEntryModule,

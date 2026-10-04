@@ -1,5 +1,5 @@
 declare module "rex:app" {
-  import type { RexAppBundle } from "@sidioralabs/rex/vite";
+  import type { RexAppBundle, RexAppConfig } from "@sidioralabs/rex/vite";
 
   export const entities: RexAppBundle["entities"];
   export const actions: RexAppBundle["actions"];
@@ -8,6 +8,7 @@ declare module "rex:app" {
   export const pages: RexAppBundle["pages"];
   export const registry: RexAppBundle["registry"];
   export const manifest: RexAppBundle["manifest"];
+  export const config: RexAppConfig;
   export const app: RexAppBundle;
   const bundle: RexAppBundle;
   export default bundle;

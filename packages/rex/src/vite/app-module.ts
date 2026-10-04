@@ -1,6 +1,8 @@
-import { relative } from "node:path";
+import { existsSync, readdirSync } from "node:fs";
+import { join, relative } from "node:path";
 import { normalizePath, type DevEnvironment, type Plugin, type ViteDevServer } from "vite";
 import type { AnyAction } from "../core/action.ts";
+import type { FontSpec, I18nConfig } from "../core/config.ts";
 import type { AnyEntity } from "../core/entity.ts";
 import type { AnyFlow } from "../core/flow.ts";
 import type { AnyPage } from "../core/page.ts";
@@ -10,8 +12,24 @@ import type { Manifest } from "../manifest/types.ts";
 import type { RexHookContext } from "./hooks.ts";
 import { resolveRuntimeEntry } from "./resolve.ts";
 import { DECLARATION_FOLDERS, RexAppScanError, scanApp, type AppScan } from "./scan.ts";
+import { configuredShellComponents, shellComponentsLines } from "./shell-components.ts";
 import { pageChunkGroups, pageChunkName } from "./split.ts";
-import { APP_MODULE_ID, CORE_SPECIFIER, RESOLVED_APP_MODULE_ID } from "./virtual.ts";
+import {
+  APP_MODULE_ID,
+  CLIENT_SPECIFIER,
+  CORE_SPECIFIER,
+  RESOLVED_APP_MODULE_ID,
+} from "./virtual.ts";
+
+declare module "./plugin.ts" {
+  interface RexPluginOptions {
+    readonly i18n?: I18nConfig | null;
+    readonly fonts?: readonly FontSpec[];
+  }
+}
+
+const LOCALES_DIR = "locales";
+const LOCALE_FILE = /^(.+)\.json$/;
 
 export interface RexLoadedPageModules {
   readonly view: unknown;
@@ -38,9 +56,42 @@ export interface RexAppBundle {
   readonly manifest: Manifest;
 }
 
+export interface RexAppConfig {
+  readonly fonts: readonly FontSpec[];
+  readonly i18n: I18nConfig | null;
+}
+
+export interface LocaleModule {
+  readonly locale: string;
+  readonly file: string;
+}
+
 export interface AppModuleOptions {
   readonly name: string;
   readonly core: string;
+  readonly client: string;
+  readonly config: RexAppConfig;
+  readonly shellComponents: string | null;
+  readonly locales: readonly LocaleModule[];
+}
+
+export function localeModules(appPath: string): readonly LocaleModule[] {
+  const dir = join(appPath, LOCALES_DIR);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && LOCALE_FILE.test(entry.name))
+    .map((entry) => ({
+      locale: (LOCALE_FILE.exec(entry.name) as RegExpExecArray)[1] as string,
+      file: normalizePath(join(dir, entry.name)),
+    }))
+    .sort((a, b) => (a.locale < b.locale ? -1 : a.locale > b.locale ? 1 : 0));
+}
+
+export function appModuleConfig(options: {
+  readonly fonts?: readonly FontSpec[];
+  readonly i18n?: I18nConfig | null;
+}): RexAppConfig {
+  return { fonts: options.fonts ?? [], i18n: options.i18n ?? null };
 }
 
 const APP_HELPERS = `function rexFail(file, problem) {
@@ -93,9 +144,20 @@ function rexPage(id, namespace, file, chunk, importModules) {
 export function generateAppModule(scan: AppScan, options: AppModuleOptions): string {
   const literal = (value: string) => JSON.stringify(value);
   const display = (file: string) => literal(normalizePath(relative(scan.root, file)));
+  const shell = shellComponentsLines(options.shellComponents, options.client);
+  const i18n = options.config.i18n;
   const imports: string[] = [
     `import { buildManifest, createRegistry } from ${literal(options.core)};`,
+    ...shell.imports,
   ];
+  const messages: string[] = [];
+  if (i18n !== null) {
+    imports.push(`import { registerI18n as rexRegisterI18n } from ${literal(options.client)};`);
+    options.locales.forEach((entry, index) => {
+      imports.push(`import rexLocale${index} from ${literal(entry.file)};`);
+      messages.push(`${literal(entry.locale)}: rexLocale${index}`);
+    });
+  }
   const lists: Record<keyof typeof DECLARATION_FOLDERS, string[]> = {
     entity: [],
     action: [],
@@ -155,6 +217,13 @@ export function generateAppModule(scan: AppScan, options: AppModuleOptions): str
     "  .register(...entities, ...actions, ...policies, ...flows, ...pages.map((entry) => entry.page))",
     "  .freeze();",
     `export const manifest = buildManifest(registry, { app: ${literal(options.name)} });`,
+    `export const config = Object.freeze({ fonts: Object.freeze(${JSON.stringify(options.config.fonts)}), i18n: ${JSON.stringify(i18n)} });`,
+    ...shell.register,
+    ...(i18n === null
+      ? []
+      : [
+          `rexRegisterI18n(registry, { config: config.i18n, messages: { ${messages.join(", ")} } });`,
+        ]),
     `export const app = Object.freeze({ name: ${literal(options.name)}, entities, actions, policies, flows, pages, registry, manifest });`,
     "export default app;",
     "",
@@ -204,8 +273,17 @@ export function appModuleHook(context: RexHookContext): Plugin {
       if (id !== RESOLVED_APP_MODULE_ID) return null;
       const { root, name } = context.state;
       const core = await resolveRuntimeEntry(this, root, CORE_SPECIFIER, context.paths.core);
+      const client = await resolveRuntimeEntry(this, root, CLIENT_SPECIFIER, context.paths.client);
+      const config = appModuleConfig(context.options);
       try {
-        return generateAppModule(scanApp(root, context.appDir), { name, core });
+        return generateAppModule(scanApp(root, context.appDir), {
+          name,
+          core,
+          client,
+          config,
+          shellComponents: configuredShellComponents(context),
+          locales: config.i18n === null ? [] : localeModules(context.appPath()),
+        });
       } catch (error) {
         if (error instanceof RexAppScanError) this.error(error.message);
         throw error;

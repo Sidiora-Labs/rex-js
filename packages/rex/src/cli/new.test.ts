@@ -32,6 +32,8 @@ const packageRoot = join(here, "..", "..");
 const NEW_TEST_TIMEOUT_MS = 180_000;
 
 const APP_FILES = [
+  ".prettierignore",
+  ".prettierrc",
   "app/actions/ping.ts",
   "app/components/Button.tsx",
   "app/data/notes.ts",
@@ -44,6 +46,7 @@ const APP_FILES = [
   "app/pages/home/states.tsx",
   "app/pages/home/view.tsx",
   "app/policies/viewer.ts",
+  "eslint.config.js",
   "index.html",
   "package.json",
   "rex.config.ts",

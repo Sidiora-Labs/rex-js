@@ -96,8 +96,13 @@ export interface UiConfig {
   readonly components?: string;
 }
 
+export interface I18nCheckConfig {
+  readonly allow?: readonly string[];
+}
+
 export interface CheckConfig {
   readonly tokens?: TokenAllowLists;
+  readonly i18n?: I18nCheckConfig;
 }
 
 export interface RexOptionsConfig {
@@ -168,6 +173,7 @@ export interface ResolvedRexOptions {
       readonly spacing: readonly string[];
       readonly classes: readonly string[];
     };
+    readonly i18n: { readonly allow: readonly string[] };
   };
 }
 
@@ -521,19 +527,26 @@ function parseUi(value: unknown): Pick<ResolvedRexOptions, "ui" | "shellComponen
 function parseCheck(value: unknown): ResolvedRexOptions["check"] {
   const fail = failFor("REX123");
   const empty = Object.freeze([]) as readonly string[];
-  if (value === undefined) {
-    return Object.freeze({ tokens: Object.freeze({ colors: empty, spacing: empty, classes: empty }) });
-  }
-  const record = objectAt(value, "check", ["tokens"], fail);
-  if (record.tokens === undefined) {
-    return Object.freeze({ tokens: Object.freeze({ colors: empty, spacing: empty, classes: empty }) });
-  }
-  const tokens = objectAt(record.tokens, "check.tokens", ["colors", "spacing", "classes"], fail);
-  const list = (key: "colors" | "spacing" | "classes") =>
-    tokens[key] === undefined ? empty : stringList(tokens[key], `check.tokens.${key}`, fail);
-  return Object.freeze({
-    tokens: Object.freeze({ colors: list("colors"), spacing: list("spacing"), classes: list("classes") }),
+  const record = value === undefined ? {} : objectAt(value, "check", ["tokens", "i18n"], fail);
+  let tokens: ResolvedRexOptions["check"]["tokens"] = Object.freeze({
+    colors: empty,
+    spacing: empty,
+    classes: empty,
   });
+  if (record.tokens !== undefined) {
+    const lists = objectAt(record.tokens, "check.tokens", ["colors", "spacing", "classes"], fail);
+    const list = (key: "colors" | "spacing" | "classes") =>
+      lists[key] === undefined ? empty : stringList(lists[key], `check.tokens.${key}`, fail);
+    tokens = Object.freeze({ colors: list("colors"), spacing: list("spacing"), classes: list("classes") });
+  }
+  let i18n: ResolvedRexOptions["check"]["i18n"] = Object.freeze({ allow: empty });
+  if (record.i18n !== undefined) {
+    const entry = objectAt(record.i18n, "check.i18n", ["allow"], fail);
+    i18n = Object.freeze({
+      allow: entry.allow === undefined ? empty : stringList(entry.allow, "check.i18n.allow", fail),
+    });
+  }
+  return Object.freeze({ tokens, i18n });
 }
 
 function checkKeys(record: Record<string, unknown>, allowed: readonly string[]): void {

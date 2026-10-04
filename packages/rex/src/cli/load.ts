@@ -1,6 +1,6 @@
 import { join, resolve } from "node:path";
 import { createServer, type LogLevel, type Plugin, type ViteDevServer } from "vite";
-import type { RexConfigExport } from "../core/config.ts";
+import type { FontSpec, ResolvedFont, RexConfigExport } from "../core/config.ts";
 import type { RexAppBundle } from "../vite/app-module.ts";
 import { rex, type RexPluginOptions } from "../vite/plugin.ts";
 import { locateAppError } from "../vite/overlay.ts";
@@ -20,9 +20,23 @@ export interface ModuleLoader {
   close(): Promise<void>;
 }
 
+export function fontSpec(font: ResolvedFont): FontSpec {
+  const { family, src, weight, style, preload } = font;
+  return weight === null ? { family, src, style, preload } : { family, src, weight, style, preload };
+}
+
 export function configPluginOptions(read: RexConfigExport): RexPluginOptions {
-  const { compiler, devtools, tailwind, ui, security } = read.options;
-  return { compiler, devtools, tailwind, ui, secretNames: security.secretNames };
+  const { compiler, devtools, tailwind, ui, security, shellComponents, fonts, i18n } = read.options;
+  return {
+    compiler,
+    devtools,
+    tailwind,
+    ui,
+    secretNames: security.secretNames,
+    shellComponents,
+    fonts: fonts.map(fontSpec),
+    i18n,
+  };
 }
 
 async function pluginOptionsFor(

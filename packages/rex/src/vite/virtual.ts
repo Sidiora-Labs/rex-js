@@ -31,6 +31,7 @@ export {
   generateAppModule,
   type AppModuleOptions,
   type RexAppBundle,
+  type RexAppConfig,
   type RexLoadedPageModules,
   type RexPageModule,
 } from "./app-module.ts";
