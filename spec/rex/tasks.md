@@ -28,7 +28,7 @@
     - Define the Actor type (id, roles, permissions, attributes) and the anonymous actor; evaluation is pure and identical on server and client.
     - Write src/core/policy.test.ts covering every predicate, combination, reason codes and the anonymous actor.
     - _Requirements: 1.1, 1.2, 1.3, 15.1, 15.2, 15.3_
-  - [ ] 0.5 Implement the Action primitive and the declaration registry
+  - [x] 0.5 Implement the Action primitive and the declaration registry
     - Implement src/core/action.ts: action(id, {input, output, policy, effect: reversible|irreversible|read, label, shortcut, invalidates, handler}) returning a frozen ActionDeclaration with inferred Input and Output types; validate id with validateName and shortcut syntax (mod, shift, alt plus one key).
     - Implement src/core/registry.ts: createRegistry() collecting entities, actions, pages, policies and flows; register throws on duplicate id; freeze() returns an immutable snapshot with deterministic ordering by id.
     - Write src/core/action.test.ts and src/core/registry.test.ts covering type inference, invalid ids and shortcuts, duplicate detection and ordering.
