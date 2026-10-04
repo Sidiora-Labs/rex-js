@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { action } from "../core/action.ts";
 import { RexError } from "../core/errors.ts";
-import type { StandardSchemaV1 } from "../core/standard.ts";
+import { validateStandardSync, type StandardSchemaV1 } from "../core/standard.ts";
 import { entity } from "../core/entity.ts";
 import { page } from "../core/page.ts";
 import { always, policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { boolean, enumOf, id, integer, money, ref, text, timestamp } from "../core/schema.ts";
+import { boolean, enumOf, id, integer, money, ref, text, timestamp } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest, stableStringify, type ManifestSource } from "./build.ts";
 import {
@@ -17,6 +17,7 @@ import {
   type SidecarPayload,
 } from "./sidecar.schema.ts";
 import { MANIFEST_VERSION } from "./types.ts";
+import { objectJsonSchema, standardJsonSchema } from "./json-schema.ts";
 
 const DRAFT = "https://json-schema.org/draft/2020-12/schema";
 
@@ -241,7 +242,7 @@ describe("buildManifest", () => {
         { name: "network", kind: "enum", ref: null, required: true },
         { name: "dust", kind: "boolean", ref: null, required: false },
       ],
-      schema: token.jsonSchema,
+      schema: objectJsonSchema(token.fields),
     });
   });
 
@@ -352,8 +353,8 @@ describe("0.2 manifest options", () => {
       revalidate: 300,
       paths: true,
       loaders: [
-        { name: "holdings", action: "list-holdings", input: "params" },
-        { name: "quote", action: "quote", input: "mapped" },
+        { name: "holdings", action: "list-holdings", input: "params", invalidatedBy: [] },
+        { name: "quote", action: "quote", input: "mapped", invalidatedBy: [] },
       ],
       cache: { staleTime: 5_000 },
       transition: "view",
@@ -380,6 +381,39 @@ describe("0.2 manifest options", () => {
       confirmTitle: "Send funds?",
     });
     expect(manifest.actions.find((item) => item.id === "quote")?.form).toBeNull();
+  });
+
+  it("carries each loader's invalidatedBy beside its action", () => {
+    const refreshed = page("refreshed", {
+      route: "/refreshed",
+      load: { quote: { action: quote, invalidatedBy: ["send-form", "list-holdings"] } },
+      actions: [sendForm],
+    });
+    const manifest = buildManifest({
+      entities: [],
+      actions: [listHoldings, quote, sendForm],
+      pages: [refreshed],
+      policies: [],
+    });
+    expect(manifest.pages[0]?.loaders).toEqual([
+      {
+        name: "quote",
+        action: "quote",
+        input: "params",
+        invalidatedBy: ["list-holdings", "send-form"],
+      },
+    ]);
+    let failure: unknown;
+    try {
+      buildManifest({ entities: [], actions: [quote, sendForm], pages: [refreshed], policies: [] });
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(RexError);
+    expect((failure as RexError).code).toBe("REX209");
+    expect((failure as RexError).message).toContain(
+      'loader "quote" names action "list-holdings"',
+    );
   });
 
   it("rejects a loader whose action is not registered with REX209", () => {
@@ -430,7 +464,7 @@ describe("sidecar schema", () => {
         allowed: false,
         reason: "locked",
         effect: "irreversible",
-        input: send.inputJsonSchema,
+        input: standardJsonSchema(send.input, "input"),
         via: ["click", "key", "palette", "url"],
       },
       {
@@ -439,7 +473,7 @@ describe("sidecar schema", () => {
         allowed: true,
         reason: null,
         effect: "reversible",
-        input: pickToken.inputJsonSchema,
+        input: standardJsonSchema(pickToken.input, "input"),
         via: ["click", "palette", "url"],
       },
     ],
@@ -481,6 +515,29 @@ describe("sidecar schema", () => {
       "key",
       "palette",
       "url",
+    ]);
+  });
+
+  it("admits each loader with its invalidatedBy", () => {
+    const withLoaders = {
+      ...payload,
+      loaders: [{ name: "wallet", action: "load-wallet", invalidatedBy: ["send"] }],
+    };
+    expect(validateSidecar(withLoaders)).toEqual({ valid: true, payload: withLoaders });
+    const repeated = validateSidecar({
+      ...payload,
+      loaders: [
+        { name: "wallet", action: "load-wallet", invalidatedBy: ["send", "send"] },
+        { name: "wallet", action: "load-wallet", invalidatedBy: [] },
+      ],
+    });
+    expect(repeated.valid).toBe(false);
+    const properties = sidecarJsonSchema.properties as Record<string, Record<string, unknown>>;
+    const loaderItems = (properties.loaders?.items ?? {}) as Record<string, unknown>;
+    expect(Object.keys(loaderItems.properties as object)).toEqual([
+      "name",
+      "action",
+      "invalidatedBy",
     ]);
   });
 
@@ -655,7 +712,7 @@ describe("Standard Schema declarations in the manifest", () => {
     const params = manifest.pages[0]?.params as Record<string, unknown>;
     expect(params["x-rex-standard"]).toBe("hand");
     expect(params.required).toEqual(["slug"]);
-    expect(reader.params.safeParse({ slug: "intro" }).success).toBe(true);
-    expect(reader.params.safeParse({ slug: 3 }).success).toBe(false);
+    expect(validateStandardSync(reader.params, { slug: "intro" }).issues).toBeUndefined();
+    expect(validateStandardSync(reader.params, { slug: 3 }).issues).toBeDefined();
   });
 });

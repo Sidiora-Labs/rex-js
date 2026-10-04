@@ -12,12 +12,17 @@ import { actor } from "../core/actor.ts";
 import { page, type AnyPage } from "../core/page.ts";
 import { always } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { boolean } from "../core/schema.ts";
+import { boolean } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import { buildManifest, stableStringify } from "../manifest/build.ts";
 import { createRexServer, memoryLedger, type RegistryRouterClient } from "./index.ts";
-import { isApiPath, isPageRoutePath, startNodeServer, type RunningNodeServer } from "./adapters/node.ts";
+import {
+  isApiPath,
+  isPageRoutePath,
+  startNodeServer,
+  type RunningNodeServer,
+} from "./adapters/node.ts";
 import { RENDER_KIND_HEADER, RENDER_PAGE_HEADER } from "./routes/render.ts";
 import { createRexRenderer, registerPageRenderer } from "./ssr.ts";
 

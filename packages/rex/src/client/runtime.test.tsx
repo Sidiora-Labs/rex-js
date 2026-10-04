@@ -7,7 +7,7 @@ import { page } from "../core/page.ts";
 import { always } from "../core/policy.ts";
 import { REX_DENSITY_HEADER, REX_MANIFEST_PATH } from "../core/protocol.ts";
 import { createRegistry } from "../core/registry.ts";
-import { money, text } from "../core/schema.ts";
+import { money, text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import {

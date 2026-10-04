@@ -1,8 +1,10 @@
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { FILE_ROLES, discoverApp, runRules } from "../engine.ts";
-import { IMPORT_TABLE, boundariesRule } from "./boundaries.ts";
+import { IMPORT_TABLE, REX_SCHEMA, boundariesRule } from "./boundaries.ts";
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), "../fixtures/boundaries");
 
@@ -120,6 +122,67 @@ describe("boundaries rule", () => {
     for (const entry of result.findings) {
       expect(entry.hint.length).toBeGreaterThan(10);
       expect(entry.column).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("admits @sidioralabs/rex/schema for declarations and a page's own page.ts and app/flows for its hooks and regions", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "rex-boundaries-schema-"));
+    try {
+      cpSync(path.join(fixtures, "pass"), root, { recursive: true });
+      const pageFile = path.join(root, "app/pages/send/page.ts");
+      writeFileSync(
+        pageFile,
+        readFileSync(pageFile, "utf8")
+          .replace(
+            'import { page } from "@sidioralabs/rex";',
+            `import { page } from "@sidioralabs/rex";\nimport { id } from "${REX_SCHEMA}";\nimport { z } from "zod/mini";`,
+          )
+          .replace(
+            'route: "/send",',
+            'route: "/send/:account",\n  params: z.object({ account: id() }),',
+          ),
+      );
+      const hookFile = path.join(root, "app/pages/send/hooks/useTokens.ts");
+      writeFileSync(
+        hookFile,
+        `import { money } from "${REX_SCHEMA}";\n${readFileSync(hookFile, "utf8")}\nexport const amount = money();\n`,
+      );
+      mkdirSync(path.join(root, "app/flows"), { recursive: true });
+      writeFileSync(
+        path.join(root, "app/flows/approve.ts"),
+        'import { always, flow, memoryJournal } from "@sidioralabs/rex";\n\nexport const approve = flow("approve", {\n  steps: [{ approval: "review", label: "Review", approvers: always() }],\n  journal: memoryJournal(),\n});\n',
+      );
+      writeFileSync(
+        path.join(root, "app/pages/send/hooks/useSendLoader.ts"),
+        'import { approve } from "../../../flows/approve.ts";\nimport sendPage from "../page.ts";\n\nexport function useSendLoader(): string {\n  return `${sendPage.id}:${approve.id}`;\n}\n',
+      );
+      const regionFile = path.join(root, "app/pages/send/regions/form/region.tsx");
+      writeFileSync(
+        regionFile,
+        `${readFileSync(regionFile, "utf8")}\nimport { approve as gate } from "../../../../flows/approve.ts";\nimport ownPage from "../../page.ts";\n\nexport const declared = [gate.id, ownPage.id];\n`,
+      );
+      const viewFile = path.join(root, "app/pages/send/view.tsx");
+      writeFileSync(
+        viewFile,
+        `import { text } from "${REX_SCHEMA}";\n${readFileSync(viewFile, "utf8")}`,
+      );
+      const result = await runRules(discoverApp(root), [boundariesRule]);
+      expect(result.findings.map((entry) => [entry.file, entry.line, entry.message])).toEqual([
+        [
+          "app/pages/send/view.tsx",
+          1,
+          `view.tsx imports the package "${REX_SCHEMA}", which the import table does not allow`,
+        ],
+      ]);
+      expect(IMPORT_TABLE.page.allowed).toContain(REX_SCHEMA);
+      expect(IMPORT_TABLE.hook.allowed).toContain(REX_SCHEMA);
+      for (const role of ["hook", "region"] as const) {
+        expect(IMPORT_TABLE[role].targets).toEqual(
+          expect.arrayContaining([{ role: "page", samePage: true }, { role: "flow" }]),
+        );
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 });

@@ -73,11 +73,11 @@ The `boundaries` rule enforces this table (`IMPORT_TABLE` in `packages/rex/src/c
 
 | Role | Allowed imports |
 | --- | --- |
-| `page.ts` | page.ts may import app/entities, app/actions, app/policies, @sidioralabs/rex and zod, never React. |
+| `page.ts` | page.ts may import app/entities, app/actions, app/policies, @sidioralabs/rex, @sidioralabs/rex/schema and zod, never React. |
 | `view.tsx` | view.tsx may import its page's regions, react types and the layout primitives from @sidioralabs/rex/client; hooks, data and parts belong in region.tsx. |
-| `region.tsx` | region.tsx may import its page's hooks, its own parts, its page's overlays, app/actions, app/components, react, @sidioralabs/rex and @sidioralabs/rex/client, never other regions or pages. (Entity imports must be type-only.) |
+| `region.tsx` | region.tsx may import its page's hooks, its own parts, its page's overlays, its own page.ts, app/actions, app/flows, app/components, react, @sidioralabs/rex and @sidioralabs/rex/client, never other regions or pages. (Entity imports must be type-only.) |
 | part | parts may import app/components, sibling parts of their region, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client; fetching, actions and navigation belong in region.tsx. |
-| hook | hooks may import app/data, app/actions, app/entities, app/policies, sibling hooks, react, @tanstack/react-query, zod, @sidioralabs/rex and @sidioralabs/rex/client, never components. |
+| hook | hooks may import app/data, app/actions, app/entities, app/policies, app/flows, sibling hooks, their own page.ts, react, @tanstack/react-query, zod, @sidioralabs/rex, @sidioralabs/rex/schema and @sidioralabs/rex/client, never components. |
 | overlay | overlays may import their page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client, never data fetching. |
 | `states.tsx` | states.tsx may import its page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client, never hooks. |
 | component | app/components may import other app/components, entity types and UI packages, never app data, actions or pages. |

@@ -4,11 +4,9 @@ import { z } from "zod/mini";
 import {
   StandardValidationError,
   formatIssues,
-  fromStandard,
   isStandardSchema,
   isZodSchema,
   issuePath,
-  standardSource,
   validateStandard,
   validateStandardSync,
   type StandardInferInput,
@@ -16,6 +14,7 @@ import {
   type StandardResult,
   type StandardSchemaV1,
 } from "./standard.ts";
+import { fromStandard, standardSource } from "../schema/index.ts";
 
 function amountResult(value: unknown): StandardResult<{ amount: number }> {
   if (typeof value !== "object" || value === null) {

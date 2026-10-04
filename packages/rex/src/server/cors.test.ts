@@ -8,7 +8,7 @@ import { action } from "../core/action.ts";
 import { actor, anonymousActor, type Actor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { always } from "../core/policy.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { API_FETCH_EXPORT, generateEntryModule } from "../vite/entry-module.ts";
 import {
   CORS_ALLOW_HEADERS,

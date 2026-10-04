@@ -36,7 +36,8 @@ import {
 } from "../client/page.tsx";
 import { RexProviders } from "../client/providers.ts";
 import { resetAll } from "../client/reset.ts";
-import { NotFound, RexRoutes, pageHref } from "../client/router.tsx";
+import { NotFound, RexRoutes, manifestParamsSchema, pageHref } from "../client/router.tsx";
+import { buildManifest } from "../manifest/build.ts";
 import { AgentOutcome } from "../client/shell.tsx";
 import { memoryLedger, type Ledger } from "../server/audit.ts";
 import { createRexServer } from "../server/app.ts";
@@ -275,7 +276,13 @@ function prepare(app: TestApp, pageId: string, options: RenderPageOptions): Rend
     throw new RexTestingError(`density must be "default" or "agent", received ${String(density)}`);
   }
   const locale = resolveLocale(options.locale);
-  const target = pageHref(declared, options.params ?? {});
+  const manifest = app.source.manifest ?? buildManifest(app.registry);
+  const target = pageHref(
+    declared,
+    options.params ?? {},
+    {},
+    manifestParamsSchema(manifest, declared),
+  );
   if (!target.ok) {
     const issues = target.issues.map((issue) => `${issue.path} ${issue.message}`).join("; ");
     throw new RexTestingError(`invalid params for page "${pageId}": ${issues}`);

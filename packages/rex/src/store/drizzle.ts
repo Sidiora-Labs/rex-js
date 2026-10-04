@@ -9,8 +9,8 @@ import {
   type SQLiteColumnBuilderBase,
 } from "drizzle-orm/sqlite-core";
 import type { AnyEntity, InferEntity } from "../core/entity.ts";
-import { fieldKind, schemaType, type FieldKind } from "../core/schema.ts";
-import type { ZodSchemaLike } from "../core/standard.ts";
+import { acceptsSync, fieldKind, schemaType, type FieldKind } from "../core/schema.ts";
+import type { StandardSchemaV1 } from "../core/standard.ts";
 import {
   normalizeListQuery,
   validateStoreId,
@@ -66,10 +66,11 @@ const TYPE_COLUMNS: Readonly<Record<string, ColumnType>> = {
   boolean: "boolean",
 };
 
-function columnTypeOf(schema: ZodSchemaLike): ColumnType {
+function columnTypeOf(schema: StandardSchemaV1): ColumnType {
   const kind = fieldKind(schema);
   if (kind !== undefined) return KIND_COLUMNS[kind];
-  return TYPE_COLUMNS[schemaType(schema)] ?? "json";
+  const type = schemaType(schema);
+  return (type === undefined ? undefined : TYPE_COLUMNS[type]) ?? "json";
 }
 
 export function tableNameFor(declared: AnyEntity): string {
@@ -78,9 +79,8 @@ export function tableNameFor(declared: AnyEntity): string {
 
 export function columnSpecs(declared: AnyEntity): readonly ColumnSpec[] {
   return Object.entries(declared.fields).map(([field, schema]) => {
-    const zodSchema = schema as ZodSchemaLike;
-    const optional = zodSchema.safeParse(undefined).success;
-    const nullable = zodSchema.safeParse(null).success;
+    const optional = acceptsSync(schema, undefined);
+    const nullable = acceptsSync(schema, null);
     if (optional && nullable) {
       throw new TypeError(
         `drizzleStore ${declared.id}: field "${field}" is both optional and nullable, which one SQL NULL cannot distinguish`,
@@ -88,7 +88,7 @@ export function columnSpecs(declared: AnyEntity): readonly ColumnSpec[] {
     }
     return {
       field,
-      type: columnTypeOf(zodSchema),
+      type: columnTypeOf(schema),
       optional,
       nullable,
       key: field === declared.key,

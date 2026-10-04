@@ -3,7 +3,7 @@ import path from "node:path";
 import ts from "typescript";
 import { CONFIG_FILE } from "../../core/config.ts";
 import { APP_MODULE_ID } from "../../vite/virtual.ts";
-import { CORE_IMPORT } from "../templates.ts";
+import { CONFIG_IMPORT } from "../templates.ts";
 import {
   addImportEdit,
   applyEdits,
@@ -76,7 +76,7 @@ export function wrapConfig(file: string, text: string): string | null {
     appName = APP_NAMES.find((candidate) => !taken.has(candidate)) ?? "rexAppBundle";
     edits.push(addImportEdit(source, `import ${appName} from ${JSON.stringify(APP_MODULE_ID)};`));
   }
-  const importDefine = namedImportEdit(source, CORE_IMPORT, DEFINE_CONFIG);
+  const importDefine = namedImportEdit(source, CONFIG_IMPORT, DEFINE_CONFIG);
   if (importDefine !== null) {
     const existing = edits[0];
     if (existing !== undefined && existing.start === importDefine.start) {

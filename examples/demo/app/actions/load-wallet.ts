@@ -1,4 +1,5 @@
-import { action, boolean, money } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { boolean, money } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { accountIdOf, walletOverview } from "../data/wallet.ts";
 import { account } from "../entities/account.ts";
@@ -9,9 +10,9 @@ import { viewer } from "../policies/viewer.ts";
 export const loadWallet = action("load-wallet", {
   input: z.object({}),
   output: z.object({
-    account: account.schema,
-    tokens: z.array(z.object({ ...token.schema.shape, valueUsd: money(), dust: boolean() })),
-    contacts: z.array(contact.schema),
+    account: z.object(account.fields),
+    tokens: z.array(z.object({ ...token.fields, valueUsd: money(), dust: boolean() })),
+    contacts: z.array(z.object(contact.fields)),
     totalUsd: money(),
   }),
   policy: viewer.can("viewer.read"),

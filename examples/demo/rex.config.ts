@@ -1,4 +1,4 @@
-import { defineConfig } from "@sidioralabs/rex";
+import { defineConfig } from "@sidioralabs/rex/config";
 import app from "rex:app";
 import { createDemoServer } from "./server.ts";
 

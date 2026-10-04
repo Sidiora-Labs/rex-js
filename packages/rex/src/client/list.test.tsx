@@ -25,6 +25,7 @@ import {
   readListParams,
 } from "./list.tsx";
 import { ActiveRouteContext, resolvePage } from "./router.tsx";
+import { standardJsonSchema } from "../manifest/json-schema.ts";
 
 interface Token {
   readonly id: string;
@@ -191,7 +192,14 @@ describe("Page.List", () => {
   });
 
   it("addresses the list under the active page", async () => {
-    const resolution = resolvePage(portfolio, {}, "", viewer, registry);
+    const resolution = resolvePage(
+      portfolio,
+      {},
+      "",
+      viewer,
+      registry,
+      standardJsonSchema(portfolio.params, "input"),
+    );
     const { memory } = mount(
       "/",
       <ActiveRouteContext.Provider value={resolution}>

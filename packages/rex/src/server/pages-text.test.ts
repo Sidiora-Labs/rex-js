@@ -6,7 +6,7 @@ import { action } from "../core/action.ts";
 import { actor, anonymousActor, type Actor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { always, never, policy } from "../core/policy.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { sidecarSchema, type SidecarPayload } from "../manifest/sidecar.schema.ts";
 import {
   MARKDOWN_CONTENT_TYPE,

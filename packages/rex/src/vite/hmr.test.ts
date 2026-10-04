@@ -28,7 +28,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = join(here, "fixtures", "app");
 const packageModules = join(here, "..", "..", "node_modules");
 const coreEntry = join(here, "..", "index.ts");
-const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
+const alias = [
+  { find: /^@sidioralabs\/rex$/, replacement: coreEntry },
+  { find: /^@sidioralabs\/rex\/schema$/, replacement: join(here, "..", "schema", "index.ts") },
+];
 
 const APP_URL = "/@id/__x00__rex:app";
 const HOME = "/app/pages/home";

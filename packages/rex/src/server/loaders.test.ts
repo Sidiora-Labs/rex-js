@@ -15,7 +15,7 @@ import type { RexLogger } from "../core/config.ts";
 import { page, type AnyPage } from "../core/page.ts";
 import { always, never } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { text } from "../core/schema.ts";
+import { text } from "../schema/index.ts";
 import { buildManifest } from "../manifest/build.ts";
 import { createRexServer } from "./app.ts";
 import { memoryLedger, type Ledger } from "./audit.ts";

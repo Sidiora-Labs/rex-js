@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { entity } from "./entity.ts";
-import { id, integer, text } from "./schema.ts";
+import { id, integer, text } from "../schema/index.ts";
 import { bind } from "./store.ts";
 import { memoryStore } from "./store.memory.ts";
 import { conformanceEntity, conformanceRecord, runStoreConformance } from "./store.conformance.ts";

@@ -1,4 +1,5 @@
-import { action, always, money, text } from "@sidioralabs/rex";
+import { action, always } from "@sidioralabs/rex";
+import { money, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 
 export const send = action("send", {

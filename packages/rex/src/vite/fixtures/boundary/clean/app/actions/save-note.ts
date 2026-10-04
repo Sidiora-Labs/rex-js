@@ -1,4 +1,5 @@
-import { action, text } from "@sidioralabs/rex";
+import { action } from "@sidioralabs/rex";
+import { text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 import { note } from "../entities/note.ts";
 import { notes } from "../policies/notes.ts";

@@ -100,7 +100,12 @@ export function appName(appRoot: string): string {
   return path.basename(path.resolve(appRoot));
 }
 
-type AppCore = Pick<typeof import("../index.ts"), "buildManifest" | "createRegistry">;
+type AppCore = Pick<typeof import("../index.ts"), "createRegistry"> &
+  Pick<typeof import("./index.ts"), "buildManifest">;
+
+export function manifestEntryOf(core: string): string {
+  return core.replace(/index(\.[cm]?[jt]s)$/, "manifest/index$1");
+}
 
 async function loadAppCore(loader: ModuleLoader): Promise<AppCore> {
   const resolved = await loader.vite.environments.ssr.pluginContainer.resolveId(
@@ -111,7 +116,11 @@ async function loadAppCore(loader: ModuleLoader): Promise<AppCore> {
     resolved === null || resolved.external || !path.isAbsolute(resolved.id)
       ? runtimePaths().core
       : resolved.id;
-  return loader.load<AppCore>(core);
+  const { createRegistry } = await loader.load<Pick<AppCore, "createRegistry">>(core);
+  const { buildManifest } = await loader.load<Pick<AppCore, "buildManifest">>(
+    manifestEntryOf(core),
+  );
+  return { createRegistry, buildManifest };
 }
 
 async function loadDeclarations(

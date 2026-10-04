@@ -7,7 +7,7 @@ import { actor } from "../../core/actor.ts";
 import { page } from "../../core/page.ts";
 import { always, never, policy } from "../../core/policy.ts";
 import { createRegistry } from "../../core/registry.ts";
-import { boolean, money, text } from "../../core/schema.ts";
+import { boolean, money, text } from "../../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../../manifest/build.ts";
 import { memoryLedger, type Ledger } from "../../server/audit.ts";

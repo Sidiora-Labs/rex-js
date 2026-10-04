@@ -34,7 +34,7 @@ new RexDensityError(value): RexDensityError;
 
 ###### Overrides
 
-[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-4)
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
 
@@ -155,7 +155,7 @@ readonly code:
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-4)
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
 
 <a id="column"></a>
 
@@ -167,7 +167,7 @@ readonly column: number | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-3)
+[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-2)
 
 <a id="detail"></a>
 
@@ -179,7 +179,7 @@ readonly detail: string;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-3)
+[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-2)
 
 <a id="docs"></a>
 
@@ -191,7 +191,7 @@ readonly docs: string;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-3)
+[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-2)
 
 <a id="file"></a>
 
@@ -203,7 +203,7 @@ readonly file: string | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-3)
+[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-2)
 
 <a id="hint"></a>
 
@@ -215,7 +215,7 @@ readonly hint: string | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-3)
+[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-2)
 
 <a id="line"></a>
 
@@ -227,7 +227,7 @@ readonly line: number | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-3)
+[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-2)
 
 <a id="value"></a>
 
@@ -281,7 +281,7 @@ new RexStaticPageError(
 
 ###### Overrides
 
-[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-4)
+[`RexError`](../rex.md#rexerror).[`constructor`](../rex.md#constructor-3)
 
 #### Properties
 
@@ -402,7 +402,7 @@ readonly code:
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-4)
+[`RexError`](../rex.md#rexerror).[`code`](../rex.md#code-3)
 
 <a id="column-1"></a>
 
@@ -414,7 +414,7 @@ readonly column: number | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-3)
+[`RexError`](../rex.md#rexerror).[`column`](../rex.md#column-2)
 
 <a id="detail-1"></a>
 
@@ -426,7 +426,7 @@ readonly detail: string;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-3)
+[`RexError`](../rex.md#rexerror).[`detail`](../rex.md#detail-2)
 
 <a id="docs-1"></a>
 
@@ -438,7 +438,7 @@ readonly docs: string;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-3)
+[`RexError`](../rex.md#rexerror).[`docs`](../rex.md#docs-2)
 
 <a id="file-1"></a>
 
@@ -450,7 +450,7 @@ readonly file: string | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-3)
+[`RexError`](../rex.md#rexerror).[`file`](../rex.md#file-2)
 
 <a id="hint-1"></a>
 
@@ -462,7 +462,7 @@ readonly hint: string | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-3)
+[`RexError`](../rex.md#rexerror).[`hint`](../rex.md#hint-2)
 
 <a id="line-1"></a>
 
@@ -474,7 +474,7 @@ readonly line: number | null;
 
 ###### Inherited from
 
-[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-3)
+[`RexError`](../rex.md#rexerror).[`line`](../rex.md#line-2)
 
 <a id="page"></a>
 
@@ -1338,6 +1338,12 @@ readonly sidecar: object;
 
 ```ts
 actions: object[];
+```
+
+###### loaders?
+
+```ts
+optional loaders?: object[];
 ```
 
 ###### outcome
@@ -3968,7 +3974,7 @@ function coerceFormData(form, schema): Record<string, unknown>;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -4056,7 +4062,7 @@ function createConsoleLogger(target?): RexLogger;
 
 #### Returns
 
-[`RexLogger`](../rex.md#rexlogger)
+[`RexLogger`](config.md#rexlogger)
 
 ***
 
@@ -4132,7 +4138,7 @@ function createRexContext(
 
 ##### i18n?
 
-[`I18nConfig`](../rex.md#i18nconfig) \| `null`
+[`I18nConfig`](config.md#i18nconfig) \| `null`
 
 #### Returns
 
@@ -4198,7 +4204,7 @@ function createTelemetry(config?): RexTelemetry;
 
 ##### config?
 
-[`TelemetryConfig`](../rex.md#telemetryconfig) = `{}`
+[`TelemetryConfig`](config.md#telemetryconfig) = `{}`
 
 #### Returns
 
@@ -4510,7 +4516,7 @@ function formEntries(form, schema): [string, FormValue][];
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 
@@ -5770,7 +5776,7 @@ function schemaDeclaresField(schema, name): boolean;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 ##### name
 
@@ -5862,7 +5868,7 @@ function submittedActionId(form, schema): string | null;
 
 ##### schema
 
-[`JsonSchema`](../rex.md#jsonschema-3)
+[`JsonSchema`](schema.md#jsonschema)
 
 #### Returns
 

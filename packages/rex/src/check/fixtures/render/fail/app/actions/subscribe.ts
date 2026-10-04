@@ -1,4 +1,5 @@
-import { action, always, text } from "@sidioralabs/rex";
+import { action, always } from "@sidioralabs/rex";
+import { text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 
 export const subscribe = action("subscribe", {

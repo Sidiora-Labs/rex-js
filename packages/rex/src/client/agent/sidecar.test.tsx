@@ -8,9 +8,10 @@ import { actor } from "../../core/actor.ts";
 import { page } from "../../core/page.ts";
 import { always, never, policy } from "../../core/policy.ts";
 import { createRegistry } from "../../core/registry.ts";
-import { boolean, money, text } from "../../core/schema.ts";
+import { boolean, money, text } from "../../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../../manifest/build.ts";
+import { standardJsonSchema } from "../../manifest/json-schema.ts";
 import { validateSidecar, type SidecarPayload } from "../../manifest/sidecar.schema.ts";
 import { memoryLedger } from "../../server/audit.ts";
 import { createRexServer } from "../../server/index.ts";
@@ -223,7 +224,7 @@ describe("RexSidecar", () => {
           allowed: true,
           reason: null,
           effect: "irreversible",
-          input: send.inputJsonSchema,
+          input: standardJsonSchema(send.input, "input"),
           via: ["click", "key", "palette", "url"],
         },
         {
@@ -232,7 +233,7 @@ describe("RexSidecar", () => {
           allowed: true,
           reason: null,
           effect: "reversible",
-          input: hideDust.inputJsonSchema,
+          input: standardJsonSchema(hideDust.input, "input"),
           via: ["click", "palette", "url"],
         },
         {
@@ -241,7 +242,7 @@ describe("RexSidecar", () => {
           allowed: false,
           reason: "never",
           effect: "reversible",
-          input: purge.inputJsonSchema,
+          input: standardJsonSchema(purge.input, "input"),
           via: ["click", "palette", "url"],
         },
       ],

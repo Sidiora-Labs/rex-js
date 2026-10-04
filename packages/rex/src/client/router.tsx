@@ -142,7 +142,7 @@ export function parsePageParams(
   declared: AnyPage,
   routeParams: Readonly<Record<string, string | undefined>>,
   search: string,
-  paramsSchema: JsonSchema = declared.paramsJsonSchema,
+  paramsSchema: JsonSchema,
 ): ParamsResult {
   const properties = propertiesOf(paramsSchema);
   const candidate: Record<string, unknown> = {};
@@ -165,9 +165,9 @@ function serializeValue(value: unknown): string {
 
 export function pageHref(
   declared: AnyPage,
-  params: unknown = {},
-  extra: Readonly<Record<string, string>> = {},
-  paramsSchema: JsonSchema = declared.paramsJsonSchema,
+  params: unknown,
+  extra: Readonly<Record<string, string>>,
+  paramsSchema: JsonSchema,
 ): HrefResult {
   const input = params ?? {};
   const parsed = validateParams(declared, input);
@@ -218,7 +218,7 @@ export function resolvePage(
   search: string,
   subject: Actor,
   registry: RegistrySnapshot,
-  paramsSchema: JsonSchema = declared.paramsJsonSchema,
+  paramsSchema: JsonSchema,
 ): PageResolution {
   const policy = evaluate(declared.policy, subject);
   const recovery =

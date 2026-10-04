@@ -3,17 +3,12 @@ import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts
 import { RexDeclarationOptionError, RexError, errorDetail } from "./errors.ts";
 import { isValidName } from "./ids.ts";
 import { isPredicate, type Predicate } from "./policy.ts";
-import { toJsonSchema, type JsonSchema } from "./schema.ts";
-import type { z } from "zod/mini";
+import type { JsonSchema } from "./schema.ts";
 import {
-  fromStandard,
   isStandardSchema,
-  standardSource,
-  type AsZodSchema,
   type StandardInferInput,
   type StandardInferOutput,
   type StandardSchemaV1,
-  type ZodSchemaLike,
 } from "./standard.ts";
 
 export type ActionEffect = "reversible" | "irreversible" | "read";
@@ -150,8 +145,8 @@ export interface ActionConfig<I extends StandardSchemaV1, O extends StandardSche
 
 export interface ActionDeclaration<
   N extends string = string,
-  I extends ZodSchemaLike = ZodSchemaLike,
-  O extends ZodSchemaLike = ZodSchemaLike,
+  I extends StandardSchemaV1 = StandardSchemaV1,
+  O extends StandardSchemaV1 = StandardSchemaV1,
 > {
   readonly kind: "action";
   readonly id: N;
@@ -165,19 +160,20 @@ export interface ActionDeclaration<
   readonly invalidates: readonly string[];
   readonly form: ActionForm | null;
   readonly jsonSchema: ActionJsonSchema | null;
-  readonly inputJsonSchema: JsonSchema;
-  readonly outputJsonSchema: JsonSchema;
-  handler(input: z.output<I>, ctx: ActionContext): z.input<O> | Promise<z.input<O>>;
+  handler(
+    input: StandardInferOutput<I>,
+    ctx: ActionContext,
+  ): StandardInferInput<O> | Promise<StandardInferInput<O>>;
 }
 
-export type AnyAction = ActionDeclaration<string, ZodSchemaLike, ZodSchemaLike>;
+export type AnyAction = ActionDeclaration<string, StandardSchemaV1, StandardSchemaV1>;
 
 export type ActionInput<A> =
-  A extends ActionDeclaration<string, infer I, ZodSchemaLike> ? z.input<I> : never;
+  A extends ActionDeclaration<string, infer I, StandardSchemaV1> ? StandardInferInput<I> : never;
 export type ActionParsedInput<A> =
-  A extends ActionDeclaration<string, infer I, ZodSchemaLike> ? z.output<I> : never;
+  A extends ActionDeclaration<string, infer I, StandardSchemaV1> ? StandardInferOutput<I> : never;
 export type ActionOutput<A> =
-  A extends ActionDeclaration<string, ZodSchemaLike, infer O> ? z.output<O> : never;
+  A extends ActionDeclaration<string, StandardSchemaV1, infer O> ? StandardInferOutput<O> : never;
 
 const ACTION_KEYS = new Set([
   "input",
@@ -201,7 +197,7 @@ export function action<
 >(
   name: N,
   config: ActionConfig<I, O>,
-): ActionDeclaration<N, AsZodSchema<I>, AsZodSchema<O>> {
+): ActionDeclaration<N, I, O> {
   const id = declarationName("action", name);
   const fail = (field: string, problem: string): never => {
     throw new RexDeclarationError("action", id, field, problem);
@@ -218,8 +214,8 @@ export function action<
   if (!isStandardSchema(config.output)) {
     fail("output", "must be a Standard Schema such as a zod schema");
   }
-  const input = fromStandard(config.input);
-  const output = fromStandard(config.output);
+  const input = config.input;
+  const output = config.output;
   if (!isPredicate(config.policy)) fail("policy", "must be a policy predicate");
   if (!ACTION_EFFECTS.includes(config.effect)) {
     fail("effect", `must be one of ${ACTION_EFFECTS.join(", ")}`);
@@ -292,27 +288,6 @@ export function action<
     });
   }
 
-  let inputJsonSchema: JsonSchema = {};
-  let outputJsonSchema: JsonSchema = {};
-  if (jsonSchema?.input != null) {
-    inputJsonSchema = jsonSchema.input;
-  } else if (standardSource(input) === null) {
-    try {
-      inputJsonSchema = toJsonSchema(input, "input");
-    } catch (error) {
-      fail("input", `cannot be represented as JSON Schema: ${(error as Error).message}`);
-    }
-  }
-  if (jsonSchema?.output != null) {
-    outputJsonSchema = jsonSchema.output;
-  } else if (standardSource(output) === null) {
-    try {
-      outputJsonSchema = toJsonSchema(output, "output");
-    } catch (error) {
-      fail("output", `cannot be represented as JSON Schema: ${(error as Error).message}`);
-    }
-  }
-
   const handler = config.handler;
   return Object.freeze({
     kind: "action",
@@ -327,12 +302,8 @@ export function action<
     invalidates: Object.freeze([...new Set(invalidates)]),
     form,
     jsonSchema,
-    inputJsonSchema: Object.freeze(inputJsonSchema),
-    outputJsonSchema: Object.freeze(outputJsonSchema),
-    handler(value: z.output<AsZodSchema<I>>, ctx: ActionContext) {
-      return handler(value as StandardInferOutput<I>, ctx) as
-        | z.input<AsZodSchema<O>>
-        | Promise<z.input<AsZodSchema<O>>>;
+    handler(value: StandardInferOutput<I>, ctx: ActionContext) {
+      return handler(value, ctx);
     },
   });
 }

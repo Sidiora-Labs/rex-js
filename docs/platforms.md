@@ -64,7 +64,7 @@ The static target writes `dist/client/` only. No server is built and no page is 
 
 ```ts
 // rex.config.ts of the static client
-import { defineConfig } from "@sidioralabs/rex";
+import { defineConfig } from "@sidioralabs/rex/config";
 import app from "rex:app";
 
 export default defineConfig({
@@ -82,7 +82,7 @@ The remote server is the same app built for the `node`, `bun`, `deno` or `edge` 
 
 ```ts
 // rex.config.ts of the API server
-import { defineConfig } from "@sidioralabs/rex";
+import { defineConfig } from "@sidioralabs/rex/config";
 import { createRexServer, memoryLedger } from "@sidioralabs/rex/server";
 import app from "rex:app";
 import { sessionActor } from "./app/server/session.ts";

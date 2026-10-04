@@ -1,4 +1,5 @@
-import { id, page } from "@sidioralabs/rex";
+import { page } from "@sidioralabs/rex";
+import { id } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 
 export default page("note", {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { entity, type InferEntity } from "./entity.ts";
-import { boolean, enumOf, id, integer, money, ref, text, timestamp } from "./schema.ts";
+import { boolean, enumOf, id, integer, money, ref, text, timestamp } from "../schema/index.ts";
 import { MAX_PAGE_SIZE, type Store } from "./store.ts";
 
 export const conformanceEntity = entity("conformance-item", {

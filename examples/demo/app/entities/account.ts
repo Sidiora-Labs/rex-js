@@ -1,4 +1,5 @@
-import { boolean, entity, id, ref, text } from "@sidioralabs/rex";
+import { entity } from "@sidioralabs/rex";
+import { boolean, id, ref, text } from "@sidioralabs/rex/schema";
 import { z } from "zod/mini";
 
 export const account = entity("account", {

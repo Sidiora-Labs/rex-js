@@ -25,7 +25,7 @@ import { RexError, isRexError, type RexErrorCode } from "./errors.ts";
 import { page } from "./page.ts";
 import { always } from "./policy.ts";
 import { createRegistry } from "./registry.ts";
-import { text } from "./schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import * as configEntry from "../config.ts";
 import * as rootEntry from "../index.ts";
@@ -83,9 +83,10 @@ describe("defineConfig", () => {
     });
   });
 
-  it("is exported from the rex/config entry and from the package root", () => {
+  it("is exported from the rex/config entry only, not from the package root", () => {
     expect(configEntry.defineConfig).toBe(defineConfig);
-    expect(rootEntry.defineConfig).toBe(defineConfig);
+    expect(Object.hasOwn(rootEntry, "defineConfig")).toBe(false);
+    expect(Object.hasOwn(rootEntry, "parseConfig")).toBe(false);
     expect(configEntry.RexError).toBe(RexError);
   });
 });

@@ -10,11 +10,27 @@ import {
 } from "./action.ts";
 import { actor } from "./actor.ts";
 import { RexDeclarationError } from "./entity.ts";
-import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
+import { RexDeclarationOptionError, RexError, type RexErrorCode } from "./errors.ts";
 import { always, policy } from "./policy.ts";
-import { boolean, money, ref, text } from "./schema.ts";
+import { boolean, money, ref, text } from "../schema/index.ts";
 import { z } from "zod/mini";
-import { isZodSchema, standardSource, type StandardSchemaV1 } from "./standard.ts";
+import { validateStandardSync, type StandardSchemaV1 } from "./standard.ts";
+import { buildManifest } from "../manifest/build.ts";
+
+function manifestAction(declared: Parameters<typeof buildManifest>[0]["actions"][number]) {
+  const built = buildManifest({ entities: [], actions: [declared], pages: [], policies: [] });
+  return built.actions[0] as (typeof built.actions)[number];
+}
+
+function manifestError(declared: Parameters<typeof buildManifest>[0]["actions"][number]): RexError {
+  try {
+    manifestAction(declared);
+  } catch (error) {
+    expect(error).toBeInstanceOf(RexError);
+    return error as RexError;
+  }
+  throw new Error("expected buildManifest to fail");
+}
 
 const wallet = policy("wallet", { permissions: ["send"], resolve: () => ["send"] });
 
@@ -87,11 +103,14 @@ describe("action", () => {
     expect(await toggle.handler(toggle.input.parse({}), ctx)).toEqual({ hide: true });
   });
 
-  it("emits JSON schemas for input and output", () => {
-    expect(send.inputJsonSchema.type).toBe("object");
-    expect(send.inputJsonSchema.required).toEqual(["to", "amount"]);
-    expect(send.outputJsonSchema.required).toEqual(["txId", "status"]);
-    expect(toggle.inputJsonSchema.required).toBeUndefined();
+  it("keeps the declared schemas and leaves JSON Schema to the manifest", () => {
+    expect(Object.hasOwn(send, "inputJsonSchema")).toBe(false);
+    expect(Object.hasOwn(send, "outputJsonSchema")).toBe(false);
+    const sent = manifestAction(send);
+    expect(sent.input.type).toBe("object");
+    expect(sent.input.required).toEqual(["to", "amount"]);
+    expect(sent.output.required).toEqual(["txId", "status"]);
+    expect(manifestAction(toggle).input.required).toBeUndefined();
   });
 
   it("infers input and output types", () => {
@@ -129,9 +148,10 @@ describe("action declaration errors name the field", () => {
   it("schemas", () => {
     expect(fieldOf(() => action("a", { ...base, input: {} } as never))).toBe("input");
     expect(fieldOf(() => action("a", { ...base, output: "x" } as never))).toBe("output");
-    expect(fieldOf(() => action("a", { ...base, input: z.object({ at: z.date() }) }))).toBe(
-      "input",
-    );
+    const dated = action("a", { ...base, input: z.object({ at: z.date() }) });
+    const error = manifestError(dated);
+    expect(error.code).toBe("REX210");
+    expect(error.message).toContain('action "a" input');
   });
 
   it("policy, effect, label, handler", () => {
@@ -211,8 +231,9 @@ describe("0.2 action options", () => {
       jsonSchema: { input },
     });
     expect(declared.jsonSchema).toEqual({ input, output: null });
-    expect(declared.inputJsonSchema).toEqual(input);
-    expect(declared.outputJsonSchema.type).toBe("object");
+    const listed = manifestAction(declared);
+    expect(listed.input).toEqual(input);
+    expect(listed.output.type).toBe("object");
   });
 
   function optionError(run: () => unknown): { code: RexErrorCode; field: string } {
@@ -278,11 +299,10 @@ describe("Standard Schema actions", () => {
   });
 
   it("accepts a hand-written Standard Schema for input and output", async () => {
-    expect(isZodSchema(pay.input)).toBe(true);
-    expect(standardSource(pay.input)).toBe(amountInput);
-    expect(standardSource(pay.output)).toBe(receipt);
-    expect(pay.input.parse({ amount: "2.5" })).toEqual({ amount: 2.5 });
-    expect(pay.input.safeParse({ amount: "nope" }).success).toBe(false);
+    expect(pay.input).toBe(amountInput);
+    expect(pay.output).toBe(receipt);
+    expect(validateStandardSync(pay.input, { amount: "2.5" })).toEqual({ value: { amount: 2.5 } });
+    expect(validateStandardSync(pay.input, { amount: "nope" }).issues).toBeDefined();
     expect(await pay.handler({ amount: 2.5 }, ctx)).toEqual({ id: "pay-2.50" });
   });
 
@@ -293,7 +313,9 @@ describe("Standard Schema actions", () => {
   });
 
   it("leaves the JSON Schema to the declared override", () => {
-    expect(pay.inputJsonSchema).toEqual({});
+    const error = manifestError(pay);
+    expect(error.code).toBe("REX210");
+    expect(error.message).toContain('action "pay" input');
     const declared = action("pay-declared", {
       input: amountInput,
       output: receipt,
@@ -305,8 +327,9 @@ describe("Standard Schema actions", () => {
       },
       handler: () => ({ id: "x" }),
     });
-    expect(declared.inputJsonSchema.required).toEqual(["amount"]);
-    expect(declared.outputJsonSchema.properties).toEqual({ id: { type: "string" } });
+    const listed = manifestAction(declared);
+    expect(listed.input.required).toEqual(["amount"]);
+    expect(listed.output.properties).toEqual({ id: { type: "string" } });
   });
 
   it("refuses an input that is not a Standard Schema", () => {

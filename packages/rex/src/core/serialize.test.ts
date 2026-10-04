@@ -11,7 +11,7 @@ import { action } from "./action.ts";
 import { actor } from "./actor.ts";
 import { page } from "./page.ts";
 import { always } from "./policy.ts";
-import { text } from "./schema.ts";
+import { text } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { escapeInlineJson } from "./serialize.ts";
 

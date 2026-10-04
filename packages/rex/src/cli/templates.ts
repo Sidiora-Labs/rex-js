@@ -9,6 +9,8 @@ import {
 
 export const CORE_IMPORT = "@sidioralabs/rex";
 export const SCHEMA_IMPORT = "zod/mini";
+export const FIELDS_IMPORT = "@sidioralabs/rex/schema";
+export const CONFIG_IMPORT = "@sidioralabs/rex/config";
 export const CLIENT_IMPORT = "@sidioralabs/rex/client";
 export const SERVER_IMPORT = "@sidioralabs/rex/server";
 
@@ -121,10 +123,11 @@ export function pageTemplate(options: PageTemplateOptions): string {
     (options.actions ?? []).map((name) => validateName(name, "action id")),
   );
   const states = options.states === undefined ? undefined : statesList(options.states);
-  const coreNames = routeParams.length > 0 ? "id, page" : "page";
   const imports = [
-    `import { ${coreNames} } from "${CORE_IMPORT}";`,
-    ...(routeParams.length > 0 ? [`import { z } from "${SCHEMA_IMPORT}";`] : []),
+    `import { page } from "${CORE_IMPORT}";`,
+    ...(routeParams.length > 0
+      ? [`import { id } from "${FIELDS_IMPORT}";`, `import { z } from "${SCHEMA_IMPORT}";`]
+      : []),
     ...actions.map((name) => `import { ${camelCase(name)} } from "../../actions/${name}.ts";`),
   ];
   const fields = [`  route: ${JSON.stringify(route)},`];
@@ -355,7 +358,8 @@ export interface DeclarationTemplateOptions {
 export function actionTemplate(options: DeclarationTemplateOptions): string {
   const id = validateName(options.name, "action id");
   return lines(
-    `import { action, always, boolean } from "${CORE_IMPORT}";`,
+    `import { action, always } from "${CORE_IMPORT}";`,
+    `import { boolean } from "${FIELDS_IMPORT}";`,
     `import { z } from "${SCHEMA_IMPORT}";`,
     "",
     `export const ${camelCase(id)} = action(${JSON.stringify(id)}, {`,
@@ -372,7 +376,8 @@ export function actionTemplate(options: DeclarationTemplateOptions): string {
 export function entityTemplate(options: DeclarationTemplateOptions): string {
   const id = validateName(options.name, "entity id");
   return lines(
-    `import { entity, id, text } from "${CORE_IMPORT}";`,
+    `import { entity } from "${CORE_IMPORT}";`,
+    `import { id, text } from "${FIELDS_IMPORT}";`,
     "",
     `export const ${camelCase(id)} = entity(${JSON.stringify(id)}, {`,
     "  fields: { id: id(), name: text({ min: 1 }) },",
@@ -408,7 +413,8 @@ export function flowTemplate(options: DeclarationTemplateOptions): string {
 
 export function configTemplate(): string {
   return lines(
-    `import { anonymousActor, defineConfig } from "${CORE_IMPORT}";`,
+    `import { anonymousActor } from "${CORE_IMPORT}";`,
+    `import { defineConfig } from "${CONFIG_IMPORT}";`,
     `import { createRexServer, memoryLedger } from "${SERVER_IMPORT}";`,
     'import app from "rex:app";',
     "",

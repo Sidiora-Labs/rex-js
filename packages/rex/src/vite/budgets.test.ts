@@ -7,6 +7,7 @@ import {
   CLIENT_EXTERNALS,
   EDGE_BUDGET_KB,
   REACT_EXTERNALS,
+  SCHEMA_EXTERNALS,
   chunkBudgets,
   isBudgetExternal,
   entryBudgets,
@@ -25,20 +26,31 @@ describe("budgets", () => {
   it("defaults to 15 KB core, 30 KB client and 50 KB per page, with 40 KB for the edge server", () => {
     expect(resolveBudgets(null)).toEqual({ core: 15, client: 30, page: 50 });
     expect(entryBudgets()).toEqual([
-      { entry: "core", source: "src/index.ts", budget: 15, externals: ["react", "react-dom"] },
-      { entry: "client", source: "src/client/index.ts", budget: 30, externals: CLIENT_EXTERNALS },
+      {
+        entry: "core",
+        source: "src/index.ts",
+        budget: 15,
+        externals: ["react", "react-dom", "zod"],
+      },
+      {
+        entry: "client",
+        source: "src/client/index.ts",
+        budget: 30,
+        externals: [...CLIENT_EXTERNALS, ...SCHEMA_EXTERNALS],
+      },
       {
         entry: "edge",
         source: "src/server/adapters/edge.ts",
         budget: EDGE_BUDGET_KB,
-        externals: CLIENT_EXTERNALS,
+        externals: [...CLIENT_EXTERNALS, ...SCHEMA_EXTERNALS],
       },
     ]);
     expect(chunkBudgets()).toEqual({ page: DEFAULT_BUDGETS.page });
   });
 
-  it("measures the core without React only and the client without its vendor peers", () => {
+  it("measures the core without React and zod and the client without its vendor peers", () => {
     expect(REACT_EXTERNALS).toEqual(["react", "react-dom"]);
+    expect(SCHEMA_EXTERNALS).toEqual(["zod"]);
     expect(CLIENT_EXTERNALS).toEqual([
       "react",
       "react-dom",
@@ -48,10 +60,10 @@ describe("budgets", () => {
       "@orpc/client",
     ]);
     const core = entryBudgets()[0]!.externals;
-    for (const id of ["react", "react/jsx-runtime", "react-dom/client"]) {
+    for (const id of ["react", "react/jsx-runtime", "react-dom/client", "zod/mini", "zod/v4/core"]) {
       expect(isBudgetExternal(id, core)).toBe(true);
     }
-    for (const id of ["zod/mini", "zod/v4/core", "hono", "@orpc/client", "cmdk", "reactive"]) {
+    for (const id of ["zodiac", "hono", "@orpc/client", "cmdk", "reactive"]) {
       expect(isBudgetExternal(id, core)).toBe(false);
     }
     expect(isBudgetExternal("@orpc/client/fetch", CLIENT_EXTERNALS)).toBe(true);

@@ -11,7 +11,7 @@ import { memoryJournal } from "../../core/journal.ts";
 import { page } from "../../core/page.ts";
 import { always, can } from "../../core/policy.ts";
 import { createRegistry } from "../../core/registry.ts";
-import { money, text } from "../../core/schema.ts";
+import { money, text } from "../../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest } from "../../manifest/build.ts";
 import { validateSidecar, type SidecarPayload } from "../../manifest/sidecar.schema.ts";

@@ -2,7 +2,7 @@ import { action } from "../../../core/action.ts";
 import { actor } from "../../../core/actor.ts";
 import { page } from "../../../core/page.ts";
 import { always } from "../../../core/policy.ts";
-import { boolean } from "../../../core/schema.ts";
+import { boolean } from "../../../schema/index.ts";
 import { z } from "zod/mini";
 import { createRexServer, memoryLedger } from "../../index.ts";
 import { createEdgeHandler } from "../edge.ts";

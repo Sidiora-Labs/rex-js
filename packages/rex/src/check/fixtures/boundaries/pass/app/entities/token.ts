@@ -1,4 +1,5 @@
-import { entity, enumOf, id, integer, text, type InferEntity } from "@sidioralabs/rex";
+import { entity, type InferEntity } from "@sidioralabs/rex";
+import { enumOf, id, integer, text } from "@sidioralabs/rex/schema";
 
 export const token = entity("token", {
   fields: {
