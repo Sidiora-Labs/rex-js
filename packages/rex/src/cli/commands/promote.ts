@@ -10,9 +10,10 @@ import path from "node:path";
 import type { RexCommand as Command } from "../args.ts";
 import ts from "typescript";
 import { createSourceLoader, isRelativeSpecifier } from "../../check/rule.ts";
+import { errorDetail } from "../../core/errors.ts";
 import type { RexCliIO } from "../index.ts";
 import { appPaths } from "../templates.ts";
-import { INVALID_ARGUMENT, MAKE_REFUSED, MakeError } from "./make.ts";
+import { INVALID_ARGUMENT, MAKE_REFUSED, MakeError, reportedMakeError } from "./make.ts";
 
 export const COMPONENTS_DIR = "app/components";
 
@@ -53,7 +54,7 @@ export function parsePartPath(spec: string): PartLocation {
   try {
     appPaths.part(page, region, part);
   } catch (error) {
-    throw new MakeError(INVALID_ARGUMENT, (error as Error).message);
+    throw new MakeError(INVALID_ARGUMENT, errorDetail(error));
   }
   return { page, region, part };
 }
@@ -183,7 +184,7 @@ export function promotePart(root: string, spec: string): PromoteResult {
 }
 
 export function register(program: Command, io: RexCliIO): void {
-  const command: Command = program
+  program
     .command("promote")
     .description("move a page part to app/components and rewrite the imports that use it")
     .argument("<part>", "part path: <page>/regions/<region>/parts/<Part>")
@@ -192,13 +193,7 @@ export function register(program: Command, io: RexCliIO): void {
       try {
         result = promotePart(io.cwd, spec);
       } catch (error) {
-        if (error instanceof MakeError) {
-          command.error(`rex promote: ${error.detail}`, {
-            code: error.cliCode,
-            exitCode: error.exitCode,
-          });
-        }
-        throw error;
+        throw reportedMakeError("rex promote", error);
       }
       io.out(`moved ${result.from} -> ${result.to}\n`);
       for (const file of result.rewritten) io.out(`rewrote ${file}\n`);

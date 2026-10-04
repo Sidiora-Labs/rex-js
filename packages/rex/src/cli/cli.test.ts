@@ -9,11 +9,14 @@ import type { AnyAction } from "../core/action.ts";
 import type { AnyEntity } from "../core/entity.ts";
 import type { AnyPage } from "../core/page.ts";
 import type { AnyPolicy } from "../core/policy.ts";
+import { isRexErrorCode } from "../core/errors.ts";
 import { REX_DATA_STATES, requiredStateExports } from "../core/states.ts";
 import { REX_VERSION, actor, evaluate, validateStandardSync } from "../index.ts";
 import {
+  EXIT_FAILURE,
   EXIT_OK,
   EXIT_USAGE,
+  USAGE_ERROR_CODES,
   commandModuleFiles,
   createProgram,
   run,
@@ -48,7 +51,9 @@ const coreEntry = join(here, "..", "index.ts");
 const schemaEntry = import.meta.resolve(SCHEMA_IMPORT);
 const fieldsEntry = join(here, "..", "schema", "index.ts");
 const packageVersion = (
-  JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as { version: string }
+  JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
+    version: string;
+  }
 ).version;
 
 const temporary: string[] = [];
@@ -61,6 +66,12 @@ function tempDir(prefix: string): string {
 afterAll(() => {
   for (const dir of temporary) rmSync(dir, { recursive: true, force: true });
 });
+
+const COMMAND_LOAD_TIMEOUT_MS = 60_000;
+
+beforeAll(async () => {
+  await createProgram({ cwd: tmpdir(), out: () => undefined, err: () => undefined });
+}, COMMAND_LOAD_TIMEOUT_MS);
 
 const CLI_BUILD_TIMEOUT_MS = 180_000;
 
@@ -99,7 +110,11 @@ function rex(...args: string[]) {
     encoding: "utf8",
     env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" },
   });
-  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+  return {
+    status: result.status,
+    stdout: result.stdout,
+    stderr: result.stderr,
+  };
 }
 
 function captureIO(cwd = packageRoot) {
@@ -244,6 +259,51 @@ describe("run and createProgram", () => {
     expect(captured.out()).toBe("hello rex\n");
   });
 
+  it("maps catalogued usage codes to exit 2 and reports every refusal by its own code", async () => {
+    expect(USAGE_ERROR_CODES).toEqual(["REX604", "REX601"]);
+    expect(USAGE_ERROR_CODES.every((code) => isRexErrorCode(code))).toBe(true);
+
+    const missing = captureIO();
+    expect(await run(["new"], missing.io)).toBe(EXIT_USAGE);
+    expect(missing.err()).toBe("REX604 error: missing required argument 'name'\n");
+
+    const cwd = tempDir("rex-make-codes-");
+    const invalid = captureIO(cwd);
+    expect(await run(["make", "entity", "Token"], invalid.io)).toBe(EXIT_USAGE);
+    expect(invalid.err()).toMatch(/^REX601 rex make: invalid entity id "Token"/);
+    expect(await run(["make", "entity", "token"], captureIO(cwd).io)).toBe(EXIT_OK);
+    const refused = captureIO(cwd);
+    expect(await run(["make", "entity", "token"], refused.io)).toBe(EXIT_FAILURE);
+    expect(refused.err()).toBe(
+      "REX602 rex make: refusing to overwrite existing files:\n  app/entities/token.ts\n",
+    );
+    const promote = captureIO(cwd);
+    expect(await run(["promote", "home/parts/Welcome"], promote.io)).toBe(EXIT_USAGE);
+    expect(promote.err()).toMatch(/^REX601 rex promote: "home\/parts\/Welcome" is not a part path/);
+
+    const dir = tempDir("rex-commands-");
+    writeFileSync(
+      join(dir, "refuse.ts"),
+      [
+        "interface Program {",
+        "  command(name: string): Program;",
+        "  action(run: () => void): Program;",
+        "  error(message: string, options: { exitCode?: number }): never;",
+        "}",
+        "",
+        "export function register(program: Program) {",
+        '  const command = program.command("refuse").action(() => {',
+        '    command.error("refuse: not today", { exitCode: 3 });',
+        "  });",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const refusal = captureIO();
+    expect(await run(["refuse"], refusal.io, dir)).toBe(3);
+    expect(refusal.err()).toBe("REX605 refuse: not today\n");
+  });
+
   it("refuses a command module without register", async () => {
     const dir = tempDir("rex-commands-");
     writeFileSync(join(dir, "broken.ts"), "export const name = 'broken';\n");
@@ -356,7 +416,10 @@ describe("canonical templates", () => {
     expect(all.imports).toEqual([CORE_IMPORT]);
 
     const some = expectValid(
-      statesTemplate({ page: "portfolio", states: ["ready", "loading", "recoverable-error"] }),
+      statesTemplate({
+        page: "portfolio",
+        states: ["ready", "loading", "recoverable-error"],
+      }),
       "states.tsx",
     );
     expect(some.named).toEqual(["Loading", "RecoverableError"]);
@@ -393,14 +456,21 @@ describe("canonical templates", () => {
     const part = expectValid(partTemplate({ name: "AmountField" }), "AmountField.tsx");
     expect(part).toEqual({ named: [], hasDefault: true, imports: [] });
 
-    const overlayCode = overlayTemplate({ page: "send", name: "TokenSelectorSheet" });
+    const overlayCode = overlayTemplate({
+      page: "send",
+      name: "TokenSelectorSheet",
+    });
     const overlay = expectValid(overlayCode, "TokenSelectorSheet.tsx");
     expect(overlay.hasDefault).toBe(true);
     expect(overlayCode).toContain('overlay("TokenSelectorSheet", { dismiss: "both"');
     expect(overlayCode).toContain("Token selector sheet");
 
     const hook = expectValid(hookTemplate({ name: "useDraft" }), "useDraft.ts");
-    expect(hook).toEqual({ named: ["useDraft"], hasDefault: false, imports: ["react"] });
+    expect(hook).toEqual({
+      named: ["useDraft"],
+      hasDefault: false,
+      imports: ["react"],
+    });
   });
 
   it("writes page.ts declaring route, params, actions, regions, overlays and states", async () => {
@@ -479,14 +549,21 @@ describe("canonical templates", () => {
     ).wallet as AnyPolicy;
     expect(policy.permissions).toEqual(["wallet.read"]);
     const reader = actor({ id: "r", permissions: ["wallet.read"] });
-    expect(evaluate(policy.can("wallet.read"), reader)).toEqual({ allowed: true, reason: null });
+    expect(evaluate(policy.can("wallet.read"), reader)).toEqual({
+      allowed: true,
+      reason: null,
+    });
     expect(evaluate(policy.can("wallet.read"), actor({ id: "n" })).allowed).toBe(false);
   });
 
   it("writes a flow declaration with an approval gate and a journal", () => {
     const code = flowTemplate({ name: "payout" });
     const shape = expectValid(code, "payout.ts");
-    expect(shape).toEqual({ named: ["payout"], hasDefault: false, imports: [CORE_IMPORT] });
+    expect(shape).toEqual({
+      named: ["payout"],
+      hasDefault: false,
+      imports: [CORE_IMPORT],
+    });
     expect(code).toContain('flow("payout", {');
     expect(code).toContain("journal: memoryJournal(),");
   });

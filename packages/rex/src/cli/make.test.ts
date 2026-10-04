@@ -2,9 +2,9 @@ import { readdirSync, statSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { makeDeclaration, makePage, MakeError, parseList } from "./commands/make.ts";
-import { run, type RexCliIO } from "./index.ts";
+import { createProgram, run, type RexCliIO } from "./index.ts";
 import {
   actionTemplate,
   entityTemplate,
@@ -19,7 +19,13 @@ import {
   viewTemplate,
 } from "./templates.ts";
 
+const COMMAND_LOAD_TIMEOUT_MS = 60_000;
+
 let root: string;
+
+beforeAll(async () => {
+  await createProgram({ cwd: tmpdir(), out: () => undefined, err: () => undefined });
+}, COMMAND_LOAD_TIMEOUT_MS);
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "rex-make-"));
@@ -44,7 +50,10 @@ function tree(dir: string, prefix = ""): string[] {
   return found;
 }
 
-function io(): RexCliIO & { readonly output: string[]; readonly errors: string[] } {
+function io(): RexCliIO & {
+  readonly output: string[];
+  readonly errors: string[];
+} {
   const output: string[] = [];
   const errors: string[] = [];
   return {
@@ -163,7 +172,7 @@ describe("rex make page", () => {
     expect(cli.output).toEqual([]);
     expect(cli.errors.join("")).toBe(
       [
-        "rex make: refusing to overwrite existing files:",
+        "REX602 rex make: refusing to overwrite existing files:",
         "  app/pages/portfolio/page.ts",
         "  app/pages/portfolio/view.tsx",
         "  app/pages/portfolio/states.tsx",
@@ -178,7 +187,7 @@ describe("rex make page", () => {
   it("rejects invalid names with a usage exit", async () => {
     const cli = io();
     expect(await run(["make", "page", "Portfolio"], cli)).toBe(2);
-    expect(cli.errors.join("")).toContain('invalid page id "Portfolio"');
+    expect(cli.errors.join("")).toContain('REX601 rex make: invalid page id "Portfolio"');
     expect(await run(["make", "page", "portfolio", "--overlays", "sheet"], io())).toBe(2);
     expect(tree(root)).toEqual([]);
   });
@@ -282,10 +291,24 @@ describe("rex make declarations", () => {
     makeDeclaration(root, "action", "send");
     await writeFile(join(root, "app/actions/send.ts"), "// handler filled in\n");
     expect(() => makeDeclaration(root, "action", "send")).toThrow(MakeError);
+    expect(() => makeDeclaration(root, "action", "send")).toThrow(
+      expect.objectContaining({
+        name: "MakeError",
+        code: "REX602",
+        exitCode: 1,
+      }),
+    );
+    expect(() => makeDeclaration(root, "action", "Send")).toThrow(
+      expect.objectContaining({
+        name: "MakeError",
+        code: "REX601",
+        exitCode: 2,
+      }),
+    );
     const cli = io();
     expect(await run(["make", "action", "send"], cli)).toBe(1);
     expect(cli.errors.join("")).toBe(
-      "rex make: refusing to overwrite existing files:\n  app/actions/send.ts\n",
+      "REX602 rex make: refusing to overwrite existing files:\n  app/actions/send.ts\n",
     );
     expect(await read("app/actions/send.ts")).toBe("// handler filled in\n");
   });
@@ -293,7 +316,7 @@ describe("rex make declarations", () => {
   it("rejects an invalid declaration name", async () => {
     const cli = io();
     expect(await run(["make", "entity", "Token"], cli)).toBe(2);
-    expect(cli.errors.join("")).toContain('invalid entity id "Token"');
+    expect(cli.errors.join("")).toContain('REX601 rex make: invalid entity id "Token"');
     expect(tree(root)).toEqual([]);
   });
 

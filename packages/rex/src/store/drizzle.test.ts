@@ -10,7 +10,13 @@ import {
   conformanceRecord,
   runStoreConformance,
 } from "../core/store.conformance.ts";
-import { columnSpecs, createTableStatement, drizzleStore, tableNameFor } from "./drizzle.ts";
+import {
+  columnSpecs,
+  createTableStatement,
+  drizzleStore,
+  entityTable,
+  tableNameFor,
+} from "./drizzle.ts";
 
 function memoryDb() {
   return drizzle(createClient({ url: ":memory:" }));
@@ -137,6 +143,9 @@ describe("drizzleStore", () => {
       label: (record) => record.id,
     });
     expect(() => drizzleStore(ambiguous, memoryDb())).toThrow("both optional and nullable");
+    expect(() => drizzleStore(ambiguous, memoryDb())).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX329" }),
+    );
   });
 
   it("rejects unknown filter fields", async () => {
@@ -144,17 +153,29 @@ describe("drizzleStore", () => {
     await expect(store.list({ filter: { nope: 1 } as never })).rejects.toThrow(
       'unknown filter field "nope"',
     );
+    await expect(store.list({ filter: { nope: 1 } as never })).rejects.toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX305" }),
+    );
   });
 
   it("uses an existing table when createTable is false", async () => {
     const db = memoryDb();
-    const missing = drizzleStore(conformanceEntity, db, { createTable: false, table: "items" });
+    const missing = drizzleStore(conformanceEntity, db, {
+      createTable: false,
+      table: "items",
+    });
     await expect(missing.get("item-001")).rejects.toThrow();
     await db.run(createTableStatement(conformanceEntity, "items"));
     await missing.put(conformanceRecord(2));
     expect((await missing.list()).items).toEqual([conformanceRecord(2)]);
     expect(() => drizzleStore(conformanceEntity, db, { table: "Bad-Name" })).toThrow(
       "lowercase snake_case",
+    );
+    expect(() => createTableStatement(conformanceEntity, "Bad-Name")).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX329" }),
+    );
+    expect(() => entityTable(conformanceEntity, "Bad-Name")).toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX329" }),
     );
   });
 });
