@@ -8,6 +8,7 @@ import { createContext, runInContext } from "node:vm";
 import { getRequestListener, type Http2Bindings, type HttpBindings } from "@hono/node-server";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
+import { createElement } from "react";
 import { build } from "vite";
 import { afterEach, describe, expect, it } from "vitest";
 import { action } from "../../core/action.ts";
@@ -15,11 +16,14 @@ import { actor } from "../../core/actor.ts";
 import { REX_ERRORS_DOCS_BASE } from "../../core/errors.ts";
 import { REX_ERROR_DOCS, errorHint } from "../../core/errors.docs.ts";
 import { page } from "../../core/page.ts";
+import { createRegistry } from "../../core/registry.ts";
+import { definePageModules, view } from "../../client/page.tsx";
 import { always } from "../../core/policy.ts";
 import { boolean } from "../../schema/index.ts";
 import { z } from "zod/mini";
 import { buildManifest, stableStringify } from "../../manifest/build.ts";
 import { createRexServer, memoryLedger, type RegistryRouterClient } from "../index.ts";
+import { createRexRenderer, registerPageRenderer } from "../ssr.ts";
 import * as legacyNode from "../node.ts";
 import {
   startBunServer,
@@ -39,6 +43,14 @@ import {
 import { createEdgeHandler, type EdgeHandler } from "./edge.ts";
 import { EDGE_APP, source as edgeSource } from "./fixtures/edge-worker.ts";
 import * as nodeAdapter from "./node.ts";
+import {
+  ACCEPT_CH,
+  ACCEPT_CH_HEADER,
+  CLIENT_HINT_VARY,
+  applyClientHints,
+  isDocumentResponse,
+  withClientHints,
+} from "./client-hints.ts";
 import { RUNTIME_MISSING_CODE, RuntimeMissingError } from "./runtime.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -444,5 +456,126 @@ describe("edge adapter", { timeout: BUNDLE_TIMEOUT_MS }, () => {
     const client = rpcClient("https://edge.test/rex/rpc", (request) => edge.fetch(request));
     await expect(client["toggle-dust"]({ hide: true })).resolves.toEqual({ hide: true });
     await expect(client["toggle-dust"]({ hide: false })).resolves.toEqual({ hide: false });
+  });
+});
+
+const PHONE_HINTS = { "sec-ch-ua-mobile": "?1", "sec-ch-viewport-width": "390" } as const;
+const hintedPage = page("hinted", { route: "/", chrome: { title: "Hinted" }, states: ["ready"] });
+const hintedRegistry = createRegistry().register(hintedPage).freeze();
+registerPageRenderer(
+  hintedRegistry,
+  createRexRenderer({
+    bundle: {
+      registry: hintedRegistry,
+      manifest: buildManifest(hintedRegistry, { app: "hinted" }),
+      pages: [
+        definePageModules({
+          page: hintedPage,
+          view: view(() => createElement("p", null, "Hinted body")),
+          states: {},
+        }),
+      ],
+    },
+  }),
+);
+
+function hintedApp() {
+  return createRexServer({
+    registry: hintedRegistry,
+    ledger: memoryLedger(),
+    actor: () => actor({ id: "alice" }),
+    app: "hinted",
+  });
+}
+
+async function expectPhoneDocument(response: Response): Promise<void> {
+  expect(response.status).toBe(200);
+  expect(response.headers.get(ACCEPT_CH_HEADER)).toBe(ACCEPT_CH);
+  const html = await response.text();
+  expect(html).toMatch(
+    /<html lang="en" data-rex-screen="phone" data-rex-pointer="coarse" data-rex-density="comfortable">/,
+  );
+  expect(html).toContain('data-rex-nav-form="dock"');
+  expect(html).toContain("Hinted body");
+}
+
+describe("client hints", () => {
+  it("adds Accept-CH and merges Vary on document responses only", () => {
+    const headers = new Headers({ vary: "Origin, sec-ch-ua-mobile" });
+    applyClientHints(headers);
+    expect(headers.get(ACCEPT_CH_HEADER)).toBe("Sec-CH-UA-Mobile, Sec-CH-Viewport-Width");
+    expect(headers.get("vary")).toBe("Origin, sec-ch-ua-mobile, Sec-CH-Viewport-Width");
+    expect(CLIENT_HINT_VARY).toEqual(["Sec-CH-UA-Mobile", "Sec-CH-Viewport-Width"]);
+    expect(isDocumentResponse(new Response("", { headers: { "content-type": "text/html; charset=utf-8" } }))).toBe(true);
+    expect(isDocumentResponse(Response.json({ ok: true }))).toBe(false);
+    const hinted = withClientHints(new Response("<p>x</p>", { status: 201 }));
+    expect(hinted.status).toBe(201);
+    expect(hinted.headers.get(ACCEPT_CH_HEADER)).toBe(ACCEPT_CH);
+  });
+
+  it("sends Accept-CH with the node adapter's index.html fallback", async () => {
+    const clientDir = mkdtempSync(join(tmpdir(), "rex-adapter-hints-"));
+    writeFileSync(join(clientDir, "index.html"), INDEX_HTML);
+    const running = await nodeAdapter.startNodeServer(rexApp("node-hints"), {
+      port: 0,
+      clientDir,
+      hostname: "127.0.0.1",
+    });
+    try {
+      const response = await fetch(`${running.url}/portfolio/acc-1`, { headers: PHONE_HINTS });
+      expect(response.headers.get(ACCEPT_CH_HEADER)).toBe(ACCEPT_CH);
+      expect(await response.text()).toBe(INDEX_HTML);
+      const health = await fetch(`${running.url}/rex/health`);
+      expect(health.headers.get(ACCEPT_CH_HEADER)).toBeNull();
+    } finally {
+      await running.close();
+      rmSync(clientDir, { recursive: true, force: true });
+    }
+  });
+
+  it("passes the hint headers through the node adapter to the server-rendered document", async () => {
+    const clientDir = mkdtempSync(join(tmpdir(), "rex-adapter-hints-ssr-"));
+    writeFileSync(join(clientDir, "index.html"), INDEX_HTML);
+    const running = await nodeAdapter.startNodeServer(hintedApp(), {
+      port: 0,
+      clientDir,
+      hostname: "127.0.0.1",
+    });
+    try {
+      await expectPhoneDocument(await fetch(`${running.url}/`, { headers: PHONE_HINTS }));
+    } finally {
+      await running.close();
+      rmSync(clientDir, { recursive: true, force: true });
+    }
+  });
+
+  it("passes the hint headers through the bun, deno and edge adapters", async () => {
+    await expectPhoneDocument(
+      await createEdgeHandler(hintedApp()).fetch(
+        new Request("https://edge.test/", { headers: PHONE_HINTS }),
+      ),
+    );
+
+    const bun = bunGlobal();
+    runtimeGlobals.Bun = bun.runtime;
+    const bunServer = await startBunServer(hintedApp(), {
+      port: await freePort(),
+      hostname: "127.0.0.1",
+    });
+    try {
+      await bun.listening;
+      await expectPhoneDocument(await fetch(`${bunServer.url}/`, { headers: PHONE_HINTS }));
+    } finally {
+      await bunServer.close();
+    }
+
+    const deno = denoGlobal();
+    runtimeGlobals.Deno = deno.runtime;
+    const denoServer = await startDenoServer(hintedApp(), { port: 0, hostname: "127.0.0.1" });
+    try {
+      await expectPhoneDocument(await fetch(`${denoServer.url}/`, { headers: PHONE_HINTS }));
+    } finally {
+      await denoServer.close();
+    }
   });
 });

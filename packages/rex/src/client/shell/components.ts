@@ -28,10 +28,17 @@ export type ShellComponentName = (typeof SHELL_COMPONENT_NAMES)[number];
 
 export type ShellButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
+export const SHELL_SHEET_FORMS = ["dialog", "bottom-sheet"] as const;
+
+export type ShellSheetForm = (typeof SHELL_SHEET_FORMS)[number];
+
+export const SHEET_FORM_ATTRIBUTE = "data-rex-sheet-form";
+
 export interface ShellSheetProps {
   readonly address: string;
   readonly title: string;
   readonly titleId: string;
+  readonly form: ShellSheetForm;
   readonly children?: ReactNode;
 }
 
@@ -77,6 +84,7 @@ export interface ShellPaletteTriggerProps {
 export interface ShellFrameProps {
   readonly appName: string;
   readonly links: readonly ShellNavLink[];
+  readonly navForm: ShellNavForm;
   readonly palette: ShellPaletteTriggerProps | null;
   readonly children?: ReactNode;
 }
@@ -96,8 +104,16 @@ export function TokenButton(props: ShellButtonProps) {
   return createElement("button", { type: "button", ...props });
 }
 
-export function TokenSheet({ title, titleId, children }: ShellSheetProps) {
-  return createElement(Fragment, null, createElement("h2", { id: titleId }, title), children);
+export function TokenSheet({ title, titleId, form, children }: ShellSheetProps) {
+  return createElement(
+    "div",
+    { className: "rex-sheet", [SHEET_FORM_ATTRIBUTE]: form },
+    form === "bottom-sheet"
+      ? createElement("span", { className: "rex-sheet-handle", "aria-hidden": true })
+      : null,
+    createElement("h2", { id: titleId }, title),
+    children,
+  );
 }
 
 export function TokenPaletteItem({
@@ -248,11 +264,16 @@ export function TokenPaletteTrigger({
   );
 }
 
-export function TokenFrame({ appName, links, palette, children }: ShellFrameProps) {
+export function TokenFrame({ appName, links, navForm, palette, children }: ShellFrameProps) {
   const Nav = useShellComponent("Nav");
+  const shown = links.length > 0;
   return createElement(
     "div",
-    { className: "rex-frame", "data-rex-frame": "" },
+    {
+      className: "rex-frame",
+      "data-rex-frame": "",
+      "data-rex-nav-form": shown ? navForm : undefined,
+    },
     createElement(
       "header",
       { className: "rex-frame-bar" },
@@ -269,11 +290,23 @@ export function TokenFrame({ appName, links, palette, children }: ShellFrameProp
           ),
           createElement("span", { className: "rex-frame-name" }, appName),
         ),
-        createElement(Nav, { links, form: "bar" }),
+        navForm === "bar" ? createElement(Nav, { links, form: navForm }) : null,
         palette === null ? null : createElement(TokenPaletteTrigger, palette),
       ),
     ),
-    createElement("div", { className: "rex-frame-content" }, children),
+    createElement(
+      "div",
+      { className: "rex-frame-body" },
+      navForm === "sidebar" && shown
+        ? createElement(
+            "div",
+            { className: "rex-frame-aside" },
+            createElement(Nav, { links, form: navForm }),
+          )
+        : null,
+      createElement("div", { className: "rex-frame-content" }, children),
+    ),
+    navForm === "dock" ? createElement(Nav, { links, form: navForm }) : null,
   );
 }
 

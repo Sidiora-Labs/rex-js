@@ -7,6 +7,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { RexError } from "../../core/errors.ts";
 import { RENDER_KIND_HEADER } from "../routes/render.ts";
+import { withClientHints } from "./client-hints.ts";
 import { assertPort, serverUrl, type FetchApp } from "./runtime.ts";
 
 export const API_PREFIX = "/rex";
@@ -65,7 +66,7 @@ export function createNodeApp(app: NodeFetchApp, clientDir: string): Hono {
     if (isApiPath(c.req.path) || !isReadMethod(c.req.method) || !isPageRoutePath(c.req.path)) {
       return next();
     }
-    return c.html(await readFile(indexPath, "utf8"));
+    return withClientHints(c.html(await readFile(indexPath, "utf8")));
   });
 
   outer.all("*", (c) => app.fetch(c.req.raw, c.env));

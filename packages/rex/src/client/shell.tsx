@@ -12,6 +12,7 @@ import { useManifest, useRegistry } from "./context.ts";
 import type { PageModuleSet } from "./page.tsx";
 import { RexProviders } from "./providers.ts";
 import { RexRoutes, type RouteResolution } from "./router.tsx";
+import { navFormFor, useScreen } from "./screen.ts";
 import { useShellComponent, type ShellPaletteTriggerProps } from "./shell/components.ts";
 import { useNavLinks } from "./shell/nav.tsx";
 import { ShellOutcome, type OutcomeSlotProps } from "./shell/outcome-slot.tsx";
@@ -60,11 +61,17 @@ function ShellFrame({ resolution, modules, navPages, Outcome, slots }: FrameProp
   const active = resolution.kind === "page" ? resolution.page : null;
   const manifest = useManifest();
   const links = useNavLinks(active, navPages);
+  const { screen } = useScreen();
   const Frame = useShellComponent("Frame");
   const palette = useMemo(() => (Outcome === AgentOutcome ? paletteTrigger() : null), [Outcome]);
   return (
     <div data-rex-shell="">
-      <Frame appName={manifest.app.name} links={links} palette={palette}>
+      <Frame
+        appName={manifest.app.name}
+        links={links}
+        navForm={navFormFor(screen)}
+        palette={palette}
+      >
         {slots.map(({ id, Component }) => (
           <Component
             key={id}
