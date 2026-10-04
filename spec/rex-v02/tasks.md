@@ -198,7 +198,7 @@
   - [x] 5.9 rex check --runtime: sidecar and DOM parity without a browser
     - Add check/runtime.ts mounting every page in happy-dom per actor and state and reporting sidecar actions without a visible control and controls without a sidecar entry as parity/runtime findings; wire --runtime into cli/commands/check.ts; write check/runtime.test.ts.
     - _Requirements: 33.3_
-  - [ ] 6.1 Core Web Vitals and Lighthouse gate on the built demo
+  - [ ] 6.1 Core Web Vitals and Lighthouse gate on the built demo — **Implemented - qualification pending**
     - Add examples/demo/e2e/vitals.spec.ts measuring LCP, CLS and INP with the web-vitals attribution build on every page (including an interaction) with the thresholds in [design] vitals_gate, and e2e/lighthouse.ts running lighthouse programmatically per page with the score thresholds; both write JSON to e2e/report; add a test:vitals script and the dependencies.
     - _Requirements: 34.1, 34.2_
   - [ ] 6.2 Demo on every 0.2 capability with the operability, no-JS, axe and vitals walks green
