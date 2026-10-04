@@ -13,7 +13,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { normalizePath, type Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { REX_ERROR_CATALOG, RexError, isRexError } from "../core/errors.ts";
+import { REX_ERROR_DOCS } from "../core/errors.docs.ts";
+import { RexError, isRexError } from "../core/errors.ts";
 import { causeFrame, fileFrame, formatCliError, locatedRexError, sourceFrame } from "./frame.ts";
 import { EXIT_FAILURE, run, type RexCliIO } from "./index.ts";
 import { withModuleLoader } from "./load.ts";
@@ -73,7 +74,7 @@ describe("CLI error output", () => {
     expect(formatCliError(error)).toBe(
       [
         `rex: REX213 page "x": field "route" route must be a string starting with / (${file}:3:16)`,
-        `  hint: ${REX_ERROR_CATALOG.REX213.hint}`,
+        `  hint: ${REX_ERROR_DOCS.REX213.hint}`,
         "  docs: https://rex.sidioralabs.com/errors/REX213",
         "",
         '  1 | import { page } from "@sidioralabs/rex";',
@@ -90,7 +91,7 @@ describe("CLI error output", () => {
   it("prints no frame without a location or a readable file", () => {
     const bare = new RexError("REX100", "missing");
     expect(formatCliError(bare)).toBe(
-      `rex: REX100 missing\n  hint: ${REX_ERROR_CATALOG.REX100.hint}\n  docs: https://rex.sidioralabs.com/errors/REX100`,
+      `rex: REX100 missing\n  hint: ${REX_ERROR_DOCS.REX100.hint}\n  docs: https://rex.sidioralabs.com/errors/REX100`,
     );
     expect(fileFrame(new RexError("REX213", "x", { file: join(dir, "gone.ts"), line: 1 }))).toBe("");
     expect(formatCliError(new Error("plain"))).toBe("rex: plain");

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
-import { formatRexError, isRexError, type RexError } from "../core/errors.ts";
+import { explainRexError } from "../core/errors.docs.ts";
+import { isRexError, type RexError } from "../core/errors.ts";
 
 export const FRAME_CONTEXT_LINES = 2;
 
@@ -54,7 +55,9 @@ export function formatCliError(error: unknown): string {
     return `rex: ${error instanceof Error ? error.message : String(error)}`;
   }
   const frame = fileFrame(error);
-  return frame === "" ? `rex: ${formatRexError(error)}` : `rex: ${formatRexError(error)}\n\n${frame}`;
+  return frame === ""
+    ? `rex: ${explainRexError(error)}`
+    : `rex: ${explainRexError(error)}\n\n${frame}`;
 }
 
 export function causeFrame(error: unknown): string {
