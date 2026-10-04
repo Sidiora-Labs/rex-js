@@ -1,4 +1,4 @@
-import { Img } from "@sidioralabs/rex/client";
+import { Img } from "@sidioralabs/rex/client/media";
 import Card from "../../../../../components/Card.tsx";
 
 export interface AboutIntroProps {

@@ -5,7 +5,7 @@ import { discoverApp } from "../../check/engine.ts";
 import { RAW_IMG_ROLES, rawImgSites } from "../../check/rules/media.ts";
 import { jsxAttributes, jsxElements } from "../../check/rules/tokens.ts";
 import { rexPrettierConfig } from "../../prettier.ts";
-import { CLIENT_IMPORT } from "../templates.ts";
+import { MEDIA_IMPORT } from "../templates.ts";
 import {
   applyEdits,
   defineCodemod,
@@ -127,7 +127,7 @@ export function convertRawImg(file: string, text: string): string | null {
   const edits = sites.flatMap((site) =>
     elementEdits(source, site.node as ts.JsxOpeningLikeElement),
   );
-  const importEdit = namedImportEdit(source, CLIENT_IMPORT, IMG_COMPONENT);
+  const importEdit = namedImportEdit(source, MEDIA_IMPORT, IMG_COMPONENT);
   if (importEdit !== null) edits.push(importEdit);
   return applyEdits(text, edits);
 }
@@ -169,7 +169,7 @@ export function placeholderFlags(file: string, relative: string, text: string): 
         relative,
         site.node,
         "REX610",
-        `createElement("img") was not converted; render Img from ${CLIENT_IMPORT} with width and height`,
+        `createElement("img") was not converted; render Img from ${MEDIA_IMPORT} with width and height`,
       ),
     );
   }

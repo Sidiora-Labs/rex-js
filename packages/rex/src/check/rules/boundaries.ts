@@ -15,6 +15,14 @@ export const REX_CORE = "@sidioralabs/rex";
 export const REX_SCHEMA = "@sidioralabs/rex/schema";
 export const REX_CLIENT = "@sidioralabs/rex/client";
 export const REX_SERVER = "@sidioralabs/rex/server";
+export const REX_CLIENT_INTEROP = "@sidioralabs/rex/client/interop";
+export const REX_CLIENT_MEDIA = "@sidioralabs/rex/client/media";
+export const REX_CLIENT_I18N = "@sidioralabs/rex/client/i18n";
+export const REX_CLIENT_CAPABILITIES = [
+  REX_CLIENT_INTEROP,
+  REX_CLIENT_MEDIA,
+  REX_CLIENT_I18N,
+] as const;
 
 const HOOK_NAME = /^use[A-Z0-9]/;
 const SOURCE_EXTENSION = /\.(tsx?|jsx?|mjs|cjs)$/;
@@ -46,7 +54,17 @@ const core: PackageRule = { specifier: REX_CORE, exact: true };
 const schema: PackageRule = { specifier: REX_SCHEMA, exact: true };
 const client: PackageRule = { specifier: REX_CLIENT, exact: true };
 const clientNoHooks: PackageRule = { specifier: REX_CLIENT, exact: true, noHooks: true };
-const DECLARATION_FORBIDDEN = ["react", "react-dom", REX_CLIENT];
+const capabilities: readonly PackageRule[] = REX_CLIENT_CAPABILITIES.map((specifier) => ({
+  specifier,
+  exact: true,
+}));
+const capabilitiesNoHooks: readonly PackageRule[] = capabilities.map((rule) => ({
+  ...rule,
+  noHooks: true,
+}));
+const CLIENT_ENTRIES: readonly string[] = [REX_CLIENT, ...REX_CLIENT_CAPABILITIES];
+const DECLARATION_FORBIDDEN = ["react", "react-dom", ...CLIENT_ENTRIES];
+const CAPABILITIES_ALLOWED = ` and the optional client entries ${REX_CLIENT_CAPABILITIES.join(", ")}`;
 
 const fileLabel = (file: AppFile) => path.posix.basename(file.file);
 
@@ -78,9 +96,8 @@ export const IMPORT_TABLE: Readonly<Record<FileRole, RoleBoundary>> = {
       { role: "component" },
       { role: "entity", typeOnly: true },
     ],
-    packages: [react, core, client],
-    allowed:
-      "region.tsx may import its page's hooks, its own parts, its page's overlays, its own page.ts, app/actions, app/flows, app/components, react, @sidioralabs/rex and @sidioralabs/rex/client, never other regions or pages.",
+    packages: [react, core, client, ...capabilities],
+    allowed: `region.tsx may import its page's hooks, its own parts, its page's overlays, its own page.ts, app/actions, app/flows, app/components, react, @sidioralabs/rex and @sidioralabs/rex/client${CAPABILITIES_ALLOWED}, never other regions or pages.`,
   },
   part: {
     label: (file) => `part ${fileLabel(file)}`,
@@ -90,9 +107,8 @@ export const IMPORT_TABLE: Readonly<Record<FileRole, RoleBoundary>> = {
       { role: "entity", typeOnly: true },
       { role: "action", typeOnly: true },
     ],
-    packages: [react, core, clientNoHooks],
-    allowed:
-      "parts may import app/components, sibling parts of their region, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client; fetching, actions and navigation belong in region.tsx.",
+    packages: [react, core, clientNoHooks, ...capabilitiesNoHooks],
+    allowed: `parts may import app/components, sibling parts of their region, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client${CAPABILITIES_ALLOWED}; fetching, actions and navigation belong in region.tsx.`,
   },
   hook: {
     label: (file) => `hook ${fileLabel(file)}`,
@@ -110,11 +126,11 @@ export const IMPORT_TABLE: Readonly<Record<FileRole, RoleBoundary>> = {
       core,
       schema,
       client,
+      ...capabilities,
       { specifier: "@tanstack/react-query" },
       { specifier: "zod" },
     ],
-    allowed:
-      "hooks may import app/data, app/actions, app/entities, app/policies, app/flows, sibling hooks, their own page.ts, react, @tanstack/react-query, zod, @sidioralabs/rex, @sidioralabs/rex/schema and @sidioralabs/rex/client, never components.",
+    allowed: `hooks may import app/data, app/actions, app/entities, app/policies, app/flows, sibling hooks, their own page.ts, react, @tanstack/react-query, zod, @sidioralabs/rex, @sidioralabs/rex/schema and @sidioralabs/rex/client${CAPABILITIES_ALLOWED}, never components.`,
   },
   overlay: {
     label: (file) => `overlay ${fileLabel(file)}`,
@@ -124,9 +140,8 @@ export const IMPORT_TABLE: Readonly<Record<FileRole, RoleBoundary>> = {
       { role: "entity", typeOnly: true },
       { role: "action", typeOnly: true },
     ],
-    packages: [react, core, clientNoHooks],
-    allowed:
-      "overlays may import their page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client, never data fetching.",
+    packages: [react, core, clientNoHooks, ...capabilitiesNoHooks],
+    allowed: `overlays may import their page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client${CAPABILITIES_ALLOWED}, never data fetching.`,
   },
   states: {
     label: () => "states.tsx",
@@ -136,10 +151,9 @@ export const IMPORT_TABLE: Readonly<Record<FileRole, RoleBoundary>> = {
       { role: "entity", typeOnly: true },
       { role: "action", typeOnly: true },
     ],
-    packages: [react, core, clientNoHooks],
+    packages: [react, core, clientNoHooks, ...capabilitiesNoHooks],
     noHooks: true,
-    allowed:
-      "states.tsx may import its page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client, never hooks.",
+    allowed: `states.tsx may import its page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client${CAPABILITIES_ALLOWED}, never hooks.`,
   },
   component: {
     label: (file) => `component ${file.file.replace(/^app\//, "")}`,
@@ -378,7 +392,7 @@ function checkFile(app: RexApp, sources: SourceLoader, file: AppFile): Finding[]
     }
     const name = packageName(ref.specifier);
     const forbidden = boundary.forbiddenPackages?.find((candidate) =>
-      candidate === REX_CLIENT ? ref.specifier === candidate : name === candidate,
+      CLIENT_ENTRIES.includes(candidate) ? ref.specifier === candidate : name === candidate,
     );
     if (forbidden !== undefined) {
       report(

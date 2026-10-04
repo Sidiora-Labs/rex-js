@@ -1,4 +1,5 @@
-import { region, useT } from "@sidioralabs/rex/client";
+import { region } from "@sidioralabs/rex/client";
+import { useT } from "@sidioralabs/rex/client/i18n";
 import AboutIntro from "./parts/AboutIntro.tsx";
 
 export default region("intro", () => {

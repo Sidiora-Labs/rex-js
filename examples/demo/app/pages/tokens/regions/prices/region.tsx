@@ -1,4 +1,5 @@
-import { region, useT } from "@sidioralabs/rex/client";
+import { region } from "@sidioralabs/rex/client";
+import { useT } from "@sidioralabs/rex/client/i18n";
 import { useTokenPrices } from "../../hooks/useTokenPrices.ts";
 import { useWatchlist } from "../../hooks/useWatchlist.ts";
 import PriceTable from "./parts/PriceTable.tsx";
