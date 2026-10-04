@@ -90,9 +90,10 @@ describe("layout primitives", () => {
 
   it("rejects values outside the token scale at runtime", () => {
     silenced(() => {
-      expect(() => render(<Page.Stack space={9 as Space} />)).toThrow(RangeError);
-      expect(() => render(<Page.Grid columns={5 as Columns} />)).toThrow(RangeError);
-      expect(() => render(<Page.Section title=" " />)).toThrow(TypeError);
+      const invalidProps = expect.objectContaining({ name: "RexError", code: "REX314" });
+      expect(() => render(<Page.Stack space={9 as Space} />)).toThrow(invalidProps);
+      expect(() => render(<Page.Grid columns={5 as Columns} />)).toThrow(invalidProps);
+      expect(() => render(<Page.Section title=" " />)).toThrow(invalidProps);
     });
   });
 

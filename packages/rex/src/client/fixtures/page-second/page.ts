@@ -1,4 +1,5 @@
-import { can, page, text, z } from "../../../index.ts";
+import { can, page, text } from "../../../index.ts";
+import { z } from "zod/mini";
 
 export default page("second", {
   route: "/second",

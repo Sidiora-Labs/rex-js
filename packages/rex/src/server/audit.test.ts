@@ -226,7 +226,7 @@ describe("memoryLedger", () => {
       await expect(ledger.list({ from: "nope" })).rejects.toThrow("filter.from");
       await expect(
         ledger.list({ from: "2026-10-04T12:00:00.000Z", to: "2026-10-04T10:00:00.000Z" }),
-      ).rejects.toThrow(RangeError);
+      ).rejects.toThrow(expect.objectContaining({ name: "RexError", code: "REX403" }));
       await expect(ledger.list({ outcome: "failed" })).rejects.toThrow("filter.outcome");
       await expect(ledger.list({ input: "x" } as never)).rejects.toThrow('unknown filter "input"');
     });

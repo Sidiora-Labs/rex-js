@@ -1,5 +1,6 @@
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
+import { RexError } from "../core/errors.ts";
 import { createSourceLoader, type Finding, type Rule, type SourceLoader } from "./rule.ts";
 
 export const FILE_ROLES = [
@@ -179,7 +180,7 @@ export function discoverApp(root: string): RexApp {
   const absoluteRoot = path.resolve(root);
   const appDir = path.join(absoluteRoot, "app");
   if (!isDirectory(appDir)) {
-    throw new Error(`discoverApp: no app directory at ${appDir}`);
+    throw new RexError("REX460", `discoverApp: no app directory at ${appDir}`);
   }
   const relative = (file: string) => toPosix(path.relative(absoluteRoot, path.resolve(file)));
 
@@ -283,19 +284,25 @@ export async function runRules(
   const seen = new Set<string>();
   const findings: Finding[] = [];
   for (const rule of rules) {
-    if (seen.has(rule.id)) throw new Error(`runRules: rule "${rule.id}" is listed twice`);
+    if (seen.has(rule.id))
+      throw new RexError("REX505", `runRules: rule "${rule.id}" is listed twice`);
     seen.add(rule.id);
     let produced: readonly Finding[];
     try {
       produced = await rule.check({ app, sources });
     } catch (error) {
-      throw new Error(`runRules: rule "${rule.id}" failed: ${(error as Error).message}`, {
-        cause: error,
-      });
+      throw new RexError(
+        "REX505",
+        `runRules: rule "${rule.id}" failed: ${(error as Error).message}`,
+        {
+          cause: error,
+        },
+      );
     }
     for (const entry of produced) {
       if (entry.rule !== rule.id && !entry.rule.startsWith(`${rule.id}/`)) {
-        throw new Error(
+        throw new RexError(
+          "REX505",
           `runRules: rule "${rule.id}" reported a finding attributed to "${entry.rule}"`,
         );
       }

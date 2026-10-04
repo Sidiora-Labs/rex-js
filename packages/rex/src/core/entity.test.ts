@@ -10,8 +10,9 @@ import {
   ref,
   text,
   timestamp,
-  z,
 } from "./schema.ts";
+import { z } from "zod/mini";
+import { standardSource, type StandardSchemaV1 } from "./standard.ts";
 
 const account = entity("account", {
   fields: {
@@ -70,7 +71,7 @@ describe("entity", () => {
   });
 
   it("builds a zod object schema from the fields", () => {
-    expect(account.schema).toBeInstanceOf(z.ZodObject);
+    expect(account.schema).toBeInstanceOf(z.ZodMiniObject);
     expect(account.parse(sample)).toEqual(sample);
     expect(account.schema.safeParse({ ...sample, balance: 12 }).success).toBe(false);
     expect(() => account.parse({ ...sample, name: "" })).toThrow("name");
@@ -166,7 +167,9 @@ describe("entity declaration errors name the field", () => {
       entity("account", { fields: { id: id(), balance: "money" }, label } as never),
     );
     expect(error.field).toBe("fields.balance");
-    expect(error.message).toContain('field "fields.balance" must be a zod schema');
+    expect(error.message).toContain(
+      'field "fields.balance" must be a Standard Schema such as a zod schema',
+    );
   });
 
   it("label", () => {
@@ -197,5 +200,55 @@ describe("entity declaration errors name the field", () => {
       entity("account", { fields: { id: id(), at: z.date() }, label } as never),
     );
     expect(error.field).toBe("fields");
+  });
+});
+
+describe("Standard Schema fields", () => {
+  const isoCountry: StandardSchemaV1<string, string> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof value === "string" && /^[A-Z]{2}$/.test(value)
+          ? { value }
+          : { issues: [{ message: "must be a two-letter country code" }] },
+    },
+  };
+
+  const office = entity("office", {
+    fields: { id: id(), country: isoCountry, name: text({ min: 1 }) },
+    label: (record) => `${record.name} (${record.country})`,
+  });
+
+  it("accepts a hand-written Standard Schema field and validates through it", () => {
+    expect(standardSource(office.fields.country)).toBe(isoCountry);
+    expect(office.parse({ id: "o-1", country: "PT", name: "Lisbon" })).toEqual({
+      id: "o-1",
+      country: "PT",
+      name: "Lisbon",
+    });
+    expect(() => office.parse({ id: "o-1", country: "Portugal", name: "Lisbon" })).toThrow(
+      /two-letter country code/,
+    );
+    expect(office.fieldKinds.country).toBeUndefined();
+    expect(office.fieldKinds.name).toBe("text");
+    expectTypeOf<InferEntity<typeof office>>().toEqualTypeOf<{
+      id: string;
+      country: string;
+      name: string;
+    }>();
+  });
+
+  it("describes the Standard Schema field in the JSON schema by its vendor", () => {
+    const properties = office.jsonSchema.properties as Record<string, Record<string, unknown>>;
+    expect(properties.country).toEqual({ "x-rex-standard": "hand" });
+    expect(office.jsonSchema.required).toEqual(["id", "country", "name"]);
+  });
+
+  it("refuses a Standard Schema key it cannot prove is a string", () => {
+    const error = declarationError(() =>
+      entity("office", { fields: { id: isoCountry }, label: () => "x" }),
+    );
+    expect(error.field).toBe("key");
   });
 });

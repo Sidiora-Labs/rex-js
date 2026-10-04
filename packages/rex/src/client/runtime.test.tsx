@@ -7,7 +7,8 @@ import { page } from "../core/page.ts";
 import { always } from "../core/policy.ts";
 import { REX_DENSITY_HEADER, REX_MANIFEST_PATH } from "../core/protocol.ts";
 import { createRegistry } from "../core/registry.ts";
-import { money, text, z } from "../core/schema.ts";
+import { money, text } from "../core/schema.ts";
+import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import {
   SIDECAR_ELEMENT_ID,
@@ -105,6 +106,9 @@ function mount(path: string): Mounted {
   let density: string | null | undefined;
   const fetch: RexFetch = async (input, init) => {
     const request = input instanceof Request ? input : new Request(input, init);
+    if (request.method !== "GET" && !request.headers.has("origin")) {
+      request.headers.set("origin", new URL(request.url).origin);
+    }
     const response = await server.fetch(request);
     if (new URL(request.url).pathname === REX_MANIFEST_PATH) {
       density = response.headers.get(REX_DENSITY_HEADER);

@@ -9,7 +9,8 @@ import {
   type SQLiteColumnBuilderBase,
 } from "drizzle-orm/sqlite-core";
 import type { AnyEntity, InferEntity } from "../core/entity.ts";
-import { fieldKind, z, type FieldKind } from "../core/schema.ts";
+import { fieldKind, schemaType, type FieldKind } from "../core/schema.ts";
+import type { ZodSchemaLike } from "../core/standard.ts";
 import {
   normalizeListQuery,
   validateStoreId,
@@ -42,10 +43,12 @@ const KIND_COLUMNS: Readonly<Record<FieldKind, ColumnType>> = {
   text: "text",
   money: "text",
   integer: "integer",
+  real: "real",
   boolean: "boolean",
   enum: "text",
   ref: "text",
   timestamp: "text",
+  json: "json",
 };
 
 const SQL_TYPES: Readonly<Record<ColumnType, string>> = {
@@ -56,26 +59,17 @@ const SQL_TYPES: Readonly<Record<ColumnType, string>> = {
   real: "real",
 };
 
-function unwrapped(schema: z.ZodType): z.ZodType {
-  let current: z.ZodType = schema;
-  while (
-    current instanceof z.ZodOptional ||
-    current instanceof z.ZodNullable ||
-    current instanceof z.ZodDefault
-  ) {
-    current = current.unwrap() as z.ZodType;
-  }
-  return current;
-}
+const TYPE_COLUMNS: Readonly<Record<string, ColumnType>> = {
+  string: "text",
+  enum: "text",
+  number: "real",
+  boolean: "boolean",
+};
 
-function columnTypeOf(schema: z.ZodType): ColumnType {
+function columnTypeOf(schema: ZodSchemaLike): ColumnType {
   const kind = fieldKind(schema);
   if (kind !== undefined) return KIND_COLUMNS[kind];
-  const inner = unwrapped(schema);
-  if (inner instanceof z.ZodString || inner instanceof z.ZodEnum) return "text";
-  if (inner instanceof z.ZodNumber) return "real";
-  if (inner instanceof z.ZodBoolean) return "boolean";
-  return "json";
+  return TYPE_COLUMNS[schemaType(schema)] ?? "json";
 }
 
 export function tableNameFor(declared: AnyEntity): string {
@@ -84,7 +78,7 @@ export function tableNameFor(declared: AnyEntity): string {
 
 export function columnSpecs(declared: AnyEntity): readonly ColumnSpec[] {
   return Object.entries(declared.fields).map(([field, schema]) => {
-    const zodSchema = schema as z.ZodType;
+    const zodSchema = schema as ZodSchemaLike;
     const optional = zodSchema.safeParse(undefined).success;
     const nullable = zodSchema.safeParse(null).success;
     if (optional && nullable) {

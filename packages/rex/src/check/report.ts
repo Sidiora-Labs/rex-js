@@ -1,3 +1,4 @@
+import { RexError } from "../core/errors.ts";
 import { compareFindings } from "./engine.ts";
 import type { Finding } from "./rule.ts";
 
@@ -57,5 +58,5 @@ export function formatHuman(findings: readonly Finding[]): string {
 export function formatFindings(findings: readonly Finding[], format: ReportFormat): string {
   if (format === "json") return formatJson(findings);
   if (format === "human") return formatHuman(findings);
-  throw new TypeError(`formatFindings: unknown format ${JSON.stringify(format)}`);
+  throw new RexError("REX506", `formatFindings: unknown format ${JSON.stringify(format)}`);
 }

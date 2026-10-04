@@ -8,7 +8,8 @@ import { actor } from "../../core/actor.ts";
 import { page } from "../../core/page.ts";
 import { always, never, policy } from "../../core/policy.ts";
 import { createRegistry } from "../../core/registry.ts";
-import { boolean, money, text, z } from "../../core/schema.ts";
+import { boolean, money, text } from "../../core/schema.ts";
+import { z } from "zod/mini";
 import { buildManifest } from "../../manifest/build.ts";
 import { validateSidecar, type SidecarPayload } from "../../manifest/sidecar.schema.ts";
 import { memoryLedger } from "../../server/audit.ts";
@@ -152,8 +153,13 @@ interface Mounted {
 
 function mount(path: string, slot = Slot): Mounted {
   const server = createRexServer({ registry, ledger: memoryLedger(), actor: () => owner });
-  const fetch: RexFetch = async (input, init) =>
-    server.fetch(input instanceof Request ? input : new Request(input, init));
+  const fetch: RexFetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    if (request.method !== "GET" && !request.headers.has("origin")) {
+      request.headers.set("origin", new URL(request.url).origin);
+    }
+    return server.fetch(request);
+  };
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const RexApp = createRexApp({
     registry,

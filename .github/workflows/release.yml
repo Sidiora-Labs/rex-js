@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish @sidioralabs/rex with provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - name: Use an npm with trusted publishing
+        run: npm install -g npm@latest
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Tag matches the package version
+        run: |
+          version="$(node -p "require('./packages/rex/package.json').version")"
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "tag ${GITHUB_REF_NAME} does not match packages/rex version ${version}" >&2
+            exit 1
+          fi
+      - name: Typecheck
+        run: pnpm -r typecheck
+      - name: Test
+        run: pnpm -C packages/rex test
+      - name: Audit
+        run: pnpm audit --prod
+      - name: License review
+        run: node tools/license-review.mjs
+      - name: Build
+        run: pnpm -C packages/rex build
+      - name: Pack
+        run: pnpm -C packages/rex pack --pack-destination "$RUNNER_TEMP/package"
+      - name: Publish with provenance through OIDC
+        run: npm publish "$RUNNER_TEMP"/package/*.tgz --provenance --access public

@@ -3,11 +3,14 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import type { AnyAction } from "../../core/action.ts";
 import type { AnyPage } from "../../core/page.ts";
 import { evaluate } from "../../core/policy.ts";
-import { actionLabel } from "../act.ts";
+import { actionLabel, inputProblem } from "../act.ts";
 import { useActor, useManifest, useRegistry } from "../context.ts";
+import { useText } from "../i18n/context.ts";
+import { APP_OUTCOME_KEY, useOutcomeStore } from "../outcome.ts";
 import { useNav } from "../nav.ts";
 import { useActivePage } from "../router.tsx";
 import { isNavigable } from "../shell.tsx";
+import { useShellComponents } from "../shell/components.ts";
 import { useConfirm, usePageInvokers } from "./confirm.tsx";
 import { isModShortcut } from "./shortcuts.ts";
 import { useAffordances, type Affordance } from "./sidecar.tsx";
@@ -47,6 +50,7 @@ function usePaletteEntries(): {
   const subject = useActor();
   const manifest = useManifest();
   const registry = useRegistry();
+  const text = useText();
   const affordances = useAffordances(active === null ? "" : active.page.id);
   const actions = useMemo<PaletteActionEntry[]>(() => {
     if (active === null) return [];
@@ -55,7 +59,7 @@ function usePaletteEntries(): {
       return {
         kind: "action",
         id: entry.id,
-        label: actionLabel(entry),
+        label: text(actionLabel(entry)),
         allowed: decision.allowed,
         reason: decision.reason,
         shortcut: entry.shortcut,
@@ -66,7 +70,7 @@ function usePaletteEntries(): {
     const extra = affordances.map((entry): PaletteActionEntry => ({
       kind: "action",
       id: entry.id,
-      label: entry.label,
+      label: text(entry.label),
       allowed: entry.allowed,
       reason: entry.allowed ? null : entry.reason,
       shortcut: null,
@@ -74,7 +78,7 @@ function usePaletteEntries(): {
       affordance: entry,
     }));
     return [...declared, ...extra];
-  }, [active, affordances, subject]);
+  }, [active, affordances, subject, text]);
   const pages = useMemo<PalettePageEntry[]>(() => {
     const entries: PalettePageEntry[] = [];
     for (const listed of manifest.pages) {
@@ -83,13 +87,13 @@ function usePaletteEntries(): {
       entries.push({
         kind: "page",
         id: listed.id,
-        title: listed.chrome.title,
+        title: text(listed.chrome.title),
         route: listed.route,
         page: declared,
       });
     }
     return entries;
-  }, [manifest, registry]);
+  }, [manifest, registry, text]);
   return { actions, pages };
 }
 
@@ -102,10 +106,12 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
   const opener = useRef<Element | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const invokers = usePageInvokers();
+  const outcomes = useOutcomeStore();
   const confirm = useConfirm();
   const nav = useNav();
   const active = useActivePage();
   const { actions, pages } = usePaletteEntries();
+  const { PaletteItem } = useShellComponents();
 
   useEffect(() => {
     const target = globalThis.window;
@@ -139,8 +145,20 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
   const runAction = (entry: PaletteActionEntry) => {
     if (!entry.allowed) return;
     close();
-    if (entry.action !== null) {
-      void invokers.invoke(entry.action.id, { ...PALETTE_INPUT });
+    const declared = entry.action;
+    if (declared !== null) {
+      void inputProblem(declared, PALETTE_INPUT).then((problem) => {
+        if (problem === null) {
+          void invokers.invoke(declared.id, { ...PALETTE_INPUT });
+          return;
+        }
+        outcomes.set(active === null ? APP_OUTCOME_KEY : active.page.id, {
+          actionId: declared.id,
+          ok: false,
+          message: problem,
+          at: new Date().toISOString(),
+        });
+      });
       return;
     }
     const affordance = entry.affordance;
@@ -150,7 +168,7 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
       return;
     }
     const pending = active === null ? null : active.page.id;
-    const subject = { id: affordance.id, label: affordance.label, effect: affordance.effect };
+    const subject = { id: affordance.id, label: entry.label, effect: affordance.effect };
     void confirm({ page: pending, action: subject, input: PALETTE_INPUT }).then((accepted) =>
       accepted ? affordance.invoke({ ...PALETTE_INPUT }) : undefined,
     );
@@ -190,9 +208,15 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
                   }
                   data-rex-allowed={entry.allowed ? "true" : "false"}
                 >
-                  <span>{entry.label}</span> <code>{entry.id}</code>
-                  {entry.shortcut === null ? null : <kbd>{entry.shortcut}</kbd>}
-                  {entry.allowed ? null : <span> Not allowed: {entry.reason}</span>}
+                  <PaletteItem
+                    kind="action"
+                    id={entry.id}
+                    label={entry.label}
+                    detail={entry.id}
+                    shortcut={entry.shortcut}
+                    allowed={entry.allowed}
+                    reason={entry.reason}
+                  />
                 </Command.Item>
               ))}
             </Command.Group>
@@ -209,7 +233,15 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
                 }}
                 data-rex-palette-page={entry.id}
               >
-                <span>Go to {entry.title}</span> <code>{entry.route}</code>
+                <PaletteItem
+                  kind="page"
+                  id={entry.id}
+                  label={`Go to ${entry.title}`}
+                  detail={entry.route}
+                  shortcut={null}
+                  allowed
+                  reason={null}
+                />
               </Command.Item>
             ))}
           </Command.Group>

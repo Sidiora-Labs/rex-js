@@ -1,5 +1,6 @@
 import type { AnyAction } from "./action.ts";
 import { RexDeclarationError } from "./entity.ts";
+import { RexError } from "./errors.ts";
 import type { AnyEntity } from "./entity.ts";
 import type { AnyPolicy } from "./policy.ts";
 
@@ -67,7 +68,7 @@ export function createRegistry(): Registry {
           );
         }
         if (typeof candidate.id !== "string") {
-          throw new TypeError(`registry: ${candidate.kind} declaration has no id`);
+          throw new RexError("REX224", `registry: ${candidate.kind} declaration has no id`);
         }
         const bucket = byKind.get(candidate.kind) as Map<string, AnyDeclaration>;
         const existing = bucket.get(candidate.id);
@@ -78,6 +79,7 @@ export function createRegistry(): Registry {
             candidate.id,
             "id",
             `is already registered by another ${candidate.kind}`,
+            "REX217",
           );
         }
         bucket.set(candidate.id, declaration);
@@ -102,7 +104,7 @@ export function createRegistry(): Registry {
         find,
         get(kind: string, id: string) {
           const found = find(kind, id);
-          if (found === undefined) throw new Error(`registry: unknown ${kind} "${id}"`);
+          if (found === undefined) throw new RexError("REX301", `registry: unknown ${kind} "${id}"`);
           return found;
         },
       }) as unknown as RegistrySnapshot;

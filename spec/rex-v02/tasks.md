@@ -4,203 +4,301 @@
 
 ## Tasks
 
-  - [ ] 0.1 Split the Vite plugin, server and client entry points into per-concern modules with registration lists
+  - [x] 0.1 Split the Vite plugin, server and client entry points into per-concern modules with registration lists
     - Create vite/plugin.ts assembling the plugin from the ordered hook list in vite/hooks.ts; move the rex:app code to vite/app-module.ts, the /@rex/entry code to vite/entry-module.ts, resolution to vite/resolve.ts and scanning to vite/scan.ts; vite/index.ts only re-exports; keep virtual.ts as the home of module id constants.
     - Create server/app.ts composing createRexServer from server/routes.ts (ordered list of route installers) and server/middleware.ts (ordered list); move the manifest, rpc and health handlers to server/routes/manifest.ts, rpc.ts and health.ts; server/index.ts re-exports and imports nothing from node:.
     - Create client/entry.tsx holding createRexEntry built from the provider list in client/providers.ts; split shell.tsx into client/shell/header.tsx, nav.tsx, outcome-slot.tsx and client/shell/slots.ts (ordered slot list) with shell.tsx composing them; add client/reset.ts exporting registerReset and resetAll for test helpers.
     - Keep every public export name identical so no existing test changes; run the full existing vite, server and client test files as the verify.
     - _Requirements: 1.1, 1.2, 1.3_
-  - [ ] 0.2 Add rex/config with defineConfig and the 0.2 page, action and context options
+  - [x] 0.2 Add rex/config with defineConfig and the 0.2 page, action and context options
     - Add core/errors.ts with the RexError class (code, hint, docs, file, line, column) and the initial catalog for REX1xx config and REX2xx declaration codes; add core/serialize.ts exporting escapeInlineJson used by every inline script Rex emits and make client/agent/sidecar.tsx use it.
     - Add core/config.ts exporting defineConfig, RexConfig and parseConfig implementing [design] config_schema in full (render, budgets, security with origins, csp, headers and secretNames, i18n, images, fonts, telemetry, ui, client, compiler, devtools, tailwind, check with tokens allow lists); export it from a new src/config.ts entry and from src/index.ts.
     - Extend page() with render, revalidate, paths, load, cache, transition and chrome.components per [design] page_options with validation and manifest output; extend action() with form and jsonSchema per [design] action_options; extend RexContext in server/context.ts with a per-request nonce (crypto.randomUUID based) and a locale field resolved later.
     - Add cli/config.ts that loads rex.config.ts through the existing Vite ssrLoadModule path, accepts a defineConfig result or a bare Hono app (emitting deprecation REX101 once through a deprecated() helper in core/deprecated.ts), and make dev, build, check and manifest commands use it; update the rex new template to defineConfig.
     - Write core/config.test.ts, extend core/page.test.ts, core/action.test.ts, manifest/build.test.ts and cli/commands.test.ts for every new option and error code.
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
-  - [ ] 0.3 Move validation to the Standard Schema interface and the field helpers to zod/mini
+  - [x] 0.3 Move validation to the Standard Schema interface and the field helpers to zod/mini
     - Add core/standard.ts with the StandardSchemaV1 types, validateStandard(schema, value) and isZodSchema; make entity(), action(), page(), the server router, useAct, the URL invoker and the palette validate through it.
     - Rebuild core/schema.ts field helpers on zod/mini keeping the x-rex-field tags and the same exported names; add integer, real and json where entity storage needs them.
     - Move JSON Schema generation into manifest/build.ts using z.toJSONSchema for zod schemas and the declared jsonSchema otherwise, throwing REX210 when neither applies; remove toJsonSchema calls from core.
     - Switch the demo app and the rex new templates to zod/mini imports; extend the tests named in the verify to cover a non-zod Standard Schema (a hand-written object implementing ~standard) end to end through the router and useAct.
     - _Requirements: 3.1, 3.2, 3.3_
-  - [ ] 0.4 Package hygiene: minimal dependencies, MIT license, export map, own argument parser and Vite-based module loading
+  - [x] 0.4 Package hygiene: minimal dependencies, MIT license, export map, own argument parser and Vite-based module loading
     - Rewrite packages/rex/package.json per [req.4] ac_1 and ac_2: dependencies hono and @orpc/*; peers react, react-dom, @tanstack/react-query, vite, zod, typescript; optional peers for drizzle-orm, @libsql/client, @hono/node-server, cmdk, wouter, @opentelemetry/api, @vitejs/plugin-react, babel-plugin-react-compiler and @tailwindcss/vite; keep the dev dependencies the tests need; license MIT; sideEffects for CSS only; types-first exports adding ./config, ./server/node and ./store/drizzle; publishConfig provenance; add the root LICENSE (MIT, Sidiora Labs).
     - Replace commander with cli/args.ts (a small parser for commands, flags, repeated flags and positionals with exit code 2 on unknown input) and replace tsx with cli/load.ts that loads TypeScript modules through Vite's createServer plus ssrLoadModule; add cli/generators.ts, an ordered list of rex new file contributors that new.ts runs, so later waves add generators without editing new.ts.
     - Add cli/pack.test.ts: build the package, run npm pack --dry-run --json and assert every export path and its types condition exist in the tarball and that no src or test files are included; regenerate pnpm-lock.yaml.
     - Update the Drizzle store to be importable from the new ./store/drizzle export and the demo and templates to use it where storage is configured.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
-  - [ ] 0.5 Per-page code splitting with Suspense and region error boundaries
+  - [x] 0.5 Per-page code splitting with Suspense and region error boundaries
     - Make vite/app-module.ts import every page's view, states, regions and overlays through dynamic import and expose them as lazy module records on the bundle; add vite/split.ts with the manual chunk naming (page-<id>) and the chunk table builder used by rex build.
     - In client/page.tsx render lazy page modules under Suspense with the page's loading state as fallback; add client/boundary.tsx with a RegionBoundary that catches render errors, reports REX330 with the region address, renders the page's recoverable-error state scoped to the region and offers a retry that remounts it; register the boundary state in the sidecar.
     - Make cli/commands/build.ts print the chunk table (name, raw, gzip, budget) and exit 1 over budget using the defaults from [design] budgets until 0.7 wires rex.config budgets.
     - Write client/boundary.test.tsx (throwing region recovers and retries; sidecar shows the state) and extend client/page.test.tsx and vite/vite.test.ts (a build emits one chunk per fixture page and the table names them).
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
-  - [ ] 0.6 Enable the React Compiler in the Vite plugin and prove fine-grained re-rendering
+  - [x] 0.6 Enable the React Compiler in the Vite plugin and prove fine-grained re-rendering
     - Add vite/compiler.ts registering babel-plugin-react-compiler through @vitejs/plugin-react when config.compiler is not false, targeting React 19; add babel-plugin-react-compiler as a dev dependency for the tests and keep it an optional peer.
     - Write vite/compiler.test.ts building the fixture app and asserting the compiler runtime import (react/compiler-runtime) appears in a compiled part, and that compiler false leaves it out.
     - Write client/compiler.test.tsx using React Profiler on the fixture page: update one store-like value read by one part and assert only that part commits again.
     - _Requirements: 6.1, 6.2_
-  - [ ] 0.7 Enforce size budgets for the core, the client runtime and page chunks
+  - [ ] 0.7 Enforce size budgets for the core, the client runtime and page chunks — **Implemented - qualification pending**
     - Add vite/budgets.ts resolving budgets from rex.config with the defaults in [design] budgets and make cli/commands/build.ts use it for the chunk table and the exit code.
     - Write src/size.test.ts that bundles the rex, rex/client and rex/server/edge entries (the edge entry is server/index.ts until 1.5 adds adapters) with Vite's build API, externalising react, react-dom, @tanstack/react-query, cmdk, wouter and @orpc/client, and asserts 15 KB, 30 KB and 40 KB gzipped respectively; the test prints the measured sizes.
     - _Requirements: 7.1, 7.2, 3.4_
-  - [ ] 1.1 Streaming server-side rendering with hydration and stylesheet links
+  - [ ] 0.8 Finish the zod/mini and Standard Schema move, regenerate the demo manifest and wire the config flags so the budgets pass — **Implemented - qualification pending**
+    - Move every remaining classic zod import to zod/mini: core/schema.ts, core/page.ts, core/entity.ts, core/flow.ts, manifest/sidecar.schema.ts (build its JSON Schema lazily on first use, never at import), server/router.ts (confirmInputSchema, confirmGrantSchema), server/flow.ts (flowStateSchema) and client/act.ts; make the core z export zod/mini so apps import one thing; keep every existing test passing.
+    - Read page params through the Standard Schema interface and the manifest paramsJsonSchema instead of params.shape in client/router.tsx, client/nav.ts and the shell, and make client/agent/sidecar.tsx and client/agent/confirm.tsx read JSON Schema from the manifest rather than the declaration (closes qualification.01).
+    - Add the real and json field kinds to the Drizzle store column map; list zod in the rex new package template and update cli/new.test.ts to the APP_PEERS list (closes qualification.01 and qualification.02).
+    - Make manifest/scan.ts and the check manifest rule load app code through cli/load.ts instead of tsx and remove tsx from the root devDependencies; pass compiler and devtools from the loaded rex.config into rex() in cli/commands/dev.ts, build.ts and cli/load.ts (closes qualification.02 and qualification.04); regenerate examples/demo/.rex/manifest.json and AGENTS.md with rex manifest so the demo checker is green again.
+    - Run the unchanged size test (core at most 15 KB, client 30 KB, edge 40 KB gzipped). If a budget still fails after the zod/mini move, record the measured number, the five largest contributors from Vite's build output and the cause in the qualification log as a blocker; never relax the budget (closes qualification.05).
+    - _Requirements: 3.1, 3.2, 3.4, 4.4, 7.1, 2.4_
+  - [x] 1.1 Streaming server-side rendering with hydration and stylesheet links
     - Add server/ssr.ts rendering the app for a request with renderToReadableStream inside the same providers the client uses, with the head carrying stylesheet links and preloads read from the Vite client manifest (vite/ssr-css.ts), the CSP nonce from RexContext on every inline script, the server-rendered sidecar and an application/rex+data script for loader data (empty until 1.2 fills it); add server/routes/render.ts installing the page routes after the /rex routes, mapping policy denial, not found and render failure to 403, 404 and 500 with the matching state rendered.
     - Add vite/ssr.ts producing the server bundle of rex:app and the render entry for rex build and serving it through ssrLoadModule in rex dev; make cli/commands/dev.ts and build.ts wire them; render csr pages as the shell plus loading state.
     - Make client/entry.tsx hydrate with hydrateRoot when the document root carries data-rex-ssr and otherwise createRoot; add client/hydrate.ts reading the data script; report mismatches as REX310 in dev.
     - Write server/ssr.test.tsx with a real createRexServer over the fixture app: streamed HTML content and order (links before body), hydration in happy-dom with an interactive click, csr behaviour, 403, 404 and 500 cases.
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
-  - [ ] 1.2 Page loaders with server execution, dehydration, deduping and invalidation
+  - [x] 1.2 Page loaders with server execution, dehydration, deduping and invalidation
     - Add client/loaders.ts with useLoader and useLoaders per [design] loaders_api, query keys under [loader, page, name, inputDigest], cache.staleTime applied, and invalidation wiring in client/act.ts for actions declaring invalidates or loaders declaring invalidatedBy.
     - Add server/loaders.ts running a page's loaders in process through the action router during SSR and dehydrating the QueryClient into the application/rex+data script that server/ssr.ts emits; client/hydrate.ts hydrates it before first render.
     - Map loader failures into the page data state through the existing precedence in client/states.ts and surface them in the sidecar.
     - Write client/loaders.test.tsx: typed output, dedupe to one request across two consumers, staleTime, invalidation by a mutating action, SSR dehydrate and client hydrate with no request, loader failure state.
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 1.1_
-  - [ ] 1.3 Static generation, on-demand regeneration and zero-JavaScript pages
-    - Add vite/prerender.ts that renders every ssg and static page at build time (expanding paths) through server/ssr.ts into dist/client/<route>/index.html and lists them; for static pages omit the page chunk and hydration script and render actions as forms (ActionForm arrives in 1.4; until then render a form element with the action id and the form route).
+  - [x] 1.3 Static generation, on-demand regeneration and zero-JavaScript pages
+    - Add vite/prerender.ts that renders every ssg and static page at build time (expanding paths) through server/ssr.ts into dist/client/<route>/index.html and lists them; for static pages omit the page chunk and hydration script and render actions with ActionForm from 1.6.
     - Add server/adapters/static-cache.ts serving prerendered pages with revalidate handled as stale-while-revalidate regeneration in the background; wire it into server/routes/render.ts and the node adapter.
-    - Add check/rules/render.ts reporting a static page that declares a shortcut action or a region-bound overlay (render/static-needs-js) with fixtures.
+    - Add check/rules/render.ts reporting a static page that declares a shortcut action or a region-bound overlay (render/static-needs-js) with fixtures, registered in the rules list.
     - Write vite/prerender.test.ts, server/static-cache.test.ts and check/rules/render.test.ts.
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
-  - [ ] 1.4 Progressive enhancement forms with CSRF and server-rendered confirmation
-    - Add server/form.ts (FormData coercion against the input schema: numbers, booleans, arrays, nested dotted names) and server/routes/form.ts implementing [design] forms_protocol: CSRF double-submit cookie rex-csrf, Origin check, policy, action run, rex-outcome cookie, redirect, validation errors, and the server-rendered confirmation page for irreversible actions.
-    - Add client/form.tsx exporting ActionForm (hidden _csrf and action fields, inputs from the schema, field errors from the outcome) that intercepts submit through useAct when JavaScript runs; make client/agent/outcome.tsx show and clear a cookie outcome on the next render.
-    - Write server/form.test.tsx (coercion, CSRF reject, Origin reject, confirm page, confirm post, redirect, errors cookie, audit record) and client/form.test.tsx (renders real form, intercepts with JS, shows field errors).
-    - _Requirements: 11.1, 11.2, 11.3, 11.4_
-  - [ ] 1.5 Runtime adapters for Node, Bun, Deno and edge with build targets
-    - Move server/node.ts to server/adapters/node.ts (keeping a re-export), add server/adapters/bun.ts, deno.ts and edge.ts per [design] runtimes with REX450 when the runtime global is absent; add server/fetch-only.test.ts that bundles src/server/index.ts for the browser platform with Vite's build API and asserts no node: specifier remains.
-    - Make rex build --target node|edge|bun|deno|static write the matching server entry and layout and bake client.apiOrigin for static; add the exports ./server/bun, ./server/deno and ./server/edge.
+  - [x] 1.4 Form post route with FormData coercion, CSRF, Origin check and server-rendered confirmation
+    - Add server/form.ts (FormData coercion against the input schema: numbers, booleans, arrays, nested dotted names) and server/routes/form.ts implementing [design] forms_protocol: CSRF double-submit cookie rex-csrf, Origin check, policy, action run, rex-outcome cookie, redirect, validation errors, and the server-rendered confirmation page for irreversible actions; register the route.
+    - Write server/form.test.tsx (coercion, CSRF reject, Origin reject, confirm page, confirm post, redirect, errors cookie, audit record).
+    - _Requirements: 11.2, 11.3, 11.4_
+  - [x] 1.5 Runtime adapters for Node, Bun, Deno and edge with the fetch-only guarantee
+    - Move server/node.ts to server/adapters/node.ts (keeping a re-export), add server/adapters/bun.ts, deno.ts and edge.ts per [design] runtimes with REX450 when the runtime global is absent; add server/fetch-only.test.ts that bundles src/server/index.ts for the browser platform with Vite's build API and asserts no node: specifier remains; add the ./server/bun, ./server/deno and ./server/edge exports.
     - Write server/adapters/adapters.test.ts: node adapter passes the existing node tests, edge handler answers Request objects, bun and deno adapters throw REX450 here and hand the fetch handler to the runtime serve when a real global exists.
-    - _Requirements: 12.1, 12.2, 12.3_
-  - [ ] 2.1 Error catalog with source locations in the Vite overlay and the CLI
-    - Complete core/errors.ts as the single catalog (REX1xx to REX6xx) with hint and docs for every code; convert every throw in core/, manifest/, check/ and cli/ to RexError with a catalogued code (server/, client/ and vite/ are converted by 5.7).
-    - Add vite/overlay.ts mapping RexError thrown while loading app modules to the Vite error overlay with file and line; add cli/frame.ts printing a source frame for errors with a location and make the CLI use it.
+    - _Requirements: 12.1, 12.2_
+  - [x] 1.6 ActionForm with JavaScript interception and cookie outcomes
+    - Add client/form.tsx exporting ActionForm (a real form posting to /rex/form/<action> with hidden _csrf and action fields, inputs derived from the input schema, field errors from the outcome) that intercepts submit through useAct when JavaScript runs; make client/agent/outcome.tsx show and clear a rex-outcome cookie outcome on the next render.
+    - Write client/form.test.tsx (renders the real form markup, intercepts with JS through a real RPC handler, shows field errors from a cookie outcome).
+    - _Requirements: 11.1, 11.4_
+  - [ ] 1.7 rex build targets for node, edge, bun, deno and static output — **Implemented - qualification pending**
+    - Make rex build --target node|edge|bun|deno|static write the matching server entry and dist layout per [design] platform_output, baking client.apiOrigin into the entry for static; extend cli/commands.test.ts with a build per target asserting the entry and layout.
+    - _Requirements: 12.3_
+  - [x] 2.1 Error catalog with source locations in the Vite overlay and the CLI
+    - Complete core/errors.ts as the single catalog (REX1xx to REX6xx, including REX330 for region boundaries) with hint and docs for every code; convert every throw in core/, manifest/ and cli/args.ts, cli/load.ts and cli/config.ts to RexError with a catalogued code (server/, client/, vite/, check/ and cli/commands are converted by 5.7).
+    - Add vite/overlay.ts mapping RexError thrown while loading app modules to the Vite error overlay with file and line; add cli/frame.ts printing a source frame for errors with a location and make the CLI entry use it.
     - Add tools/docs-errors.mjs generating docs/errors.md from the catalog with --check; write core/errors.test.ts and cli/frame.test.ts.
     - _Requirements: 13.1, 13.2, 13.3_
-  - [ ] 2.2 Verified hot module replacement for parts, regions and page declarations
+  - [x] 2.2 Verified hot module replacement for parts, regions and page declarations
     - Add vite/hmr.ts: part and region edits flow through react-refresh as module updates; page.ts edits invalidate rex:app and the page chunk and send a full reload with a REX320 notice naming the page.
     - Write vite/hmr.test.ts starting the dev server on a copy of the fixture app, editing a part and asserting an update event for that module (not a full reload), then editing page.ts and asserting the full reload notice.
     - _Requirements: 14.1, 14.2_
-  - [ ] 2.3 Dev-only devtools overlay
+  - [x] 2.3 Dev-only devtools overlay
     - Add client/devtools/ with RexDevtools (shift+mod+d toggle) and the Manifest, Page, Sidecar, Outcomes, Queries, Renders and Audit panels per [design] devtools; register a slot in client/shell/slots.ts guarded by import.meta.env.DEV and config.devtools; add server/routes/dev.ts serving GET /rex/dev/audit only in dev mode; add the ./devtools export.
     - Write client/devtools/devtools.test.tsx (toggle, each panel reads real data from the fixture app) and extend vite/vite.test.ts with a production build asserting the devtools module is absent from the bundle.
     - _Requirements: 15.1, 15.2_
-  - [ ] 2.4 First-party testing helpers and real demo page tests
+  - [x] 2.4 First-party testing helpers on the real runtime
     - Add src/testing/index.ts exporting createTestApp, renderPage, renderRegion, testServer and readSidecar per [design] testing_api on the real server and runtime, calling resetAll from client/reset.ts between renders; add the ./testing export and a vitest setup helper.
-    - Write tests in examples/demo/app/pages/<page>/test/ for every page and region using rex/testing, a vitest config for the demo and a test:unit script.
     - Write src/testing/testing.test.tsx proving each helper against the fixture app.
-    - _Requirements: 16.1, 16.2_
-  - [ ] 2.5 ESLint plugin, prettier preset and format rule
+    - _Requirements: 16.1_
+  - [x] 2.5 ESLint plugin, prettier preset and format rule
     - Add src/eslint/index.ts exporting a flat config and an ESLint plugin whose rules run the checker's boundary, naming, trap, token, a11y and media rule functions per file (a11y and media land in waves 3 and 5; register them through check/rules/index.ts so they appear when present), plus eslint-plugin-jsx-a11y recommended; add src/prettier.ts with the format preset; add check/rules/format.ts running prettier in check mode.
     - Add cli/gen/lint.ts contributing eslint.config.js, .prettierrc and lint and format scripts to rex new through cli/generators.ts; add eslint, prettier and eslint-plugin-jsx-a11y as dev dependencies and optional peers; add the ./eslint and ./prettier exports.
     - Write src/eslint/eslint.test.ts running ESLint programmatically on a fixture with a boundary violation and an a11y violation.
     - _Requirements: 17.1, 17.2_
-  - [ ] 2.6 Tutorial, recipes, migration guide, versioning policy and generated API reference
+  - [x] 2.6 Tutorial, recipes, migration guide, versioning policy and generated API reference
     - Write docs/tutorial.md building the wallet demo from rex new step by step, docs/recipes/ with the eight recipes named in [req.18] ac_1, docs/migration.md and docs/versioning.md.
     - Add typedoc.json and tools/docs-api.mjs generating docs/api/ from the package entries with a --check mode that fails when stale; add tools/check-links.mjs validating local links in README.md and docs/; add root scripts docs:api and docs:check.
     - Generate and commit docs/api/.
     - _Requirements: 18.1, 18.2, 18.3_
-  - [ ] 3.1 Shared state primitive exposed to the sidecar
+  - [ ] 2.7 Real demo page tests written with rex/testing — **Implemented - qualification pending**
+    - Write tests in examples/demo/app/pages/<page>/test/ for every page and region using rex/testing, a vitest config for the demo and a test:unit script in the demo package.
+    - _Requirements: 16.2_
+  - [x] 3.1 Shared state primitive exposed to the sidecar
     - Add client/store.ts implementing store() per [design] state_api on useSyncExternalStore with get, set, update, subscribe, useStore, toJSON and a reset registered through client/reset.ts; exposed stores appear in the sidecar under state.stores (extend manifest/sidecar.schema.ts and client/agent/sidecar.tsx).
+    - Add a regions list to the sidecar schema carrying each region's state and error code so RegionBoundary reports through it (closes qualification.03).
     - Write client/store.test.tsx: typed updates, single-subscriber re-render, sidecar exposure and update, reset between tests, serialisation.
     - _Requirements: 19.1, 19.2_
-  - [ ] 3.2 Web Components, native DOM escape hatch and incremental page mounting
+  - [x] 3.2 Web Components, native DOM escape hatch and incremental page mounting
     - Add client/interop/define-element.tsx (defineElement), client/interop/mount.tsx (mountRexPage returning unmount) and client/interop/native.tsx (Native) per [design] interop_api; export them from client/index.ts.
     - Extend check/rules/traps.ts with traps/custom-element allowing custom element tags that carry tabindex or a declared keyboard equivalent and reporting them otherwise, with fixtures.
     - Write client/interop/interop.test.tsx: a part as a custom element with attribute props, a Rex page mounted inside a plain document with other content, an action invoked through its data-rex address, clean unmount, Native ref access.
     - _Requirements: 20.1, 20.2, 20.3_
-  - [ ] 3.3 Focus management, route announcements, view transitions and the Navigation API
+  - [x] 3.3 Focus management, route announcements, view transitions and the Navigation API
     - Add client/shell/announcer.tsx (aria-live polite region with the page title after navigation) registered in slots.ts; make RexRoutes move focus to the page heading or main after commit; wrap route changes in document.startViewTransition when the page transition is view and the API exists; intercept same-origin window.navigation navigate events when present.
     - Write client/navigation.test.tsx with injected globals of the real shapes for startViewTransition and navigation: focus target, announcer text, transition invoked, navigate intercepted and routed.
     - _Requirements: 21.1, 21.2_
-  - [ ] 3.4 Accessibility checker rules and the axe audit in the walk
-    - Add check/rules/a11y.ts with the rules in [design] a11y_rules, each with a passing and failing fixture, registered in check/rules/index.ts.
-    - Add examples/demo/e2e/axe.spec.ts running @axe-core/playwright on every page in both densities, failing on serious or critical violations, with the dependency added to the demo; the demo is fixed to pass in 6.2 if needed.
-    - Write check/rules/a11y.test.ts.
-    - _Requirements: 22.1, 22.2_
-  - [ ] 3.5 Internationalisation: messages, locale resolution, prefixed routing and the i18n rule
+  - [x] 3.4 Accessibility checker rules
+    - Add check/rules/a11y.ts with the rules in [design] a11y_rules, each with a passing and failing fixture, registered in the rules list; write check/rules/a11y.test.ts.
+    - _Requirements: 22.1_
+  - [x] 3.5 Internationalisation: messages, locale resolution, prefixed routing and the i18n rule
     - Add client/i18n/ with useLocale, useT, t, the ICU-subset formatter (placeholders, plural and select through Intl.PluralRules) and msg: key resolution used by labels, titles, outcomes, the sidecar and the palette; add server/locale.ts resolving the locale from the URL prefix, the rex-locale cookie, Accept-Language and the default, setting RexContext.locale and html lang in SSR.
     - With i18n.routing prefix mount every page under /:locale in client/router.tsx and keep the prefix in nav.to and useNav.href.
     - Add check/rules/i18n.ts (i18n/literal with allow list) and cli/gen/i18n.ts contributing app/locales/<default>.json to rex new; write client/i18n/i18n.test.tsx and check/rules/i18n.test.ts.
     - _Requirements: 23.1, 23.2, 23.3_
-  - [ ] 3.6 Styling freedom: CSS Modules, Tailwind 4 and a configurable token rule
+  - [x] 3.6 Styling freedom: CSS Modules, Tailwind 4 and a configurable token rule
     - Add vite/styles.ts enabling @tailwindcss/vite when config.tailwind is true or ui is designx and documenting CSS Modules as default Vite behaviour; register it in vite/hooks.ts.
     - Rewrite check/rules/tokens.ts to report only raw color and spacing literals, resolve Tailwind utilities to tokens through the theme and honour the allow lists in config.check.tokens; add a fixture app using CSS Modules and Tailwind utilities that passes.
     - Write vite/styles.test.ts and extend check/rules/quality.test.ts.
     - _Requirements: 24.1, 24.2_
-  - [ ] 4.1 Explicit unsafe HTML opt-in and the escaping audit
+  - [ ] 3.7 The axe audit in the demo walk — **Implemented - qualification pending**
+    - Add @axe-core/playwright to the demo and write examples/demo/e2e/axe.spec.ts that builds the demo, starts node dist/server.js on an ephemeral port like the operability walk, runs axe on every manifest page in both densities and fails on serious or critical violations; if the current demo fails, record the violations in the qualification log for 6.2 and report implemented.
+    - _Requirements: 22.2_
+  - [x] 4.1 Explicit unsafe HTML opt-in and the escaping audit
     - Add client/unsafe-html.tsx exporting unsafeHtml(html) as the only sanctioned raw HTML path; add check/rules/security.ts reporting dangerouslySetInnerHTML outside it (security/unsafe-html) with fixtures.
     - Write check/rules/security.test.ts and core/serialize.test.ts cases proving every inline serialisation escapes <, >, & and U+2028 and U+2029.
     - _Requirements: 25.1_
-  - [ ] 4.2 Origin checks, CSP nonces and security headers
+  - [x] 4.2 Origin checks, CSP nonces and security headers
     - Add server/middleware/security.ts implementing [design] security_impl: Origin check for POST on /rex/*, CSP built from config.security with the per-request nonce from RexContext, X-Content-Type-Options, Referrer-Policy and Permissions-Policy defaults, header overrides; register it in server/middleware.ts; add vite/nonce.ts applying the nonce to inline scripts in the dev HTML transform.
     - Write server/security.test.ts: 403 without or with a foreign Origin, allowed origins, CSP header shape in strict and report modes, nonce present on every inline script in an SSR response.
     - _Requirements: 25.2, 25.3_
-  - [ ] 4.3 Server and client bundle boundary with secret leak detection
+  - [x] 4.3 Server and client bundle boundary with secret leak detection
     - Add vite/boundary.ts: a transform that strips handler from action modules in client builds, a resolver that throws REX440 when a client module imports rex/server, app/server or a module containing import 'rex/server-only', and a closeBundle scan of the client output for process.env references without the VITE_ prefix and for config.security.secretNames that throws REX441; register in vite/hooks.ts; add the rex/server-only export (an empty module with a side-effect marker).
     - Write vite/boundary.test.ts covering each case with fixture apps.
     - _Requirements: 25.4_
-  - [ ] 4.4 OpenTelemetry spans, logger and client hooks
+  - [x] 4.4 OpenTelemetry spans, logger and client hooks
     - Add server/middleware/telemetry.ts per [design] telemetry_impl using @opentelemetry/api as an optional peer, spans for action, form, loader and render, traceId and spanId on audit records, and the logger interface with the console default; register it in server/middleware.ts and server/router.ts.
     - Add onOutcome and onNavigate options to createRexApp in client/app.tsx.
     - Write server/telemetry.test.ts with the in-memory span exporter from @opentelemetry/sdk-trace-base (dev dependency) asserting span names, attributes and the audit trace id, and client/app.test.tsx cases for the hooks.
     - _Requirements: 26.1, 26.2_
-  - [ ] 4.5 Continuous integration, release workflow with provenance, audit and license review
+  - [x] 4.5 Continuous integration, release workflow with provenance, audit and license review
     - Add .github/workflows/ci.yml (install with frozen lockfile, typecheck, test, check, walk, vitals, pnpm audit --prod, license review) and .github/workflows/release.yml publishing on a v* tag with npm provenance through OIDC; add tools/license-review.mjs allowing MIT, ISC, BSD, Apache-2.0, 0BSD and CC0 and failing otherwise.
     - Extend tools/gate-lint.sh to run pnpm audit --prod and the license review.
     - _Requirements: 27.1, 27.2_
-  - [ ] 5.1 Img, Script and fonts with preloads and the raw-img rule
+  - [x] 5.1 Img, Script and fonts with preloads and the raw-img rule
     - Add client/media.tsx exporting Img and Script per [design] media_api; emit preload links for priority images and configured fonts plus the font-face block with font-display swap in server/ssr.ts; add check/rules/media.ts (media/no-raw-img) with fixtures and register it.
     - Write client/media.test.tsx and check/rules/media.test.ts, and an SSR case asserting the preload and font-face output.
     - _Requirements: 28.1, 28.2_
-  - [ ] 5.2 DesignX UI installed by rex new and used by the demo and the shell
+  - [ ] 5.2 DesignX UI installed by rex new and used by the demo and the shell — **Implemented - qualification pending**
     - Add cli/designx.ts fetching registry items from https://dxuireact.com/r/<name>.json with their registry dependencies into app/components/ui and app/theme.css, installing npm dependencies and @tailwindcss/vite, writing dx.json; add cli/gen/designx.ts contributing it to rex new under ui designx (default) with --ui none keeping token components.
     - Add chrome.components support in client/shell/components.ts so an app replaces the shell's Button, Sheet, palette item and Outcome renderers; make the demo use DesignX for every part, overlay and the shell components, with Tailwind 4 and the DesignX theme, keeping agent density motion-free.
     - Write cli/designx.test.ts (real registry fetch into a temp app that passes rex check) and update the demo so pnpm -C examples/demo exec rex check reports no findings.
     - _Requirements: 29.1, 29.2, 29.3_
-  - [ ] 5.3 Remote API origin, CORS, platform docs and the markdown text renderer
+  - [x] 5.3 Remote API origin, CORS, platform docs and the markdown text renderer
     - Add client.apiOrigin support in client/context.ts and vite/entry-module.ts (baked for static builds) and server/middleware/cors.ts enabling CORS with credentials for config.security.origins; write docs/platforms.md for the node, edge, bun, deno and static targets with Electron, Tauri and Capacitor sections.
     - Add server/routes/pages-text.ts serving GET /rex/pages/<id>.md per [design] text_renderer and register it.
     - Write server/pages-text.test.ts and server/cors.test.ts.
     - _Requirements: 30.1, 30.2, 12.3_
-  - [ ] 5.4 Deprecations and rex migrate with the 0.1 codemods
+  - [x] 5.4 Deprecations and rex migrate with the 0.1 codemods
     - Finish core/deprecated.ts (warn once per code with the docs link) and add cli/commands/migrate.ts with cli/codemods/ implementing [design] migrate on the TypeScript compiler API, idempotent, reporting changed files; register the command.
     - Add cli/fixtures/app-01 (a 0.1-shaped app) and write cli/migrate.test.ts: migrate it, assert the config wrap, the img conversion with REX610 flags, idempotency, and that the migrated app passes runCheck; add the codemod section to docs/versioning.md.
     - _Requirements: 31.1, 31.2_
-  - [ ] 5.5 Governance, maintainers, security policy, code of conduct and funding
+  - [ ] 5.5 Governance, maintainers, security policy, code of conduct and funding — **Implemented - qualification pending**
     - Write GOVERNANCE.md (decision process, roles, release authority), MAINTAINERS.md, SECURITY.md (reporting channel, supported versions, disclosure timeline), CODE_OF_CONDUCT.md and .github/FUNDING.yml, and link them from README.md.
     - _Requirements: 32.1_
-  - [ ] 5.6 Close the 0.1 gaps: paged lists, audited flow decisions and runtime parity checking
-    - Add client/list.tsx exporting Page.List with page and size URL params and a load-more control that appends; use it for the demo holdings; add traps/infinite-list to check/rules/traps.ts.
-    - Make server/flow.ts write an audit record for every decision with the gate id and decision.
-    - Add check/runtime.ts implementing rex check --runtime per [req.33] ac_3 with happy-dom, wired into cli/commands/check.ts and reported as parity/runtime; write client/list.test.tsx, check/runtime.test.ts and extend server/flow.test.ts.
-    - _Requirements: 33.1, 33.2, 33.3_
-  - [ ] 5.7 Convert the remaining server, client and Vite errors to catalogued codes
-    - Convert every throw in server/, client/ and vite/ to RexError with a catalogued code, adding codes to core/errors.ts where missing, and regenerate docs/errors.md; the test asserts no bare Error throw remains in those directories by scanning the sources.
+  - [x] 5.6 Page.List paged lists and the infinite-list trap rule
+    - Add client/list.tsx exporting Page.List with page and size URL params and a load-more control that appends; use it for the demo holdings and regenerate the demo manifest; add traps/infinite-list to check/rules/traps.ts with fixtures; write client/list.test.tsx.
+    - _Requirements: 33.1_
+  - [x] 5.7 Convert the remaining server, client and Vite errors to catalogued codes
+    - Convert every throw in server/, client/, vite/, check/ and cli/commands to RexError with a catalogued code, adding codes to core/errors.ts where missing, and regenerate docs/errors.md; the test asserts no bare Error throw remains in those directories by scanning the sources.
+    - Split the catalog for the budgets ([decision] zod_boundary, qualification.721): REX_ERROR_CATALOG in core/errors.ts keeps code and message only, and hint and docs move to core/errors.docs.ts, which the CLI, devtools, check, the dev overlay and tools/docs-errors.mjs consume and the core entry does not export, so no runtime bundle carries documentation strings; errors.test.ts proves every catalogued code has a docs entry and that errors.docs.ts is not reachable from src/index.ts.
     - _Requirements: 13.1_
-  - [ ] 6.1 Core Web Vitals and Lighthouse gate on the built demo
+  - [x] 5.8 Audit records for flow decisions
+    - Make server/flow.ts write an audit record for every approval decision with the gate id and the decision; extend server/flow.test.ts and client/agent/flow.test.tsx.
+    - _Requirements: 33.2_
+  - [x] 5.9 rex check --runtime: sidecar and DOM parity without a browser
+    - Add check/runtime.ts mounting every page in happy-dom per actor and state and reporting sidecar actions without a visible control and controls without a sidecar entry as parity/runtime findings; wire --runtime into cli/commands/check.ts; write check/runtime.test.ts.
+    - _Requirements: 33.3_
+  - [ ] 6.1 Core Web Vitals and Lighthouse gate on the built demo — **Implemented - qualification pending**
     - Add examples/demo/e2e/vitals.spec.ts measuring LCP, CLS and INP with the web-vitals attribution build on every page (including an interaction) with the thresholds in [design] vitals_gate, and e2e/lighthouse.ts running lighthouse programmatically per page with the score thresholds; both write JSON to e2e/report; add a test:vitals script and the dependencies.
     - _Requirements: 34.1, 34.2_
   - [ ] 6.2 Demo on every 0.2 capability with the operability, no-JS, axe and vitals walks green
     - Extend the demo per [req.35] ac_1: a static About page, an ssg Tokens page with revalidate, loaders on portfolio, ActionForm on send, a shared store, Img and fonts, two locales with a switch, and a web-component embed example page; regenerate .rex/manifest.json and AGENTS.md.
     - Extend e2e/operability.spec.ts for loaders, forms, static zero-JS assertion, stylesheet order, the text renderer and the CSP console check; add e2e/nojs.spec.ts running the send flow with JavaScript disabled and asserting the audit record; make the demo test script run check, operability, nojs, axe and vitals.
+    - Give the demo the lint generator output (qualification.251): eslint.config.js, .prettierrc and .prettierignore as rex new writes them, the lint and format scripts and their devDependencies in package.json, and run the format script so rex check reports no format/prettier finding; vitest.config.ts imports @sidioralabs/rex/vite directly again now that 7.5 makes rex/vite loadable from Node (the runnerImport workaround from 7.4 goes); the portfolio density test (qualification.761) reads the first render's regions before it renders the second, since rex/testing unmounts the previous render, so the demo test:unit passes 40 of 40; every demo page keeps its ui.components override, its loaders and its two locales working through the 7.5 wiring.
     - _Requirements: 35.1, 8.5, 11.5, 22.2, 30.2, 10.3_
   - [ ] 6.3 Release 0.2.0
     - Set version 0.2.0, write the CHANGELOG 0.2.0 entry from the git log grouped by area, add the standards table to README.md with every [standard.*] item and its status, regenerate docs/api and docs/errors, and verify the pack test and the link check.
     - _Requirements: 35.2, 4.3_
+  - [ ] 7.1 Integration repair: green typecheck, one Origin rule, shared nonce, config flags wired, SSR from the node entry — **Implemented - qualification pending**
+    - Close qualification.082, .083, .311, .581 and .411: cast through ZodSchemaLike in manifest/build.ts, assert a zod/mini object in core/entity.test.ts, make the two demo hooks import z from zod/mini and use z.string().check(z.maxLength(n)), pass a manifest built with buildManifest into the buildSidecarPayload call in core/serialize.test.ts, and add security to the default rule order in check/check.test.ts; pnpm -r typecheck must exit 0.
+    - Close qualification.421: seed RequestContext.nonce from requestNonce(request) in server/context.ts so the CSP header, SSR and the sidecar share one per-request nonce, make server/ssr.ts use it, and send an Origin header in every existing test that POSTs to /rex/* from Node (server, node, runtime, act, agent, flow and CLI tests); the Origin rule is not relaxed.
+    - Close qualification.141: the form route checks Origin through the security middleware helper with resolveSecurityPolicy(options).security.origins; remove the duplicate helper so rex/server exports one isAllowedOrigin.
+    - Close qualification.04, .361 and .431: cli/commands/dev.ts, cli/commands/build.ts and cli/load.ts pass compiler, devtools, tailwind, ui and security.secretNames from the loaded rex.config into rex(); extend cli/commands.test.ts.
+    - Close qualification.111: server/adapters/node.ts serves static assets first and forwards GET page paths to the app when a page renderer is registered, with no index.html fallback for SSR pages, so node dist/server.js renders pages on the server; extend server/node.test.ts.
+    - Close the qualification.521 follow-ups: cli/new.test.ts runs rex new with --ui none for the token expectations and adds a real designx case; client/overlay.tsx, client/agent/palette.tsx and client/agent/outcome.tsx render through useShellComponents(); shell overrides move to rex.config ui.components per [decision] shell_components (remove chrome.components from page options, resolve the module in client/shell/components.ts, set it in the demo rex.config); run pnpm -C examples/demo exec rex check and fix what it reports inside the demo.
+    - _Requirements: 3.3, 25.2, 25.3, 2.4, 8.2, 29.1, 29.3_
+  - [ ] 7.2 Budgets: curated core exports, prebuilt manifest for server bundles, trimmed client runtime and vendor-free page chunks — **Implemented - qualification pending**
+    - Implement [decision] core_exports: remove the z namespace re-export from the core entry (apps and templates import z from zod/mini; update cli/templates.ts and the rex new fixtures), keep the field helpers and validateStandard, and make the size test measure the core with React excluded and nothing else.
+    - Prebuild the manifest: rex build writes dist/manifest.json and the generated server entry passes it to createRexServer({ manifest }), buildManifest runs only in dev and the CLI, and the JSON Schema generator leaves the server bundles; the edge size entry measures server/adapters/edge.ts.
+    - Trim the client runtime to the 30 KB budget: no @orpc/server value import on the client, the palette and devtools loaded lazily, agent modules importing only what they use.
+    - Make vite/split.ts put only modules under a page's folder into its page-<id> chunk and everything shared into shared chunks; extend vite/vite.test.ts with the fixture build and a demo build asserting every page chunk is under its budget.
+    - Run the unchanged size test, the package build and the demo build; if a budget still fails, record the measured number, the five largest contributors and the cause as a blocker; never relax a budget.
+    - _Requirements: 3.4, 7.1, 7.2, 5.1, 5.4, 11.3_
+  - [ ] 7.3 Re-qualify the tasks that ended implemented once their blockers are merged
+    - For each of 0.7, 0.8, 1.7, 2.7, 3.7, 5.2, 5.5, 6.1, 7.1, 7.4, 7.5 and 7.6 (and 6.2, 7.8 or 7.9 if they ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release.
+    - _Requirements: 7.1, 22.2, 29.1, 32.1, 3.4, 16.2, 34.1, 12.3, 3.3, 25.2_
+  - [ ] 7.4 rex/testing sends the request Origin and the demo page tests pass — **Implemented - qualification pending**
+    - Make testServer and the helpers in src/testing send Origin: <server origin> on every request they issue (RPC, form and flow posts), the same header a browser sends, so the security middleware admits them; the Origin rule itself is not relaxed. Fix whatever else the demo page tests from 2.7 report inside src/testing or the demo tests, never by weakening an assertion; extend src/testing/testing.test.tsx with a case that proves a POST through the helpers is admitted and a foreign Origin is rejected.
+    - _Requirements: 16.1, 16.2, 25.2_
+  - [ ] 7.5 Close the recorded integration follow-ups: shell components wired into the build, loader spans, font preloads, the rule-order test and the CLI test defects — **Implemented - qualification pending**
+    - Wire the configured shell components into every build (qualification.712): add vite/shell-components.ts, a hook registered in vite/hooks.ts that carries config.shellComponents through configPluginOptions in cli/load.ts into the rex() plugin options, and make the generated rex:app module in vite/app-module.ts import that module and call registerShellComponents before the entry renders, so a rex.config ui.components override is live in dev and in built apps; prove it in vite/shell-components.test.ts with a real build of a fixture app whose override replaces the overlay.
+    - Emit the rex.loader span (qualification.122): in server/loaders.ts wrap each loader run inside runPageLoaders with traceLoader from the telemetry middleware, carrying the page id, the loader action id and the actor id, and make client/devtools/panels.tsx import LOADER_QUERY_SCOPE from client/loaders.ts instead of declaring its own; prove the span in server/loaders.test.ts against the real telemetry exporter.
+    - Carry fonts into built apps (qualification.511): the generated rex:render module in vite/ssr.ts passes fonts: config.fonts into its createRexRenderer call so the font preloads and the font-display swap block that 5.1 added reach SSR output of built apps; cover it in vite/shell-components.test.ts or the existing styles test, whichever already builds a fixture.
+    - Make check/check.test.ts true to the merged checker (qualification.511, .711): the defaultRules order test lists exactly the order check/rules/index.ts declares after every merged rule (security, a11y, render, i18n, media, format and any later addition), and the combined fail fixture expectations name every finding the fixtures produce; never drop a rule from the order or an expectation from a fixture to pass.
+    - Repair the CLI test defects recorded in qualification.171 inside cli/commands.test.ts: the EDGE_PROBE ends with process.exit(0) so the probe process exits, the entryScript baseUrl assertion accepts either a quote or a backtick, the bun and deno target cases stop asserting the absence of createEdgeHandler, and every POST the tests send to rex dev carries the browser Origin header the security middleware requires; the Origin rule, the page budgets and every other assertion stay as they are.
+    - Make i18n real in apps (qualification.351): core/config.ts parseCheck accepts check.i18n { allow: string[] } beside tokens and ResolvedRexOptions carries it; the generated rex:app module in vite/app-module.ts imports app/locales/*.json when config.i18n is set and calls registerI18n(registry, { config, messages }) before the entry renders; server/routes/render.ts passes the server's i18n config into createRexContext so SSR resolves the locale from one place; cover the config parse in core/config.test.ts and the registration in vite/shell-components.test.ts with a two-locale fixture.
+    - Make the generator tests true to the merged generators (qualification.251): cli/new.test.ts APP_FILES lists eslint.config.js, .prettierrc and .prettierignore that the 2.5 lint generator writes, in listFiles order, and check/fixtures/all/fail gains one unformatted file with the matching format/prettier expectation in check.test.ts; nothing is removed from either list.
+    - rex/vite loads from plain Node (qualification.741): SSR_ATTRIBUTE moves to client/ssr-attribute.ts, a module with no client imports, used by both vite/entry-module.ts and client/hydrate.ts, and nothing under vite/ imports a .tsx module at module scope; prove it in shell-components.test.ts by importing the package's vite entry in a child node process and asserting it exits 0.
+    - _Requirements: 29.1, 29.3, 26.1, 26.2, 28.1, 28.2, 9.2, 12.3, 3.3_
+  - [ ] 7.6 Loaders declare invalidatedBy so a mutating action refreshes the loaders that name it — **Implemented - qualification pending**
+    - Deliver the invalidatedBy half of [design] loaders_api (qualification.121): PageLoaderInput and PageLoader in core/page.ts accept invalidatedBy, a list of action ids, validated like the other loader keys and added to LOADER_INPUT_KEYS; loaderInvalidatedBy in client/loaders.ts, reached from the act path, matches the mutating action id against both the action's invalidates list and each loader's invalidatedBy, so either side can declare the dependency; the sidecar and the manifest carry invalidatedBy with the loader.
+    - Prove it in core/page.test.ts (validation and manifest shape) and client/loaders.test.tsx (a mutation through act refetches a loader that names the action in invalidatedBy and leaves an unrelated loader untouched), against the real query client and the real action router.
+    - The rex/testing mount waits for the page, not the clock (qualification.741): renderPage and renderRegion wait until the page is mounted and out of data-rex-page-loading for up to a pageTimeout option that defaults to 15000 ms, so the first lazy page import under the rex plugin transform cannot time out on a loaded machine; the page assertions in testing.test.tsx and the demo page tests are unchanged and the demo test:unit passes 40 of 40.
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [ ] 7.7 One error pattern everywhere: catalogued RexError codes in core, the manifest scanner, the CLI arguments and the runtime adapters, one node server entry, and the peer licenses reviewed
+    - Convert every native throw and uncatalogued Error subclass left after 5.7 (qualification.211) to RexError with a catalogued code: core/store.ts, core/registry.ts, core/flow.ts (FlowDecisionError), core/standard.ts (StandardValidationError), core/actor.ts, core/serialize.ts, manifest/scan.ts (ManifestScanError, REX500 family) and cli/args.ts (RexArgsError); add the missing codes to REX_ERROR_CATALOG in core/errors.ts with hint and docs, move the test pins in store.conformance.ts, store.memory.test.ts, registry.test.ts, flow.test.ts, standard.test.ts, args.test.ts and commands.test.ts and server/flow.ts's read of the decision code to the catalogued codes, and regenerate docs/errors.md; no assertion is relaxed.
+    - RuntimeMissingError in server/adapters/runtime.ts extends RexError with code REX450 so its hint and docs come from the catalog (qualification.151), with the bun and deno adapters and adapters.test.ts kept working.
+    - One node server entry (qualification.132): startPrerenderedNodeServer delegates to startNodeServer and createPrerenderedNodeApp becomes a thin alias of createNodeApp now that createNodeApp forwards page paths; the generated server entry in cli/commands/build.ts and static-cache.test.ts follow only if an export name changes.
+    - Apply [decision] license_scope: tools/license-review.mjs walks peer dependencies and the demo closure as well as dependencies and optionalDependencies, with the allowlist the decision names; the script keeps failing on any license outside it (qualification.451).
+    - Static and native clients reach the app server without an app server factory (qualification.531): the server entry that rex build generates passes config.security and config.client into its default createRexServer so credentialed CORS applies out of the box, and security.origins admits app-scheme origins such as tauri://localhost and capacitor://localhost, validated as URL origins rather than http(s) only, with security.test.ts and cors.test.ts covering both and docs/platforms.md stating it.
+    - _Requirements: 3.3, 12.3, 27.1_
+  - [ ] 7.8 The core entry is the declaration surface, imports no zod and meets its 15 KB budget
+    - Curate src/index.ts to the declaration surface per [decision] core_exports: errors, ids, entity, store and the memory store, actor, policy, action, states, overlay, page, registry, journal, flow, protocol, deprecated, serialize, manifest/types and the Standard Schema helpers; config.ts is reachable only through rex/config, the field helpers of core/schema.ts only through a new src/schema/index.ts exported as rex/schema, and manifest/build.ts with the JSON Schema generator and sidecar.schema.ts only through a new src/manifest/index.ts exported as rex/manifest; package.json exports and tsconfig paths gain ./schema and ./manifest.
+    - No zod in the runtime per [decision] zod_boundary: entity, action and page keep the declared schema objects and stop computing JSON Schema at declaration time, buildManifest in rex/manifest derives the JSON Schema when the manifest is built, and check/runtime.ts reads the sidecar schema through rex/manifest; add src/zod-boundary.test.ts, which bundles the three budget entries with the same externals as the size test and fails if any module path containing /zod/ or zod/mini lands in the output of the core entry (the client and edge entries are asserted by 7.9).
+    - vite/budgets.ts adds zod to the externals of every entry per the revised [design] budgets and src/size.test.ts builds the entries in production mode (NODE_ENV=production, minified) so devtools and dev-only branches are stripped; the budgets stay 15, 30, 40 and 50 KB and the core entry passes its 15 KB assertion.
+    - The manifest and the sidecar carry each loader's invalidatedBy beside its action (qualification.762): manifest/types.ts and manifest/build.ts emit it, the sidecar schema admits it, and the manifest and sidecar tests assert it for a page declaring one.
+    - Every consumer follows the new entries: cli/templates.ts and cli/fixtures import the field helpers from @sidioralabs/rex/schema and z from zod/mini, check/rules/boundaries.ts admits @sidioralabs/rex/schema wherever @sidioralabs/rex is admitted for declarations and lets a page's hooks and regions import their own page.ts ({ role: page, samePage: true }) and app/flows ({ role: flow }) so useLoader(page, name) and useFlow(flow, instance) pass the import table (qualification.261), with docs/convention.md updated and the two recipe notes in docs/recipes removed, the demo app pages import from rex/schema, README.md line 83 and docs/primitives.md show the rex/schema import (qualification.722), and cli/codemods gains the 0.2 schema-entry codemod that rex migrate lists, with a migrate.test.ts case.
+    - _Requirements: 3.1, 3.2, 3.3, 2.4_
+  - [ ] 7.9 The client and edge entries carry no server code, no zod and no build-time work, and meet their 30 KB and 40 KB budgets
+    - The client runtime carries no server module (qualification.721): FLOW_RPC_PREFIX and the density values live in core/protocol.ts; client/agent/flow.tsx and client/agent/density.ts import them from there, and server/flow.ts and server/context.ts re-export the same names from protocol, so @orpc/server leaves the client bundle; useFlowClient builds its client from the runtime baseUrl and the credentialed apiFetch of client.apiOrigin instead of location.origin, so flow calls from a static or native client reach the app server (qualification.531).
+    - rex:app and the client entry read the prebuilt manifest: the vite plugin builds the manifest once per build and emits it as a virtual module that rex:app and client/agent/sidecar.tsx consume, neither bundle calls buildManifest or the JSON Schema generator, and the sidecar is validated with a zod-free structural check from rex/manifest types; the server bundles keep taking dist/manifest.json as 7.2 made them.
+    - The palette is a lazily loaded module: client/agent/palette.tsx exports a thin trigger that imports the cmdk palette module on the first open (mod+k, the data-rex trigger or ?act=) and the open is awaited where client/runtime.test.tsx relied on it being synchronous; devtools are excluded from production builds.
+    - The edge entry carries no config parser and no zod: server/app.ts takes resolved options with config parsing left to the CLI and the vite plugin, server/form.ts decodes form fields through the Standard Schema interface, and src/zod-boundary.test.ts gains the client and edge entries; the client entry passes 30 KB and the edge entry 40 KB with the unchanged assertions.
+    - _Requirements: 3.2, 3.4, 7.1, 12.3_
+  - [ ] 7.10 Generated apps are formatted as generated and prerendered pages carry the font preloads
+    - Every file rex new writes passes the rex/prettier preset untouched (qualification.751): the dataTemplate in cli/commands/new.ts and any other template string that the preset would rewrite are written in their formatted form, so rex check on a fresh app reports no format/prettier finding and the zero-findings assertions in commands.test.ts and new.test.ts pass without change.
+    - vite/prerender.ts creates its renderer with the resolved fonts, the same way the rex:render module does after 7.5, so prerendered ssg and static pages carry the font preloads and the font-display swap block; prerender.test.ts asserts a preload link for a fixture font.
+    - _Requirements: 13.2, 28.2_
+  - [ ] 8.1 A full CI pipeline with the package smoke test, the release path and the repository hygiene files
+    - ci.yml becomes the full pipeline on push and pull_request: verify (install, typecheck, pnpm -C packages/rex test which includes the size budgets), demo (build rex, rex check, the demo test script that 6.2 made run check, unit, operability, nojs, axe and vitals, with Playwright browsers installed), docs (pnpm docs:check), supply-chain (pnpm audit --prod and node tools/license-review.mjs) and package (build, pnpm pack, publint and are-the-types-wrong on the tarball, then sh tools/smoke-package.sh); every job pins actions by major version, uses pnpm with caching and a timeout, and the workflow declares read-only permissions.
+    - tools/smoke-package.sh packs @sidioralabs/rex, runs rex new from the tarball's own bin into a temp directory, installs the tarball there, runs rex check and rex build, starts the built node server on a free port, fetches the home page (expects the data-rex-page attribute and the sidecar script), /rex/manifest (expects JSON with the pages) and one RPC POST with an Origin header (expects 200), stops the server and exits non-zero on any miss; pnpm smoke runs it locally.
+    - release.yml runs the same gates plus the smoke test before publishing with provenance, and creates a GitHub release whose body is the CHANGELOG section of the tag; docs/releasing.md documents the path: bump the version in packages/rex/package.json, write the CHANGELOG entry, land main, push the v<version> tag, and the trusted publisher settings npm needs (repository Sidiora-Labs/rex-js, workflow release.yml, environment npm).
+    - Repository hygiene: .github/CODEOWNERS (@dev-paxeer owns everything, with spec/ and .github/ called out), .github/dependabot.yml (npm weekly grouped minor and patch, github-actions weekly), .github/ISSUE_TEMPLATE with bug, feature and agent-operability reports and a config.yml pointing security to the advisory channel, .github/pull_request_template.md asking for the spec task id and the verify evidence line, README.md gains the CI, npm version and license badges and an Install from npm section, and packages/rex/package.json gains repository, homepage and bugs.
+    - _Requirements: 36.1, 36.3, 27.1_
+  - [ ] 8.2 Coverage thresholds and the one-to-one test ratio, measured and enforced
+    - packages/rex gains @vitest/coverage-v8 and vitest.config.ts enables coverage over src with the test, conformance, fixture, testing-helper and .d.ts files excluded and thresholds lines 90, statements 90, functions 90, branches 80; pnpm -C packages/rex test:coverage runs it and the CI verify job uses that script; tools/test-ratio.mjs counts non-blank lines of test code (*.test.ts and .tsx, *.conformance.ts, src/testing, src/cli/fixtures, examples/demo/e2e and the demo page test folders) against source lines (packages/rex/src without those, examples/demo/app and tools) and exits non-zero under 1.0, printing both counts; pnpm test:ratio runs it in the CI verify job.
+    - Bring the suite to the thresholds and the ratio to at least 1.0 with real tests on the least covered modules the coverage report names (list the ten lowest in the task report with before and after figures): real code paths, real servers and registries, no mocks; no threshold is lowered and no file is excluded to pass.
+    - _Requirements: 36.2, 16.1_
+  - [ ] 8.3 The repository lints and formats itself with the rex presets
+    - A root eslint.config.js applies the rex/eslint preset with jsx-a11y to examples/demo/app and typescript-eslint recommended to packages/rex/src, examples/demo/e2e and tools; .prettierrc is the string @sidioralabs/rex/prettier and .prettierignore lists dist, .rex, AGENTS.md, pnpm-lock.yaml, docs/api, e2e/report and generated manifests; the root scripts lint, format and format:check run them.
+    - One format sweep of the whole repository with the preset, committed on its own as the first commit of the task; then every lint finding is fixed in place without disabling a rule, except a generated file that gets a targeted eslint-disable with its reason; ci.yml gains the lint job running pnpm lint and pnpm format:check, and CONTRIBUTING.md names the two commands.
+    - _Requirements: 36.4, 17.1_
 
 ## Task Dependency Graph
 
 ```json
 {
   "waves": [
-    { "id": 0,  "tasks": ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7"] },
-    { "id": 1,  "tasks": ["1.1", "1.2", "1.3", "1.4", "1.5"] },
-    { "id": 2,  "tasks": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6"] },
-    { "id": 3,  "tasks": ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6"] },
+    { "id": 0,  "tasks": ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"] },
+    { "id": 1,  "tasks": ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7"] },
+    { "id": 2,  "tasks": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"] },
+    { "id": 3,  "tasks": ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"] },
     { "id": 4,  "tasks": ["4.1", "4.2", "4.3", "4.4", "4.5"] },
-    { "id": 5,  "tasks": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7"] },
-    { "id": 6,  "tasks": ["6.1", "6.2", "6.3"] }
+    { "id": 5,  "tasks": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9"] },
+    { "id": 6,  "tasks": ["6.1", "6.2", "6.3"] },
+    { "id": 7,  "tasks": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9", "7.10"] },
+    { "id": 8,  "tasks": ["8.1", "8.2", "8.3"] }
   ]
 }
 ```

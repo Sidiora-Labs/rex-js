@@ -8,7 +8,8 @@ import { actor } from "../../core/actor.ts";
 import { page } from "../../core/page.ts";
 import { always } from "../../core/policy.ts";
 import { createRegistry } from "../../core/registry.ts";
-import { boolean, text, z } from "../../core/schema.ts";
+import { boolean, text } from "../../core/schema.ts";
+import { z } from "zod/mini";
 import { buildManifest } from "../../manifest/build.ts";
 import { memoryLedger } from "../../server/audit.ts";
 import { createRexServer } from "../../server/index.ts";
@@ -76,8 +77,13 @@ const owner = actor({ id: "owner" });
 
 function mount(path: string) {
   const server = createRexServer({ registry, ledger: memoryLedger(), actor: () => owner });
-  const fetch: RexFetch = async (input, init) =>
-    server.fetch(input instanceof Request ? input : new Request(input, init));
+  const fetch: RexFetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    if (request.method !== "GET" && !request.headers.has("origin")) {
+      request.headers.set("origin", new URL(request.url).origin);
+    }
+    return server.fetch(request);
+  };
   const RexApp = createRexApp({
     registry,
     manifest,

@@ -2,6 +2,7 @@
   "actions": [
     {
       "effect": "read",
+      "form": null,
       "id": "load-wallet",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -118,7 +119,8 @@
                   "x-rex-field": "money"
                 },
                 "dust": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "x-rex-field": "boolean"
                 },
                 "id": {
                   "maxLength": 128,
@@ -188,6 +190,7 @@
     },
     {
       "effect": "reversible",
+      "form": null,
       "id": "pick-contact",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -238,6 +241,7 @@
     },
     {
       "effect": "reversible",
+      "form": null,
       "id": "pick-token",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -288,6 +292,7 @@
     },
     {
       "effect": "irreversible",
+      "form": null,
       "id": "send",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -342,6 +347,7 @@
     },
     {
       "effect": "reversible",
+      "form": null,
       "id": "toggle-hide-dust",
       "input": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -634,6 +640,7 @@
       "actions": [
         "toggle-hide-dust"
       ],
+      "cache": null,
       "chrome": {
         "back": null,
         "header": true,
@@ -642,6 +649,7 @@
       },
       "draft": "route",
       "id": "portfolio",
+      "loaders": [],
       "overlays": [
         {
           "binding": "url",
@@ -654,6 +662,7 @@
         "properties": {},
         "type": "object"
       },
+      "paths": false,
       "policy": {
         "kind": "can",
         "permission": "viewer.read",
@@ -665,6 +674,8 @@
         "actions",
         "holdings"
       ],
+      "render": "ssr",
+      "revalidate": null,
       "route": "/",
       "routeParams": [],
       "states": [
@@ -677,7 +688,8 @@
         "recoverable-error",
         "terminal-error",
         "ready"
-      ]
+      ],
+      "transition": "none"
     },
     {
       "actions": [
@@ -685,6 +697,7 @@
         "pick-token",
         "send"
       ],
+      "cache": null,
       "chrome": {
         "back": "portfolio",
         "header": true,
@@ -693,6 +706,7 @@
       },
       "draft": "route",
       "id": "send",
+      "loaders": [],
       "overlays": [
         {
           "binding": "region",
@@ -710,6 +724,7 @@
         "properties": {},
         "type": "object"
       },
+      "paths": false,
       "policy": {
         "kind": "can",
         "permission": "viewer.read",
@@ -721,6 +736,8 @@
         "confirm",
         "success"
       ],
+      "render": "ssr",
+      "revalidate": null,
       "route": "/send",
       "routeParams": [],
       "states": [
@@ -733,7 +750,8 @@
         "recoverable-error",
         "terminal-error",
         "ready"
-      ]
+      ],
+      "transition": "none"
     }
   ],
   "policies": [

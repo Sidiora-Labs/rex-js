@@ -3,12 +3,14 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
+import { useLocation } from "wouter";
 import { action } from "../core/action.ts";
 import { actor, anonymousActor } from "../core/actor.ts";
 import { page } from "../core/page.ts";
 import { always, policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { text, z } from "../core/schema.ts";
+import { text } from "../core/schema.ts";
+import { z } from "zod/mini";
 import { buildManifest } from "../manifest/build.ts";
 import type { Manifest } from "../manifest/types.ts";
 import {
@@ -19,7 +21,11 @@ import {
   parseManifest,
   RexStartupError,
   type RexFetch,
+  type RexNavigateEvent,
+  type RexOutcomeEvent,
 } from "./app.tsx";
+import { useAct } from "./act.ts";
+import { APP_OUTCOME_KEY, useOutcome } from "./outcome.ts";
 import {
   ACTOR_HEADER,
   DENSITY_HEADER,
@@ -273,5 +279,127 @@ describe("startup helpers", () => {
       "manifest and registry disagree on pages (missing from the manifest: home)",
     );
     expect(checkManifest(manifest, registry)).toBe(manifest);
+  });
+});
+
+describe("createRexApp hooks", () => {
+  function Invoker() {
+    const echoing = useAct(echo);
+    const outcome = useOutcome(APP_OUTCOME_KEY);
+    return (
+      <div>
+        <p data-testid="outcome">{outcome === null ? "none" : outcome.message}</p>
+        <button type="button" onClick={() => void echoing.run({ text: "hello" })}>
+          echo
+        </button>
+      </div>
+    );
+  }
+
+  it("reports every recorded action outcome to onOutcome and still shows it", async () => {
+    const { fetch, requests } = server();
+    const events: RexOutcomeEvent[] = [];
+    const RexApp = createRexApp({
+      registry,
+      manifest,
+      actor: signedIn,
+      fetch,
+      baseUrl: "http://rex.test",
+      onOutcome: (event) => events.push(event),
+    });
+    render(
+      <RexApp>
+        <Invoker />
+      </RexApp>,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "echo" }));
+    });
+    await waitFor(() => expect(screen.getByTestId("outcome").textContent).toBe("Echo succeeded"));
+    expect(requests).toEqual([`POST ${REX_RPC_PATH}/echo`]);
+    expect(events).toHaveLength(1);
+    const [event] = events;
+    expect(event).toMatchObject({
+      page: APP_OUTCOME_KEY,
+      actionId: "echo",
+      ok: true,
+      message: "Echo succeeded",
+    });
+    expect(Number.isNaN(Date.parse(event?.at ?? ""))).toBe(false);
+    expect(Object.isFrozen(event)).toBe(true);
+  });
+
+  it("reports the initial location and every navigation to onNavigate with the matched page", async () => {
+    globalThis.history.replaceState(null, "", "/");
+    const events: RexNavigateEvent[] = [];
+    function Mover() {
+      const [, navigate] = useLocation();
+      return (
+        <div>
+          <button type="button" onClick={() => navigate("/elsewhere?tab=a")}>
+            away
+          </button>
+          <button type="button" onClick={() => navigate("/")}>
+            home
+          </button>
+        </div>
+      );
+    }
+    const RexApp = createRexApp({
+      registry,
+      manifest,
+      actor: signedIn,
+      fetch: server().fetch,
+      baseUrl: "http://rex.test",
+      onNavigate: (event) => events.push(event),
+    });
+    render(
+      <RexApp>
+        <Mover />
+      </RexApp>,
+    );
+    await waitFor(() => expect(events).toHaveLength(1));
+    expect(events[0]).toEqual({ path: "/", search: "", href: "/", page: "home", from: null });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "away" }));
+    });
+    await waitFor(() => expect(events).toHaveLength(2));
+    expect(events[1]).toEqual({
+      path: "/elsewhere",
+      search: "tab=a",
+      href: "/elsewhere?tab=a",
+      page: null,
+      from: "/",
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "home" }));
+    });
+    await waitFor(() => expect(events).toHaveLength(3));
+    expect(events[2]).toEqual({
+      path: "/",
+      search: "",
+      href: "/",
+      page: "home",
+      from: "/elsewhere?tab=a",
+    });
+  });
+
+  it("does not report navigation before startup has finished", async () => {
+    globalThis.history.replaceState(null, "", "/");
+    const events: RexNavigateEvent[] = [];
+    const fetch: RexFetch = async () => new Response("down", { status: 503 });
+    const RexApp = createRexApp({
+      registry,
+      fetch,
+      baseUrl: "http://rex.test",
+      onNavigate: (event) => events.push(event),
+    });
+    render(
+      <RexApp>
+        <Probe />
+      </RexApp>,
+    );
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("503"));
+    expect(events).toEqual([]);
   });
 });

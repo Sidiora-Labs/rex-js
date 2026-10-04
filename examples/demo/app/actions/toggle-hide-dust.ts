@@ -1,9 +1,10 @@
-import { action, boolean, z } from "@sidioralabs/rex";
+import { action, boolean } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 import { accountIdOf, accounts, requireAccount } from "../data/wallet.ts";
 import { wallet } from "../policies/wallet.ts";
 
 export const toggleHideDust = action("toggle-hide-dust", {
-  input: z.object({ hide: boolean().optional() }),
+  input: z.object({ hide: z.optional(boolean()) }),
   output: z.object({ hideDust: boolean() }),
   policy: wallet.can("wallet.manage"),
   effect: "reversible",

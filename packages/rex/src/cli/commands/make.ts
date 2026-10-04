@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { Command } from "commander";
+import { RexError } from "../../core/errors.ts";
+import { ARGS_ERROR, type RexCommand as Command } from "../args.ts";
 import type { RexCliIO } from "../index.ts";
 import {
   actionTemplate,
@@ -22,7 +23,7 @@ export const DECLARATION_KINDS = ["action", "entity", "policy", "flow"] as const
 export type DeclarationKind = (typeof DECLARATION_KINDS)[number];
 
 export const MAKE_REFUSED = "rex.make.refused";
-export const INVALID_ARGUMENT = "commander.invalidArgument";
+export const INVALID_ARGUMENT = ARGS_ERROR.invalidArgument;
 
 export interface PlannedFile {
   readonly kind: "file";
@@ -37,15 +38,15 @@ export interface PlannedDir {
 
 export type PlannedEntry = PlannedFile | PlannedDir;
 
-export class MakeError extends Error {
-  readonly code: typeof MAKE_REFUSED | typeof INVALID_ARGUMENT;
+export class MakeError extends RexError {
+  readonly cliCode: typeof MAKE_REFUSED | typeof INVALID_ARGUMENT;
   readonly exitCode: number;
 
-  constructor(code: typeof MAKE_REFUSED | typeof INVALID_ARGUMENT, message: string) {
-    super(message);
+  constructor(cliCode: typeof MAKE_REFUSED | typeof INVALID_ARGUMENT, message: string) {
+    super(cliCode === MAKE_REFUSED ? "REX602" : "REX601", message);
     this.name = "MakeError";
-    this.code = code;
-    this.exitCode = code === MAKE_REFUSED ? 1 : 2;
+    this.cliCode = cliCode;
+    this.exitCode = cliCode === MAKE_REFUSED ? 1 : 2;
   }
 }
 
@@ -192,7 +193,7 @@ function report(command: Command, io: RexCliIO, make: () => string[]): void {
     written = make();
   } catch (error) {
     if (error instanceof MakeError) {
-      command.error(`rex make: ${error.message}`, { code: error.code, exitCode: error.exitCode });
+      command.error(`rex make: ${error.detail}`, { code: error.cliCode, exitCode: error.exitCode });
     }
     throw error;
   }

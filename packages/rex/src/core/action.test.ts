@@ -10,8 +10,11 @@ import {
 } from "./action.ts";
 import { actor } from "./actor.ts";
 import { RexDeclarationError } from "./entity.ts";
+import { RexDeclarationOptionError, type RexErrorCode } from "./errors.ts";
 import { always, policy } from "./policy.ts";
-import { boolean, money, ref, text, z } from "./schema.ts";
+import { boolean, money, ref, text } from "./schema.ts";
+import { z } from "zod/mini";
+import { isZodSchema, standardSource, type StandardSchemaV1 } from "./standard.ts";
 
 const wallet = policy("wallet", { permissions: ["send"], resolve: () => ["send"] });
 
@@ -179,5 +182,136 @@ describe("shortcuts", () => {
   it("reserves the palette and dismissal keys", () => {
     expect(() => validateShortcut("mod+k")).toThrow("reserved");
     expect(() => validateShortcut("escape")).toThrow("reserved");
+  });
+});
+
+describe("0.2 action options", () => {
+  it("defaults form and jsonSchema to null", () => {
+    expect(toggle.form).toBeNull();
+    expect(toggle.jsonSchema).toBeNull();
+  });
+
+  it("records form options", () => {
+    const declared = action("send-form", {
+      ...base,
+      effect: "irreversible",
+      form: { redirect: "/sent", confirmTitle: "Send funds?" },
+    });
+    expect(declared.form).toEqual({ redirect: "/sent", confirmTitle: "Send funds?" });
+    expect(Object.isFrozen(declared.form)).toBe(true);
+    const partial = action("partial", { ...base, form: {} });
+    expect(partial.form).toEqual({ redirect: null, confirmTitle: null });
+  });
+
+  it("uses a declared JSON Schema override instead of deriving one", () => {
+    const input = { type: "object", properties: { at: { type: "string", format: "date-time" } } };
+    const declared = action("schedule", {
+      ...base,
+      input: z.object({ at: z.date() }),
+      jsonSchema: { input },
+    });
+    expect(declared.jsonSchema).toEqual({ input, output: null });
+    expect(declared.inputJsonSchema).toEqual(input);
+    expect(declared.outputJsonSchema.type).toBe("object");
+  });
+
+  function optionError(run: () => unknown): { code: RexErrorCode; field: string } {
+    try {
+      run();
+    } catch (error) {
+      expect(error).toBeInstanceOf(RexDeclarationOptionError);
+      const failure = error as RexDeclarationOptionError;
+      expect(failure.declaration).toBe("action");
+      return { code: failure.code, field: failure.field };
+    }
+    throw new Error("expected a RexDeclarationOptionError");
+  }
+
+  it.each([
+    [{ form: "yes" }, "REX207", "form"],
+    [{ form: { redirect: "sent" } }, "REX207", "form.redirect"],
+    [{ form: { redirect: "//evil.example.com" } }, "REX207", "form.redirect"],
+    [{ form: { confirmTitle: " " } }, "REX207", "form.confirmTitle"],
+    [{ form: { method: "get" } }, "REX207", "form.method"],
+    [{ jsonSchema: [] }, "REX208", "jsonSchema"],
+    [{ jsonSchema: { params: {} } }, "REX208", "jsonSchema.params"],
+    [{ jsonSchema: { input: "object" } }, "REX208", "jsonSchema.input"],
+    [{ jsonSchema: { output: [] } }, "REX208", "jsonSchema.output"],
+  ] as const)("rejects %j with %s naming %s", (extra, code, field) => {
+    expect(optionError(() => action("probe", { ...base, ...extra } as never))).toEqual({
+      code,
+      field,
+    });
+  });
+});
+
+describe("Standard Schema actions", () => {
+  const amountInput: StandardSchemaV1<{ amount: string }, { amount: number }> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) => {
+        const raw = (value as { amount?: unknown } | null)?.amount;
+        const amount = typeof raw === "string" ? Number(raw) : Number.NaN;
+        return Number.isFinite(amount) && amount > 0
+          ? { value: { amount } }
+          : { issues: [{ message: "must be a positive decimal", path: ["amount"] }] };
+      },
+    },
+  };
+  const receipt: StandardSchemaV1<{ id: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "hand",
+      validate: (value) =>
+        typeof (value as { id?: unknown } | null)?.id === "string"
+          ? { value: value as { id: string } }
+          : { issues: [{ message: "must carry an id", path: ["id"] }] },
+    },
+  };
+  const pay = action("pay", {
+    input: amountInput,
+    output: receipt,
+    policy: always(),
+    effect: "reversible",
+    handler: (input) => ({ id: `pay-${input.amount.toFixed(2)}` }),
+  });
+
+  it("accepts a hand-written Standard Schema for input and output", async () => {
+    expect(isZodSchema(pay.input)).toBe(true);
+    expect(standardSource(pay.input)).toBe(amountInput);
+    expect(standardSource(pay.output)).toBe(receipt);
+    expect(pay.input.parse({ amount: "2.5" })).toEqual({ amount: 2.5 });
+    expect(pay.input.safeParse({ amount: "nope" }).success).toBe(false);
+    expect(await pay.handler({ amount: 2.5 }, ctx)).toEqual({ id: "pay-2.50" });
+  });
+
+  it("types input, parsed input and output from the Standard Schema", () => {
+    expectTypeOf<ActionInput<typeof pay>>().toEqualTypeOf<{ amount: string }>();
+    expectTypeOf<ActionParsedInput<typeof pay>>().toEqualTypeOf<{ amount: number }>();
+    expectTypeOf<ActionOutput<typeof pay>>().toEqualTypeOf<{ id: string }>();
+  });
+
+  it("leaves the JSON Schema to the declared override", () => {
+    expect(pay.inputJsonSchema).toEqual({});
+    const declared = action("pay-declared", {
+      input: amountInput,
+      output: receipt,
+      policy: always(),
+      effect: "reversible",
+      jsonSchema: {
+        input: { type: "object", properties: { amount: { type: "string" } }, required: ["amount"] },
+        output: { type: "object", properties: { id: { type: "string" } } },
+      },
+      handler: () => ({ id: "x" }),
+    });
+    expect(declared.inputJsonSchema.required).toEqual(["amount"]);
+    expect(declared.outputJsonSchema.properties).toEqual({ id: { type: "string" } });
+  });
+
+  it("refuses an input that is not a Standard Schema", () => {
+    expect(fieldOf(() => action("a", { ...base, input: { parse: () => ({}) } } as never))).toBe(
+      "input",
+    );
   });
 });

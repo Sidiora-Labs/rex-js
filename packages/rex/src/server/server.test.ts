@@ -9,7 +9,8 @@ import { memoryJournal } from "../core/journal.ts";
 import { page } from "../core/page.ts";
 import { always, never, policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
-import { boolean, id, money, ref, text, z } from "../core/schema.ts";
+import { boolean, id, money, ref, text } from "../core/schema.ts";
+import { z } from "zod/mini";
 import { buildManifest, stableStringify } from "../manifest/build.ts";
 import { REX_ACTOR_HEADER, REX_DENSITY_HEADER } from "../core/protocol.ts";
 import {
@@ -22,11 +23,16 @@ import {
   createRexContext,
   createRexServer,
   memoryLedger,
+  requestNonce,
+  CSP_HEADER,
   type FlowRouter,
   type Ledger,
   type RegistryRouterClient,
 } from "./index.ts";
 import type { RouterClient } from "@orpc/server";
+
+const ORIGIN = "http://rex.test";
+const LOCAL_ORIGIN = "http://localhost";
 
 const wallet = policy("wallet", {
   permissions: ["send"],
@@ -108,6 +114,7 @@ function clientFor(
     url: "http://rex.test/rex/rpc",
     headers: ({ context }) => ({
       authorization: `Bearer ${as}`,
+      origin: ORIGIN,
       ...(density === undefined ? {} : { [DENSITY_HEADER]: density }),
       ...(context.confirm === undefined ? {} : { [CONFIRM_HEADER]: context.confirm }),
     }),
@@ -264,11 +271,23 @@ describe("createRexServer", () => {
       expect(plain).toEqual({ actor: anonymousActor, density: "default" });
     });
 
+    it("seeds the context nonce from the request so the CSP header and SSR share it", async () => {
+      const request = new Request(`${ORIGIN}/rex/manifest`);
+      const context = await createRexContext(request, resolveActor);
+      expect(context.nonce).toMatch(/^[0-9a-f]{32}$/);
+      expect(context.nonce).toBe(requestNonce(request));
+      expect((await createRexContext(request, resolveActor)).nonce).toBe(context.nonce);
+      const other = await createRexContext(new Request(`${ORIGIN}/rex/manifest`), resolveActor);
+      expect(other.nonce).not.toBe(context.nonce);
+      const response = await app.fetch(request);
+      expect(response.headers.get(CSP_HEADER)).toContain(`'nonce-${context.nonce}'`);
+    });
+
     it("echoes the resolved density on RPC responses", async () => {
       let observed: string | null = null;
       const link = new RPCLink({
         url: "http://rex.test/rex/rpc",
-        headers: { authorization: "Bearer alice", [DENSITY_HEADER]: "agent" },
+        headers: { authorization: "Bearer alice", [DENSITY_HEADER]: "agent", origin: ORIGIN },
         fetch: async (request) => {
           const response = await app.fetch(request);
           observed = response.headers.get(DENSITY_HEADER);
@@ -284,13 +303,17 @@ describe("createRexServer", () => {
     it("rejects an unknown density with 400 before any action runs", async () => {
       const response = await app.request("/rex/rpc/toggle-dust", {
         method: "POST",
-        headers: { "content-type": "application/json", [DENSITY_HEADER]: "compact" },
+        headers: {
+          "content-type": "application/json",
+          [DENSITY_HEADER]: "compact",
+          origin: LOCAL_ORIGIN,
+        },
         body: JSON.stringify({ json: { hide: true } }),
       });
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({
         code: "BAD_REQUEST",
-        message: 'x-rex-density must be one of default, agent, received "compact"',
+        message: 'REX321 x-rex-density must be one of default, agent, received "compact"',
       });
       expect(await ledger.list()).toEqual([]);
       await expect(
@@ -302,7 +325,7 @@ describe("createRexServer", () => {
   it("returns 404 for unknown procedures and paths", async () => {
     const response = await app.request("/rex/rpc/nope", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", origin: LOCAL_ORIGIN },
       body: JSON.stringify({ json: {} }),
     });
     expect(response.status).toBe(404);
@@ -334,7 +357,7 @@ describe("createRexServer", () => {
       createORPCClient(
         new RPCLink({
           url: `http://rex.test${FLOW_RPC_PREFIX}`,
-          headers: { authorization: `Bearer ${as}` },
+          headers: { authorization: `Bearer ${as}`, origin: ORIGIN },
           fetch: async (request) => server.fetch(request),
         }),
       );

@@ -1,9 +1,23 @@
 import { useCallback, useMemo, useState } from "react";
 import { useLocation, useSearch } from "wouter";
+import { RexError } from "../core/errors.ts";
 import type { AnyPage, PageDraft, PageParamsInput } from "../core/page.ts";
-import type { z } from "../core/schema.ts";
-import { useRegistry } from "./context.ts";
-import { DRAFT_QUERY_KEY, pageHref, useActivePage, type ParamIssue } from "./router.tsx";
+import {
+  validateStandardSync,
+  type StandardInferOutput,
+  type StandardSchemaV1,
+} from "../core/standard.ts";
+import { useManifest, useRegistry } from "./context.ts";
+import {
+  DRAFT_QUERY_KEY,
+  manifestParamsSchema,
+  pageHref,
+  paramKeyAccepted,
+  useActivePage,
+  useLocaleHref,
+  useRouteChange,
+  type ParamIssue,
+} from "./router.tsx";
 
 export type NavParamsArg<Pg extends AnyPage> = {} extends PageParamsInput<Pg>
   ? [params?: PageParamsInput<Pg>]
@@ -37,27 +51,29 @@ function describeIssues(page: string, issues: readonly ParamIssue[]): string {
 
 export function useNav(): Nav {
   const registry = useRegistry();
+  const manifest = useManifest();
   const active = useActivePage();
-  const [, navigate] = useLocation();
+  const change = useRouteChange();
+  const localize = useLocaleHref();
 
   const hrefFor = useCallback(
     (target: AnyPage, params: unknown): NavOutcome => {
       if (registry.find("page", target.id) !== target) {
         return failure(target.id, `page "${target.id}" is not registered in this app`);
       }
-      const result = pageHref(target, params ?? {});
+      const result = pageHref(target, params ?? {}, {}, manifestParamsSchema(manifest, target));
       if (!result.ok) {
         return failure(target.id, describeIssues(target.id, result.issues), result.issues);
       }
-      return { ok: true, page: target.id, href: result.href };
+      return { ok: true, page: target.id, href: localize(result.href) };
     },
-    [registry],
+    [localize, manifest, registry],
   );
 
   return useMemo<Nav>(() => {
     const go = (target: AnyPage, params: unknown, replace: boolean): NavOutcome => {
       const outcome = hrefFor(target, params);
-      if (outcome.ok) navigate(outcome.href, { replace });
+      if (outcome.ok) change(target, outcome.href, { replace });
       return outcome;
     };
     return {
@@ -74,15 +90,15 @@ export function useNav(): Nav {
         if (target === undefined) {
           return failure(backId, `back target "${backId}" is not registered in this app`);
         }
-        const shape = target.params.shape as Record<string, unknown>;
+        const targetParams = manifestParamsSchema(manifest, target);
         const carried: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(active.params)) {
-          if (key in shape) carried[key] = value;
+          if (paramKeyAccepted(targetParams, key)) carried[key] = value;
         }
         return go(target, carried, false);
       },
     };
-  }, [active, hrefFor, navigate, registry]);
+  }, [active, change, hrefFor, manifest, registry]);
 }
 
 export interface Draft<T> {
@@ -95,7 +111,10 @@ export function draftStorageKey(page: string): string {
   return `rex:draft:${page}`;
 }
 
-function parseDraft<S extends z.ZodType>(schema: S, raw: string | null): z.output<S> | null {
+function parseDraft<S extends StandardSchemaV1>(
+  schema: S,
+  raw: string | null,
+): StandardInferOutput<S> | null {
   if (raw === null) return null;
   let value: unknown;
   try {
@@ -103,8 +122,8 @@ function parseDraft<S extends z.ZodType>(schema: S, raw: string | null): z.outpu
   } catch {
     return null;
   }
-  const parsed = schema.safeParse(value);
-  return parsed.success ? parsed.data : null;
+  const parsed = validateStandardSync(schema, value);
+  return parsed.issues === undefined ? parsed.value : null;
 }
 
 function readSession(key: string): string | null {
@@ -124,9 +143,9 @@ function writeSession(key: string, value: string | null): void {
   }
 }
 
-export function useDraft<S extends z.ZodType>(schema: S): Draft<z.output<S>> {
+export function useDraft<S extends StandardSchemaV1>(schema: S): Draft<StandardInferOutput<S>> {
   const active = useActivePage();
-  if (active === null) throw new Error("rex: useDraft must be called inside an active page");
+  if (active === null) throw new RexError("REX306", "rex: useDraft must be called inside an active page");
   const declared = active.page;
   const [location, navigate] = useLocation();
   const search = useSearch();
@@ -144,9 +163,9 @@ export function useDraft<S extends z.ZodType>(schema: S): Draft<z.output<S>> {
   const value = useMemo(() => parseDraft(schema, raw), [schema, raw]);
 
   const set = useCallback(
-    (next: z.output<S> | null) => {
-      if (next !== null && !schema.safeParse(next).success) {
-        throw new Error(`rex: draft for page "${declared.id}" does not match its schema`);
+    (next: StandardInferOutput<S> | null) => {
+      if (next !== null && validateStandardSync(schema, next).issues !== undefined) {
+        throw new RexError("REX325", `rex: draft for page "${declared.id}" does not match its schema`);
       }
       const encoded = next === null ? null : JSON.stringify(next);
       if (declared.draft === "route") {
@@ -159,7 +178,7 @@ export function useDraft<S extends z.ZodType>(schema: S): Draft<z.output<S>> {
         writeSession(storageKey, encoded);
         setSessionRaw(encoded);
       } else {
-        throw new Error(`rex: page "${declared.id}" declares draft "none"`);
+        throw new RexError("REX325", `rex: page "${declared.id}" declares draft "none"`);
       }
     },
     [declared, location, navigate, schema, search, storageKey],

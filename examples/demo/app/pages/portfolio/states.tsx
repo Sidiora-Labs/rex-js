@@ -1,4 +1,5 @@
 import type { StateProps } from "@sidioralabs/rex";
+import Button from "../../components/Button.tsx";
 
 export function Loading() {
   return <p role="status">Loading portfolio</p>;
@@ -12,9 +13,9 @@ export function Stale({ retry }: StateProps) {
   return (
     <section role="status">
       <p>Portfolio may be out of date</p>
-      <button type="button" onClick={retry}>
+      <Button onClick={retry}>
         Refresh
-      </button>
+      </Button>
     </section>
   );
 }
@@ -23,9 +24,9 @@ export function Partial({ retry }: StateProps) {
   return (
     <section role="status">
       <p>Part of portfolio could not be loaded</p>
-      <button type="button" onClick={retry}>
+      <Button onClick={retry}>
         Refresh
-      </button>
+      </Button>
     </section>
   );
 }
@@ -34,9 +35,9 @@ export function Offline({ retry }: StateProps) {
   return (
     <section role="status">
       <p>You are offline; portfolio will refresh when the connection returns</p>
-      <button type="button" onClick={retry}>
+      <Button onClick={retry}>
         Refresh
-      </button>
+      </Button>
     </section>
   );
 }
@@ -50,9 +51,9 @@ export function RecoverableError({ error, retry }: StateProps) {
     <section role="alert">
       <p>Portfolio failed to load</p>
       {error === null ? null : <p>{error.message}</p>}
-      <button type="button" onClick={retry}>
+      <Button onClick={retry}>
         Try again
-      </button>
+      </Button>
     </section>
   );
 }

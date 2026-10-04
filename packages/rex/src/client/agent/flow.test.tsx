@@ -6,15 +6,16 @@ import { memoryLocation } from "wouter/memory-location";
 import * as core from "../../index.ts";
 import { action } from "../../core/action.ts";
 import { actor, type Actor } from "../../core/actor.ts";
-import { flow } from "../../core/flow.ts";
+import { flow, type AnyFlow } from "../../core/flow.ts";
 import { memoryJournal } from "../../core/journal.ts";
 import { page } from "../../core/page.ts";
 import { always, can } from "../../core/policy.ts";
 import { createRegistry } from "../../core/registry.ts";
-import { money, text, z } from "../../core/schema.ts";
+import { money, text } from "../../core/schema.ts";
+import { z } from "zod/mini";
 import { buildManifest } from "../../manifest/build.ts";
 import { validateSidecar, type SidecarPayload } from "../../manifest/sidecar.schema.ts";
-import { memoryLedger } from "../../server/audit.ts";
+import { AUDIT_OK, digest, memoryLedger, type Ledger } from "../../server/audit.ts";
 import { mountFlows } from "../../server/flow.ts";
 import { createRexServer } from "../../server/index.ts";
 import { createRexApp, type RexFetch } from "../app.tsx";
@@ -22,7 +23,13 @@ import { createOutcomeStore, OutcomeProvider, type OutcomeStore } from "../outco
 import { definePageModules, view, type PageModuleSet } from "../page.tsx";
 import { Shell, ShellOutcome, type OutcomeSlotProps } from "../shell.tsx";
 import { ConfirmProvider, PageInvokers } from "./confirm.tsx";
-import { FlowClientProvider, createFlowClient, useFlow, type FlowClient } from "./flow.tsx";
+import {
+  FlowClientProvider,
+  createFlowClient,
+  gateAffordanceId,
+  useFlow,
+  type FlowClient,
+} from "./flow.tsx";
 import { RexPalette } from "./palette.tsx";
 import {
   AffordanceRegistryProvider,
@@ -74,6 +81,8 @@ const clerk = actor({ id: "clerk" });
 interface Mounted {
   readonly store: OutcomeStore;
   readonly client: FlowClient;
+  readonly ledger: Ledger;
+  readonly payout: AnyFlow;
 }
 
 function mount(subject: Actor, instance: string): Mounted {
@@ -108,10 +117,16 @@ function mount(subject: Actor, instance: string): Mounted {
   const pages: readonly PageModuleSet[] = [
     definePageModules({ page: payouts, view: view(() => <Payout />), states: {} }),
   ];
-  const server = createRexServer({ registry, ledger: memoryLedger(), actor: () => subject });
-  mountFlows(server, { flows: [payout], actor: () => subject });
-  const fetch: RexFetch = async (input, init) =>
-    server.fetch(input instanceof Request ? input : new Request(input, init));
+  const ledger = memoryLedger();
+  const server = createRexServer({ registry, ledger, actor: () => subject });
+  mountFlows(server, { flows: [payout], actor: () => subject, ledger });
+  const fetch: RexFetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    if (request.method !== "GET" && !request.headers.has("origin")) {
+      request.headers.set("origin", new URL(request.url).origin);
+    }
+    return server.fetch(request);
+  };
   const client = createFlowClient({ baseUrl: "http://rex.test", fetch });
   const RexApp = createRexApp({
     registry,
@@ -146,7 +161,7 @@ function mount(subject: Actor, instance: string): Mounted {
       </AffordanceRegistryProvider>
     </OutcomeProvider>,
   );
-  return { store, client };
+  return { store, client, ledger, payout };
 }
 
 function sidecar(): SidecarPayload {
@@ -163,6 +178,27 @@ async function click(element: HTMLElement) {
   await act(async () => {
     fireEvent.click(element);
   });
+}
+
+async function expectDecisionAudit(
+  mounted: Mounted,
+  subject: Actor,
+  instance: string,
+  decision: "approve" | "reject",
+  outcome: string,
+) {
+  const actionId = gateAffordanceId(mounted.payout, "review", decision);
+  const records = await mounted.ledger.list({ actionId });
+  expect(records).toHaveLength(1);
+  expect(records[0]).toMatchObject({
+    actor: subject.id,
+    actionId: `payout.review.${decision}`,
+    inputDigest: await digest({ flow: "payout", instance, gate: "review", decision }),
+    outcome,
+    effect: "irreversible",
+  });
+  const other = decision === "approve" ? "reject" : "approve";
+  expect(await mounted.ledger.list({ actionId: `payout.review.${other}` })).toEqual([]);
 }
 
 async function pause() {
@@ -235,8 +271,10 @@ describe("useFlow", () => {
   });
 
   it("resumes the flow on approve after confirmation", async () => {
-    const { store } = mount(approver, "p-2");
+    const mounted = mount(approver, "p-2");
+    const { store } = mounted;
     await pause();
+    expect(await mounted.ledger.list()).toEqual([]);
     await click(screen.getByRole("button", { name: "Approve" }));
     const dialog = await waitFor(() =>
       screen.getByRole("alertdialog", { name: "Confirm Approve Review payout" }),
@@ -253,10 +291,12 @@ describe("useFlow", () => {
     await waitFor(() => expect(sidecar().actions).toEqual([]));
     expect(sidecar().outcome).toMatchObject({ action: "payout.review.approve", ok: true });
     expect(screen.queryByRole("button", { name: "Approve" })).toBeNull();
+    await expectDecisionAudit(mounted, approver, "p-2", "approve", AUDIT_OK);
   });
 
   it("terminates the flow on reject chosen from the palette", async () => {
-    const { store } = mount(approver, "p-3");
+    const mounted = mount(approver, "p-3");
+    const { store } = mounted;
     await pause();
     await act(async () => {
       fireEvent.keyDown(window, { key: "k", code: "KeyK", ctrlKey: true });
@@ -276,10 +316,12 @@ describe("useFlow", () => {
     expect(charged).toEqual([]);
     expect(store.get("payouts")).toMatchObject({ actionId: "payout.review.reject", ok: true });
     await waitFor(() => expect(sidecar().actions).toEqual([]));
+    await expectDecisionAudit(mounted, approver, "p-3", "reject", AUDIT_OK);
   });
 
   it("shows the gate as not allowed for an actor outside the approvers and the server refuses", async () => {
-    const { client } = mount(clerk, "p-4");
+    const mounted = mount(clerk, "p-4");
+    const { client } = mounted;
     await pause();
     const actions = sidecar().actions;
     expect(actions.map((entry) => [entry.id, entry.allowed, entry.reason])).toEqual([
@@ -304,5 +346,6 @@ describe("useFlow", () => {
       completed: 1,
     });
     expect(charged).toEqual([]);
+    await expectDecisionAudit(mounted, clerk, "p-4", "approve", "FORBIDDEN");
   });
 });

@@ -1,6 +1,8 @@
 import { useQueryClient, type Query } from "@tanstack/react-query";
 import {
+  Suspense,
   createContext,
+  lazy,
   useCallback,
   useContext,
   useLayoutEffect,
@@ -8,9 +10,11 @@ import {
   useReducer,
   useRef,
   type ComponentType,
+  type LazyExoticComponent,
   type ReactNode,
 } from "react";
 import type { ActionInput, AnyAction } from "../core/action.ts";
+import { RexError } from "../core/errors.ts";
 import { regionAddress, regionName } from "../core/ids.ts";
 import type { AnyPage, PageStatesModule } from "../core/page.ts";
 import { titleFromId } from "../core/page.ts";
@@ -23,6 +27,8 @@ import {
 import type { ActResult, RunOptions } from "./act.ts";
 import { AddressScope } from "./agent/address.tsx";
 import { ConfirmContext, ConfirmProvider, useInvoke, type InvokeHandle } from "./agent/confirm.tsx";
+import { PageStatesContext, RegionBoundary } from "./boundary.tsx";
+import { pageLoaderQueryHashes, usePageLoaderQueries } from "./loaders.ts";
 import { useNav, type Nav } from "./nav.ts";
 import { useActivePage, type PageResolution } from "./router.tsx";
 import { useDataState } from "./states.ts";
@@ -41,7 +47,7 @@ PageRuntimeContext.displayName = "RexPage";
 
 export function usePageRuntime(): PageRuntime {
   const runtime = useContext(PageRuntimeContext);
-  if (runtime === null) throw new Error("rex: this component must render inside a PageHost");
+  if (runtime === null) throw new RexError("REX306", "rex: this component must render inside a PageHost");
   return runtime;
 }
 
@@ -53,7 +59,7 @@ export interface ViewContext<P = PageParamsValue> {
 export type ViewComponent = ComponentType & { readonly rexKind: "view" };
 
 export function view<P = PageParamsValue>(render: (ctx: ViewContext<P>) => ReactNode): ViewComponent {
-  if (typeof render !== "function") throw new TypeError("view: render must be a function");
+  if (typeof render !== "function") throw new RexError("REX313", "view: render must be a function");
   function RexView() {
     const runtime = usePageRuntime();
     return <>{render({ params: runtime.params as P, state: runtime.state })}</>;
@@ -95,12 +101,14 @@ export function Region({ name, children }: RegionProps) {
   const runtime = usePageRuntime();
   const confirm = useContext(ConfirmContext);
   if (!runtime.page.regions.includes(name)) {
-    throw new Error(`rex: region "${name}" is not declared by page "${runtime.page.id}"`);
+    throw new RexError("REX307", `rex: region "${name}" is not declared by page "${runtime.page.id}"`);
   }
   const scoped = <AddressScope region={name}>{children}</AddressScope>;
   return (
     <section aria-label={titleFromId(name)} data-rex-region={regionAddress(runtime.page.id, name)}>
-      {confirm === null ? <ConfirmProvider>{scoped}</ConfirmProvider> : scoped}
+      <RegionBoundary region={name}>
+        {confirm === null ? <ConfirmProvider>{scoped}</ConfirmProvider> : scoped}
+      </RegionBoundary>
     </section>
   );
 }
@@ -110,7 +118,7 @@ export function region<P = PageParamsValue>(
   render: (ctx: RegionContext<P>) => ReactNode,
 ): RegionComponent {
   regionName(name);
-  if (typeof render !== "function") throw new TypeError("region: render must be a function");
+  if (typeof render !== "function") throw new RexError("REX313", "region: render must be a function");
   function RegionBody() {
     const runtime = usePageRuntime();
     const nav = useNav();
@@ -139,7 +147,7 @@ export function region<P = PageParamsValue>(
 
 export type StateExportComponent = ComponentType<StateProps<PageParamsValue>>;
 
-export interface PageModuleSet<Pg extends AnyPage = AnyPage> {
+export interface EagerPageModuleSet<Pg extends AnyPage = AnyPage> {
   readonly page: Pg;
   readonly view: ComponentType;
   readonly states: PageStatesModule<Pg>;
@@ -147,11 +155,31 @@ export interface PageModuleSet<Pg extends AnyPage = AnyPage> {
   readonly overlays?: Readonly<Record<string, ComponentType>>;
 }
 
-export class RexPageModuleError extends Error {
+export interface LoadedPageModules {
+  readonly view: unknown;
+  readonly states: Readonly<Record<string, unknown>>;
+  readonly regions?: Readonly<Record<string, unknown>>;
+  readonly overlays?: Readonly<Record<string, unknown>>;
+}
+
+export interface LazyPageModuleSet<Pg extends AnyPage = AnyPage> {
+  readonly page: Pg;
+  readonly chunk?: string;
+  load(): Promise<LoadedPageModules>;
+}
+
+export type PageModuleSet<Pg extends AnyPage = AnyPage> =
+  EagerPageModuleSet<Pg> | LazyPageModuleSet<Pg>;
+
+export function isLazyPageModules(modules: PageModuleSet): modules is LazyPageModuleSet {
+  return typeof (modules as { load?: unknown }).load === "function";
+}
+
+export class RexPageModuleError extends RexError {
   readonly page: string;
 
   constructor(page: string, problem: string) {
-    super(`page "${page}" modules: ${problem}`);
+    super("REX313", `page "${page}" modules: ${problem}`);
     this.name = "RexPageModuleError";
     this.page = page;
   }
@@ -164,10 +192,12 @@ function sameNames(page: string, kind: string, declared: readonly string[], prov
   if (extra.length > 0) throw new RexPageModuleError(page, `undeclared ${kind} ${extra.join(", ")}`);
 }
 
-export function definePageModules<Pg extends AnyPage>(modules: PageModuleSet<Pg>): PageModuleSet<Pg> {
+export function definePageModules<Pg extends AnyPage>(
+  modules: EagerPageModuleSet<Pg>,
+): EagerPageModuleSet<Pg> {
   const declared = modules.page;
   if (declared === undefined || declared.kind !== "page") {
-    throw new TypeError("definePageModules: page must be a page declaration");
+    throw new RexError("REX313", "definePageModules: page must be a page declaration");
   }
   if (typeof modules.view !== "function") {
     throw new RexPageModuleError(declared.id, "view.tsx must default-export a component");
@@ -193,12 +223,27 @@ export function definePageModules<Pg extends AnyPage>(modules: PageModuleSet<Pg>
   return Object.freeze({ ...modules });
 }
 
+export function pageQueryScope(resolution: PageResolution): string {
+  return `${resolution.page.id}:${JSON.stringify(resolution.params)}`;
+}
+
+function settledOrFetching(query: Query): boolean {
+  return query.state.status !== "pending" || query.state.fetchStatus !== "idle";
+}
+
 export function usePageQueries(scope: string): readonly Query[] {
   const cache = useQueryClient().getQueryCache();
+  const active = useActivePage();
   const observed = () => new Set(cache.getAll().filter((query) => query.getObserversCount() > 0));
   const tracked = useRef<{ scope: string; queries: Set<Query> } | null>(null);
   if (tracked.current === null || tracked.current.scope !== scope) {
     tracked.current = { scope, queries: observed() };
+  }
+  if (active !== null && pageQueryScope(active) === scope) {
+    for (const hash of pageLoaderQueryHashes(active.page, active.params)) {
+      const query = cache.get(hash);
+      if (query !== undefined && settledOrFetching(query)) tracked.current.queries.add(query);
+    }
   }
   const [, refresh] = useReducer((count: number) => count + 1, 0);
 
@@ -261,21 +306,79 @@ export interface PageHostProps {
   readonly modules: PageModuleSet;
 }
 
-export function PageHost({ modules }: PageHostProps) {
+function useActiveResolution(modules: PageModuleSet): PageResolution {
   const resolution = useActivePage();
-  if (resolution === null) throw new Error("rex: PageHost must render inside an active page route");
+  if (resolution === null) throw new RexError("REX306", "rex: PageHost must render inside an active page route");
   if (resolution.page !== modules.page) {
-    throw new Error(
+    throw new RexError(
+      "REX313",
       `rex: PageHost received modules for page "${modules.page.id}" while "${resolution.page.id}" is active`,
     );
   }
+  return resolution;
+}
+
+const lazyPages = new WeakMap<LazyPageModuleSet, LazyExoticComponent<ComponentType>>();
+
+function lazyPage(modules: LazyPageModuleSet): LazyExoticComponent<ComponentType> {
+  let component = lazyPages.get(modules);
+  if (component === undefined) {
+    component = lazy(async () => {
+      const loaded = await modules.load();
+      const eager = definePageModules({
+        page: modules.page,
+        view: loaded.view as ComponentType,
+        states: loaded.states as PageStatesModule<AnyPage>,
+        regions: (loaded.regions ?? {}) as Readonly<Record<string, ComponentType>>,
+        overlays: (loaded.overlays ?? {}) as Readonly<Record<string, ComponentType>>,
+      });
+      function LoadedPage() {
+        return <EagerPageHost modules={eager} />;
+      }
+      LoadedPage.displayName = `RexPage(${modules.page.id})`;
+      return { default: LoadedPage };
+    });
+    lazyPages.set(modules, component);
+  }
+  return component;
+}
+
+function PageLoading({ modules }: { readonly modules: LazyPageModuleSet }) {
+  const resolution = useActiveResolution(modules);
+  return (
+    <main data-rex-page={modules.page.id} data-rex-page-loading="">
+      <DefaultState state="loading" params={resolution.params} retry={() => {}} error={null} />
+    </main>
+  );
+}
+
+export function PageHost({ modules }: PageHostProps) {
+  if (!isLazyPageModules(modules)) return <EagerPageHost modules={modules} />;
+  const Loaded = lazyPage(modules);
+  return (
+    <Suspense fallback={<PageLoading modules={modules} />}>
+      <Loaded />
+    </Suspense>
+  );
+}
+
+function EagerPageHost({ modules }: { readonly modules: EagerPageModuleSet }) {
+  const resolution = useActiveResolution(modules);
   const declared = resolution.page;
   const validated = useMemo(() => definePageModules(modules), [modules]);
   const queryClient = useQueryClient();
-  const scope = `${declared.id}:${JSON.stringify(resolution.params)}`;
-  const queries = usePageQueries(scope);
+  const loadable = resolution.policy.allowed && resolution.issues.length === 0;
+  const loaderResults = usePageLoaderQueries(declared, resolution.params, loadable);
+  const queries = usePageQueries(pageQueryScope(resolution));
+  const loaderHashes = useMemo(
+    () => new Set(pageLoaderQueryHashes(declared, resolution.params)),
+    [declared, resolution.params],
+  );
   const dataState = useDataState(
-    queries.map((query) => query.state),
+    [
+      ...loaderResults,
+      ...queries.filter((query) => !loaderHashes.has(query.queryHash)).map((query) => query.state),
+    ],
     { policy: resolution.policy },
   );
   const invalid = resolution.policy.allowed && resolution.issues.length > 0;
@@ -316,7 +419,9 @@ export function PageHost({ modules }: PageHostProps) {
 
   return (
     <PageRuntimeContext.Provider value={runtime}>
-      <main data-rex-page={declared.id}>{body}</main>
+      <PageStatesContext.Provider value={validated.states as Readonly<Record<string, unknown>>}>
+        <main data-rex-page={declared.id}>{body}</main>
+      </PageStatesContext.Provider>
     </PageRuntimeContext.Provider>
   );
 }

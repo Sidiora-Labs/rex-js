@@ -1,10 +1,17 @@
 import type { AnyAction } from "../core/action.ts";
 import type { AnyEntity } from "../core/entity.ts";
+import { RexError } from "../core/errors.ts";
 import { isValidName } from "../core/ids.ts";
-import type { AnyPage } from "../core/page.ts";
+import type { AnyPage, PageRender } from "../core/page.ts";
 import { predicateToJson, type AnyPolicy } from "../core/policy.ts";
 import { compareIds } from "../core/registry.ts";
-import { refTarget, type z } from "../core/schema.ts";
+import {
+  objectJsonSchema,
+  refTarget,
+  toJsonSchema,
+  type JsonSchema,
+} from "../core/schema.ts";
+import { standardSource, type ZodSchemaLike } from "../core/standard.ts";
 import {
   MANIFEST_VERSION,
   type FlowSource,
@@ -26,7 +33,10 @@ export interface ManifestSource {
 
 export interface BuildManifestOptions {
   readonly app?: string;
+  readonly render?: PageRender;
 }
+
+export const DEFAULT_PAGE_RENDER: PageRender = "ssr";
 
 export const DEFAULT_APP_NAME = "app";
 
@@ -38,6 +48,45 @@ function sortedIds(items: readonly { readonly id: string }[]): string[] {
   return items.map((item) => item.id).sort();
 }
 
+function unrepresentable(subject: string, problem: string): RexError {
+  return new RexError("REX210", `buildManifest: ${subject} ${problem}`);
+}
+
+export function declaredJsonSchema(
+  schema: ZodSchemaLike,
+  override: JsonSchema | null,
+  io: "input" | "output",
+  subject: string,
+): JsonSchema {
+  if (override !== null) return override;
+  const source = standardSource(schema);
+  if (source !== null) {
+    throw unrepresentable(
+      subject,
+      `is a ${source["~standard"].vendor} Standard Schema; declare jsonSchema.${io} on the declaration`,
+    );
+  }
+  try {
+    return toJsonSchema(schema, io);
+  } catch (error) {
+    throw unrepresentable(
+      subject,
+      `cannot be represented as JSON Schema: ${(error as Error).message}`,
+    );
+  }
+}
+
+function entityJsonSchema(declared: AnyEntity): JsonSchema {
+  try {
+    return objectJsonSchema(declared.fields);
+  } catch (error) {
+    throw unrepresentable(
+      `entity "${declared.id}" fields`,
+      `cannot be represented as JSON Schema: ${(error as Error).message}`,
+    );
+  }
+}
+
 function entityManifest(declared: AnyEntity): ManifestEntity {
   return {
     id: declared.id,
@@ -45,10 +94,10 @@ function entityManifest(declared: AnyEntity): ManifestEntity {
     fields: Object.entries(declared.fields).map(([name, schema]) => ({
       name,
       kind: declared.fieldKinds[name] ?? null,
-      ref: refTarget(schema as z.ZodType) ?? null,
-      required: !(schema as z.ZodType).safeParse(undefined).success,
+      ref: refTarget(schema as ZodSchemaLike) ?? null,
+      required: !(schema as ZodSchemaLike).safeParse(undefined).success,
     })),
-    schema: declared.jsonSchema,
+    schema: entityJsonSchema(declared),
   };
 }
 
@@ -59,22 +108,50 @@ function actionManifest(declared: AnyAction): ManifestAction {
     shortcut: declared.shortcut,
     effect: declared.effect,
     invalidates: [...declared.invalidates].sort(),
+    form: declared.form === null ? null : { ...declared.form },
     policy: predicateToJson(declared.policy),
-    input: declared.inputJsonSchema,
-    output: declared.outputJsonSchema,
+    input: declaredJsonSchema(
+      declared.input,
+      declared.jsonSchema?.input ?? null,
+      "input",
+      `action "${declared.id}" input`,
+    ),
+    output: declaredJsonSchema(
+      declared.output,
+      declared.jsonSchema?.output ?? null,
+      "output",
+      `action "${declared.id}" output`,
+    ),
   };
 }
 
-function pageManifest(declared: AnyPage): ManifestPage {
+function pageManifest(declared: AnyPage, render: PageRender): ManifestPage {
   return {
     id: declared.id,
     route: declared.route,
     routeParams: [...declared.routeParams],
-    params: declared.paramsJsonSchema,
+    params: declaredJsonSchema(declared.params, null, "input", `page "${declared.id}" params`),
     policy: predicateToJson(declared.policy),
     recovery: declared.recovery,
     draft: declared.draft,
-    chrome: { ...declared.chrome },
+    render: declared.render ?? render,
+    revalidate: declared.revalidate,
+    paths: declared.paths !== null,
+    loaders: [...declared.loaders]
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+      .map((loader) => ({
+        name: loader.name,
+        action: loader.action.id,
+        input: loader.input === null ? ("params" as const) : ("mapped" as const),
+      })),
+    cache: declared.cache === null ? null : { ...declared.cache },
+    transition: declared.transition,
+    chrome: {
+      header: declared.chrome.header,
+      nav: declared.chrome.nav,
+      back: declared.chrome.back,
+      title: declared.chrome.title,
+    },
     regions: [...declared.regions],
     overlays: sortById(declared.overlays).map((overlay) => ({
       id: overlay.id,
@@ -112,16 +189,26 @@ export function buildManifest(
 ): Manifest {
   const app = options.app ?? DEFAULT_APP_NAME;
   if (typeof app !== "string" || app.trim() === "") {
-    throw new TypeError("buildManifest: app must be a non-empty string");
+    throw new RexError("REX501", "buildManifest: app must be a non-empty string");
   }
+  const render = options.render ?? DEFAULT_PAGE_RENDER;
   const pages = sortById(source.pages);
   const actionIds = new Set(source.actions.map((declared) => declared.id));
   const pageIds = new Set(pages.map((declared) => declared.id));
   for (const declared of pages) {
     for (const pageAction of declared.actions) {
       if (!actionIds.has(pageAction.id)) {
-        throw new Error(
+        throw new RexError(
+          "REX222",
           `buildManifest: page "${declared.id}" declares action "${pageAction.id}" that is not registered`,
+        );
+      }
+    }
+    for (const loader of declared.loaders) {
+      if (!actionIds.has(loader.action.id)) {
+        throw new RexError(
+          "REX209",
+          `buildManifest: page "${declared.id}" loader "${loader.name}" names action "${loader.action.id}" that is not registered`,
         );
       }
     }
@@ -130,7 +217,8 @@ export function buildManifest(
       ["chrome.back", declared.chrome.back],
     ] as const) {
       if (target !== null && (!isValidName(target) || !pageIds.has(target))) {
-        throw new Error(
+        throw new RexError(
+          "REX223",
           `buildManifest: page "${declared.id}" ${field} names unknown page "${target}"`,
         );
       }
@@ -141,7 +229,7 @@ export function buildManifest(
     app: { name: app },
     entities: sortById(source.entities).map(entityManifest),
     actions: sortById(source.actions).map(actionManifest),
-    pages: pages.map(pageManifest),
+    pages: pages.map((declared) => pageManifest(declared, render)),
     policies: sortById(source.policies).map(policyManifest),
     flows: sortById(source.flows ?? []).map(flowManifest),
   };
@@ -150,7 +238,7 @@ export function buildManifest(
 function canonical(value: unknown, path: string): unknown {
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw new TypeError(`stableStringify: ${path} is not finite`);
+    if (!Number.isFinite(value)) throw new RexError("REX502", `stableStringify: ${path} is not finite`);
     return value;
   }
   if (Array.isArray(value)) {
@@ -167,7 +255,7 @@ function canonical(value: unknown, path: string): unknown {
     }
     return result;
   }
-  throw new TypeError(`stableStringify: ${path} has unsupported type ${typeof value}`);
+  throw new RexError("REX502", `stableStringify: ${path} has unsupported type ${typeof value}`);
 }
 
 export function stableStringify(value: unknown, indent = 2): string {

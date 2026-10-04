@@ -1,9 +1,10 @@
-import { action, id, text, z } from "@sidioralabs/rex";
+import { action, id, text } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 import { accountIdOf, accounts, contacts, nextId, requireAccount } from "../data/wallet.ts";
 import { wallet } from "../policies/wallet.ts";
 
 export const pickContact = action("pick-contact", {
-  input: z.object({ contact: id().optional() }),
+  input: z.object({ contact: z.optional(id()) }),
   output: z.object({ contact: id(), name: text({ min: 1 }) }),
   policy: wallet.can("wallet.manage"),
   effect: "reversible",

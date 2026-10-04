@@ -8,6 +8,13 @@ export const ALTERNATIVE_ATTRIBUTE = "data-rex-alternative";
 
 const MOTION_CLASS = /^(?:[^:\s]+:)*animate-(?!none$)[a-z0-9-]+$/;
 const TEXT_ATTRIBUTES = ["aria-label", "aria-labelledby", "title"];
+const PAGED_LIST_TAG = "Page.List";
+const LIST_TAGS = ["ul", "ol"];
+const LIST_ROLES = ["list", "feed"];
+const SCROLL_ATTRIBUTES = ["onScroll", "onScrollCapture", "onScrollEnd"];
+const SCROLL_EVENTS = ["scroll", "scrollend"];
+const CUSTOM_ELEMENT_TAG = /^[a-z][a-z0-9._]*-[a-z0-9._-]*$/;
+const TABINDEX_ATTRIBUTES = ["tabIndex", "tabindex"];
 
 function tagName(element: ts.JsxOpeningLikeElement): string {
   return element.tagName.getText();
@@ -35,6 +42,37 @@ function hasValue(attribute: ts.JsxAttribute | undefined): boolean {
       return expression.text.trim().length > 0;
     }
     return true;
+  }
+  return false;
+}
+
+function isCustomElement(element: ts.JsxOpeningLikeElement): boolean {
+  return ts.isIdentifier(element.tagName) && CUSTOM_ELEMENT_TAG.test(element.tagName.text);
+}
+
+function isNegative(expression: ts.Expression): boolean {
+  if (ts.isParenthesizedExpression(expression)) return isNegative(expression.expression);
+  return (
+    ts.isPrefixUnaryExpression(expression) &&
+    expression.operator === ts.SyntaxKind.MinusToken &&
+    ts.isNumericLiteral(expression.operand) &&
+    Number(expression.operand.text) > 0
+  );
+}
+
+function isFocusable(attribute: ts.JsxAttribute | undefined): boolean {
+  if (attribute === undefined || !hasValue(attribute)) return false;
+  const initializer = attribute.initializer;
+  if (initializer !== undefined && ts.isStringLiteral(initializer)) {
+    return !initializer.text.trim().startsWith("-");
+  }
+  if (initializer !== undefined && ts.isJsxExpression(initializer)) {
+    const expression = initializer.expression;
+    if (expression === undefined) return false;
+    if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
+      return !expression.text.trim().startsWith("-");
+    }
+    return !isNegative(expression);
   }
   return false;
 }
@@ -84,6 +122,18 @@ function checkFile(sources: SourceLoader, file: AppFile): Finding[] {
       );
     }
 
+    if (
+      isCustomElement(element) &&
+      !TABINDEX_ATTRIBUTES.some((name) => isFocusable(attributes.get(name))) &&
+      !hasValue(attributes.get(ALTERNATIVE_ATTRIBUTE))
+    ) {
+      report(
+        "custom-element",
+        `custom element <${tag}> has no tabIndex or ${ALTERNATIVE_ATTRIBUTE}`,
+        `Give <${tag}> tabIndex={0} so keyboard and agent users reach it, or declare its keyboard equivalent with ${ALTERNATIVE_ATTRIBUTE}="<page>/<action>" and render that control.`,
+      );
+    }
+
     const classAttribute = attributes.get("className") ?? attributes.get("class");
     const motion = classAttribute
       ? classTokens(source, classAttribute).find(({ token }) => MOTION_CLASS.test(token))
@@ -101,6 +151,92 @@ function checkFile(sources: SourceLoader, file: AppFile): Finding[] {
     }
   }
   return findings;
+}
+
+function stringValue(attribute: ts.JsxAttribute | undefined): string | null {
+  const initializer = attribute?.initializer;
+  if (initializer === undefined) return null;
+  if (ts.isStringLiteral(initializer)) return initializer.text;
+  if (
+    ts.isJsxExpression(initializer) &&
+    initializer.expression !== undefined &&
+    (ts.isStringLiteral(initializer.expression) ||
+      ts.isNoSubstitutionTemplateLiteral(initializer.expression))
+  ) {
+    return initializer.expression.text;
+  }
+  return null;
+}
+
+function isMapCall(node: ts.Node): boolean {
+  return (
+    ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    node.expression.name.text === "map"
+  );
+}
+
+function isIntersectionObserver(node: ts.NewExpression): boolean {
+  const callee = node.expression;
+  if (ts.isIdentifier(callee)) return callee.text === "IntersectionObserver";
+  return ts.isPropertyAccessExpression(callee) && callee.name.text === "IntersectionObserver";
+}
+
+function isScrollListener(node: ts.CallExpression): boolean {
+  const callee = node.expression;
+  const event = node.arguments[0];
+  return (
+    ts.isPropertyAccessExpression(callee) &&
+    callee.name.text === "addEventListener" &&
+    event !== undefined &&
+    (ts.isStringLiteral(event) || ts.isNoSubstitutionTemplateLiteral(event)) &&
+    SCROLL_EVENTS.includes(event.text)
+  );
+}
+
+interface ScrollTrigger {
+  readonly node: ts.Node;
+  readonly description: string;
+}
+
+function checkInfiniteList(sources: SourceLoader, file: AppFile): Finding[] {
+  const source = sources.load(file.path);
+  const triggers: ScrollTrigger[] = [];
+  let rendersList = false;
+  let rendersPagedList = false;
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const tag = tagName(node);
+      const attributes = jsxAttributes(node);
+      if (tag === PAGED_LIST_TAG) rendersPagedList = true;
+      const role = stringValue(attributes.get("role")) ?? "";
+      if (LIST_TAGS.includes(tag) || LIST_ROLES.includes(role)) rendersList = true;
+      const scroll = SCROLL_ATTRIBUTES.find((name) => attributes.has(name));
+      if (scroll !== undefined) triggers.push({ node, description: `<${tag}> ${scroll}` });
+    } else if (
+      ts.isJsxExpression(node) &&
+      node.expression !== undefined &&
+      isMapCall(node.expression)
+    ) {
+      rendersList = true;
+    } else if (ts.isNewExpression(node) && isIntersectionObserver(node)) {
+      triggers.push({ node, description: "an IntersectionObserver" });
+    } else if (ts.isCallExpression(node) && isScrollListener(node)) {
+      triggers.push({ node, description: "a scroll listener" });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  if (!rendersList || rendersPagedList) return [];
+  return triggers.map((trigger) =>
+    finding({
+      rule: "traps/infinite-list",
+      file: file.file,
+      ...sources.location(file.path, trigger.node),
+      message: `${trigger.description} loads list items on scroll without Page.List`,
+      hint: "Render the list with Page.List so page and size live in the URL and a visible Load more control appends the next page; keep scroll loading only as an enhancement next to it.",
+    }),
+  );
 }
 
 function checkOverlayDismiss(app: RexApp, sources: SourceLoader): Finding[] {
@@ -136,12 +272,12 @@ function checkOverlayDismiss(app: RexApp, sources: SourceLoader): Finding[] {
 export const trapsRule = defineRule({
   id: "traps",
   description:
-    "Reports hover-only, drag-only, canvas-only and motion-only controls and overlays without a declared dismiss.",
+    "Reports hover-only, drag-only, canvas-only and motion-only controls, custom elements without tabIndex or a declared keyboard equivalent, scroll-loading lists without Page.List and overlays without a declared dismiss.",
   check({ app, sources }) {
     return [
       ...app.files
         .filter((file) => file.path.endsWith(".tsx") && file.role !== "test")
-        .flatMap((file) => checkFile(sources, file)),
+        .flatMap((file) => [...checkFile(sources, file), ...checkInfiniteList(sources, file)]),
       ...checkOverlayDismiss(app, sources),
     ];
   },

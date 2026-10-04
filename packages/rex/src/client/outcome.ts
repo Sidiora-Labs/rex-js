@@ -5,6 +5,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { RexError } from "../core/errors.ts";
 
 export const APP_OUTCOME_KEY = "app";
 
@@ -32,10 +33,10 @@ export function createOutcomeStore(): OutcomeStore {
     get: (page) => outcomes.get(page) ?? null,
     set(page, outcome) {
       if (typeof outcome.actionId !== "string" || outcome.actionId.length === 0) {
-        throw new TypeError("outcome: actionId must be a non-empty string");
+        throw new RexError("REX322", "outcome: actionId must be a non-empty string");
       }
       if (Number.isNaN(Date.parse(outcome.at))) {
-        throw new TypeError("outcome: at must be an ISO timestamp");
+        throw new RexError("REX322", "outcome: at must be an ISO timestamp");
       }
       outcomes.set(page, Object.freeze({ ...outcome }));
       notify();

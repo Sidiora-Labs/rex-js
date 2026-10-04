@@ -1,6 +1,11 @@
-import type { ActionEffect } from "../core/action.ts";
+import type { ActionEffect, ActionForm } from "../core/action.ts";
 import type { OverlayBinding, OverlayDismiss } from "../core/overlay.ts";
-import type { PageChrome, PageDraft } from "../core/page.ts";
+import type {
+  PageCacheConfig,
+  PageDraft,
+  PageRender,
+  PageTransition,
+} from "../core/page.ts";
 import type { Predicate, PredicateJson } from "../core/policy.ts";
 import type { FieldKind, JsonSchema } from "../core/schema.ts";
 import type { RexDataState } from "../core/states.ts";
@@ -32,6 +37,7 @@ export interface ManifestAction {
   readonly effect: ActionEffect;
   readonly invalidates: readonly string[];
   readonly policy: PredicateJson;
+  readonly form: ActionForm | null;
   readonly input: JsonSchema;
   readonly output: JsonSchema;
 }
@@ -42,6 +48,19 @@ export interface ManifestOverlay {
   readonly binding: OverlayBinding;
 }
 
+export interface ManifestChrome {
+  readonly header: boolean;
+  readonly nav: boolean;
+  readonly back: string | null;
+  readonly title: string;
+}
+
+export interface ManifestLoader {
+  readonly name: string;
+  readonly action: string;
+  readonly input: "params" | "mapped";
+}
+
 export interface ManifestPage {
   readonly id: string;
   readonly route: string;
@@ -50,7 +69,13 @@ export interface ManifestPage {
   readonly policy: PredicateJson;
   readonly recovery: string | null;
   readonly draft: PageDraft;
-  readonly chrome: PageChrome;
+  readonly render: PageRender;
+  readonly revalidate: number | null;
+  readonly paths: boolean;
+  readonly loaders: readonly ManifestLoader[];
+  readonly cache: PageCacheConfig | null;
+  readonly transition: PageTransition;
+  readonly chrome: ManifestChrome;
   readonly regions: readonly string[];
   readonly overlays: readonly ManifestOverlay[];
   readonly states: readonly RexDataState[];

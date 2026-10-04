@@ -5,15 +5,17 @@ import {
   Fragment,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ComponentType,
   type ReactNode,
 } from "react";
+import { matchRoute, useLocation, useRouter, useSearch } from "wouter";
 import { actor as createActor, anonymousActor, type Actor, type ActorInput } from "../core/actor.ts";
 import { isPlainObject } from "../core/entity.ts";
+import { RexError, type RexErrorCode } from "../core/errors.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import { MANIFEST_VERSION, type Manifest } from "../manifest/types.ts";
-import { DensityProvider } from "./agent/density.ts";
 import {
   ACTOR_HEADER,
   CONFIRM_HEADER,
@@ -25,14 +27,29 @@ import {
   type RexClientContext,
   type RexRuntime,
 } from "./context.ts";
-import type { PageModuleSet } from "./page.tsx";
-import { AgentShell } from "./shell.tsx";
+import { OutcomeProvider, useOutcomeStore, type Outcome, type OutcomeStore } from "./outcome.ts";
+import { orderPages } from "./router.tsx";
 
 export type RexFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
 
 export interface DensitySlotProps {
   readonly children: ReactNode;
 }
+
+export interface RexOutcomeEvent extends Outcome {
+  readonly page: string;
+}
+
+export interface RexNavigateEvent {
+  readonly path: string;
+  readonly search: string;
+  readonly href: string;
+  readonly page: string | null;
+  readonly from: string | null;
+}
+
+export type RexOutcomeHook = (event: RexOutcomeEvent) => void;
+export type RexNavigateHook = (event: RexNavigateEvent) => void;
 
 export interface CreateRexAppOptions {
   readonly registry: RegistrySnapshot;
@@ -43,6 +60,8 @@ export interface CreateRexAppOptions {
   readonly fetch?: RexFetch;
   readonly queryClient?: QueryClient;
   readonly density?: ComponentType<DensitySlotProps>;
+  readonly onOutcome?: RexOutcomeHook;
+  readonly onNavigate?: RexNavigateHook;
 }
 
 export interface RexAppProps {
@@ -62,9 +81,9 @@ type Startup =
   | { readonly status: "ready"; readonly value: StartupValue }
   | { readonly status: "error"; readonly message: string };
 
-export class RexStartupError extends Error {
-  constructor(message: string) {
-    super(`rex startup: ${message}`);
+export class RexStartupError extends RexError {
+  constructor(message: string, code: RexErrorCode = "REX311") {
+    super(code, `rex startup: ${message}`);
     this.name = "RexStartupError";
   }
 }
@@ -134,7 +153,7 @@ export function checkManifest(manifest: Manifest, registry: RegistrySnapshot): M
 function resolveBase(baseUrl: string | undefined): string {
   const base = baseUrl ?? globalThis.location?.origin;
   if (typeof base !== "string" || !/^https?:\/\//.test(base)) {
-    throw new RexStartupError("baseUrl must be an http(s) origin when the page has no location");
+    throw new RexStartupError("baseUrl must be an http(s) origin when the page has no location", "REX323");
   }
   return base;
 }
@@ -181,13 +200,60 @@ async function loadStartup(
   return { manifest, actor, density: response.headers.get(DENSITY_HEADER) };
 }
 
+export function observeOutcomes(store: OutcomeStore, onOutcome: RexOutcomeHook): OutcomeStore {
+  return {
+    get: (page) => store.get(page),
+    set(page, outcome) {
+      store.set(page, outcome);
+      const recorded = store.get(page);
+      if (recorded !== null) onOutcome(Object.freeze({ ...recorded, page }));
+    },
+    clear: (page) => store.clear(page),
+    subscribe: (listener) => store.subscribe(listener),
+  };
+}
+
+export function pageAtPath(
+  registry: RegistrySnapshot,
+  parser: Parameters<typeof matchRoute>[0],
+  path: string,
+): string | null {
+  for (const declared of orderPages(registry.pages)) {
+    const [matched] = matchRoute(parser, declared.route, path);
+    if (matched) return declared.id;
+  }
+  return null;
+}
+
+interface NavigationObserverProps {
+  readonly registry: RegistrySnapshot;
+  readonly onNavigate: RexNavigateHook;
+}
+
+function NavigationObserver({ registry, onNavigate }: NavigationObserverProps) {
+  const [path] = useLocation();
+  const search = useSearch();
+  const { parser } = useRouter();
+  const previous = useRef<string | null>(null);
+  useEffect(() => {
+    const href = search === "" ? path : `${path}?${search}`;
+    if (previous.current === href) return;
+    const from = previous.current;
+    previous.current = href;
+    onNavigate(
+      Object.freeze({ path, search, href, page: pageAtPath(registry, parser, path), from }),
+    );
+  }, [path, search, parser]);
+  return null;
+}
+
 function PassthroughDensity({ children }: DensitySlotProps) {
   return <Fragment>{children}</Fragment>;
 }
 
 export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
   if (typeof options !== "object" || options === null || options.registry === undefined) {
-    throw new TypeError("createRexApp: a frozen registry is required");
+    throw new RexError("REX329", "createRexApp: a frozen registry is required");
   }
   const registry = options.registry;
   const base = resolveBase(options.baseUrl);
@@ -195,6 +261,8 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
   const client = createORPCClient<RexClient>(link);
   const queryClient = options.queryClient ?? new QueryClient();
   const Density = options.density ?? PassthroughDensity;
+  const onOutcome = options.onOutcome;
+  const onNavigate = options.onNavigate;
   const provided: StartupValue | null =
     options.manifest !== undefined && options.actor !== undefined
       ? { manifest: checkManifest(options.manifest, registry), actor: options.actor, density: null }
@@ -205,6 +273,11 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
       provided === null ? { status: "loading" } : { status: "ready", value: provided },
     );
     const [attempt, setAttempt] = useState(0);
+    const parentOutcomes = useOutcomeStore();
+    const outcomes = useMemo(
+      () => (onOutcome === undefined ? null : observeOutcomes(parentOutcomes, onOutcome)),
+      [parentOutcomes],
+    );
 
     useEffect(() => {
       if (provided !== null) return;
@@ -256,9 +329,21 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
         </div>
       );
     } else {
+      const observed = (
+        <Fragment>
+          {onNavigate === undefined ? null : (
+            <NavigationObserver registry={registry} onNavigate={onNavigate} />
+          )}
+          <Density>{children}</Density>
+        </Fragment>
+      );
       body = (
         <RexRuntimeContext.Provider value={runtime}>
-          <Density>{children}</Density>
+          {outcomes === null ? (
+            observed
+          ) : (
+            <OutcomeProvider store={outcomes}>{observed}</OutcomeProvider>
+          )}
         </RexRuntimeContext.Provider>
       );
     }
@@ -268,35 +353,8 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
   return RexApp;
 }
 
-export interface RexEntryBundle {
-  readonly registry: RegistrySnapshot;
-  readonly manifest?: Manifest;
-  readonly pages: readonly PageModuleSet[];
-}
-
-export type RexEntryOptions = Omit<CreateRexAppOptions, "registry" | "manifest" | "density">;
-
-export function createRexEntry(
-  bundle: RexEntryBundle,
-  options: RexEntryOptions = {},
-): ComponentType {
-  if (typeof bundle !== "object" || bundle === null || !Array.isArray(bundle.pages)) {
-    throw new TypeError("createRexEntry: the rex:app bundle with registry and pages is required");
-  }
-  const RexApp = createRexApp({
-    ...options,
-    registry: bundle.registry,
-    ...(bundle.manifest === undefined ? {} : { manifest: bundle.manifest }),
-    density: DensityProvider,
-  });
-  const pages = bundle.pages;
-  function RexEntry() {
-    return (
-      <RexApp>
-        <AgentShell pages={pages} />
-      </RexApp>
-    );
-  }
-  RexEntry.displayName = "RexEntry";
-  return RexEntry;
-}
+export {
+  createRexEntry,
+  type RexEntryBundle,
+  type RexEntryOptions,
+} from "./entry.tsx";

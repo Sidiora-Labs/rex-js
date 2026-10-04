@@ -18,7 +18,10 @@ import {
   PageHost,
   region,
   RexPageModuleError,
+  isLazyPageModules,
   view,
+  type LazyPageModuleSet,
+  type LoadedPageModules,
   type PageModuleSet,
 } from "./page.tsx";
 import { NotFound, RexRoutes } from "./router.tsx";
@@ -46,13 +49,42 @@ const strayModules = definePageModules({
   regions: { main: MainRegion },
 });
 
+interface Deferred {
+  readonly promise: Promise<LoadedPageModules>;
+  resolve(modules: LoadedPageModules): void;
+  reject(error: Error): void;
+}
+
+function deferred(): Deferred {
+  let resolve: (modules: LoadedPageModules) => void = () => {};
+  let reject: (error: Error) => void = () => {};
+  const promise = new Promise<LoadedPageModules>((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
+}
+
+const slow = page("slow", { route: "/slow", states: ["ready", "loading"] });
+let slowLoad = deferred();
+let slowLoads = 0;
+const slowModules: LazyPageModuleSet = {
+  page: slow,
+  chunk: "page-slow",
+  load: () => {
+    slowLoads += 1;
+    return slowLoad.promise;
+  },
+};
+
 const modulesById: Record<string, PageModuleSet> = {
   basic: basicModules,
   lite: liteModules,
   "stray-host": strayModules,
+  slow: slowModules,
 };
 
-const registry = createRegistry().register(greet, basicPage, lite, strayPage).freeze();
+const registry = createRegistry().register(greet, basicPage, lite, strayPage, slow).freeze();
 const manifest = buildManifest(registry);
 const viewer = actor({ id: "viewer", permissions: ["view"] });
 const stranger = actor({ id: "stranger" });
@@ -279,5 +311,30 @@ describe("page modules", () => {
     silenced(() => {
       expect(() => render(<MainRegion />)).toThrow("must render inside a PageHost");
     });
+  });
+});
+
+describe("lazy page modules", () => {
+  it("shows the loading state under Suspense until the page chunk loads, then the view", async () => {
+    slowLoad = deferred();
+    slowLoads = 0;
+    expect(isLazyPageModules(slowModules)).toBe(true);
+    expect(isLazyPageModules(basicModules)).toBe(false);
+    mount("/slow");
+    const loading = document.querySelector("[data-rex-page-loading]");
+    expect(loading?.getAttribute("data-rex-page")).toBe("slow");
+    expect(loading?.querySelector("[data-rex-default-state]")?.getAttribute("data-rex-default-state")).toBe(
+      "loading",
+    );
+    expect(screen.getByRole("status").textContent).toBe("Loading");
+    expect(screen.queryByText("slow ready")).toBeNull();
+    await act(async () => {
+      slowLoad.resolve({ view: view(() => <p>slow ready</p>), states: { Loading: () => <p>slow loading</p> } });
+      await slowLoad.promise;
+    });
+    await waitFor(() => expect(screen.getByText("slow ready")).toBeTruthy());
+    expect(document.querySelector("[data-rex-page-loading]")).toBeNull();
+    expect(document.querySelector('main[data-rex-page="slow"]')).not.toBeNull();
+    expect(slowLoads).toBe(1);
   });
 });

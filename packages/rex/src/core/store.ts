@@ -1,4 +1,5 @@
 import type { AnyEntity, InferEntity } from "./entity.ts";
+import { RexError } from "./errors.ts";
 
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_PAGE_SIZE = 500;
@@ -77,7 +78,7 @@ export function bind<E extends AnyEntity>(entity: E, store: Store<InferEntity<E>
       if (filter !== undefined) {
         for (const field of Object.keys(filter)) {
           if (!(field in entity.fields)) {
-            throw new TypeError(`store ${entity.id}: unknown filter field "${field}"`);
+            throw new RexError("REX305", `store ${entity.id}: unknown filter field "${field}"`);
           }
         }
       }

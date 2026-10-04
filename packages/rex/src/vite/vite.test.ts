@@ -9,9 +9,20 @@ import { build, createServer, normalizePath, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { stateExportName } from "../core/states.ts";
 import { DENSITY_HEADER, isApiPath, rex } from "./index.ts";
+import { loadRexConfig } from "../cli/config.ts";
+import { configPluginOptions } from "../cli/load.ts";
+import { chunkBudgets, resolveBudgets } from "./budgets.ts";
+import {
+  PAGE_BUDGET_KB,
+  chunkTable,
+  formatChunkTable,
+  pageChunkGroups,
+  pageIdOfModule,
+} from "./split.ts";
 import {
   APP_MODULE_ID,
   ENTRY_MODULE_ID,
+  PAGE_CHUNK_PREFIX,
   RESOLVED_APP_MODULE_ID,
   RESOLVED_ENTRY_MODULE_ID,
   RexAppScanError,
@@ -22,7 +33,10 @@ import {
   type RexAppBundle,
 } from "./virtual.ts";
 
+const VITE_TEST_TIMEOUT_MS = 20_000;
+const DEMO_BUILD_TIMEOUT_MS = 240_000;
 const here = dirname(fileURLToPath(import.meta.url));
+const demoRoot = join(here, "..", "..", "..", "..", "examples", "demo");
 const fixtureRoot = join(here, "fixtures", "app");
 const coreEntry = join(here, "..", "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
@@ -101,7 +115,7 @@ describe("scanApp", () => {
     expect(code).toContain(
       "createRoot(container).render(createElement(StrictMode, null, createElement(RexEntry)));",
     );
-    expect(code).toContain('document.getElementById("root")');
+    expect(code).toContain('const container = findRootElement("root");');
     for (const file of [tokens, density]) expect(existsSync(file)).toBe(true);
   });
 
@@ -162,7 +176,7 @@ describe("rex() with the Vite build API", () => {
   });
 });
 
-describe("the client entry build", () => {
+describe("the client entry build", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
   it("bundles /@rex/entry into a client that mounts the shell, the agent surfaces and the stylesheets", async () => {
     const result = await build({
       root: fixtureRoot,
@@ -196,7 +210,7 @@ describe("the client entry build", () => {
     const code = chunks.map((chunk) => chunk.code).join("\n");
     expect(code).toContain("data-rex-shell");
     expect(code).toContain("application/rex+json");
-    expect(code).toContain('getElementById("root")');
+    expect(code).toContain('findRootElement("root")');
     const css = items
       .filter((item) => item.type === "asset" && item.fileName.endsWith(".css"))
       .map((item) => (item.type === "asset" ? String(item.source) : ""))
@@ -207,10 +221,174 @@ describe("the client entry build", () => {
     expect(densityRule).toBeGreaterThan(tokenRule);
     const html = items.find((item) => item.type === "asset" && item.fileName === "index.html");
     expect(html?.type === "asset" ? String(html.source) : "").toContain(entry?.fileName ?? "-");
+
+    const pageChunks = chunks.filter((chunk) => chunk.name.startsWith("page-"));
+    expect(pageChunks.map((chunk) => chunk.name).sort()).toEqual(["page-home", "page-note"]);
+    const home = pageChunks.find((chunk) => chunk.name === "page-home");
+    expect(home?.isEntry).toBe(false);
+    expect(home?.moduleIds.map(normalizePath)).toEqual(
+      expect.arrayContaining([
+        fixture("app/pages/home/view.tsx"),
+        fixture("app/pages/home/states.tsx"),
+        fixture("app/pages/home/regions/list/region.tsx"),
+        fixture("app/pages/home/regions/list/parts/NoteRow.tsx"),
+        fixture("app/pages/home/overlays/NoteSheet.tsx"),
+      ]),
+    );
+    expect(home?.moduleIds.map(normalizePath)).not.toContain(fixture("app/pages/home/page.ts"));
+    expect(entry?.moduleIds.map(normalizePath)).not.toContain(fixture("app/pages/home/view.tsx"));
+    expect(entry?.dynamicImports.length).toBeGreaterThanOrEqual(2);
+    for (const chunk of pageChunks) {
+      const pageId = chunk.name.slice(PAGE_CHUNK_PREFIX.length);
+      const outside = chunk.moduleIds
+        .map(normalizePath)
+        .filter((id) => pageIdOfModule(id, fixture("app")) !== pageId);
+      expect(outside, `${chunk.name} holds only modules under app/pages/${pageId}`).toEqual([]);
+    }
+    expect(modules).toContain(normalizePath(join(here, "..", "client", "shell.tsx")));
+    const shared = chunks.filter((chunk) => !chunk.name.startsWith(PAGE_CHUNK_PREFIX));
+    expect(
+      shared.flatMap((chunk) => chunk.moduleIds).some((id) => id.includes("/node_modules/react")),
+    ).toBe(true);
+
+    const rows = chunkTable(items);
+    const pageRows = rows.filter((row) => row.name.startsWith("page-"));
+    expect(pageRows.map((row) => [row.name, row.budget, row.over])).toEqual([
+      ["page-home", PAGE_BUDGET_KB, false],
+      ["page-note", PAGE_BUDGET_KB, false],
+    ]);
+    for (const row of rows) {
+      expect(row.gzip).toBeGreaterThan(0);
+      expect(row.raw).toBeGreaterThanOrEqual(row.gzip);
+    }
+    const table = formatChunkTable(rows);
+    expect(table.split("\n")[0]).toMatch(/^chunk\s+raw\s+gzip\s+budget$/);
+    expect(table).toMatch(/^page-home\s+[\d.]+ KB\s+[\d.]+ KB\s+50 KB$/m);
+    expect(table).toMatch(/^page-note\s+[\d.]+ KB\s+[\d.]+ KB\s+50 KB$/m);
+    const over = chunkTable(items, { page: 0.01 }).filter((row) => row.over);
+    expect(over.map((row) => row.name)).toEqual(["page-home", "page-note"]);
+    expect(formatChunkTable(over)).toContain("0.01 KB OVER");
+  });
+
+  it("assigns page folder modules except page.ts to the page chunk", () => {
+    const appPath = fixture("app");
+    const [group, ...rest] = pageChunkGroups(appPath);
+    expect(rest).toEqual([]);
+    expect(group?.includeDependenciesRecursively).toBe(false);
+    expect(group?.name(fixture("app/pages/home/view.tsx"))).toBe("page-home");
+    expect(group?.name(fixture("app/components/ui/button.tsx"))).toBeNull();
+    expect(group?.name(normalizePath(join(here, "..", "client", "shell.tsx")))).toBeNull();
+    expect(pageIdOfModule(fixture("app/pages/home/view.tsx"), appPath)).toBe("home");
+    expect(pageIdOfModule(fixture("app/pages/home/regions/list/parts/NoteRow.tsx"), appPath)).toBe(
+      "home",
+    );
+    expect(pageIdOfModule(fixture("app/pages/home/page.ts"), appPath)).toBeNull();
+    expect(pageIdOfModule(fixture("app/actions/add-note.ts"), appPath)).toBeNull();
   });
 });
 
-describe("rex() with the Vite dev server", () => {
+describe("the demo client build", { timeout: DEMO_BUILD_TIMEOUT_MS }, () => {
+  it("keeps every demo page chunk to its page folder and under the page budget", async () => {
+    const loaded = await loadRexConfig(demoRoot);
+    const result = await build({
+      root: demoRoot,
+      configFile: false,
+      logLevel: "silent",
+      plugins: rex(configPluginOptions(loaded.read)),
+      build: { write: false, manifest: true },
+    });
+    const outputs = Array.isArray(result) ? result : [result];
+    const items = outputs.flatMap((output) => ("output" in output ? output.output : []));
+    const chunks = items.filter((item) => item.type === "chunk");
+    const appPath = normalizePath(join(demoRoot, "app"));
+    const pageChunks = chunks.filter((chunk) => chunk.name.startsWith(PAGE_CHUNK_PREFIX));
+    expect(pageChunks.map((chunk) => chunk.name).sort()).toEqual([
+      "page-portfolio",
+      "page-send",
+    ]);
+    for (const chunk of pageChunks) {
+      const pageId = chunk.name.slice(PAGE_CHUNK_PREFIX.length);
+      const outside = chunk.moduleIds
+        .map(normalizePath)
+        .filter((id) => pageIdOfModule(id, appPath) !== pageId);
+      expect(outside, `${chunk.name} holds only modules under app/pages/${pageId}`).toEqual([]);
+    }
+    const budgets = chunkBudgets(resolveBudgets(loaded.read));
+    const rows = chunkTable(items, budgets);
+    const pageRows = rows.filter((row) => row.name.startsWith(PAGE_CHUNK_PREFIX));
+    expect(pageRows.map((row) => [row.name, row.budget])).toEqual([
+      ["page-portfolio", budgets.page],
+      ["page-send", budgets.page],
+    ]);
+    for (const row of pageRows) {
+      expect(row.gzip, `${row.name}\n${formatChunkTable(rows)}`).toBeLessThanOrEqual(
+        budgets.page * 1024,
+      );
+      expect(row.over).toBe(false);
+    }
+    expect(rows.filter((row) => row.over)).toEqual([]);
+  });
+});
+
+describe("the devtools in client builds", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
+  const devtoolsDir = normalizePath(join(here, "..", "client", "devtools"));
+  const devtoolsSlot = normalizePath(join(here, "..", "client", "shell", "devtools-slot.tsx"));
+
+  async function buildClient(nodeEnv: string, devtools?: boolean) {
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = nodeEnv;
+    try {
+      const result = await build({
+        root: fixtureRoot,
+        configFile: false,
+        logLevel: "silent",
+        resolve: { alias },
+        plugins: [rex(devtools === undefined ? { name: "fixture" } : { name: "fixture", devtools })],
+        build: { write: false, minify: false },
+      });
+      const outputs = Array.isArray(result) ? result : [result];
+      const chunks = outputs
+        .flatMap((output) => ("output" in output ? output.output : []))
+        .filter((item) => item.type === "chunk");
+      return {
+        modules: chunks.flatMap((chunk) => chunk.moduleIds.map(normalizePath)),
+        code: chunks.map((chunk) => chunk.code).join("\n"),
+      };
+    } finally {
+      process.env.NODE_ENV = previous;
+    }
+  }
+
+  const devtoolsModules = (modules: readonly string[]) =>
+    modules.filter((id) => id.startsWith(`${devtoolsDir}/`) || id === devtoolsSlot);
+
+  it("leaves the devtools module out of the production bundle", async () => {
+    const { modules, code } = await buildClient("production");
+    expect(modules).toContain(normalizePath(join(here, "..", "client", "shell.tsx")));
+    expect(devtoolsModules(modules)).toEqual([]);
+    expect(code).not.toContain("data-rex-devtools");
+    expect(code).not.toContain("rex-devtools");
+  });
+
+  it("bundles the devtools in development and drops them when devtools is false", async () => {
+    const development = await buildClient("development");
+    expect(devtoolsModules(development.modules)).toEqual(
+      expect.arrayContaining([
+        `${devtoolsDir}/devtools.tsx`,
+        `${devtoolsDir}/provider.tsx`,
+        `${devtoolsDir}/panels.tsx`,
+        devtoolsSlot,
+      ]),
+    );
+    expect(development.code).toContain("data-rex-devtools");
+
+    const disabled = await buildClient("development", false);
+    expect(devtoolsModules(disabled.modules)).toEqual([]);
+    expect(disabled.code).not.toContain("data-rex-devtools");
+  });
+});
+
+describe("rex() with the Vite dev server", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
   let vite: ViteDevServer;
   let http: Server;
   let base: string;
@@ -272,11 +450,16 @@ describe("rex() with the Vite dev server", () => {
     expect(bundle.flows).toEqual([]);
 
     expect(bundle.pages.map((entry) => entry.id)).toEqual(["home", "note"]);
-    const [home, note] = bundle.pages;
-    expect(home?.page.kind).toBe("page");
-    expect(home?.page.id).toBe("home");
-    expect(home?.page.actions.map((item) => item.id)).toEqual(["add-note"]);
-    expect(home?.page.actions[0]).toBe(bundle.actions[0]);
+    const [homeEntry, noteEntry] = bundle.pages;
+    expect(homeEntry?.page.kind).toBe("page");
+    expect(homeEntry?.page.id).toBe("home");
+    expect(homeEntry?.page.actions.map((item) => item.id)).toEqual(["add-note"]);
+    expect(homeEntry?.page.actions[0]).toBe(bundle.actions[0]);
+    expect(homeEntry?.chunk).toBe("page-home");
+    expect(noteEntry?.chunk).toBe("page-note");
+    expect(Object.keys(homeEntry ?? {}).sort()).toEqual(["chunk", "id", "load", "page"]);
+    const home = await homeEntry?.load();
+    expect(await homeEntry?.load()).toBe(home);
     expect(typeof home?.view).toBe("function");
     expect(Object.keys(home?.states ?? {}).sort()).toEqual(HOME_STATE_EXPORTS);
     expect(Object.keys(home?.regions ?? {})).toEqual(["composer", "list"]);
@@ -284,9 +467,10 @@ describe("rex() with the Vite dev server", () => {
     expect(Object.keys(home?.overlays ?? {})).toEqual(["NoteSheet"]);
     expect(typeof home?.overlays.NoteSheet).toBe("function");
 
-    expect(note?.page.route).toBe("/notes/:noteId");
+    const note = await noteEntry?.load();
+    expect(noteEntry?.page.route).toBe("/notes/:noteId");
     expect(Object.keys(note?.states ?? {}).sort()).toEqual(
-      (note?.page.states ?? [])
+      (noteEntry?.page.states ?? [])
         .filter((state) => state !== "ready")
         .map(stateExportName)
         .sort(),
@@ -354,7 +538,8 @@ describe("rex() with the Vite dev server", () => {
       await writeFile(
         extra,
         [
-          'import { action, always, z } from "@sidioralabs/rex";',
+          'import { action, always } from "@sidioralabs/rex";',
+          'import { z } from "zod/mini";',
           "",
           'export const archiveNote = action("archive-note", {',
           "  input: z.object({}),",

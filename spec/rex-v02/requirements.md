@@ -34,7 +34,7 @@ Rex 0.1 proved the convention and the agent contract. Rex 0.2 brings the framewo
 1. entity(), action() and page() accept any object implementing the Standard Schema v1 interface for fields, input, output and params; validation in the runtime, the router and useAct goes through ~standard.validate.
 2. The Rex field helpers (id, text, money, boolean, enumOf, ref, json, integer, real) are built on zod/mini and keep their x-rex-field tags; the demo and rex new templates use zod/mini.
 3. JSON Schema is produced only in buildManifest: through z.toJSONSchema for zod schemas, from a declared jsonSchema for others, and a REX210 error names the declaration when neither is possible.
-4. A size test proves the rex entry bundled for the browser, zod/mini included and React excluded, is at most 15 KB gzipped.
+4. A size test proves the rex entry bundled for the browser in production mode, with React and zod external and no zod module reachable from the entry, is at most 15 KB gzipped; the client and edge entries meet 30 KB and 40 KB under the same rule.
 
 ## Requirement 4: Package hygiene
 
@@ -345,4 +345,13 @@ Rex 0.1 proved the convention and the agent contract. Rex 0.2 brings the framewo
 
 1. The demo adds a static About page, an ssg Tokens page with revalidate, a loader-driven portfolio, forms on send, a shared store, Img and fonts, a locale switch with two locales, and a web-component embed example; the walk, the no-JS walk, axe and vitals pass with zero failures.
 2. package version is 0.2.0, CHANGELOG has the 0.2.0 entry, README carries the standards table with no open gap, docs are regenerated, and the pack test passes.
+
+## Requirement 36: Continuous integration, coverage and the published package
+
+### Acceptance Criteria
+
+1. Every push and pull request runs typecheck, the unit tests with coverage, the size budgets, the demo check with its unit, operability, no-JS, axe and vitals walks, the docs link and API checks, the audit and license review, the lint and format check and the package smoke test; a v<version> tag publishes @sidioralabs/rex to npm with provenance after the same gates.
+2. The unit suite covers at least 90 percent of lines, statements and functions and 80 percent of branches of packages/rex/src, and the repository holds at least one line of test code for every line of source code; both are measured by scripts the CI pipeline runs and are never lowered to pass.
+3. The packed tarball installs into a fresh rex new app, which builds, serves its home page, its manifest and an RPC call from the built server, and the tarball passes publint and are-the-types-wrong; the README documents installation from npm.
+4. The repository is linted and formatted by its own rex/eslint and rex/prettier presets with zero findings, checked in CI.
 

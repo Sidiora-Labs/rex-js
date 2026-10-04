@@ -1,9 +1,20 @@
 import type { AnyAction } from "./action.ts";
 import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts";
+import { RexDeclarationOptionError, RexError, errorDetail, type RexErrorCode } from "./errors.ts";
 import { isValidName, validateName } from "./ids.ts";
 import { overlayDeclaration, type OverlayDeclaration } from "./overlay.ts";
 import { always, isPredicate, type Predicate } from "./policy.ts";
-import { toJsonSchema, z, type JsonSchema } from "./schema.ts";
+import * as zm from "zod/mini";
+import type { $ZodObject, $ZodShape } from "zod/v4/core";
+import { STANDARD_VENDOR_KEY, schemaType, toJsonSchema, type JsonSchema } from "./schema.ts";
+import {
+  isStandardSchema,
+  isZodSchema,
+  issuePath,
+  validateStandardSync,
+  type StandardInferInput,
+  type StandardSchemaV1,
+} from "./standard.ts";
 import { REX_DATA_STATES, isRexDataState, type RexDataState, type StatesModule } from "./states.ts";
 
 declare module "./registry.ts" {
@@ -15,6 +26,14 @@ declare module "./registry.ts" {
 export type PageDraft = "route" | "session" | "none";
 
 export const PAGE_DRAFTS: readonly PageDraft[] = ["route", "session", "none"];
+
+export const PAGE_RENDER_MODES = ["ssr", "csr", "ssg", "static"] as const;
+
+export type PageRender = (typeof PAGE_RENDER_MODES)[number];
+
+export const PAGE_TRANSITIONS = ["view", "none"] as const;
+
+export type PageTransition = (typeof PAGE_TRANSITIONS)[number];
 
 export interface PageChromeConfig {
   readonly header?: boolean;
@@ -29,6 +48,33 @@ export interface PageChrome {
   readonly back: string | null;
   readonly title: string;
 }
+
+export interface PageLoaderInput<Act extends AnyAction = AnyAction> {
+  readonly action: Act;
+  input?(params: Readonly<Record<string, unknown>>): unknown;
+  readonly invalidatedBy?: readonly string[];
+}
+
+export type PageLoaderSpec = AnyAction | PageLoaderInput;
+
+export type PageLoadMap = Readonly<Record<string, PageLoaderSpec>>;
+
+export interface PageLoader {
+  readonly name: string;
+  readonly action: AnyAction;
+  readonly input: ((params: Readonly<Record<string, unknown>>) => unknown) | null;
+  readonly invalidatedBy: readonly string[];
+}
+
+export interface PageCacheConfig {
+  readonly staleTime: number;
+}
+
+export type PagePaths<Params = Readonly<Record<string, unknown>>> = () =>
+  | readonly Params[]
+  | Promise<readonly Params[]>;
+
+export const LOADER_NAME = /^[a-z][a-zA-Z0-9]*$/;
 
 export type RouteSegment =
   | { readonly kind: "static"; readonly value: string }
@@ -45,24 +91,27 @@ const PARAM_SEGMENT = /^:([a-z][a-zA-Z0-9]*)$/;
 
 export function parseRoute(route: string): ParsedRoute {
   if (typeof route !== "string" || !route.startsWith("/")) {
-    throw new Error("route must be a string starting with /");
+    throw new RexError("REX220", "route must be a string starting with /");
   }
   if (route === "/")
     return Object.freeze({ route, segments: Object.freeze([]), params: Object.freeze([]) });
-  if (route.endsWith("/")) throw new Error("route must not end with /");
+  if (route.endsWith("/")) throw new RexError("REX220", "route must not end with /");
   const segments: RouteSegment[] = [];
   const params: string[] = [];
   for (const part of route.slice(1).split("/")) {
     const param = PARAM_SEGMENT.exec(part);
     if (param) {
       const name = param[1] as string;
-      if (params.includes(name)) throw new Error(`route param ":${name}" is repeated`);
+      if (params.includes(name)) {
+        throw new RexError("REX220", `route param ":${name}" is repeated`);
+      }
       params.push(name);
       segments.push(Object.freeze({ kind: "param", name }));
     } else if (STATIC_SEGMENT.test(part)) {
       segments.push(Object.freeze({ kind: "static", value: part }));
     } else {
-      throw new Error(
+      throw new RexError(
+        "REX220",
         `route segment "${part}" must be lowercase letters, digits, dot, dash and underscore, or :camelCaseParam`,
       );
     }
@@ -70,17 +119,30 @@ export function parseRoute(route: string): ParsedRoute {
   return Object.freeze({ route, segments: Object.freeze(segments), params: Object.freeze(params) });
 }
 
-export type PageParamsSchema = z.ZodObject<z.ZodRawShape>;
+export type PageParamsSchema = zm.ZodMiniObject;
+
+export type AsPageParams<S extends StandardSchemaV1> = S extends PageParamsSchema
+  ? S
+  : S extends $ZodObject<infer Shape>
+    ? zm.ZodMiniObject<Shape>
+    : PageParamsSchema;
 
 export interface PageConfig<
-  P extends PageParamsSchema,
+  P extends StandardSchemaV1,
   S extends readonly RexDataState[],
   R extends string,
   O extends string,
   A extends AnyAction,
+  L extends PageLoadMap = PageLoadMap,
 > {
   readonly route: string;
   readonly params?: P;
+  readonly render?: PageRender;
+  readonly revalidate?: number;
+  readonly paths?: PagePaths<StandardInferInput<P>>;
+  readonly load?: L;
+  readonly cache?: PageCacheConfig;
+  readonly transition?: PageTransition;
   readonly policy?: Predicate;
   readonly recovery?: string;
   readonly draft?: PageDraft;
@@ -98,6 +160,7 @@ export interface PageDeclaration<
   R extends string = string,
   O extends string = string,
   A extends AnyAction = AnyAction,
+  L extends PageLoadMap = PageLoadMap,
 > {
   readonly kind: "page";
   readonly id: N;
@@ -114,6 +177,13 @@ export interface PageDeclaration<
   readonly regions: readonly R[];
   readonly overlays: readonly OverlayDeclaration<O>[];
   readonly states: readonly S[];
+  readonly render: PageRender | null;
+  readonly revalidate: number | null;
+  readonly paths: PagePaths<zm.input<P>> | null;
+  readonly load: L;
+  readonly loaders: readonly PageLoader[];
+  readonly cache: PageCacheConfig | null;
+  readonly transition: PageTransition;
 }
 
 export type AnyPage = PageDeclaration<
@@ -122,17 +192,18 @@ export type AnyPage = PageDeclaration<
   RexDataState,
   string,
   string,
-  AnyAction
+  AnyAction,
+  PageLoadMap
 >;
 
 export type PageParams<Pg> =
   Pg extends PageDeclaration<string, infer P, RexDataState, string, string, AnyAction>
-    ? z.output<P>
+    ? zm.output<P>
     : never;
 
 export type PageParamsInput<Pg> =
   Pg extends PageDeclaration<string, infer P, RexDataState, string, string, AnyAction>
-    ? z.input<P>
+    ? zm.input<P>
     : never;
 
 export type PageStates<Pg> =
@@ -159,20 +230,90 @@ const PAGE_KEYS = new Set([
   "regions",
   "overlays",
   "states",
+  "render",
+  "revalidate",
+  "paths",
+  "load",
+  "cache",
+  "transition",
 ]);
 const CHROME_KEYS = new Set(["header", "nav", "back", "title"]);
+const LOADER_INPUT_KEYS = new Set(["action", "input", "invalidatedBy"]);
+
+function loaderInvalidatedByList(
+  value: unknown,
+  field: string,
+  reject: (code: RexErrorCode, field: string, problem: string) => never,
+): readonly string[] {
+  if (!Array.isArray(value)) return reject("REX203", field, "must be a list of action ids");
+  const ids = new Set<string>();
+  for (const [index, entry] of value.entries()) {
+    if (typeof entry !== "string" || !isValidName(entry)) {
+      reject("REX203", `${field}.${index}`, "must be an action id");
+    }
+    if (ids.has(entry)) reject("REX203", `${field}.${index}`, `repeats action "${entry}"`);
+    ids.add(entry);
+  }
+  return Object.freeze([...ids]);
+}
+
+function isActionDeclaration(value: unknown): value is AnyAction {
+  return (
+    typeof value === "object" && value !== null && (value as { kind?: unknown }).kind === "action"
+  );
+}
+
+function pageParamsSchema(
+  value: unknown,
+  routeParams: readonly string[],
+  fail: (field: string, problem: string) => never,
+): PageParamsSchema {
+  if (value === undefined) return zm.object({});
+  if (value instanceof zm.ZodMiniObject) return value as PageParamsSchema;
+  if (isZodSchema(value)) {
+    if (schemaType(value) !== "object" || !("shape" in value)) {
+      return fail("params", "must be an object schema");
+    }
+    return zm.object((value as unknown as $ZodObject)._zod.def.shape);
+  }
+  if (!isStandardSchema(value)) {
+    return fail("params", "must be a Standard Schema object such as a zod object");
+  }
+  const routeShape = Object.fromEntries(routeParams.map((name) => [name, zm.string()]));
+  const adapter = zm.looseObject(routeShape).check((payload) => {
+    const result = validateStandardSync(value, payload.value);
+    if (result.issues === undefined) return;
+    for (const issue of result.issues) {
+      payload.issues.push({
+        code: "custom",
+        message: issue.message,
+        input: payload.value,
+        path: issuePath(issue) === "" ? [] : issuePath(issue).split("."),
+      });
+    }
+  });
+  zm.globalRegistry.add(adapter, { [STANDARD_VENDOR_KEY]: value["~standard"].vendor });
+  return adapter as unknown as PageParamsSchema;
+}
 
 export function page<
   const N extends string,
-  P extends PageParamsSchema = z.ZodObject<{}>,
+  P extends StandardSchemaV1 = zm.ZodMiniObject<{}>,
   const S extends readonly RexDataState[] = typeof REX_DATA_STATES,
   const R extends string = never,
   const O extends string = never,
   const A extends AnyAction = never,
->(name: N, config: PageConfig<P, S, R, O, A>): PageDeclaration<N, P, S[number], R, O, A> {
+  const L extends PageLoadMap = {},
+>(
+  name: N,
+  config: PageConfig<P, S, R, O, A, L>,
+): PageDeclaration<N, AsPageParams<P>, S[number], R, O, A, L> {
   const id = declarationName("page", name);
   const fail = (field: string, problem: string): never => {
     throw new RexDeclarationError("page", id, field, problem);
+  };
+  const reject = (code: RexErrorCode, field: string, problem: string): never => {
+    throw new RexDeclarationOptionError(code, { declaration: "page", id, field, problem });
   };
 
   if (!isPlainObject(config)) fail("config", "must be a declaration object");
@@ -184,18 +325,17 @@ export function page<
   try {
     parsedRoute = parseRoute(config.route);
   } catch (error) {
-    fail("route", (error as Error).message);
+    fail("route", errorDetail(error));
   }
   const route = parsedRoute as ParsedRoute;
 
-  const params = (config.params ?? z.object({})) as P;
-  if (!(params instanceof z.ZodObject)) fail("params", "must be a zod object schema");
-  const shape = params.shape as Record<string, z.ZodType>;
+  const params = pageParamsSchema(config.params, route.params, fail) as AsPageParams<P>;
+  const shape: $ZodShape = (params as PageParamsSchema).shape;
   for (const routeParam of route.params) {
     const paramSchema = shape[routeParam];
     if (paramSchema === undefined) {
       fail("params", `must declare the route param "${routeParam}"`);
-    } else if (paramSchema.safeParse(undefined).success) {
+    } else if (zm.safeParse(paramSchema, undefined).success) {
       fail(`params.${routeParam}`, "is a route param and must be required");
     }
   }
@@ -297,6 +437,103 @@ export function page<
   if (!stateSet.has("ready")) fail("states", 'must include "ready"');
   const orderedStates = REX_DATA_STATES.filter((state) => stateSet.has(state));
 
+  let render: PageRender | null = null;
+  if (config.render !== undefined) {
+    if (!(PAGE_RENDER_MODES as readonly string[]).includes(config.render)) {
+      reject("REX200", "render", `must be one of ${PAGE_RENDER_MODES.join(", ")}`);
+    }
+    render = config.render;
+  }
+
+  let revalidate: number | null = null;
+  if (config.revalidate !== undefined) {
+    if (render !== "ssg") reject("REX201", "revalidate", 'is only allowed with render "ssg"');
+    if (!Number.isInteger(config.revalidate) || config.revalidate <= 0) {
+      reject("REX201", "revalidate", "must be a positive whole number of seconds");
+    }
+    revalidate = config.revalidate;
+  }
+
+  let paths: PagePaths<zm.input<AsPageParams<P>>> | null = null;
+  if (config.paths !== undefined) {
+    if (typeof config.paths !== "function") reject("REX202", "paths", "must be a function");
+    if (render !== "ssg" && render !== "static") {
+      reject("REX202", "paths", 'is only allowed with render "ssg" or "static"');
+    }
+    if (route.params.length === 0) {
+      reject("REX202", "paths", "is only allowed on a route with params");
+    }
+    paths = config.paths as PagePaths<zm.input<AsPageParams<P>>>;
+  }
+
+  const loadConfig = (config.load ?? {}) as L;
+  if (!isPlainObject(loadConfig as unknown)) {
+    reject("REX203", "load", "must map loader names to read actions");
+  }
+  const loaders: PageLoader[] = [];
+  for (const [loaderName, spec] of Object.entries(loadConfig as PageLoadMap)) {
+    const field = `load.${loaderName}`;
+    if (!LOADER_NAME.test(loaderName)) {
+      reject("REX203", field, "must be a camelCase loader name");
+    }
+    let loaderAction: unknown = spec;
+    let loaderInput: PageLoader["input"] = null;
+    let invalidatedBy: readonly string[] = Object.freeze([]);
+    if (!isActionDeclaration(spec)) {
+      if (!isPlainObject(spec as unknown)) {
+        reject("REX203", field, "must be a read action or { action, input, invalidatedBy }");
+      }
+      for (const property of Object.keys(spec)) {
+        if (!LOADER_INPUT_KEYS.has(property)) {
+          reject("REX203", `${field}.${property}`, "is not one of action, input, invalidatedBy");
+        }
+      }
+      if (spec.invalidatedBy !== undefined) {
+        invalidatedBy = loaderInvalidatedByList(spec.invalidatedBy, `${field}.invalidatedBy`, reject);
+      }
+      if (spec.input !== undefined || spec.invalidatedBy === undefined) {
+        const mapInput: unknown = spec.input;
+        if (typeof mapInput !== "function") {
+          return reject(
+            "REX203",
+            `${field}.input`,
+            "must be a function from the page params to the input",
+          );
+        }
+        const mapper = mapInput.bind(spec) as NonNullable<PageLoader["input"]>;
+        loaderInput = (params) => mapper(params);
+      }
+      loaderAction = spec.action;
+    }
+    if (!isActionDeclaration(loaderAction)) {
+      reject("REX203", field, "must reference an action declaration");
+    }
+    const declared = loaderAction as AnyAction;
+    if (declared.effect !== "read") {
+      reject("REX203", field, `references action "${declared.id}" whose effect is not read`);
+    }
+    loaders.push(
+      Object.freeze({ name: loaderName, action: declared, input: loaderInput, invalidatedBy }),
+    );
+  }
+
+  let cache: PageCacheConfig | null = null;
+  if (config.cache !== undefined) {
+    if (!isPlainObject(config.cache as unknown)) reject("REX204", "cache", "must be an object");
+    for (const property of Object.keys(config.cache)) {
+      if (property !== "staleTime") reject("REX204", `cache.${property}`, "is not staleTime");
+    }
+    if (!Number.isInteger(config.cache.staleTime) || config.cache.staleTime < 0) {
+      reject("REX204", "cache.staleTime", "must be a whole number of milliseconds of zero or more");
+    }
+    cache = Object.freeze({ staleTime: config.cache.staleTime });
+  }
+
+  const transition = config.transition ?? "none";
+  if (!(PAGE_TRANSITIONS as readonly string[]).includes(transition)) {
+    reject("REX205", "transition", `must be one of ${PAGE_TRANSITIONS.join(", ")}`);
+  }
+
   return Object.freeze({
     kind: "page",
     id,
@@ -313,5 +550,12 @@ export function page<
     regions: Object.freeze([...regions]),
     overlays: Object.freeze(overlays),
     states: Object.freeze(orderedStates) as readonly S[number][],
+    render,
+    revalidate,
+    paths,
+    load: Object.freeze({ ...loadConfig }) as L,
+    loaders: Object.freeze(loaders),
+    cache,
+    transition,
   });
 }

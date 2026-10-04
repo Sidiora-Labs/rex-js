@@ -1,18 +1,25 @@
 {
   "name": "rex-js",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.27.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "pnpm -r --filter @sidioralabs/rex build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "check": "pnpm --filter demo check",
-    "dev": "pnpm --filter demo dev"
+    "dev": "pnpm --filter demo dev",
+    "docs:errors": "node tools/docs-errors.mjs",
+    "docs:api": "node tools/docs-api.mjs",
+    "docs:check": "node tools/check-links.mjs && node tools/docs-api.mjs --check"
   },
   "devDependencies": {
-    "tsx": "^4.23.15",
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.13.1",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"
   }

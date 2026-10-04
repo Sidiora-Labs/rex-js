@@ -2,9 +2,11 @@ import { toORPCError } from "@orpc/client";
 import { ORPCError, os, type Procedure } from "@orpc/server";
 import type { AnyAction } from "../core/action.ts";
 import type { Actor } from "../core/actor.ts";
+import { RexError } from "../core/errors.ts";
 import { evaluate } from "../core/policy.ts";
 import { CONFIRM_PROCEDURE } from "../core/protocol.ts";
-import { z } from "../core/schema.ts";
+import * as zm from "zod/mini";
+import { validateStandard } from "../core/standard.ts";
 import {
   AUDIT_OK,
   ERROR_CODE_PATTERN,
@@ -14,6 +16,13 @@ import {
   type Ledger,
 } from "./audit.ts";
 import type { RexContext } from "./context.ts";
+import {
+  ATTR_ACTION_ID,
+  ATTR_ACTOR_ID,
+  SPAN_ACTION,
+  telemetryFor,
+  type RexTelemetry,
+} from "./middleware/telemetry.ts";
 
 export { CONFIRM_PROCEDURE };
 export const DEFAULT_CONFIRM_TTL_MS = 60_000;
@@ -62,20 +71,20 @@ export type ActionProcedure<A extends AnyAction> = Procedure<
   NoMeta
 >;
 
-export const confirmInputSchema = z.strictObject({
-  action: z.string().min(1),
-  input: z.unknown(),
+export const confirmInputSchema = zm.strictObject({
+  action: zm.string().check(zm.minLength(1)),
+  input: zm.unknown(),
 });
 
-export const confirmOutputSchema = z.strictObject({
-  token: z.string().min(1),
-  action: z.string().min(1),
-  inputDigest: z.string().min(1),
-  expiresAt: z.iso.datetime(),
+export const confirmOutputSchema = zm.strictObject({
+  token: zm.string().check(zm.minLength(1)),
+  action: zm.string().check(zm.minLength(1)),
+  inputDigest: zm.string().check(zm.minLength(1)),
+  expiresAt: zm.iso.datetime(),
 });
 
-export type ConfirmInput = z.input<typeof confirmInputSchema>;
-export type ConfirmOutput = z.output<typeof confirmOutputSchema>;
+export type ConfirmInput = zm.input<typeof confirmInputSchema>;
+export type ConfirmOutput = zm.output<typeof confirmOutputSchema>;
 
 export type ConfirmProcedure = Procedure<
   RexContext,
@@ -97,6 +106,7 @@ export interface ActionRouterSource<A extends AnyAction> {
 export interface ActionRouterOptions {
   readonly ledger: Ledger;
   readonly confirmTtlMs?: number;
+  readonly telemetry?: RexTelemetry;
 }
 
 interface PendingConfirmation {
@@ -204,31 +214,41 @@ function actionProcedure(
   declared: AnyAction,
   ledger: Ledger,
   confirmations: Confirmations,
+  telemetry: () => RexTelemetry,
 ): ActionProcedure<AnyAction> {
   return base
-    .use(async ({ context, next }, input: unknown) => {
-      const at = new Date().toISOString();
-      const started = performance.now();
-      let outcome: AuditOutcome = AUDIT_OK;
-      try {
-        return await next();
-      } catch (error) {
-        outcome = auditCode(error);
-        throw error;
-      } finally {
-        await ledger.append(
-          await createAuditEntry({
-            actor: context.actor.id,
-            actionId: declared.id,
-            input,
-            outcome,
-            effect: declared.effect,
-            durationMs: performance.now() - started,
-            at,
-          }),
-        );
-      }
-    })
+    .use(async ({ context, next }, input: unknown) =>
+      telemetry().span(
+        SPAN_ACTION,
+        { [ATTR_ACTION_ID]: declared.id, [ATTR_ACTOR_ID]: context.actor.id },
+        async (span) => {
+          const at = new Date().toISOString();
+          const started = performance.now();
+          let outcome: AuditOutcome = AUDIT_OK;
+          try {
+            return await next();
+          } catch (error) {
+            outcome = auditCode(error);
+            throw error;
+          } finally {
+            span.outcome(outcome);
+            await ledger.append(
+              await createAuditEntry({
+                actor: context.actor.id,
+                actionId: declared.id,
+                input,
+                outcome,
+                effect: declared.effect,
+                durationMs: performance.now() - started,
+                at,
+                traceId: span.traceId,
+                spanId: span.spanId,
+              }),
+            );
+          }
+        },
+      ),
+    )
     .use(async ({ context, next }) => {
       forbidden(declared, context.actor);
       return next();
@@ -262,14 +282,14 @@ function confirmProcedure(
         });
       }
       forbidden(declared, context.actor);
-      const parsed = await declared.input.safeParseAsync(input.input);
-      if (!parsed.success) {
+      const parsed = await validateStandard(declared.input, input.input);
+      if (parsed.issues !== undefined) {
         throw new ORPCError("BAD_REQUEST", {
           message: "Input validation failed",
-          data: { action: declared.id, issues: parsed.error.issues },
+          data: { action: declared.id, issues: parsed.issues },
         });
       }
-      return confirmations.issue(declared, parsed.data, context.actor);
+      return confirmations.issue(declared, parsed.value, context.actor);
     });
 }
 
@@ -284,29 +304,36 @@ export function buildActionRouter<A extends AnyAction>(
     typeof ledger.append !== "function" ||
     typeof ledger.list !== "function"
   ) {
-    throw new TypeError("buildActionRouter: ledger must implement append and list");
+    throw new RexError("REX400", "buildActionRouter: ledger must implement append and list");
   }
   const ttlMs = options.confirmTtlMs ?? DEFAULT_CONFIRM_TTL_MS;
   if (!Number.isInteger(ttlMs) || ttlMs < 1) {
-    throw new RangeError("buildActionRouter: confirmTtlMs must be a positive integer");
+    throw new RexError("REX400", "buildActionRouter: confirmTtlMs must be a positive integer");
   }
   const confirmations = createConfirmations(ttlMs);
+  const configured = options.telemetry;
+  const telemetry = (): RexTelemetry => configured ?? telemetryFor(ledger);
   const byId = new Map<string, AnyAction>();
   for (const declared of source.actions) {
     if (declared.kind !== "action") {
-      throw new TypeError("buildActionRouter: actions must be action declarations");
+      throw new RexError("REX400", "buildActionRouter: actions must be action declarations");
     }
     if (declared.id === CONFIRM_PROCEDURE) {
-      throw new Error(`buildActionRouter: "${CONFIRM_PROCEDURE}" is reserved`);
+      throw new RexError("REX401", `buildActionRouter: "${CONFIRM_PROCEDURE}" is reserved`);
     }
     if (byId.has(declared.id)) {
-      throw new Error(`buildActionRouter: duplicate action "${declared.id}"`);
+      throw new RexError("REX401", `buildActionRouter: duplicate action "${declared.id}"`);
     }
     byId.set(declared.id, declared);
   }
   const router: Record<string, ActionProcedure<AnyAction> | ConfirmProcedure> = {};
   for (const id of [...byId.keys()].sort()) {
-    router[id] = actionProcedure(byId.get(id) as AnyAction, ledger, confirmations);
+    router[id] = actionProcedure(
+      byId.get(id) as AnyAction,
+      ledger,
+      confirmations,
+      telemetry,
+    );
   }
   router[CONFIRM_PROCEDURE] = confirmProcedure(byId, confirmations);
   return Object.freeze(router) as unknown as ActionRouter<A>;

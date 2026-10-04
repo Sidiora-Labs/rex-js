@@ -1,0 +1,392 @@
+# rex-v02 qualification log. Format: sectioned KV (.kvx). String values are ALWAYS double-quoted.
+
+[qualification.01]
+task = "0.3"
+file = "packages/rex/src/client/router.tsx, client/nav.ts, client/shell.tsx, client/agent/sidecar.tsx, client/agent/confirm.tsx, core/flow.ts, store/drizzle.ts, cli/commands/new.ts"
+symbol = "z export, AnyPage.params, ActionDeclaration.inputJsonSchema, FieldKind, packageJsonTemplate"
+observed = "Finishing the zod/mini move needs files outside the 0.3 touches: the core still re-exports classic z, router.tsx, nav.ts and shell.tsx read params.shape so a non-zod Standard Schema page params only receives route params, sidecar.tsx reads declaration JSON Schema so declarations keep it beside the manifest copy, drizzle KIND_COLUMNS blocks real and json kinds, and rex new lists no zod dependency so templates keep the core z; evidence: revision c26b3a68c53cb6325ce2ac31e098b3e24c8a8f8d, command pnpm -C packages/rex exec vitest run src/core/standard.test.ts src/core/schema.test.ts src/core/entity.test.ts src/core/action.test.ts src/server/router.test.ts src/client/act.test.tsx src/manifest/build.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.3-verify.log."
+assumption = "A follow-up task owning those files switches the core z export to zod/mini, reads params and JSON Schema from Standard Schema and the manifest, adds real and json field kinds to the Drizzle store, and adds zod to the rex new package template (0.4 owns new.ts)."
+severity = "assumption"
+
+[qualification.02]
+task = "0.4"
+file = "packages/rex/src/manifest/scan.ts, packages/rex/src/check/rules/manifest.ts, packages/rex/src/cli/new.test.ts"
+symbol = "loadRegistry, scanManifest, manifestRule, generated package.json dependencies"
+observed = "tsx and commander left the package and rex manifest now loads app code through cli/load.ts, but manifest/scan.ts (used by the check manifest rule) still imports tsx, resolved only through the root devDependency, and new.test.ts pins the generated dependency list that now adds the vite, zod, wouter, cmdk, @vitejs/plugin-react and @hono/node-server peers; evidence: revision 1b634ec05443a6be38df09e54994747c9f6ab9b0, command pnpm -C packages/rex exec vitest run src/cli/args.test.ts src/cli/cli.test.ts src/cli/pack.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.4-verify.log."
+assumption = "A follow-up task owning manifest/scan.ts and check/rules/manifest.ts builds the fresh manifest through cli/load.ts so the root tsx devDependency can go, and the owner of new.test.ts updates its dependency expectation to the peer list in commands/new.ts APP_PEERS."
+severity = "assumption"
+
+[qualification.03]
+task = "0.5"
+file = "packages/rex/src/core/errors.ts, packages/rex/src/manifest/sidecar.schema.ts"
+symbol = "REX330, sidecarSchema"
+observed = "The region boundary reports code REX330 but the catalog in core/errors.ts (owned by 2.1) has no REX3xx entries, so the code travels as a REGION_ERROR_CODE string; the strict sidecar schema (outside the touches) has no regions field, so a failing region is reported through the existing state (recoverable-error) and outcome (region address and REX330 message) fields; evidence: revision bef8d5c6201c6c9ac828b9362cead824740876ac, command pnpm -C packages/rex exec vitest run src/client/boundary.test.tsx src/client/page.test.tsx src/vite/vite.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.5-verify.log."
+assumption = "Task 2.1 adds REX330 to the catalog so RegionBoundary can raise a RexError, and a sidecar schema owner may add a regions list with per-region state if agents need more than the page state and outcome."
+severity = "note"
+
+[qualification.04]
+task = "0.6"
+file = "packages/rex/src/cli/commands/dev.ts, packages/rex/src/cli/commands/build.ts, packages/rex/src/cli/load.ts"
+symbol = "rex(), RexPluginOptions.compiler, ResolvedRexOptions.compiler"
+observed = "The Vite plugin honours rex({ compiler }) (default on, client environment only, through reactCompilerPreset and @babel/core), but rex dev, rex build and the module loader call rex() without the resolved rex.config.ts compiler flag because those files are outside the 0.6 touches, so compiler: false in rex.config.ts does not yet reach the plugin; evidence: revision c806c05fcb19f5aa4233c30b464bc3337f27dcff, command pnpm -C packages/rex exec vitest run src/vite/compiler.test.ts src/client/compiler.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.6-verify.log."
+assumption = "The task that next owns the dev and build commands passes { compiler: config.compiler } from the loaded config into rex()."
+severity = "assumption"
+
+[qualification.05]
+task = "0.7"
+file = "packages/rex/src/core/schema.ts, core/page.ts, core/entity.ts, manifest/sidecar.schema.ts, server/router.ts, server/flow.ts, client/act.ts"
+symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowStateSchema, confirmGrantSchema"
+observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
+assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
+severity = "blocker"
+
+[qualification.551]
+task = "5.5"
+file = "tools/check-links.mjs"
+symbol = "verify_cmd of task 5.5"
+observed = "The 5.5 verify_cmd runs tools/check-links.mjs, which task 2.6 creates, but 5.5 requires only 0.7 while 2.6 requires 5.4 and 5.6, so the script is absent when 5.5 runs and node exits with MODULE_NOT_FOUND; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command node tools/check-links.mjs, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.5-private/logs/5.5-verify.log."
+assumption = "Once 2.6 lands tools/check-links.mjs, the unchanged verify_cmd can qualify 5.5 (its README.md and governance links all point at files present in the tree); alternatively 5.5 gains requires 2.6."
+severity = "blocker"
+
+[qualification.411]
+task = "4.1"
+file = "packages/rex/src/check/check.test.ts"
+symbol = "defaultRules, default rule set execution order test"
+observed = "Task 4.1 appends securityRule to defaultRules in check/rules/index.ts and adds app/components/Markup.tsx to the all/fail fixture so the combined fixture reports security/unsafe-html, but check.test.ts (outside the 4.1 touches) pins the rule id list without security; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/check/rules/security.test.ts src/core/serialize.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.1-private/logs/4.1-verify.log."
+assumption = "The owner of check.test.ts (or the wave merge) appends \"security\" after \"manifest\" in the default rule set order test; no assertion was relaxed."
+severity = "assumption"
+
+[qualification.151]
+task = "1.5"
+file = "packages/rex/src/core/errors.ts, packages/rex/src/server/adapters/runtime.ts, packages/rex/src/vite/budgets.ts"
+symbol = "REX450, RuntimeMissingError, RUNTIME_MISSING_CODE, entryBudgets"
+observed = "The catalog in core/errors.ts (outside the 1.5 touches) has no REX450 and RexError rejects uncatalogued codes, so the bun and deno adapters throw RuntimeMissingError carrying code REX450, hint, docs and runtime, following the REX330 precedent from 0.5; the edge entry budget in vite/budgets.ts still measures src/server/index.ts; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/server/fetch-only.test.ts src/server/adapters/adapters.test.ts src/server/node.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.5-private/logs/1.5-verify.log."
+assumption = "Task 2.1 adds REX450 to the catalog so RuntimeMissingError can become a RexError, and the owner of vite/budgets.ts may keep src/server/index.ts as the edge source since an edge worker bundles createRexServer plus the few lines of adapters/edge.ts."
+severity = "note"
+
+[qualification.371]
+task = "3.7"
+file = "examples/demo/app/pages/portfolio, packages/rex/src/vite/budgets.ts, packages/rex/src/core/schema.ts"
+symbol = "rex build page budget, buildDemo"
+observed = "The axe walk never reaches a page because rex build exits 1 with page-portfolio at 80.36 KB gzip over the 50 KB page budget (classic zod still bundled, see qualification.05); the committed demo manifest was also stale against a fresh build and was regenerated with rex manifest; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C examples/demo exec playwright test e2e/axe.spec.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.7-private/logs/3.7-verify.log."
+assumption = "Once the zod/mini move brings the portfolio page chunk under its budget the unchanged axe spec builds the demo and audits every page and overlay in both densities; any serious or critical violation it then reports is for 6.2; the budget was not relaxed and --no-check was not used."
+severity = "blocker"
+
+[qualification.221]
+task = "2.2"
+file = "packages/rex/src/core/errors.ts, packages/rex/src/vite/hmr.ts"
+symbol = "REX320, PAGE_RELOAD_CODE, RexHmrNotice"
+observed = "The page declaration reload notice carries code REX320 but the catalog in core/errors.ts (owned by 2.1) has no REX320 entry, so hmr.ts sends it as the PAGE_RELOAD_CODE string in a rex:notice HMR payload and the dev logger instead of a RexError; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/vite/hmr.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.2-private/logs/2.2-verify.log."
+assumption = "The catalog owner adds REX320 (page declaration changed, full reload) so docs/errors.md lists it; the notice shape and code string stay as they are."
+severity = "note"
+
+[qualification.081]
+task = "0.8"
+file = "packages/rex/src/core/schema.ts, packages/rex/src/manifest/build.ts, packages/rex/src/client/index.ts, packages/rex/src/server/index.ts"
+symbol = "z export, buildManifest, entryBudgets"
+observed = "After the zod/mini move the unchanged size test measures core 106.40 KB, client 35.51 KB and edge 40.32 KB gzipped against 15, 30 and 40 KB; core contributors (rendered raw): zod/v4/core 265.2 KB, zod/v4/locales 242.9 KB, zod/v4/mini 36.0 KB, core/config.ts 14.2 KB, core/page.ts 12.1 KB, because the library entry re-exports the whole zod/mini namespace as z (locales and the JSON Schema generator stay live); client: zod/v4/core 42.8 KB, client/agent 40.3 KB, @orpc/server 14.5 KB, client/page.tsx 9.2 KB, client/router.tsx 7.2 KB; edge: zod/v4/core 72.6 KB (json-schema-processors 23.3 KB and to-json-schema 15.0 KB from buildManifest at server start), hono 39.9 KB, @orpc/server 25.0 KB, @orpc/standard-server-fetch 7.3 KB, @orpc/standard-server 6.9 KB; evidence: revision a6f6eda (base 013c50fdde6d4fbcc0499f3a0586325cde5ea074), command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts src/cli/new.test.ts src/server/router.test.ts src/client/act.test.tsx src/client/nav.test.tsx src/store/drizzle.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0.8-private/logs/0.8-verify.log, contributors /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0.8-private/logs/0.8-size-contributors.log."
+assumption = "The core budget cannot hold while the rex entry re-exports the full zod/mini namespace; a follow-up decides between a curated z export or measuring the core without the z namespace, moves JSON Schema generation out of the edge entry (prebuilt manifest) and trims the client agent and @orpc/server imports; the budgets were not relaxed."
+severity = "blocker"
+
+[qualification.082]
+task = "0.8"
+file = "packages/rex/src/manifest/build.ts, packages/rex/src/core/entity.test.ts, examples/demo/app/pages/send/hooks/useSendDraft.ts, examples/demo/app/pages/portfolio/hooks/useHoldingsFilter.ts"
+symbol = "entityManifest (z.ZodType casts), entity schema test (z.ZodObject), sendDraft and holdingsFilter (z.string().max)"
+observed = "With the core z now zod/mini, files outside the 0.8 touches still use classic-only z members: build.ts lines 103-104 cast to z.ZodType (TS2694, fails tsc in pnpm build, the rex new check in new.test.ts and the demo typecheck), entity.test.ts line 74 asserts toBeInstanceOf(z.ZodObject), and the two demo hooks call z.string().max (TS2339 in rex check); evidence: revision a6f6eda, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0.8-private/logs/0.8-typecheck.log; command node packages/rex/src/cli/index.ts check in examples/demo, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0.8-private/logs/0.8-demo-check.log."
+assumption = "A follow-up owning those files casts to ZodSchemaLike in build.ts, asserts zm.ZodMiniObject in entity.test.ts and writes z.string().check(z.maxLength(n)) in the demo hooks; with that the demo checker is green (the regenerated manifest already passes the manifest rule)."
+severity = "blocker"
+
+[qualification.083]
+task = "0.8"
+file = "packages/rex/src/core/serialize.test.ts, packages/rex/src/client/agent/sidecar.tsx"
+symbol = "SidecarSource.manifest, buildSidecarPayload"
+observed = "Merging 0.8 into feature/rex-v02 meets the sidecar escaping test that 4.1 added: serialize.test.ts line 81 calls buildSidecarPayload without the manifest field that 0.8 made required on SidecarSource, so tsc reports TS2345 there beside the qualification.082 errors; the test was not edited at merge; evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -r typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/fm-rex-v02-merge-0.8.log."
+assumption = "The follow-up that closes qualification.082 also passes a manifest built with buildManifest from the test's annotate action and notes page into that buildSidecarPayload call; no assertion changes."
+severity = "blocker"
+
+[qualification.421]
+task = "4.2"
+file = "packages/rex/src/server/server.test.ts, server/node.test.ts, client/runtime.test.tsx, client/act.test.tsx, client/agent/*.test.tsx, cli/commands.test.ts, server/context.ts, server/ssr.ts"
+symbol = "installSecurityMiddleware, requestNonce, createRexContext, RequestContext.nonce"
+observed = "req 25 ac_2 makes every non-GET request to /rex/* without an allowed Origin a 403, and the middleware is registered for every createRexServer, so existing tests outside the 4.2 touches that POST to /rex/rpc or /rex/flow from Node without an Origin header now receive 403; RexContext.nonce is generated lazily in context.ts while the CSP header uses requestNonce(request), so SSR (1.1) must take its nonce from requestNonce; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/server/security.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.2-private/logs/4.2-verify.log."
+assumption = "Owners of those tests send Origin: <their base URL> on RPC and flow posts (browsers always send it, so the client code needs no change), and the owner of context.ts seeds RequestContext.nonce from requestNonce(request) so RexContext and the CSP header share one per-request nonce; the Origin rule was not relaxed."
+severity = "blocker"
+
+[qualification.311]
+task = "3.1"
+file = "packages/rex/src/core/serialize.test.ts"
+symbol = "SidecarSource.manifest, buildSidecarPayload"
+observed = "The package typecheck still fails outside the 3.1 touches: serialize.test.ts line 81 calls buildSidecarPayload without the manifest field that 0.8 made required on SidecarSource (TS2345), beside the build.ts and entity.test.ts errors already recorded in qualification.082; the 3.1 files typecheck clean; evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.1-private/logs/3.1-typecheck-2.log."
+assumption = "The owner of core/serialize.test.ts passes manifest: buildManifest(registry) into buildSidecarPayload; no check was relaxed and the optional stores and regions fields added by 3.1 need no change there."
+severity = "assumption"
+
+[qualification.361]
+task = "3.6"
+file = "packages/rex/src/cli/commands/dev.ts, packages/rex/src/cli/commands/build.ts, packages/rex/src/cli/load.ts, packages/rex/src/cli/config.ts"
+symbol = "rex(), RexPluginOptions.tailwind, RexPluginOptions.ui"
+observed = "The Vite plugin adds @tailwindcss/vite through vite/styles.ts when rex({ tailwind: true }) or rex({ ui: 'designx' }), and the token rule reads check.tokens statically from rex.config.ts, but rex dev, rex build and the module loader (outside the 3.6 touches) call rex() without the tailwind and ui values of the loaded rex.config.ts; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/vite/styles.test.ts src/check/rules/quality.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.6-private/logs/3.6-verify.log."
+assumption = "The task that next owns the dev and build commands passes { tailwind: config.tailwind, ui: config.ui } from the loaded config into rex(), alongside compiler and devtools from qualification.04."
+severity = "assumption"
+
+[qualification.431]
+task = "4.3"
+file = "packages/rex/src/core/errors.ts, packages/rex/src/cli/commands/build.ts"
+symbol = "REX_ERROR_CATALOG, buildApp, RexPluginOptions.secretNames, boundaryError"
+observed = "The boundary fails client builds with REX440 and REX441 carried as the Rolldown plugin code with a hint and docs link, but REX440 and REX441 are not in the catalog in core/errors.ts (owned by 2.1) so RexError cannot be raised yet, and rex build calls rex() without config.security.secretNames (cli/commands/build.ts is outside the 4.3 touches), so the secret-name scan only runs when rex({ secretNames }) is passed; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/vite/boundary.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.3-private/logs/4.3-verify.log."
+assumption = "Task 2.1 adds REX440 and REX441 to the catalog and 5.7 converts vite/boundary.ts to RexError; the owner of cli/commands/build.ts passes { secretNames: config.security.secretNames } into rex() for the client build."
+severity = "assumption"
+
+[qualification.141]
+task = "1.4"
+file = "packages/rex/src/server/index.ts, packages/rex/src/server/form.ts, packages/rex/src/server/routes/form.ts, packages/rex/src/server/middleware/security.ts"
+symbol = "isAllowedOrigin (form.ts and middleware/security.ts), installFormRoute, installSecurityMiddleware"
+observed = "Merging 1.4 into feature/rex-v02 meets 4.2: both export isAllowedOrigin with different signatures (form.ts takes the request and optional origins, middleware/security.ts takes origin, requestUrl and origins), and the explicit security re-export in server/index.ts shadowed the form one that form.test.tsx imports (TS2554 at lines 257-262), so integration repair 5e24383 re-exports only the form helper from rex/server while the security helper stays in its module and in use; POST /rex/form/:action now passes the security middleware, which allows origins listed in security.origins, and then the form route's own check, which accepts only the request origin, so a listed cross origin is refused by the form route; evidence: revision 5e243838c3e92cff35c81b2cb733ac35de40fa97, command pnpm -r typecheck, exit 2 with only the qualification.082 and .083 errors left, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/fm-rex-v02-merge-1.4.log."
+assumption = "A follow-up owning server/form.ts and server/routes/form.ts makes the form route check Origin through the 4.2 helper with resolveSecurityPolicy(setup.options).security.origins and removes the duplicate helper, so Rex keeps one Origin rule and one exported isAllowedOrigin; no check or test was relaxed at merge."
+severity = "assumption"
+
+[qualification.111]
+task = "1.1"
+file = "packages/rex/src/server/adapters/node.ts, packages/rex/src/server/app.ts, packages/rex/src/core/errors.ts, packages/rex/src/vite/split.ts"
+symbol = "createNodeApp, RexServerOptions, REX310, pageChunkGroups"
+observed = "SSR is served by routes/render.ts for any registry with a renderer registered through registerPageRenderer (the rex:render module does this in dev and in the rex build server entry) because RexServerOptions in app.ts is outside the 1.1 touches; createNodeApp still answers page paths with dist/client/index.html before the app, so the built node server never reaches the SSR route; REX310 travels as the HYDRATION_MISMATCH_CODE string since the catalog has no REX3xx entries; the fixture client manifest shows the entry chunk statically importing page-home (and page-note importing page-home), so the home page CSS is an entry stylesheet; evidence: revision b285a9f2322adae9098dab5f36d1a4b9b564aea9, command pnpm -C packages/rex exec vitest run src/server/ssr.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.1-private/logs/1.1-verify.log."
+assumption = "The owner of adapters/node.ts forwards GET page paths to the app when a page renderer is registered (static assets first, no index.html fallback), 2.1 adds REX310 to the catalog, and the owner of vite/split.ts keeps shared modules out of page-<id> groups so each page chunk loads only on its route."
+severity = "note"
+
+[qualification.581]
+task = "5.8"
+file = "packages/rex/src/core/serialize.test.ts"
+symbol = "serialize sidecar source test (line 81)"
+observed = "The single typecheck reports TS2345 in serialize.test.ts line 81 (SidecarSource now requires manifest) beside the build.ts and entity.test.ts errors already in qualification.082; no error is in the 5.8 touches; evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.8-private/logs/5.8-typecheck.log."
+assumption = "A follow-up owning core/serialize.test.ts passes the manifest in its sidecar source as 0.8 made SidecarSource require it; the 5.8 verify_cmd passes with exit 0."
+severity = "minor"
+
+[qualification.451]
+task = "4.5"
+file = "tools/license-review.mjs"
+symbol = "license review scope"
+observed = "The review walks the dependencies and optionalDependencies closure of every published workspace package (packages/rex: 20 packages, MIT and (MIT OR CC0-1.0)) and passes; the adopter-installed peer and private demo closure that pnpm licenses list --prod reports also holds lightningcss (MPL-2.0, via the vite peer), caniuse-lite (CC-BY-4.0) and wouter (Unlicense, optional peer), which are outside the allowlist and are not gated; evidence: revision f9c42dfc20de556bf9ada91733d3a9c72463ff79, command node tools/license-review.mjs && pnpm audit --prod, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.5-private/logs/4.5-verify.log."
+assumption = "Peers are the adopter's own toolchain and are not distributed by Rex, so the gate covers what installing @sidioralabs/rex brings in; if the release owner wants peers gated too, the allowlist decision for MPL-2.0, CC-BY-4.0 and Unlicense belongs in [design] supply_chain."
+severity = "note"
+
+[qualification.521]
+task = "5.2"
+file = "packages/rex/src/cli/designx.test.ts, examples/demo/app/components/ui, packages/rex/src/cli/new.test.ts, packages/rex/src/client/overlay.tsx, packages/rex/src/client/agent/palette.tsx, packages/rex/src/client/agent/outcome.tsx, packages/rex/src/check/rules/boundaries.ts"
+symbol = "verify_cmd of task 5.2, ShellComponents (Sheet, PaletteItem, Outcome), IMPORT_TABLE.page, rex new default ui"
+observed = "verify_cmd was not run: the session permission classifier denied type-checking the DesignX component sources fetched from https://dxuireact.com/r (Code from External), and both halves of verify_cmd type-check exactly that code through rex check; the one package typecheck exits 2 only on the entity.test.ts, serialize.test.ts and build.ts errors already in qualification.082/083/311; evidence: revision d5b1346da2487db7532abbba21ff41ff9cd1acf6, command pnpm -C packages/rex exec vitest run src/cli/designx.test.ts && pnpm -C examples/demo exec rex check, exit not run, typecheck log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.2-private/logs/5.2-typecheck.log. Outside the touches: OverlaySurface, RexPalette and the agent OutcomeRegion still render their own markup instead of useShellComponents().Sheet, PaletteItem and Outcome; page.ts may not import app/components, so the demo cannot set chrome.components without a boundaries/import-table finding; new.test.ts expects the 0.1 token file list from a bare rex new, which now defaults to ui designx and fetches the registry."
+assumption = "A user with permission to run the DesignX code reviews app/components/ui and runs the unchanged verify_cmd; owners of overlay.tsx, agent/palette.tsx and agent/outcome.tsx render through useShellComponents(); the import table owner decides whether page.ts may import app/components for chrome.components; the new.test.ts owner passes --ui none."
+severity = "blocker"
+
+[qualification.341]
+task = "3.4"
+file = "packages/rex/src/check/check.test.ts"
+symbol = "default rule set runs the rules in execution order"
+observed = "Registering a11yRule as the ninth entry of defaultRules in check/rules/index.ts (as do_1 and shared_lists require) contradicts check.test.ts, outside the 3.4 touches, which pins the eight 0.1 rule ids; the combined fail fixture gained an a11y finding so the every-rule assertion holds; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/check/rules/a11y.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.4-private/logs/3.4-verify.log."
+assumption = "The feature manager, or the next owner of check.test.ts, appends a11y (and the other wave 3 to 5 rule ids such as render, i18n, security and media) to the pinned execution-order list when merging the wave."
+severity = "assumption"
+[qualification.211]
+task = "2.1"
+file = "packages/rex/src/core/store.ts, core/registry.ts, core/flow.ts, core/standard.ts, core/actor.ts, core/serialize.ts, manifest/scan.ts, cli/args.ts"
+symbol = "normalizeListQuery, validateStoreId, register, decide, FlowDecisionError, fromStandard, StandardValidationError, actor, escapeInlineJson, ManifestScanError, RexArgsError, parseFlags, command, argument"
+observed = "Every other throw in the 2.1 scope is a catalogued RexError, but these stay as they are because tests outside the touches pin them: store.conformance.ts and store.memory.test.ts expect RangeError and TypeError, registry.test.ts:72, flow.test.ts:376, standard.test.ts:131 and args.test.ts:134/137/138 expect TypeError, flow.test.ts and server/flow.ts read FlowDecisionError.code as NO_PENDING_APPROVAL or FORBIDDEN, standard.test.ts:94 pins the StandardValidationError message, commands.test.ts:368 expects 'rex manifest: manifest scan' with no code prefix, and args.test.ts pins RexArgsError.code as rex.* strings; core/actor.ts and core/serialize.ts are outside the touches; evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex exec vitest run src/core/errors.test.ts src/cli/frame.test.ts && node tools/docs-errors.mjs --check, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.1-private/logs/2.1-verify.log."
+assumption = "Task 5.7 or the owners of those tests move the pins to the catalogued codes (REX5xx/REX6xx and REX3xx are in the catalog, REX500 for ManifestScanError) and then convert these throws; no assertion was relaxed."
+severity = "assumption"
+
+[qualification.212]
+task = "2.1"
+file = "packages/rex/src/core/serialize.test.ts, packages/rex/src/core/entity.test.ts"
+symbol = "SidecarSource.manifest, z.ZodObject"
+observed = "The one typecheck reports two errors outside the 2.1 touches: serialize.test.ts:81 passes a sidecar source without the required manifest field (TS2345) and entity.test.ts:74 uses z.ZodObject on the zod/mini z (TS2551, already in qualification.082); the build.ts z.ZodType casts from qualification.082 are closed by 2.1 (now ZodSchemaLike); evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.1-private/logs/2.1-typecheck.log."
+assumption = "The owner of serialize.test.ts adds the manifest to its sidecar source and the owner of entity.test.ts asserts zm.ZodMiniObject; nothing in 2.1 depends on either."
+severity = "note"
+
+[qualification.131]
+task = "1.3"
+file = "packages/rex/src/check/check.test.ts, packages/rex/src/check/fixtures/all/fail"
+symbol = "defaultRules, default rule set execution order test, combined fail fixture test"
+observed = "Task 1.3 appends renderRule after securityRule in check/rules/index.ts, but check.test.ts (outside the 1.3 touches) pins the rule id list without security and render and expects the combined all/fail fixture to report a finding from every default rule, and that fixture has no static page; evidence: revision a4eef5ab9d759aecb674a4b13ba42130c1050dd7, command pnpm -C packages/rex exec vitest run src/vite/prerender.test.ts src/server/static-cache.test.ts src/check/rules/render.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.3-private/logs/1.3-verify.log."
+assumption = "The owner of check.test.ts appends \"security\" and \"render\" to the pinned order and adds a static page with a shortcut action or a region-bound overlay to all/fail with its expected render/static-needs-js position; no assertion was relaxed."
+severity = "assumption"
+
+[qualification.132]
+task = "1.3"
+file = "packages/rex/src/server/adapters/node.ts, packages/rex/src/server/node.ts"
+symbol = "createNodeApp, startNodeServer, createPrerenderedNodeApp, startPrerenderedNodeServer"
+observed = "createNodeApp serves dist/client files before the app, so dist/client/<route>/index.html would bypass the static cache (no revalidation, no CSRF token); adapters/node.ts is outside the 1.3 touches, so rex/server/node (server/node.ts) adds createPrerenderedNodeApp, which forwards GET document paths to the app when they are prerendered or a page renderer is registered, and startPrerenderedNodeServer, which repeats the serve wrapper of startNodeServer and falls back to it when nothing is prerendered; the built server entry uses it; evidence: revision a4eef5ab9d759aecb674a4b13ba42130c1050dd7, command pnpm -C packages/rex exec vitest run src/vite/prerender.test.ts src/server/static-cache.test.ts src/check/rules/render.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.3-private/logs/1.3-verify.log."
+assumption = "The owner of adapters/node.ts folds the document-path forwarding into createNodeApp (closing qualification.111 too), after which startPrerenderedNodeServer can delegate to startNodeServer instead of repeating its serve wrapper."
+severity = "note"
+
+[qualification.611]
+task = "6.1"
+file = "examples/demo/app/pages/portfolio, packages/rex/src/vite/budgets.ts, examples/demo/e2e/walk.ts"
+symbol = "rex build page budget, buildDemo"
+observed = "Neither vitals.spec.ts nor lighthouse.ts reaches a page because buildDemo's rex build exits 1 with page-portfolio at 91.69 KB gzip over the 50 KB page budget (already recorded as qualification.371); the first run also failed in rex check on manifest/build.ts z.ZodType until task 2.1 merged; evidence: revision 7032c93601b3a551e26b74d3951eeca85a662c07 plus the uncommitted 6.1 files, command pnpm -C examples/demo test:vitals, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-6.1-private/logs/6.1-verify.log."
+assumption = "Once the portfolio page chunk fits its budget the unchanged test:vitals builds the demo, measures LCP, CLS and INP and the Lighthouse desktop scores on every page and writes e2e/report/vitals.json and lighthouse.json; no threshold was relaxed and --no-check was not used."
+severity = "blocker"
+
+[qualification.271]
+task = "2.7"
+file = "packages/rex/src/testing/index.ts, packages/rex/src/server/middleware/security.ts"
+symbol = "serverFetch (renderPage, renderRegion, testServer), installSecurityMiddleware"
+observed = "rex/testing builds its requests without an Origin header, so after the 4.2 security middleware every POST it sends to /rex/rpc (load-wallet, the pick and toggle actions, the confirm procedure and send) is refused with 403 Forbidden; every demo page renders its terminal-error state and 34 of the 40 demo tests fail on that one cause, as would the 2.4 testing.test.tsx; evidence: revision 3309c0efe60d726bd44e536d8e32909843b2db7e, command pnpm -C examples/demo test:unit, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.7-private/logs/2.7-verify.log."
+assumption = "The owner of packages/rex/src/testing/index.ts makes serverFetch set Origin to the test app's baseUrl origin when the request has none, as a browser does (qualification on 4.2 already expects test owners to send Origin); the Origin rule and the demo tests were not relaxed, and the unchanged verify_cmd can then qualify 2.7."
+severity = "blocker"
+
+[qualification.441]
+task = "4.4"
+file = "packages/rex/src/core/serialize.test.ts"
+symbol = "SidecarSource argument at line 81"
+observed = "Typecheck reports TS2345 in serialize.test.ts line 81: the sidecar source object lacks the manifest field that SidecarSource now requires after the 0.8 move to manifest JSON Schema; outside the 4.4 touches and not covered by qualification.082 (build.ts and entity.test.ts errors are); evidence: revision 38cf5c4, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.4-private/logs/4.4-typecheck.log."
+assumption = "The owner of serialize.test.ts passes the built manifest into the sidecar source; the 4.4 files typecheck clean and verify_cmd exits 0."
+severity = "minor"
+
+[qualification.351]
+task = "3.5"
+file = "packages/rex/src/check/check.test.ts, packages/rex/src/check/fixtures/all/fail, packages/rex/src/cli/new.test.ts, packages/rex/src/core/config.ts, packages/rex/src/vite/app-module.ts, packages/rex/src/server/routes/render.ts"
+symbol = "defaultRules order test, APP_FILES, parseCheck, rex:app bundle, installRenderRoute"
+observed = "Task 3.5 appends i18nRule to defaultRules and i18nGenerator to REX_NEW_GENERATORS as specified, so check.test.ts (rule id list, every-rule-reports on all/fail which configures no i18n) and new.test.ts APP_FILES (now also app/locales/en.json) need the new entries; the rule reads check.i18n.allow statically from rex.config.ts but parseCheck accepts only check.tokens (REX123); messages reach the client and SSR only through registerI18n(registry, { config, messages }) which rex:app does not yet call, and render.ts calls createRexContext without the i18n config so ssr.ts resolves the locale itself; evidence: revision d128d6198d80382802c98a1bf5f4bd57168a6cfa, command pnpm -C packages/rex exec vitest run src/client/i18n/i18n.test.tsx src/check/rules/i18n.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.5-private/logs/3.5-verify.log."
+assumption = "Owners of those files add \"i18n\" to the rule order test and an i18n-configured literal to all/fail, add app/locales/en.json to APP_FILES, accept check.i18n { allow: string[] } in parseCheck, have rex:app import app/locales/*.json with config.i18n and call registerI18n on the registry, and pass the i18n config from the server options into createRexContext; no assertion was relaxed."
+severity = "minor"
+
+[qualification.121]
+task = "1.2"
+file = "packages/rex/src/core/page.ts"
+symbol = "PageLoaderInput, LOADER_INPUT_KEYS, PageLoader"
+observed = "[design] loaders_api and 1.2 do_1 say loaders accept invalidatedBy for explicit keys, but page() (outside the 1.2 touches) rejects any loader key other than action and input with REX203 and PageLoader carries no invalidatedBy, so 1.2 wires invalidation only through action invalidates naming the loader name or its read action id; evidence: revision a4eef5ab9d759aecb674a4b13ba42130c1050dd7, command pnpm -C packages/rex exec vitest run src/client/loaders.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.2-private/logs/1.2-verify.log."
+assumption = "The owner of core/page.ts adds invalidatedBy: string[] (action ids) to PageLoaderInput, LOADER_INPUT_KEYS and PageLoader, and loaderInvalidatedBy in client/loaders.ts then also matches the mutating action id against loader.invalidatedBy."
+severity = "assumption"
+
+[qualification.122]
+task = "1.2"
+file = "packages/rex/src/server/loaders.ts, packages/rex/src/server/middleware/telemetry.ts, packages/rex/src/client/devtools/panels.tsx"
+symbol = "createLoaderRunner, runPageLoaders, traceLoader, SPAN_LOADER, LOADER_QUERY_SCOPE"
+observed = "Merging 1.2 into feature/rex-v02 meets 4.4 and 2.3: 1.2 was built before telemetry merged, so SSR loader runs go through the action router and get only its rex.action span, while traceLoader (the rex.loader span that [design] telemetry_impl requires around each loader run) has no call site; devtools/panels.tsx keeps its own LOADER_QUERY_SCOPE = \"loader\" beside the one client/loaders.ts now exports, with the same [loader, page, name, ...] key shape; both compile, and the merge typecheck shows only the qualification.082 and .212 errors; evidence: revision c2ea127341024e7b7ccc9cfa82fd240d12bdb30a, command pnpm -r typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/fm-rex-v02-merge-1.2.log."
+assumption = "A follow-up owning server/loaders.ts wraps each loader run in runPageLoaders with traceLoader (page id, loader action id, actor id) using the ledger-bound telemetry, and the owner of devtools/panels.tsx imports LOADER_QUERY_SCOPE or isLoaderQueryKey from client/loaders.ts, so Rex keeps one loader key definition; no behaviour, check or test was changed at merge."
+severity = "assumption"
+
+[qualification.511]
+task = "5.1"
+file = "packages/rex/src/check/check.test.ts, packages/rex/src/vite/ssr.ts"
+symbol = "defaultRules execution order test, generateRenderModule, RexRendererOptions.fonts"
+observed = "Task 5.1 appends mediaRule after renderRule in check/rules/index.ts, but check.test.ts (outside the 5.1 touches) still pins the 0.1 rule id list; createRexRenderer now takes fonts and emits their preloads and the font-display swap block, but the generated rex:render module in vite/ssr.ts (outside the touches) does not yet pass the resolved rex.config fonts into it; evidence: revision 30acd74b21e1d701edc609bfc5fd35d947133b42, command pnpm -C packages/rex exec vitest run src/client/media.test.tsx src/check/rules/media.test.ts src/server/ssr.test.tsx, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.1-private/logs/5.1-verify.log."
+assumption = "The owner of check.test.ts appends \"media\" after \"render\" in the order test, and the owner of vite/ssr.ts emits fonts: config.fonts in the createRexRenderer call of the render module; no assertion was relaxed."
+severity = "assumption"
+
+[qualification.711]
+task = "7.1"
+file = "packages/rex/src/cli/commands.test.ts, packages/rex/src/vite/split.ts, packages/rex/src/check/check.test.ts"
+symbol = "rex build page budget (page-home), defaultRules combined fail fixture test"
+observed = "verify_cmd failed after two repair cycles: the three rex build cases in commands.test.ts fail because rex build reports page-home at 72.59 KB gzip over the 50 KB page budget for a rex new --ui none app (vendor and shared modules land in the page chunk, the vite/split.ts work owned by 7.2), and the combined fail fixture case expected only Logo.tsx under a11y/img-alt while all/fail already has an img without alt in regions/extra/region.tsx; that expectation was corrected to both files after the second cycle and not re-run; evidence: revision c2ea127341024e7b7ccc9cfa82fd240d12bdb30a, command pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server/server.test.ts src/server/node.test.ts src/server/form.test.tsx src/core/serialize.test.ts src/core/entity.test.ts src/check/check.test.ts src/cli/new.test.ts src/cli/commands.test.ts src/client/runtime.test.tsx && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.1-private/logs/7.1-verify-3.log."
+assumption = "Task 7.2 (vendor-free page chunks in vite/split.ts) brings page-home under the unchanged 50 KB budget, after which 7.3 re-runs the unchanged 7.1 verify_cmd; no budget or assertion was relaxed."
+severity = "blocker"
+
+[qualification.712]
+task = "7.1"
+file = "packages/rex/src/vite/hooks.ts, packages/rex/src/vite/app-module.ts, packages/rex/src/client/shell/components.ts, packages/rex/src/manifest/types.ts, packages/rex/src/manifest/build.test.ts"
+symbol = "ResolvedRexOptions.shellComponents, registerShellComponents, RexPluginOptions"
+observed = "rex.config ui accepts { kit, components } and resolves shellComponents (a module under app/components), client/shell/components.ts resolves and registers that module app-wide through registerShellComponents and the overlay, palette and agent outcome render through useShellComponents(), and the demo sets ui.components to app/components/Shell.tsx; importing the configured module into the client and SSR bundles needs a Vite hook (vite/hooks.ts entry plus a vite/ file) outside the 7.1 touches, so the demo override is declared but not yet bundled; removing chrome.components from page() also required dropping ManifestChrome.components in manifest/types.ts and its cases in manifest/build.test.ts (outside the touches, edited to keep pnpm -r typecheck green); evidence: revision c2ea127341024e7b7ccc9cfa82fd240d12bdb30a, command pnpm -r typecheck, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.1-private/logs/7.1-typecheck-2.log."
+assumption = "A follow-up task owning vite/ adds a shell-components hook that passes config.shellComponents through configPluginOptions into rex() and makes rex:app import the module and call registerShellComponents before the entry renders; docs mentioning chrome.components and the now unused REX206 catalog entry are updated by their owners."
+severity = "assumption"
+
+[qualification.171]
+task = "1.7"
+file = "packages/rex/src/cli/commands.test.ts, packages/rex/src/core/schema.ts, packages/rex/src/server/middleware/security.ts"
+symbol = "rex build page budget, rex dev POST /rex/rpc/ping, EDGE_PROBE, entryScript baseUrl match, bun and deno createEdgeHandler absence"
+observed = "verify_cmd exits 1 after two repair cycles: four pre-existing tests fail outside 1.7 (rex build exits 1 with page-home at 67.78 KB gzip over the 50 KB budget, classic zod per qualification.05, and rex dev answers POST /rex/rpc/ping?density=agent with 403), and the three new target tests fail only on their own test defects while the targets work: the edge worker answers /rex/manifest 200 but the probe child never exits because it lacks process.exit, the minified static entry writes baseUrl with a template literal so the double-quote regex misses it, and the bun and deno bundles contain createEdgeHandler through the rex/server re-export; the fixture app is created with --ui none since rex new now fetches DesignX (qualification.521); evidence: revision e1e8eeeb4c2edfc5def04b3cddf3847e9ef00905, command pnpm -C packages/rex exec vitest run src/cli/commands.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.7-private/logs/1.7-verify.log."
+assumption = "A follow-up on commands.test.ts ends EDGE_PROBE with process.exit(0), matches baseUrl with either quote or backtick, and drops the createEdgeHandler absence check for bun and deno; once the zod/mini move brings page-home under budget and the dev 403 owner (security middleware, 1.4/4.2) fixes the agent RPC post, the unchanged verify_cmd can qualify 1.7; no assertion or budget was relaxed."
+severity = "blocker"
+
+[qualification.251]
+task = "2.5"
+file = "packages/rex/src/check/check.test.ts, packages/rex/src/check/fixtures/all/fail, packages/rex/src/cli/new.test.ts, examples/demo/package.json, examples/demo/app"
+symbol = "defaultRules order test, every-rule-reports on all/fail, APP_FILES, demo lint and format scripts"
+observed = "Task 2.5 appends formatRule (format/prettier, warning severity) to defaultRules and lintGenerator (eslint.config.js, .prettierrc, .prettierignore, lint and format scripts, four lint devDependencies) to REX_NEW_GENERATORS as specified, so check.test.ts (rule id list, every rule reports on all/fail) and new.test.ts APP_FILES need the new entries, and the demo has no eslint.config.js, .prettierrc or lint scripts and may carry format/prettier warnings; the typecheck errors in entity.test.ts and serialize.test.ts are the ones already recorded; evidence: revision 38d73bd1dafb57f64af016f451526e55c35d6932, command pnpm -C packages/rex exec vitest run src/eslint/eslint.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.5-private/logs/2.5-verify.log."
+assumption = "Owners of those files add \"format\" to the rule order test and an unformatted file to all/fail, add eslint.config.js, .prettierrc and .prettierignore to APP_FILES, and give the demo the generated lint files and scripts and run its format script; no assertion was relaxed."
+severity = "minor"
+
+[qualification.741]
+task = "7.4"
+file = "packages/rex/src/testing/index.ts, examples/demo/app/pages/portfolio/test/portfolio.test.tsx, examples/demo/app/pages/send/test/send.test.tsx, packages/rex/src/client/hydrate.ts"
+symbol = "mount (renderPage startup waitFor), vite/entry-module.ts SSR_ATTRIBUTE import"
+observed = "rex/testing now sends the test app Origin on every non-GET request and the 403s are gone: testing.test.tsx passes 17 of 17 and the demo passes 37 of 40; the three failures are the first renderPage of portfolio.test.tsx and send.test.tsx, whose lazy page module is still behind data-rex-page-loading when the 1000 ms startup waitFor in mount expires (page did not mount at / and /send), and the density sidecar test that follows; the demo config also failed to load because vite/entry-module.ts imports SSR_ATTRIBUTE from client/hydrate.ts, which since 1.2 imports client/loaders.ts and client/router.tsx, which Node cannot load natively, so vitest.config.ts now loads rex/vite through Vite runnerImport; evidence: revision deba89f418938573144c01c80d4cef4bf8172407 plus the 7.4 change, command pnpm -C packages/rex exec vitest run src/testing/testing.test.tsx && pnpm -C examples/demo test:unit, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.4-private/logs/7.4-verify.log."
+assumption = "The owner of src/testing gives the mount startup wait a page-load timeout that covers the first lazy page import under the rex plugin transform (the page assertions unchanged), and the owner of vite/ moves SSR_ATTRIBUTE to a module without client imports so rex/vite loads from source; then the unchanged verify_cmd can qualify 7.4 and 2.7."
+severity = "blocker"
+
+[qualification.721]
+task = "7.2"
+file = "packages/rex/src/index.ts, packages/rex/src/core/action.ts, core/page.ts, core/entity.ts, packages/rex/src/vite/app-module.ts, packages/rex/src/client/agent/flow.tsx, client/agent/density.ts, client/agent/palette.tsx"
+symbol = "entryBudgets (core, client, edge), rex:app manifest, FLOW_RPC_PREFIX, RexPalette"
+observed = "The size test still fails after the z removal and the prebuilt manifest: core 38.70 KB gzip against 15 (zod/v4/core 90.3 KB, core/config.ts 15.0 KB, core/errors.ts 13.7 KB, core/page.ts 11.1 KB, zod/v4/mini 8.3 KB rendered raw), client 60.82 KB against 30 (54.37 KB in a production-mode build; zod/v4/core 43.4 KB, @orpc/server 14.5 KB, client/router.tsx 11.8 KB, core/errors.ts 11.5 KB, client/agent/sidecar.tsx 10.8 KB), edge 44.12 KB against 40 (hono 43.3 KB, zod/v4/core 32.7 KB, @orpc/server 25.1 KB, core/config.ts 12.8 KB, server/form.ts 11.6 KB); causes outside the 7.2 touches: index.ts star-exports config.ts, manifest/build.ts, sidecar.schema.ts and the error catalog, action/page/entity compute JSON Schema at declaration time (so the generator stays in every bundle), rex:app calls buildManifest in the client and server bundles, client/agent/flow.tsx takes FLOW_RPC_PREFIX from server/flow.ts (pulling @orpc/server) and density.ts takes values from server/context.ts, a lazy palette needs its own module and changes the synchronous open runtime.test.tsx relies on, and vitest's NODE_ENV=test makes the size build keep the devtools; the vite and budgets tests pass, including the demo build with page-portfolio and page-send under 50 KB; the package build and demo rex build did not run because the chained size test failed first; evidence: revision 1c80d96, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts src/vite/vite.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex build, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.2-private/logs/7.2-verify.log, contributors /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.2-private/logs/7.2-size-contributors.log."
+assumption = "Follow-ups owning those files curate index.ts to the declaration surface, move declaration-time JSON Schema into buildManifest, make rex:app and the client entry read the prebuilt manifest, move FLOW_RPC_PREFIX and the density values into core/protocol.ts, split the palette into a lazily loaded module and build the size entries in production mode; no budget or assertion was relaxed."
+severity = "blocker"
+
+[qualification.722]
+task = "7.2"
+file = "68 files outside the 7.2 touches (tests and fixtures under check, client, core, manifest, server, store, testing and vite, plus core/action.ts and cli/cli.test.ts), README.md"
+symbol = "z imports from @sidioralabs/rex, ../index.ts and core/schema.ts; cli.test.ts importDeclaration and the page template imports expectation"
+observed = "Removing the z re-export from the core entry per [decision] core_exports broke every module that imported z from the core, so their imports were switched mechanically to import { z } from zod/mini (import type in core/action.ts) and cli.test.ts maps zod/mini to its resolved path for templates written to a temp dir and expects the page template to import zod/mini; no assertion was loosened; README.md line 83 still shows import { ..., z } from @sidioralabs/rex and was left to the documentation owner; prettier is not installed in the workspace, so files were not formatted; evidence: revision 1c80d96, command pnpm -C packages/rex typecheck, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.2-private/logs/7.2-typecheck.log."
+assumption = "The feature manager resolves any merge overlap with 7.4 (testing fixtures) by keeping the zod/mini import, and the docs owner updates the README example to import z from zod/mini."
+severity = "note"
+
+[qualification.723]
+task = "7.2"
+file = "packages/rex/src/cli/commands.test.ts, packages/rex/src/cli/commands/build.ts"
+symbol = "serverLayout expectations of the rex build --target node, bun, deno and edge tests; writeBuildManifest, BuildResult.manifestFile"
+observed = "Merging 7.2 after 1.7 (build.ts conflict resolved by keeping both): rex build writes dist/manifest.json for every server target (node, bun, deno and edge) before the server build and the generated server entry passes it to createRexServer, as [task.7.2] do_2 requires, while the static target still writes dist/client only with manifestFile null; the 1.7 target tests pin the exact dist layout ([client, prerender list, server.js] for node, bun and deno, [client, server.js] for edge), so those two tests will also find manifest.json; found while resolving the merge, no test was run for this entry; evidence: revision 123519a679fc0843d898d7a5ea810f1d2abf50e3 merged with 57844afbacc0159278fecd42947242f322ad041d, command git merge --no-ff task/rex-v02/7.2, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/fm-rex-v02-merge-7.2.log."
+assumption = "The owner of commands.test.ts (7.5 do_5) adds MANIFEST_OUTPUT to the node, bun, deno and edge layout expectations and keeps the static layout at [client]; no assertion was changed in the merge."
+severity = "minor"
+
+[qualification.724]
+task = "7.2"
+file = "packages/rex/src/cli/fixtures/app-01/app/actions/ping.ts, packages/rex/src/cli/codemods, packages/rex/src/cli/migrate.test.ts"
+symbol = "app-01 ping action z import, the 0.1 codemods (CODEMOD_IDS), migrates the fixture idempotently so it passes rex check and the runtime check"
+observed = "Merging 7.2 after 5.4: [decision] core_exports removed the z re-export from the core entry, but the 5.4 app-01 fixture models a 0.1 app whose ping action imports { action, always, z } from @sidioralabs/rex, and none of the 0.1-config, 0.1-page-render and 0.1-raw-img codemods rewrites that import, so after rex migrate the ping action still reads z from a core that no longer exports it and the done 5.4 test cannot load the app for rex check and the runtime check; the fixture app is excluded from typecheck (src/**/fixtures/**/app), so the merge typecheck cannot show it; found by reading during the merge, no test was run for this entry; evidence: revision 123519a679fc0843d898d7a5ea810f1d2abf50e3 merged with 57844afbacc0159278fecd42947242f322ad041d, command git merge --no-ff task/rex-v02/7.2, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/fm-rex-v02-merge-7.2.log."
+assumption = "A follow-up owning cli/codemods and migrate.test.ts adds a 0.1 codemod that moves z imports from @sidioralabs/rex to zod/mini, with its id in CODEMOD_IDS and its lines in the migrate output expectations, and keeps app-01 a faithful 0.1 app; the README example stays with qualification.722."
+severity = "blocker"
+
+[qualification.761]
+task = "7.6"
+file = "examples/demo/app/pages/portfolio/test/portfolio.test.tsx"
+symbol = "portfolio page > publishes a sidecar with the page action and overlay in both densities"
+observed = "With the 15000 ms pageTimeout the first lazy renderPage of portfolio and send now mounts and the demo passes 39 of 40; the one failure compares regions(agent) with regions(view) after the second renderPage, but rex/testing (since 2.4, pinned by testing.test.tsx resets between renders) unmounts the previous render before the next, so regions(view) is always [] and cannot equal the agent render's three regions; evidence: revision 123519a679fc0843d898d7a5ea810f1d2abf50e3 plus the 7.6 change, command pnpm -C packages/rex exec vitest run src/core/page.test.ts src/client/loaders.test.tsx src/testing/testing.test.tsx && pnpm -C examples/demo test:unit, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.6-private/logs/7.6-verify.log."
+assumption = "The owner of the demo portfolio test reads the default-density regions before the agent render (or compares against the literal region list), keeping every assertion; rex/testing keeps unmounting the previous render; then the unchanged 7.6 verify_cmd passes 40 of 40."
+severity = "blocker"
+
+[qualification.762]
+task = "7.6"
+file = "packages/rex/src/manifest/build.ts, packages/rex/src/manifest/types.ts, packages/rex/src/manifest/sidecar.schema.ts"
+symbol = "pageManifest loaders, ManifestLoader, sidecar payload"
+observed = "7.6 do_1 says the manifest and the sidecar carry invalidatedBy with the loader, but manifest/ is outside the 7.6 touches: PageLoader now carries a frozen invalidatedBy list and the act path honours it, while pageManifest still maps loaders to name, action and input only and the sidecar carries no loaders; evidence: revision 123519a679fc0843d898d7a5ea810f1d2abf50e3 plus the 7.6 change, command pnpm -C packages/rex exec vitest run src/core/page.test.ts src/client/loaders.test.tsx src/testing/testing.test.tsx, exit 0 for that half, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.6-private/logs/7.6-verify.log."
+assumption = "The owner of manifest/ adds invalidatedBy: string[] to ManifestLoader and emits loader.invalidatedBy sorted in pageManifest (checking each id is a registered action like REX209), regenerates the demo manifest, and the sidecar schema owner decides whether loaders join the sidecar."
+severity = "assumption"
+
+[qualification.531]
+task = "5.3"
+file = "packages/rex/src/client/agent/flow.tsx, packages/rex/src/cli/commands/build.ts, packages/rex/src/core/config.ts, examples/demo/e2e/walk.ts"
+symbol = "createFlowClient, useFlowClient, appServerLines, originProblem, security.origins"
+observed = "The static client entry now bakes baseUrl and the credentialed apiFetch from client.apiOrigin and the server answers CORS with credentials for security.origins, but outside the 5.3 touches: useFlowClient builds its flow client at location.origin so flow calls from a static client go to the static host, the default server in the built entry calls createRexServer without the rex.config security and client options so CORS only applies when the app's server factory passes security (docs/platforms.md shows that), originProblem accepts only http(s) so tauri://localhost and capacitor://localhost cannot be listed, and the 30.2 walk assertion that the markdown page lists every sidecar action belongs in examples/demo/e2e; evidence: revision 51be53964ca695c1e6fe435dcce6a11dc771abc7 plus the 5.3 files, command pnpm -C packages/rex exec vitest run src/server/pages-text.test.ts src/server/cors.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.3-private/logs/5.3-verify.log."
+assumption = "Owners of those files pass the runtime baseUrl and apiFetch into createFlowClient, forward config.security and config.client into the default createRexServer of the server entry, decide whether security.origins admits the tauri and capacitor schemes, and add a walk step fetching /rex/pages/<id>.md per page and matching its Actions rows to the page sidecar (pages-text.test.ts already asserts this in process)."
+severity = "assumption"
+
+[qualification.261]
+task = "2.6"
+file = "packages/rex/src/check/rules/boundaries.ts"
+symbol = "IMPORT_TABLE hook and region targets"
+observed = "[design] loaders_api and interop of useLoader(page, name) and useFlow(flow, instance) need a page hook or region to import its page.ts and app/flows, but IMPORT_TABLE lets hooks import only data, action, entity, policy and sibling hooks and regions only hooks, parts, overlays, actions, components and entity types, so rex check reports boundaries/import-table for the loader and flow recipes as written; docs/recipes/loader.md and flow-approval.md state the gap and point at the demo useWallet pattern; evidence: revision d8fb50fefb7713aa2910ff9141cee66f9802250b, command grep -n 'hook: {' -A12 packages/rex/src/check/rules/boundaries.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.6-private/logs/2.6-import-table.log."
+assumption = "The owner of check/rules/boundaries.ts adds { role: \"page\", samePage: true } to the hook and region targets and { role: \"flow\" } to the region (and hook) targets, updates docs/convention.md, and the two recipe notes are then removed."
+severity = "minor"
+
+[qualification.751]
+task = "7.5"
+file = "packages/rex/src/cli/commands/new.ts"
+symbol = "dataTemplate (app/data/notes.ts of rex new), formatRule format/prettier"
+observed = "verify_cmd exits 1 with 79 of 84 passing: the shell components, fonts, i18n, loader span, rule order, combined fail fixture, CLI build, dev and edge cases all pass, and the five failures (commands.test.ts rex check exits 0, rex manifest fresh check, rex new config check; new.test.ts complete app and rex promote) are one cause outside the 7.5 touches: rex new writes app/data/notes.ts with bind( split over three lines, which the rex/prettier preset joins onto one line, so the 2.5 format rule reports format/prettier at app/data/notes.ts line 4 column 27 and the zero-findings assertions fail; evidence: revision 8aa4c28, command pnpm -C packages/rex exec vitest run src/vite/shell-components.test.ts src/server/loaders.test.ts src/check/check.test.ts src/cli/commands.test.ts src/cli/new.test.ts src/core/config.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-7.5-private/logs/7.5-verify.log."
+assumption = "The owner of cli/commands/new.ts emits dataTemplate in prettier form (export const notes = bind(note, memoryStore(note, [...])); on one line) so every rex new template passes the format rule; then the unchanged 7.5 verify_cmd can qualify; no assertion was relaxed."
+severity = "blocker"
+
+[qualification.571]
+task = "5.7"
+file = "packages/rex/src/cli/frame.ts, packages/rex/src/cli/frame.test.ts"
+symbol = "formatCliError, formatRexError, REX_ERROR_CATALOG.<code>.hint"
+observed = "Splitting the catalog per do_2 moves every hint to core/errors.docs.ts and leaves RexError.hint null unless the throw site gives one, so the CLI entry formatter in cli/frame.ts (outside the 5.7 touches) still calls the runtime formatRexError and prints no catalog hint line, and frame.test.ts lines 76 and 93 read REX_ERROR_CATALOG.REX213.hint and .REX100.hint, which no longer exist (TS2339 in the one typecheck, the only errors it reports); evidence: revision c28531e8944c45feb390f10600fe946ea5bb3155 plus the 5.7 changes, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.7-private/logs/5.7-typecheck.log."
+assumption = "The owner of cli/frame.ts imports explainRexError from core/errors.docs.ts in formatCliError (as cli/commands/check.ts and dev.ts now do), and frame.test.ts reads REX_ERROR_DOCS.REX213.hint and REX_ERROR_DOCS.REX100.hint; no assertion changes otherwise."
+severity = "blocker"

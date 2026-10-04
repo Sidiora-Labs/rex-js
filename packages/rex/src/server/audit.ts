@@ -1,5 +1,6 @@
 import { ACTION_EFFECTS, type ActionEffect } from "../core/action.ts";
 import { isPlainObject } from "../core/entity.ts";
+import { RexError } from "../core/errors.ts";
 import { stableStringify } from "../manifest/build.ts";
 
 export const AUDIT_OK = "ok";
@@ -7,6 +8,8 @@ export const AUDIT_ERROR_FILTER = "error";
 
 export const ERROR_CODE_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 export const DIGEST_PATTERN = /^[0-9a-f]{64}$/;
+export const TRACE_ID_PATTERN = /^[0-9a-f]{32}$/;
+export const SPAN_ID_PATTERN = /^[0-9a-f]{16}$/;
 
 export type AuditOutcome = typeof AUDIT_OK | (string & {});
 
@@ -19,6 +22,8 @@ export interface AuditRecord {
   readonly effect: ActionEffect;
   readonly durationMs: number;
   readonly at: string;
+  readonly traceId?: string;
+  readonly spanId?: string;
 }
 
 export type AuditEntry = Omit<AuditRecord, "id">;
@@ -44,9 +49,21 @@ export interface AuditEntryInput {
   readonly effect: ActionEffect;
   readonly durationMs: number;
   readonly at: string;
+  readonly traceId?: string | null;
+  readonly spanId?: string | null;
 }
 
-const ENTRY_KEYS = ["actor", "actionId", "inputDigest", "outcome", "effect", "durationMs", "at"];
+const ENTRY_KEYS = [
+  "actor",
+  "actionId",
+  "inputDigest",
+  "outcome",
+  "effect",
+  "durationMs",
+  "at",
+  "traceId",
+  "spanId",
+];
 const FILTER_KEYS = new Set(["actor", "actionId", "outcome", "from", "to"]);
 
 function toHex(buffer: ArrayBuffer): string {
@@ -62,10 +79,15 @@ export async function digest(input: unknown): Promise<string> {
   return toHex(await globalThis.crypto.subtle.digest("SHA-256", bytes));
 }
 
+function auditErrorCode(field: string): "REX402" | "REX403" {
+  return field.startsWith("filter.") ? "REX403" : "REX402";
+}
+
 function timeOf(field: string, value: unknown): number {
   const time = typeof value === "string" ? Date.parse(value) : Number.NaN;
   if (Number.isNaN(time)) {
-    throw new TypeError(
+    throw new RexError(
+      auditErrorCode(field),
       `audit: ${field} must be an ISO timestamp, received ${JSON.stringify(value)}`,
     );
   }
@@ -74,7 +96,7 @@ function timeOf(field: string, value: unknown): number {
 
 function nonEmpty(field: string, value: unknown): string {
   if (typeof value !== "string" || value.length === 0) {
-    throw new TypeError(`audit: ${field} must be a non-empty string`);
+    throw new RexError(auditErrorCode(field), `audit: ${field} must be a non-empty string`);
   }
   return value;
 }
@@ -84,34 +106,44 @@ export function isAuditOutcome(value: unknown): value is AuditOutcome {
 }
 
 export function validateAuditEntry(entry: AuditEntry): AuditEntry {
-  if (!isPlainObject(entry)) throw new TypeError("audit: entry must be an object");
+  if (!isPlainObject(entry)) throw new RexError("REX402", "audit: entry must be an object");
   for (const property of Object.keys(entry)) {
     if (!ENTRY_KEYS.includes(property)) {
-      throw new TypeError(`audit: "${property}" is not part of an audit entry`);
+      throw new RexError("REX402", `audit: "${property}" is not part of an audit entry`);
     }
   }
   nonEmpty("actor", entry.actor);
   nonEmpty("actionId", entry.actionId);
   if (typeof entry.inputDigest !== "string" || !DIGEST_PATTERN.test(entry.inputDigest)) {
-    throw new TypeError("audit: inputDigest must be a lowercase hex sha-256 digest");
+    throw new RexError("REX402", "audit: inputDigest must be a lowercase hex sha-256 digest");
   }
   if (!isAuditOutcome(entry.outcome)) {
-    throw new TypeError(
+    throw new RexError(
+      "REX402",
       `audit: outcome must be "${AUDIT_OK}" or an UPPER_SNAKE error code, received ${JSON.stringify(entry.outcome)}`,
     );
   }
   if (!ACTION_EFFECTS.includes(entry.effect)) {
-    throw new TypeError(`audit: effect must be one of ${ACTION_EFFECTS.join(", ")}`);
+    throw new RexError("REX402", `audit: effect must be one of ${ACTION_EFFECTS.join(", ")}`);
   }
   if (
     typeof entry.durationMs !== "number" ||
     !Number.isFinite(entry.durationMs) ||
     entry.durationMs < 0
   ) {
-    throw new TypeError("audit: durationMs must be a finite non-negative number");
+    throw new RexError("REX402", "audit: durationMs must be a finite non-negative number");
   }
   timeOf("at", entry.at);
-  return {
+  if ((entry.traceId === undefined) !== (entry.spanId === undefined)) {
+    throw new RexError("REX402", "audit: traceId and spanId must be given together");
+  }
+  if (entry.traceId !== undefined && !TRACE_ID_PATTERN.test(entry.traceId)) {
+    throw new RexError("REX402", "audit: traceId must be 32 lowercase hex characters");
+  }
+  if (entry.spanId !== undefined && !SPAN_ID_PATTERN.test(entry.spanId)) {
+    throw new RexError("REX402", "audit: spanId must be 16 lowercase hex characters");
+  }
+  const valid: AuditEntry = {
     actor: entry.actor,
     actionId: entry.actionId,
     inputDigest: entry.inputDigest,
@@ -120,10 +152,13 @@ export function validateAuditEntry(entry: AuditEntry): AuditEntry {
     durationMs: entry.durationMs,
     at: entry.at,
   };
+  return entry.traceId === undefined || entry.spanId === undefined
+    ? valid
+    : { ...valid, traceId: entry.traceId, spanId: entry.spanId };
 }
 
 export async function createAuditEntry(params: AuditEntryInput): Promise<AuditEntry> {
-  return validateAuditEntry({
+  const entry: AuditEntry = {
     actor: params.actor,
     actionId: params.actionId,
     inputDigest: await digest(params.input),
@@ -131,6 +166,11 @@ export async function createAuditEntry(params: AuditEntryInput): Promise<AuditEn
     effect: params.effect,
     durationMs: params.durationMs,
     at: params.at,
+  };
+  return validateAuditEntry({
+    ...entry,
+    ...(params.traceId === undefined || params.traceId === null ? {} : { traceId: params.traceId }),
+    ...(params.spanId === undefined || params.spanId === null ? {} : { spanId: params.spanId }),
   });
 }
 
@@ -151,9 +191,10 @@ export function matchesAuditFilter(record: AuditRecord, filter: AuditFilter): bo
 }
 
 function validateFilter(filter: AuditFilter): AuditFilter {
-  if (!isPlainObject(filter)) throw new TypeError("audit: filter must be an object");
+  if (!isPlainObject(filter)) throw new RexError("REX403", "audit: filter must be an object");
   for (const property of Object.keys(filter)) {
-    if (!FILTER_KEYS.has(property)) throw new TypeError(`audit: unknown filter "${property}"`);
+    if (!FILTER_KEYS.has(property))
+      throw new RexError("REX403", `audit: unknown filter "${property}"`);
   }
   if (filter.actor !== undefined) nonEmpty("filter.actor", filter.actor);
   if (filter.actionId !== undefined) nonEmpty("filter.actionId", filter.actionId);
@@ -162,14 +203,15 @@ function validateFilter(filter: AuditFilter): AuditFilter {
     filter.outcome !== AUDIT_ERROR_FILTER &&
     !isAuditOutcome(filter.outcome)
   ) {
-    throw new TypeError(
+    throw new RexError(
+      "REX403",
       `audit: filter.outcome must be "${AUDIT_OK}", "${AUDIT_ERROR_FILTER}" or an error code`,
     );
   }
   const from = filter.from === undefined ? undefined : timeOf("filter.from", filter.from);
   const to = filter.to === undefined ? undefined : timeOf("filter.to", filter.to);
   if (from !== undefined && to !== undefined && from > to) {
-    throw new RangeError("audit: filter.from must not be after filter.to");
+    throw new RexError("REX403", "audit: filter.from must not be after filter.to");
   }
   return filter;
 }

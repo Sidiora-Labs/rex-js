@@ -15,7 +15,9 @@ import {
   REX_RPC_PREFIX as REX_RPC_PATH,
 } from "../core/protocol.ts";
 import { createRegistry } from "../core/registry.ts";
-import { money, text, z } from "../core/schema.ts";
+import { money, text } from "../core/schema.ts";
+import { z } from "zod/mini";
+import type { StandardSchemaV1 } from "../core/standard.ts";
 import { buildManifest, stableStringify } from "../manifest/build.ts";
 import { useAct, type ActHandle } from "./act.ts";
 import { createRexApp, type RexFetch } from "./app.tsx";
@@ -71,9 +73,47 @@ const archive = action("archive", {
   },
 });
 
-const home = page("home", { route: "/", actions: [rename, send, purge, archive] });
+const tipAmount: StandardSchemaV1<{ amount: string }, { amount: number }> = {
+  "~standard": {
+    version: 1,
+    vendor: "hand",
+    validate: (value) => {
+      const raw = (value as { amount?: unknown } | null)?.amount;
+      const amount = typeof raw === "string" ? Number(raw) : Number.NaN;
+      return Number.isFinite(amount) && amount > 0
+        ? { value: { amount } }
+        : { issues: [{ message: "must be a positive decimal", path: ["amount"] }] };
+    },
+  },
+};
+const tipped: StandardSchemaV1<{ tipped: number }> = {
+  "~standard": {
+    version: 1,
+    vendor: "hand",
+    validate: (value) =>
+      typeof (value as { tipped?: unknown } | null)?.tipped === "number"
+        ? { value: value as { tipped: number } }
+        : { issues: [{ message: "must report the tip", path: ["tipped"] }] },
+  },
+};
+const tip = action("tip", {
+  input: tipAmount,
+  output: tipped,
+  policy: always(),
+  effect: "reversible",
+  label: "Tip",
+  jsonSchema: {
+    input: { type: "object", properties: { amount: { type: "string" } }, required: ["amount"] },
+    output: { type: "object", properties: { tipped: { type: "number" } }, required: ["tipped"] },
+  },
+  handler: (input) => ({ tipped: input.amount }),
+});
 
-const registry = createRegistry().register(wallet, rename, send, purge, archive, home).freeze();
+const home = page("home", { route: "/", actions: [rename, send, purge, archive, tip] });
+
+const registry = createRegistry()
+  .register(wallet, rename, send, purge, archive, tip, home)
+  .freeze();
 const manifest = buildManifest(registry);
 const owner = actor({ id: "owner", permissions: ["view", "send"] });
 
@@ -118,6 +158,7 @@ const rpc = new RPCHandler({
   send: implement(send),
   purge: implement(purge),
   archive: implement(archive),
+  tip: implement(tip),
 });
 
 interface Harness {
@@ -132,6 +173,7 @@ function Probe({ handles }: { readonly handles: Record<string, ActHandle<AnyActi
   handles.send = useAct(send) as unknown as ActHandle<AnyAction>;
   handles.purge = useAct(purge) as unknown as ActHandle<AnyAction>;
   handles.archive = useAct(archive) as unknown as ActHandle<AnyAction>;
+  handles.tip = useAct(tip) as unknown as ActHandle<AnyAction>;
   const outcome = useOutcome("home");
   return (
     <div>
@@ -334,6 +376,38 @@ describe("useAct", () => {
   });
 });
 
+describe("useAct with a hand-written Standard Schema", () => {
+  it("validates input through ~standard.validate before calling the server", async () => {
+    const harness = mount();
+    await waitFor(() => expect(screen.getByTestId("balance").textContent).toBe("1"));
+    let result: Awaited<ReturnType<ActHandle<AnyAction>["run"]>> | undefined;
+    await act(async () => {
+      result = await handle(harness, "tip").run({ amount: "nope" });
+    });
+    expect(result).toEqual({
+      ok: false,
+      code: "BAD_REQUEST",
+      message: "Tip: invalid input: amount must be a positive decimal",
+    });
+    expect(harness.requests).toEqual([]);
+    expect(screen.getByTestId("outcome").textContent).toBe(
+      "tip|false|Tip: invalid input: amount must be a positive decimal",
+    );
+  });
+
+  it("runs the action and validates the output through ~standard.validate", async () => {
+    const harness = mount();
+    await waitFor(() => expect(screen.getByTestId("balance").textContent).toBe("1"));
+    let result: Awaited<ReturnType<ActHandle<AnyAction>["run"]>> | undefined;
+    await act(async () => {
+      result = await handle(harness, "tip").run({ amount: "1.5" });
+    });
+    expect(result).toEqual({ ok: true, output: { tipped: 1.5 } });
+    expect(harness.requests).toEqual([`${REX_RPC_PATH}/tip`]);
+    expect(screen.getByTestId("outcome").textContent).toBe("tip|true|Tip succeeded");
+  });
+});
+
 describe("outcome store", () => {
   it("keeps the last outcome per page and notifies subscribers", () => {
     const store = createOutcomeStore();
@@ -355,9 +429,12 @@ describe("outcome store", () => {
     unsubscribe();
     store.set("home", { actionId: "rename", ok: true, message: "ok", at });
     expect(notified).toBe(4);
-    expect(() => store.set("home", { actionId: "", ok: true, message: "", at })).toThrow(TypeError);
+    const invalidOutcome = expect.objectContaining({ name: "RexError", code: "REX322" });
+    expect(() => store.set("home", { actionId: "", ok: true, message: "", at })).toThrow(
+      invalidOutcome,
+    );
     expect(() => store.set("home", { actionId: "x", ok: true, message: "", at: "later" })).toThrow(
-      TypeError,
+      invalidOutcome,
     );
   });
 });

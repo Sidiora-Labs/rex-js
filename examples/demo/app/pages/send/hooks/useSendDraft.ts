@@ -1,7 +1,8 @@
 import { useDraft } from "@sidioralabs/rex/client";
-import { MONEY_PATTERN, z } from "@sidioralabs/rex";
+import { MONEY_PATTERN } from "@sidioralabs/rex";
+import { z } from "zod/mini";
 
-const sendDraft = z.object({ amount: z.string().max(32) });
+const sendDraft = z.object({ amount: z.string().check(z.maxLength(32)) });
 
 export function useSendDraft() {
   const draft = useDraft(sendDraft);

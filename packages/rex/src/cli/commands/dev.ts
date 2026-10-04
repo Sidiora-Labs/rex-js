@@ -1,11 +1,15 @@
-import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { InvalidArgumentError, type Command } from "commander";
+import { resolve } from "node:path";
+import { InvalidArgumentError, type RexCommand as Command } from "../args.ts";
 import { createServer, type LogLevel, type ServerOptions, type ViteDevServer } from "vite";
-import { rex, type RexFetchApp } from "../../vite/index.ts";
+import { isFetchHandler } from "../../core/config.ts";
+import type { DeprecationWarn } from "../../core/deprecated.ts";
+import { explainRexError } from "../../core/errors.docs.ts";
+import { isRexError } from "../../core/errors.ts";
+import { rex, type RexFetchApp, type RexPluginOptions } from "../../vite/index.ts";
+import { loadConfigServer, loadRexConfig, requireConfig } from "../config.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
+import { configPluginOptions } from "../load.ts";
 import { ensureCheckPasses } from "./check.ts";
-import { CONFIG_FILE } from "./new.ts";
 
 export const DEFAULT_DEV_PORT = 5173;
 
@@ -13,17 +17,24 @@ export interface DevOptions {
   readonly port?: number;
   readonly host?: string;
   readonly logLevel?: LogLevel;
+  readonly warn?: DeprecationWarn;
+}
+
+export function cliWarn(io: RexCliIO): DeprecationWarn {
+  return (message) => io.err(`${message}\n`);
+}
+
+export function rexCliExit(error: unknown): never {
+  if (isRexError(error)) throw new RexCliExit(EXIT_FAILURE, `rex: ${explainRexError(error)}`);
+  throw error;
 }
 
 export function appConfigPath(root: string): string {
-  const file = join(resolve(root), CONFIG_FILE);
-  if (!existsSync(file)) {
-    throw new RexCliExit(
-      EXIT_FAILURE,
-      `rex: ${CONFIG_FILE} is missing in ${resolve(root)}; it default-exports the app's Hono server from createRexServer`,
-    );
+  try {
+    return requireConfig(root);
+  } catch (error) {
+    return rexCliExit(error);
   }
-  return file;
 }
 
 export function parsePort(value: string): number {
@@ -35,26 +46,26 @@ export function parsePort(value: string): number {
 }
 
 export function isFetchApp(value: unknown): value is RexFetchApp {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as { fetch?: unknown }).fetch === "function"
-  );
+  return isFetchHandler(value);
 }
 
-export async function loadAppServer(vite: ViteDevServer): Promise<RexFetchApp> {
-  const loaded = (await vite.ssrLoadModule(`/${CONFIG_FILE}`)) as { readonly default?: unknown };
-  if (!isFetchApp(loaded.default)) {
-    throw new Error(
-      `${CONFIG_FILE} must default-export the app's Hono server, such as createRexServer({ registry, ledger, actor })`,
-    );
-  }
-  return loaded.default;
+export function loadAppServer(vite: ViteDevServer, warn?: DeprecationWarn): Promise<RexFetchApp> {
+  return loadConfigServer(vite, warn);
 }
 
 export async function startDev(root: string, options: DevOptions = {}): Promise<ViteDevServer> {
   const appRoot = resolve(root);
   appConfigPath(appRoot);
+  let pluginOptions: RexPluginOptions;
+  try {
+    const loaded = await loadRexConfig(
+      appRoot,
+      options.warn === undefined ? {} : { warn: options.warn },
+    );
+    pluginOptions = configPluginOptions(loaded.read);
+  } catch (error) {
+    return rexCliExit(error);
+  }
   const server: ServerOptions = {
     port: options.port ?? DEFAULT_DEV_PORT,
     ...(options.host === undefined ? {} : { host: options.host }),
@@ -63,7 +74,7 @@ export async function startDev(root: string, options: DevOptions = {}): Promise<
     root: appRoot,
     configFile: false,
     logLevel: options.logLevel ?? "info",
-    plugins: rex({ server: loadAppServer }),
+    plugins: rex({ ...pluginOptions, server: (vite) => loadAppServer(vite, options.warn) }),
     server,
   });
   try {
@@ -91,8 +102,8 @@ export function register(program: Command, io: RexCliIO): void {
       const vite = await startDev(
         io.cwd,
         options.host === undefined
-          ? { port: options.port }
-          : { port: options.port, host: options.host },
+          ? { port: options.port, warn: cliWarn(io) }
+          : { port: options.port, host: options.host, warn: cliWarn(io) },
       );
       for (const url of devUrls(vite)) io.out(`rex dev: serving ${url}\n`);
     });

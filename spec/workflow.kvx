@@ -28,7 +28,7 @@ read_full        = "When a tool output is flagged truncated with a way to get th
 deliver_complete = "Deliver complete, runnable artifacts, not diffs. Follow existing repo style; add no comments or docs unless the task asks."
 
 [limits]
-max_in_progress        = 8
+max_in_progress        = 32
 max_repair_cycles      = 2
 max_task_minutes       = 45
 -max_gate_runs_per_task = 1

@@ -1,0 +1,28 @@
+{
+  "registry": "https://dxuireact.com/r/{name}.json",
+  "theme": "app/theme.css",
+  "ui": "app/components/ui",
+  "tailwind": {
+    "plugin": "@tailwindcss/vite",
+    "css": "app/theme.css"
+  },
+  "items": [
+    "badge",
+    "button",
+    "card",
+    "command",
+    "dialog",
+    "empty",
+    "field",
+    "input",
+    "kbd",
+    "select",
+    "sheet",
+    "skeleton",
+    "table",
+    "tabs",
+    "theme",
+    "tooltip",
+    "utils"
+  ]
+}
