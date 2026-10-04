@@ -198,3 +198,19 @@ symbol = "SidecarSource.manifest, z.ZodObject"
 observed = "The one typecheck reports two errors outside the 2.1 touches: serialize.test.ts:81 passes a sidecar source without the required manifest field (TS2345) and entity.test.ts:74 uses z.ZodObject on the zod/mini z (TS2551, already in qualification.082); the build.ts z.ZodType casts from qualification.082 are closed by 2.1 (now ZodSchemaLike); evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-2.1-private/logs/2.1-typecheck.log."
 assumption = "The owner of serialize.test.ts adds the manifest to its sidecar source and the owner of entity.test.ts asserts zm.ZodMiniObject; nothing in 2.1 depends on either."
 severity = "note"
+
+[qualification.131]
+task = "1.3"
+file = "packages/rex/src/check/check.test.ts, packages/rex/src/check/fixtures/all/fail"
+symbol = "defaultRules, default rule set execution order test, combined fail fixture test"
+observed = "Task 1.3 appends renderRule after securityRule in check/rules/index.ts, but check.test.ts (outside the 1.3 touches) pins the rule id list without security and render and expects the combined all/fail fixture to report a finding from every default rule, and that fixture has no static page; evidence: revision a4eef5ab9d759aecb674a4b13ba42130c1050dd7, command pnpm -C packages/rex exec vitest run src/vite/prerender.test.ts src/server/static-cache.test.ts src/check/rules/render.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.3-private/logs/1.3-verify.log."
+assumption = "The owner of check.test.ts appends \"security\" and \"render\" to the pinned order and adds a static page with a shortcut action or a region-bound overlay to all/fail with its expected render/static-needs-js position; no assertion was relaxed."
+severity = "assumption"
+
+[qualification.132]
+task = "1.3"
+file = "packages/rex/src/server/adapters/node.ts, packages/rex/src/server/node.ts"
+symbol = "createNodeApp, startNodeServer, createPrerenderedNodeApp, startPrerenderedNodeServer"
+observed = "createNodeApp serves dist/client files before the app, so dist/client/<route>/index.html would bypass the static cache (no revalidation, no CSRF token); adapters/node.ts is outside the 1.3 touches, so rex/server/node (server/node.ts) adds createPrerenderedNodeApp, which forwards GET document paths to the app when they are prerendered or a page renderer is registered, and startPrerenderedNodeServer, which repeats the serve wrapper of startNodeServer and falls back to it when nothing is prerendered; the built server entry uses it; evidence: revision a4eef5ab9d759aecb674a4b13ba42130c1050dd7, command pnpm -C packages/rex exec vitest run src/vite/prerender.test.ts src/server/static-cache.test.ts src/check/rules/render.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-1.3-private/logs/1.3-verify.log."
+assumption = "The owner of adapters/node.ts folds the document-path forwarding into createNodeApp (closing qualification.111 too), after which startPrerenderedNodeServer can delegate to startNodeServer instead of repeating its serve wrapper."
+severity = "note"

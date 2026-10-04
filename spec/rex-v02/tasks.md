@@ -63,7 +63,7 @@
     - Map loader failures into the page data state through the existing precedence in client/states.ts and surface them in the sidecar.
     - Write client/loaders.test.tsx: typed output, dedupe to one request across two consumers, staleTime, invalidation by a mutating action, SSR dehydrate and client hydrate with no request, loader failure state.
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 1.1_
-  - [ ] 1.3 Static generation, on-demand regeneration and zero-JavaScript pages
+  - [x] 1.3 Static generation, on-demand regeneration and zero-JavaScript pages
     - Add vite/prerender.ts that renders every ssg and static page at build time (expanding paths) through server/ssr.ts into dist/client/<route>/index.html and lists them; for static pages omit the page chunk and hydration script and render actions with ActionForm from 1.6.
     - Add server/adapters/static-cache.ts serving prerendered pages with revalidate handled as stale-while-revalidate regeneration in the background; wire it into server/routes/render.ts and the node adapter.
     - Add check/rules/render.ts reporting a static page that declares a shortcut action or a region-bound overlay (render/static-needs-js) with fixtures, registered in the rules list.

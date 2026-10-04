@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import { STATIC_HEADER, staticCacheFor, type StaticHit } from "../adapters/static-cache.ts";
 import type { RexServerSetup } from "../app.ts";
 import {
   DENSITY_HEADER,
@@ -57,10 +58,25 @@ export function isDocumentPath(path: string): boolean {
   return !last.includes(".");
 }
 
+function staticResponse(hit: StaticHit, density: string): Response {
+  const headers = new Headers({
+    "content-type": HTML_CONTENT_TYPE,
+    "cache-control": "no-store",
+    [RENDER_KIND_HEADER]: "page",
+    [RENDER_PAGE_HEADER]: hit.page,
+    [STATIC_HEADER]: hit.status,
+    [DENSITY_HEADER]: density,
+  });
+  if (hit.setCookie !== null) headers.append("set-cookie", hit.setCookie);
+  return new Response(hit.html, { status: RENDER_STATUS.page, headers });
+}
+
 export function installRenderRoute(app: Hono, setup: RexServerSetup): void {
   app.get("*", async (c, next) => {
     const renderer = pageRendererFor(setup.options.registry);
-    if (renderer === undefined || !isDocumentPath(c.req.path)) {
+    const cache = staticCacheFor(setup.options.registry);
+    const cached = cache !== undefined && cache.has(c.req.path);
+    if ((renderer === undefined && !cached) || !isDocumentPath(c.req.path)) {
       await next();
       return;
     }
@@ -72,6 +88,14 @@ export function installRenderRoute(app: Hono, setup: RexServerSetup): void {
         return c.json({ code: "BAD_REQUEST", message: error.message }, 400);
       }
       throw error;
+    }
+    if (cached) {
+      const hit = await cache.serve(c.req.raw, renderer, context.nonce);
+      if (hit !== null) return staticResponse(hit, context.density);
+    }
+    if (renderer === undefined) {
+      await next();
+      return;
     }
     const result = await renderer.render(c.req.raw, context);
     const headers = new Headers({
