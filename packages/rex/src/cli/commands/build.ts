@@ -3,7 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RexCommand as Command } from "../args.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
-import { rex } from "../../vite/index.ts";
+import { rex, type RexPluginOptions } from "../../vite/index.ts";
 import { chunkBudgets, resolveBudgets } from "../../vite/budgets.ts";
 import {
   chunkTable,
@@ -14,6 +14,7 @@ import {
 } from "../../vite/split.ts";
 import { loadRexConfig } from "../config.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
+import { configPluginOptions } from "../load.ts";
 import { ensureCheckPasses } from "./check.ts";
 import { appConfigPath, cliWarn, rexCliExit } from "./dev.ts";
 import type { ResolvedBudgets } from "../../core/config.ts";
@@ -131,12 +132,14 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
   const config = appConfigPath(appRoot);
   const logLevel = options.logLevel ?? "warn";
   let budgets: ResolvedBudgets;
+  let pluginOptions: RexPluginOptions;
   try {
     const loaded = await loadRexConfig(
       appRoot,
       options.warn === undefined ? {} : { warn: options.warn },
     );
     budgets = resolveBudgets(loaded.read);
+    pluginOptions = configPluginOptions(loaded.read);
   } catch (error) {
     return rexCliExit(error);
   }
@@ -148,7 +151,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     root: appRoot,
     configFile: false,
     logLevel,
-    plugins: rex(),
+    plugins: rex(pluginOptions),
     build: { outDir: clientDir, emptyOutDir: true },
   });
   const chunks = chunkTable(outputItems(client), chunkBudgets(budgets));
@@ -157,7 +160,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     root: appRoot,
     configFile: false,
     logLevel,
-    plugins: [...rex(), serverEntryPlugin({ config, runtime: serverRuntimePaths() })],
+    plugins: [...rex(pluginOptions), serverEntryPlugin({ config, runtime: serverRuntimePaths() })],
     ssr: { noExternal: true, target: "node" },
     build: {
       ssr: true,

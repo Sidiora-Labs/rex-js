@@ -1,9 +1,9 @@
+import * as zm from "zod/mini";
 import { RexNameError, validateName } from "./ids.ts";
 import {
   fieldKind,
   objectJsonSchema,
   schemaType,
-  z,
   type FieldKind,
   type JsonSchema,
 } from "./schema.ts";
@@ -53,7 +53,7 @@ export type EntityFields = { readonly [field: string]: StandardSchemaV1 };
 
 export type EntityShape<F extends EntityFields> = { -readonly [P in keyof F]: AsZodSchema<F[P]> };
 
-export type EntityRecord<F extends EntityFields> = z.output<z.ZodObject<EntityShape<F>>>;
+export type EntityRecord<F extends EntityFields> = zm.output<zm.ZodMiniObject<EntityShape<F>>>;
 
 export type StringFieldOf<F extends EntityFields> = {
   [P in keyof F]: StandardInferOutput<F[P]> extends string ? P : never;
@@ -77,7 +77,7 @@ export interface EntityDeclaration<
   readonly fields: Readonly<EntityShape<F>>;
   readonly fieldKinds: Readonly<Record<keyof F & string, FieldKind | undefined>>;
   readonly key: K;
-  readonly schema: z.ZodObject<EntityShape<F>>;
+  readonly schema: zm.ZodMiniObject<EntityShape<F>>;
   readonly jsonSchema: JsonSchema;
   label(record: EntityRecord<F>): string;
   parse(value: unknown): EntityRecord<F>;
@@ -132,7 +132,8 @@ export function entity<
     ]),
   ) as EntityShape<F>;
   const keySchema = (shape as Record<string, ZodSchemaLike>)[key] as ZodSchemaLike;
-  const keyOptional = keySchema.safeParse(undefined).success || keySchema.safeParse(null).success;
+  const keyOptional =
+    zm.safeParse(keySchema, undefined).success || zm.safeParse(keySchema, null).success;
   if (
     keyOptional ||
     (schemaType(keySchema) !== "string" && !KEY_KINDS.includes(fieldKind(keySchema)))
@@ -140,7 +141,7 @@ export function entity<
     fail("key", `field "${key}" must be a required string field`);
   }
 
-  const schema = z.object(shape);
+  const schema = zm.object(shape);
   let jsonSchema: JsonSchema;
   try {
     jsonSchema = objectJsonSchema(shape);

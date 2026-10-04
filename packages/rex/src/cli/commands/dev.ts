@@ -4,9 +4,10 @@ import { createServer, type LogLevel, type ServerOptions, type ViteDevServer } f
 import { isFetchHandler } from "../../core/config.ts";
 import type { DeprecationWarn } from "../../core/deprecated.ts";
 import { formatRexError, isRexError } from "../../core/errors.ts";
-import { rex, type RexFetchApp } from "../../vite/index.ts";
-import { loadConfigServer, requireConfig } from "../config.ts";
+import { rex, type RexFetchApp, type RexPluginOptions } from "../../vite/index.ts";
+import { loadConfigServer, loadRexConfig, requireConfig } from "../config.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
+import { configPluginOptions } from "../load.ts";
 import { ensureCheckPasses } from "./check.ts";
 
 export const DEFAULT_DEV_PORT = 5173;
@@ -54,6 +55,16 @@ export function loadAppServer(vite: ViteDevServer, warn?: DeprecationWarn): Prom
 export async function startDev(root: string, options: DevOptions = {}): Promise<ViteDevServer> {
   const appRoot = resolve(root);
   appConfigPath(appRoot);
+  let pluginOptions: RexPluginOptions;
+  try {
+    const loaded = await loadRexConfig(
+      appRoot,
+      options.warn === undefined ? {} : { warn: options.warn },
+    );
+    pluginOptions = configPluginOptions(loaded.read);
+  } catch (error) {
+    return rexCliExit(error);
+  }
   const server: ServerOptions = {
     port: options.port ?? DEFAULT_DEV_PORT,
     ...(options.host === undefined ? {} : { host: options.host }),
@@ -62,7 +73,7 @@ export async function startDev(root: string, options: DevOptions = {}): Promise<
     root: appRoot,
     configFile: false,
     logLevel: options.logLevel ?? "info",
-    plugins: rex({ server: (vite) => loadAppServer(vite, options.warn) }),
+    plugins: rex({ ...pluginOptions, server: (vite) => loadAppServer(vite, options.warn) }),
     server,
   });
   try {

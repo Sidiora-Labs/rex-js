@@ -618,7 +618,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.0.8]
 title = "Finish the zod/mini and Standard Schema move, regenerate the demo manifest and wire the config flags so the budgets pass"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 0
 requires = ["0.7"]
@@ -628,7 +628,7 @@ do_2 = "Read page params through the Standard Schema interface and the manifest 
 do_3 = "Add the real and json field kinds to the Drizzle store column map; list zod in the rex new package template and update cli/new.test.ts to the APP_PEERS list (closes qualification.01 and qualification.02)."
 do_4 = "Make manifest/scan.ts and the check manifest rule load app code through cli/load.ts instead of tsx and remove tsx from the root devDependencies; pass compiler and devtools from the loaded rex.config into rex() in cli/commands/dev.ts, build.ts and cli/load.ts (closes qualification.02 and qualification.04); regenerate examples/demo/.rex/manifest.json and AGENTS.md with rex manifest so the demo checker is green again."
 do_5 = "Run the unchanged size test (core at most 15 KB, client 30 KB, edge 40 KB gzipped). If a budget still fails after the zod/mini move, record the measured number, the five largest contributors from Vite's build output and the cause in the qualification log as a blocker; never relax the budget (closes qualification.05)."
-touches = ["packages/rex/src/core/schema.ts", "packages/rex/src/core/schema.test.ts", "packages/rex/src/core/page.ts", "packages/rex/src/core/entity.ts", "packages/rex/src/core/flow.ts", "packages/rex/src/manifest/sidecar.schema.ts", "packages/rex/src/server/router.ts", "packages/rex/src/server/flow.ts", "packages/rex/src/client/act.ts", "packages/rex/src/client/router.tsx", "packages/rex/src/client/nav.ts", "packages/rex/src/client/shell.tsx", "packages/rex/src/client/shell", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/confirm.tsx", "packages/rex/src/store/drizzle.ts", "packages/rex/src/store/drizzle.test.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/new.test.ts", "packages/rex/src/manifest/scan.ts", "packages/rex/src/check/rules/manifest.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/build.ts"]
+touches = ["packages/rex/src/core/schema.ts", "packages/rex/src/core/schema.test.ts", "packages/rex/src/core/page.ts", "packages/rex/src/core/entity.ts", "packages/rex/src/core/flow.ts", "packages/rex/src/manifest/sidecar.schema.ts", "packages/rex/src/server/router.ts", "packages/rex/src/server/flow.ts", "packages/rex/src/client/act.ts", "packages/rex/src/client/router.tsx", "packages/rex/src/client/nav.ts", "packages/rex/src/client/shell.tsx", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/confirm.tsx", "packages/rex/src/store/drizzle.ts", "packages/rex/src/store/drizzle.test.ts", "packages/rex/src/cli/new.test.ts", "packages/rex/src/manifest/scan.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/build.ts"]
 verify_cmd = "pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts src/cli/new.test.ts src/server/router.test.ts src/client/act.test.tsx src/client/nav.test.tsx src/store/drizzle.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check"
 gate_kind = "planned"
 max_builds = 1

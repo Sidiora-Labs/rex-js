@@ -1,10 +1,10 @@
 import { ORPCError } from "@orpc/client";
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
+import * as zm from "zod/mini";
 import type { ActionInput, ActionOutput, AnyAction } from "../core/action.ts";
 import { actionAddress } from "../core/ids.ts";
 import { evaluate, type ReasonCode } from "../core/policy.ts";
-import { z } from "../core/schema.ts";
 import { formatIssues, validateStandard } from "../core/standard.ts";
 import { CONFIRM_PROCEDURE } from "../core/protocol.ts";
 import {
@@ -51,9 +51,9 @@ export interface ActHandle<A extends AnyAction> {
   requestConfirm(input: ActionInput<A>): Promise<ConfirmGrant>;
 }
 
-export const confirmGrantSchema = z.object({
-  token: z.string().min(1),
-  expiresAt: z.iso.datetime(),
+export const confirmGrantSchema = zm.object({
+  token: zm.string().check(zm.minLength(1)),
+  expiresAt: zm.iso.datetime(),
 });
 
 export function describeError(error: unknown): { code: string; message: string } {
