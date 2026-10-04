@@ -136,7 +136,7 @@
     - With i18n.routing prefix mount every page under /:locale in client/router.tsx and keep the prefix in nav.to and useNav.href.
     - Add check/rules/i18n.ts (i18n/literal with allow list) and cli/gen/i18n.ts contributing app/locales/<default>.json to rex new; write client/i18n/i18n.test.tsx and check/rules/i18n.test.ts.
     - _Requirements: 23.1, 23.2, 23.3_
-  - [ ] 3.6 Styling freedom: CSS Modules, Tailwind 4 and a configurable token rule
+  - [x] 3.6 Styling freedom: CSS Modules, Tailwind 4 and a configurable token rule
     - Add vite/styles.ts enabling @tailwindcss/vite when config.tailwind is true or ui is designx and documenting CSS Modules as default Vite behaviour; register it in vite/hooks.ts.
     - Rewrite check/rules/tokens.ts to report only raw color and spacing literals, resolve Tailwind utilities to tokens through the theme and honour the allow lists in config.check.tokens; add a fixture app using CSS Modules and Tailwind utilities that passes.
     - Write vite/styles.test.ts and extend check/rules/quality.test.ts.

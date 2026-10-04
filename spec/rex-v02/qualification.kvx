@@ -39,3 +39,11 @@ symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowSt
 observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
 assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
 severity = "blocker"
+
+[qualification.361]
+task = "3.6"
+file = "packages/rex/src/cli/commands/dev.ts, packages/rex/src/cli/commands/build.ts, packages/rex/src/cli/load.ts, packages/rex/src/cli/config.ts"
+symbol = "rex(), RexPluginOptions.tailwind, RexPluginOptions.ui"
+observed = "The Vite plugin adds @tailwindcss/vite through vite/styles.ts when rex({ tailwind: true }) or rex({ ui: 'designx' }), and the token rule reads check.tokens statically from rex.config.ts, but rex dev, rex build and the module loader (outside the 3.6 touches) call rex() without the tailwind and ui values of the loaded rex.config.ts; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/vite/styles.test.ts src/check/rules/quality.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.6-private/logs/3.6-verify.log."
+assumption = "The task that next owns the dev and build commands passes { tailwind: config.tailwind, ui: config.ui } from the loaded config into rex(), alongside compiler and devtools from qualification.04."
+severity = "assumption"
