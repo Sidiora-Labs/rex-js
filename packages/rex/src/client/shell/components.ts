@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { RexError } from "../../core/errors.ts";
-import { PageOutcome } from "../page-outcome.tsx";
+import { PageOutcome } from "../outcome-frame.tsx";
 import { useOutcome } from "../outcome.ts";
 import type { OutcomeSlotProps } from "./outcome-slot.tsx";
 import type { ShellSlotProps } from "./slots.ts";

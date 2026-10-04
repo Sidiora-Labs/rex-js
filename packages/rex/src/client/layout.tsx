@@ -7,7 +7,7 @@ import {
   checkSpace,
   spaceClass,
   type Space,
-} from "./page-outcome.tsx";
+} from "./outcome-frame.tsx";
 
 export {
   DEFAULT_SPACE,
@@ -15,7 +15,7 @@ export {
   spaceClass,
   type OutcomeProps,
   type Space,
-} from "./page-outcome.tsx";
+} from "./outcome-frame.tsx";
 
 export const COLUMNS = [1, 2, 3, 4] as const;
 
