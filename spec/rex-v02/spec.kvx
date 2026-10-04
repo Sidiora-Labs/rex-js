@@ -479,7 +479,7 @@ ac_2  = "package version is 0.2.0, CHANGELOG has the 0.2.0 entry, README carries
 
 [task.0.1]
 title = "Split the Vite plugin, server and client entry points into per-concern modules with registration lists"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 0
 requires = []

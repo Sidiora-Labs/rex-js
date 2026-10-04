@@ -4,7 +4,7 @@
 
 ## Tasks
 
-  - [ ] 0.1 Split the Vite plugin, server and client entry points into per-concern modules with registration lists
+  - [x] 0.1 Split the Vite plugin, server and client entry points into per-concern modules with registration lists
     - Create vite/plugin.ts assembling the plugin from the ordered hook list in vite/hooks.ts; move the rex:app code to vite/app-module.ts, the /@rex/entry code to vite/entry-module.ts, resolution to vite/resolve.ts and scanning to vite/scan.ts; vite/index.ts only re-exports; keep virtual.ts as the home of module id constants.
     - Create server/app.ts composing createRexServer from server/routes.ts (ordered list of route installers) and server/middleware.ts (ordered list); move the manifest, rpc and health handlers to server/routes/manifest.ts, rpc.ts and health.ts; server/index.ts re-exports and imports nothing from node:.
     - Create client/entry.tsx holding createRexEntry built from the provider list in client/providers.ts; split shell.tsx into client/shell/header.tsx, nav.tsx, outcome-slot.tsx and client/shell/slots.ts (ordered slot list) with shell.tsx composing them; add client/reset.ts exporting registerReset and resetAll for test helpers.

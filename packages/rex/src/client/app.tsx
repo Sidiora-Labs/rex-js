@@ -13,7 +13,6 @@ import { actor as createActor, anonymousActor, type Actor, type ActorInput } fro
 import { isPlainObject } from "../core/entity.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import { MANIFEST_VERSION, type Manifest } from "../manifest/types.ts";
-import { DensityProvider } from "./agent/density.ts";
 import {
   ACTOR_HEADER,
   CONFIRM_HEADER,
@@ -25,8 +24,6 @@ import {
   type RexClientContext,
   type RexRuntime,
 } from "./context.ts";
-import type { PageModuleSet } from "./page.tsx";
-import { AgentShell } from "./shell.tsx";
 
 export type RexFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -268,35 +265,8 @@ export function createRexApp(options: CreateRexAppOptions): RexAppComponent {
   return RexApp;
 }
 
-export interface RexEntryBundle {
-  readonly registry: RegistrySnapshot;
-  readonly manifest?: Manifest;
-  readonly pages: readonly PageModuleSet[];
-}
-
-export type RexEntryOptions = Omit<CreateRexAppOptions, "registry" | "manifest" | "density">;
-
-export function createRexEntry(
-  bundle: RexEntryBundle,
-  options: RexEntryOptions = {},
-): ComponentType {
-  if (typeof bundle !== "object" || bundle === null || !Array.isArray(bundle.pages)) {
-    throw new TypeError("createRexEntry: the rex:app bundle with registry and pages is required");
-  }
-  const RexApp = createRexApp({
-    ...options,
-    registry: bundle.registry,
-    ...(bundle.manifest === undefined ? {} : { manifest: bundle.manifest }),
-    density: DensityProvider,
-  });
-  const pages = bundle.pages;
-  function RexEntry() {
-    return (
-      <RexApp>
-        <AgentShell pages={pages} />
-      </RexApp>
-    );
-  }
-  RexEntry.displayName = "RexEntry";
-  return RexEntry;
-}
+export {
+  createRexEntry,
+  type RexEntryBundle,
+  type RexEntryOptions,
+} from "./entry.tsx";
