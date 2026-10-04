@@ -44,7 +44,7 @@
     - Implement src/manifest/build.ts: buildManifest(registry) producing a deterministic manifest and stableStringify for byte-identical output; implement src/manifest/sidecar.schema.ts exporting the JSON Schema for the application/rex+json payload and a validateSidecar function.
     - Write src/manifest/build.test.ts covering ordering determinism, JSON schema emission for params and inputs, and sidecar schema acceptance and rejection cases.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 11.1, 11.2, 11.3_
-  - [ ] 0.8 Implement the Flow primitive with a journal and approval gates
+  - [x] 0.8 Implement the Flow primitive with a journal and approval gates
     - Implement src/core/flow.ts: flow(id, {steps, journal}) where a step is {action, input(ctx)} or {approval, label, approvers policy}; FlowDeclaration is frozen and validated.
     - Implement src/core/journal.ts with the Journal interface (open, record, load, list) and the in-memory journal; implement runFlow(flow, instanceId, ctx) that executes from the first incomplete step, pauses at an approval gate, and resumes or terminates on decide(instanceId, approve|reject, actor).
     - Write src/core/flow.test.ts covering completion, restart from a partial journal, approval pause and resume, rejection termination and duplicate decision refusal.

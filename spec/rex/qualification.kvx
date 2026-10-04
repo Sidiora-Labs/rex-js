@@ -1,0 +1,9 @@
+# rex qualification log. Format: sectioned KV (.kvx). String values are ALWAYS double-quoted.
+
+[qualification.1]
+task = "0.8"
+file = "packages/rex/src/index.ts"
+symbol = "flow, runFlow, decide, FlowDecisionError, memoryJournal"
+observed = "Task 0.8 adds src/core/flow.ts and src/core/journal.ts but its touches exclude src/index.ts, so the package entry does not re-export them; evidence: revision 578db82390865bfc9689e62e74517836a792bca8, command pnpm -C packages/rex exec vitest run src/core/flow.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/70688564-1e05-423b-8a55-efb8e233b3ec/scratchpad/logs/0.8-done.log."
+assumption = "A later task that owns packages/rex/src/index.ts adds export * from ./core/journal.ts and ./core/flow.ts."
+severity = "note"
