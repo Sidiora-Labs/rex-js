@@ -109,7 +109,7 @@ function addStaticPageAndImage(root: string): void {
       'import { defineConfig } from "@sidioralabs/rex/config";',
       'import app from "rex:app";',
       "",
-      'export default defineConfig({ app, i18n: { locales: ["en"], default: "en" } });',
+      'export default defineConfig({ app, ui: "designx", i18n: { locales: ["en"], default: "en" } });',
       "",
     ].join("\n"),
     "app/components/Logo.tsx": [
@@ -144,6 +144,8 @@ describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
       "i18n",
       "media",
       "format",
+      "ui",
+      "layout",
     ]);
   });
 
@@ -209,6 +211,15 @@ describe("default rule set", { timeout: CHECK_TEST_TIMEOUT_MS }, () => {
     expect(pick("i18n/literal").map(([file]) => file)).toEqual(["app/actions/ping.ts"]);
     expect(pick("media/no-raw-img")).toEqual([["app/pages/home/regions/extra/region.tsx", 5, 7]]);
     expect(pick("format/prettier")).toEqual([["app/data/unformatted.ts", 1, 23]]);
+    expect(pick("ui/designx-primitive")).toEqual([
+      ["app/pages/home/regions/main/parts/badge.tsx", 3, 5],
+    ]);
+    expect(pick("layout/fixed-size")).toEqual([
+      ["app/pages/home/regions/main/parts/badge.tsx", 3, 36],
+    ]);
+    expect(pick("layout/touch-target")).toEqual([
+      ["app/pages/home/regions/main/parts/badge.tsx", 3, 36],
+    ]);
 
     const human = await runCheck(root);
     expect(human.output).toBe(formatHuman(result.findings));

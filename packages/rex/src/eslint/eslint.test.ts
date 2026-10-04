@@ -57,6 +57,8 @@ describe("rex/eslint plugin and flat config", () => {
       "tokens",
       "a11y",
       "media",
+      "ui",
+      "layout",
     ]);
     const ids = lintRules().map((rule) => rule.id);
     expect(ids).toEqual(

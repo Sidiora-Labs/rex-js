@@ -1,0 +1,11 @@
+.chart {
+  max-width: 100%;
+  width: 480px;
+  /* height: 200px; */
+  min-height: 0;
+  border-width: 1px;
+}
+
+.legend {
+  min-block-size: 32px;
+}

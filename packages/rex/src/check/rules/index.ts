@@ -5,6 +5,7 @@ import { a11yRule } from "./a11y.ts";
 import { boundariesRule } from "./boundaries.ts";
 import { formatRule } from "./format.ts";
 import { i18nRule } from "./i18n.ts";
+import { layoutRule } from "./layout.ts";
 import { manifestRule } from "./manifest.ts";
 import { mediaRule } from "./media.ts";
 import { namingRule } from "./naming.ts";
@@ -15,6 +16,7 @@ import { statesRule } from "./states.ts";
 import { tokensRule } from "./tokens.ts";
 import { trapsRule } from "./traps.ts";
 import { typecheckRule } from "./typecheck.ts";
+import { uiRule } from "./ui.ts";
 
 export const defaultRules: readonly Rule[] = Object.freeze([
   typecheckRule,
@@ -31,6 +33,8 @@ export const defaultRules: readonly Rule[] = Object.freeze([
   i18nRule,
   mediaRule,
   formatRule,
+  uiRule,
+  layoutRule,
 ]);
 
 export interface RunCheckOptions {
