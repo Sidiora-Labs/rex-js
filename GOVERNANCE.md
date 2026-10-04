@@ -49,7 +49,7 @@ Changes to this file, [MAINTAINERS.md](MAINTAINERS.md), [SECURITY.md](SECURITY.m
 ## Release authority
 
 - Rex follows semantic versioning. Before 1.0, a minor version (0.x) may contain breaking changes, each listed in [CHANGELOG.md](CHANGELOG.md) with its migration.
-- A release is made only from `main`, only when every release gate in [docs/development.md](docs/development.md) passes on the release revision: the package tests, the typecheck, `rex check` on the demo, the operability walk and `cg spec render --check`, plus every gate the feature spec adds for that release.
+- A release is made only from `main`, only when every release gate in [docs/development.md](docs/development.md) passes on the release revision: the package tests, the typecheck, `rex check` on the demo, the demo walks (operability, no-JS, axe, vitals, Lighthouse and screenshots), `pnpm audit --prod`, the license review and `cg spec render --check`, plus every gate the feature spec adds for that release.
 - A release manager prepares the release pull request (version bump in `packages/rex/package.json` and the changelog entry). Another maintainer approves it; with a single maintainer, the release manager self-approves after the gates pass.
 - The release manager pushes a signed `v<version>` tag. The release workflow publishes to npm from GitHub Actions with npm provenance. Nobody publishes from a local machine.
 - A security release may skip the waiting periods in this document. It still needs the release gates and is announced through a GitHub security advisory as described in [SECURITY.md](SECURITY.md).
@@ -73,7 +73,7 @@ The project is set up to outlive any one person:
 
 ## Funding
 
-Rex is free to use under the MIT [license](LICENSE). The project accepts sponsorship through the channels in `.github/FUNDING.yml`, which GitHub shows as the Sponsor button on the repository. Sponsorship money is held by Sidiora Labs and spent only on the project: maintainer time, CI and infrastructure, security audits, and documentation. Sponsors gain no say in technical decisions; those follow the process above. Maintainers publish a short summary of income and spending in a GitHub discussion at least once a year.
+Rex is free to use under the MIT [license](LICENSE). Sponsorship is not yet open; `.github/FUNDING.yml` lists the channels and GitHub will show them as the Sponsor button once Sidiora Labs' GitHub Sponsors profile is live. Sponsorship money is held by Sidiora Labs and spent only on the project: maintainer time, CI and infrastructure, security audits, and documentation. Sponsors gain no say in technical decisions; those follow the process above. Maintainers publish a short summary of income and spending in a pinned GitHub issue at least once a year.
 
 ## Code of conduct and security
 

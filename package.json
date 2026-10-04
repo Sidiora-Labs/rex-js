@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@10.27.0",
   "engines": {
-    "node": ">=22"
+    "node": "^22.19.0 || ^24.11.0 || >=26.0.0"
   },
   "scripts": {
     "build": "pnpm -r --filter @sidioralabs/rex build",
@@ -20,7 +20,6 @@
   "devDependencies": {
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.13.1",
-    "typescript": "^5.9.3",
-    "vitest": "^5.0.3"
+    "typescript": "^5.9.3"
   }
 }

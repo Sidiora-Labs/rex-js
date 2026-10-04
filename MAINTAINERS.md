@@ -14,7 +14,7 @@ This file lists the people who maintain Rex and what each may do. Roles and how 
 | --- | --- |
 | Security vulnerabilities | Private vulnerability reporting on GitHub, as described in [SECURITY.md](SECURITY.md). |
 | Code of conduct reports | The conduct contact above, privately, as described in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). If the report concerns the conduct contact, any other maintainer or the Sidiora Labs organisation owners. |
-| Everything else | An issue or a discussion on the repository. |
+| Everything else | An issue on the repository. |
 
 ## Release managers
 
