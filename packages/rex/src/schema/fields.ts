@@ -124,3 +124,34 @@ export function timestamp() {
 export function json() {
   return field(zm.json(), { [FIELD_KIND_KEY]: "json" });
 }
+
+export interface MarkdownHeading {
+  readonly depth: number;
+  readonly id: string;
+  readonly text: string;
+}
+
+export interface MarkdownValue {
+  readonly source: string;
+  readonly html: string;
+  readonly headings: readonly MarkdownHeading[];
+  readonly text: string;
+}
+
+export function markdown() {
+  return field(
+    zm.object({
+      source: zm.string(),
+      html: zm.string(),
+      headings: zm.array(
+        zm.object({
+          depth: zm.int().check(zm.gte(1), zm.lte(6)),
+          id: zm.string().check(zm.minLength(1)),
+          text: zm.string(),
+        }),
+      ),
+      text: zm.string(),
+    }),
+    { [FIELD_KIND_KEY]: "markdown" },
+  );
+}

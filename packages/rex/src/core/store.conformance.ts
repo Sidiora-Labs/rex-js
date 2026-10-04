@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { entity, type InferEntity } from "./entity.ts";
-import { boolean, enumOf, id, integer, money, ref, text, timestamp } from "../schema/index.ts";
+import {
+  boolean,
+  enumOf,
+  id,
+  integer,
+  money,
+  real,
+  ref,
+  text,
+  timestamp,
+} from "../schema/index.ts";
 import { MAX_PAGE_SIZE, type Store } from "./store.ts";
 
 const invalidArgument = expect.objectContaining({ name: "RexError", code: "REX329" });
@@ -10,6 +20,7 @@ export const conformanceEntity = entity("conformance-item", {
     id: id(),
     name: text({ min: 1 }),
     quantity: integer({ min: 0 }),
+    weight: real(),
     active: boolean(),
     price: money(),
     tier: enumOf(["gold", "silver"]),
@@ -27,6 +38,11 @@ export type MakeStore = (
   declaration: ConformanceEntity,
 ) => Store<ConformanceRecord> | Promise<Store<ConformanceRecord>>;
 
+export type MakeSeededStore = (
+  declaration: ConformanceEntity,
+  seed: readonly ConformanceRecord[],
+) => Store<ConformanceRecord> | Promise<Store<ConformanceRecord>>;
+
 export function conformanceRecord(
   index: number,
   overrides: Partial<ConformanceRecord> = {},
@@ -36,6 +52,7 @@ export function conformanceRecord(
     id: `item-${suffix}`,
     name: `Item ${suffix}`,
     quantity: index,
+    weight: index * 0.25,
     active: index % 2 === 0,
     price: `${index}.50`,
     tier: index % 3 === 0 ? "gold" : "silver",
@@ -46,6 +63,11 @@ export function conformanceRecord(
 }
 
 export function runStoreConformance(name: string, makeStore: MakeStore): void {
+  runStoreQueryConformance(name, async (declaration, seed) => {
+    const store = await makeStore(declaration);
+    for (const record of seed) await store.put(record);
+    return store;
+  });
   describe(`store conformance: ${name}`, () => {
     let store: Store<ConformanceRecord>;
 
@@ -166,6 +188,217 @@ export function runStoreConformance(name: string, makeStore: MakeStore): void {
       const first = listed.items[0];
       if (first) first.name = "mutated listed";
       expect((await store.get("item-008"))?.name).toBe("Item 008");
+    });
+  });
+}
+
+function records(...indexes: readonly number[]): ConformanceRecord[] {
+  return indexes.map((index) => conformanceRecord(index));
+}
+
+const ids = (result: { readonly items: readonly ConformanceRecord[] }) =>
+  result.items.map((item) => item.id);
+
+export function runStoreQueryConformance(name: string, makeSeeded: MakeSeededStore): void {
+  describe(`store query conformance: ${name}`, () => {
+    it("sorts by an integer, a real and a text field in both directions", async () => {
+      const store = await makeSeeded(conformanceEntity, records(4, 1, 5, 2, 3));
+      expect(ids(await store.list({ sort: { field: "quantity", direction: "desc" } }))).toEqual([
+        "item-005",
+        "item-004",
+        "item-003",
+        "item-002",
+        "item-001",
+      ]);
+      expect(ids(await store.list({ sort: { field: "weight" } }))).toEqual([
+        "item-001",
+        "item-002",
+        "item-003",
+        "item-004",
+        "item-005",
+      ]);
+      const named = await makeSeeded(conformanceEntity, [
+        conformanceRecord(1, { name: "beta" }),
+        conformanceRecord(2, { name: "Alpha" }),
+        conformanceRecord(3, { name: "alpha" }),
+        conformanceRecord(4, { name: "\u00e9t\u00e9" }),
+      ]);
+      expect(ids(await named.list({ sort: { field: "name", direction: "asc" } }))).toEqual([
+        "item-002",
+        "item-003",
+        "item-001",
+        "item-004",
+      ]);
+      expect(ids(await named.list({ sort: { field: "name", direction: "desc" } }))).toEqual([
+        "item-004",
+        "item-001",
+        "item-003",
+        "item-002",
+      ]);
+    });
+
+    it("sorts timestamps by instant and money by amount, not by their text", async () => {
+      const store = await makeSeeded(conformanceEntity, [
+        conformanceRecord(1, { createdAt: "2026-10-04T00:00:01Z", price: "10.00" }),
+        conformanceRecord(2, { createdAt: "2026-10-04T00:00:00.500Z", price: "9.5" }),
+        conformanceRecord(3, { createdAt: "2026-10-04T00:00:00Z", price: "100" }),
+      ]);
+      expect(ids(await store.list({ sort: { field: "createdAt" } }))).toEqual([
+        "item-003",
+        "item-002",
+        "item-001",
+      ]);
+      expect(ids(await store.list({ sort: { field: "price", direction: "desc" } }))).toEqual([
+        "item-003",
+        "item-001",
+        "item-002",
+      ]);
+    });
+
+    it("breaks sort ties by ascending key and places absent values first ascending, last descending", async () => {
+      const store = await makeSeeded(conformanceEntity, [
+        conformanceRecord(3, { tier: "gold", note: "b" }),
+        conformanceRecord(1, { tier: "gold" }),
+        conformanceRecord(2, { tier: "silver", note: "a" }),
+        conformanceRecord(4, { tier: "silver" }),
+      ]);
+      expect(ids(await store.list({ sort: { field: "tier", direction: "desc" } }))).toEqual([
+        "item-002",
+        "item-004",
+        "item-001",
+        "item-003",
+      ]);
+      expect(ids(await store.list({ sort: { field: "note" } }))).toEqual([
+        "item-001",
+        "item-004",
+        "item-002",
+        "item-003",
+      ]);
+      expect(ids(await store.list({ sort: { field: "note", direction: "desc" } }))).toEqual([
+        "item-003",
+        "item-002",
+        "item-001",
+        "item-004",
+      ]);
+    });
+
+    it("filters integer and real fields by range", async () => {
+      const store = await makeSeeded(conformanceEntity, records(1, 2, 3, 4, 5, 6, 7, 8, 9));
+      const between = await store.list({ filter: { quantity: { gte: 3, lt: 7 } } });
+      expect(ids(between)).toEqual(["item-003", "item-004", "item-005", "item-006"]);
+      expect(between.total).toBe(4);
+      expect(ids(await store.list({ filter: { quantity: { gt: 7 } } }))).toEqual([
+        "item-008",
+        "item-009",
+      ]);
+      expect(ids(await store.list({ filter: { quantity: { lte: 2 } } }))).toEqual([
+        "item-001",
+        "item-002",
+      ]);
+      expect(ids(await store.list({ filter: { weight: { gt: 1.5, lte: 2 } } }))).toEqual([
+        "item-007",
+        "item-008",
+      ]);
+      expect(ids(await store.list({ filter: { weight: { lt: 0.5 } } }))).toEqual(["item-001"]);
+    });
+
+    it("filters timestamps by instant and text by code point order", async () => {
+      const store = await makeSeeded(conformanceEntity, [
+        conformanceRecord(1, { createdAt: "2026-10-04T00:00:00Z", name: "apple" }),
+        conformanceRecord(2, { createdAt: "2026-10-04T00:00:00.500Z", name: "banana" }),
+        conformanceRecord(3, { createdAt: "2026-10-04T00:00:01Z", name: "cherry" }),
+        conformanceRecord(4, { createdAt: "2026-10-05T00:00:00Z", name: "Date" }),
+      ]);
+      expect(
+        ids(await store.list({ filter: { createdAt: { gt: "2026-10-04T00:00:00Z" } } })),
+      ).toEqual(["item-002", "item-003", "item-004"]);
+      expect(
+        ids(
+          await store.list({
+            filter: { createdAt: { gte: "2026-10-04T00:00:00.5Z", lt: "2026-10-05T00:00:00Z" } },
+          }),
+        ),
+      ).toEqual(["item-002", "item-003"]);
+      expect(ids(await store.list({ filter: { name: { gte: "b", lt: "c" } } }))).toEqual([
+        "item-002",
+      ]);
+      expect(ids(await store.list({ filter: { name: { lt: "a" } } }))).toEqual(["item-004"]);
+    });
+
+    it("filters by membership with in", async () => {
+      const store = await makeSeeded(conformanceEntity, records(1, 2, 3, 4, 5, 6));
+      expect(ids(await store.list({ filter: { quantity: { in: [2, 5, 40] } } }))).toEqual([
+        "item-002",
+        "item-005",
+      ]);
+      expect(ids(await store.list({ filter: { name: { in: ["Item 003", "Item 006"] } } }))).toEqual(
+        ["item-003", "item-006"],
+      );
+      expect(
+        ids(
+          await store.list({
+            filter: { createdAt: { in: ["2026-10-04T00:00:01.000Z", "2026-10-04T00:00:04Z"] } },
+          }),
+        ),
+      ).toEqual(["item-001", "item-004"]);
+      expect(await store.list({ filter: { quantity: { in: [] } } })).toEqual({
+        items: [],
+        page: 1,
+        size: 50,
+        total: 0,
+      });
+    });
+
+    it("excludes absent values from a range and combines ranges, equality, sort and paging", async () => {
+      const store = await makeSeeded(conformanceEntity, [
+        ...records(1, 2, 3, 4, 5, 6, 7, 8),
+        conformanceRecord(9, { note: "kept" }),
+        conformanceRecord(10, { note: "also" }),
+      ]);
+      expect(ids(await store.list({ filter: { note: { gte: "" } } }))).toEqual([
+        "item-009",
+        "item-010",
+      ]);
+      const query = {
+        filter: { active: true, quantity: { gte: 2, lte: 8 } },
+        sort: { field: "quantity", direction: "desc" },
+      } as const;
+      const first = await store.list({ ...query, page: 1, size: 3 });
+      const second = await store.list({ ...query, page: 2, size: 3 });
+      expect(ids(first)).toEqual(["item-008", "item-006", "item-004"]);
+      expect(ids(second)).toEqual(["item-002"]);
+      expect([first.total, second.total]).toEqual([4, 4]);
+    });
+
+    it("rejects malformed sorts and range filters", async () => {
+      const store = await makeSeeded(conformanceEntity, records(1));
+      const unknownField = expect.objectContaining({ name: "RexError", code: "REX305" });
+      const cases: unknown[] = [
+        { sort: { field: "quantity", direction: "up" } },
+        { sort: { direction: "asc" } },
+        { sort: "quantity" },
+        { filter: { quantity: { between: [1, 2] } } },
+        { filter: { quantity: {} } },
+        { filter: { quantity: { in: 3 } } },
+        { filter: { quantity: { gt: "3" } } },
+        { filter: { weight: { lt: Number.NaN } } },
+        { filter: { createdAt: { gt: "yesterday" } } },
+        { filter: { name: { lt: 3 } } },
+        { filter: { active: { gt: false } } },
+        { filter: { price: { gt: "1.00" } } },
+        { filter: { tier: { in: ["gold"] } } },
+      ];
+      for (const query of cases) {
+        await expect(store.list(query as never), JSON.stringify(query)).rejects.toThrow(
+          invalidArgument,
+        );
+      }
+      await expect(store.list({ sort: { field: "missing" } } as never)).rejects.toThrow(
+        unknownField,
+      );
+      await expect(store.list({ filter: { missing: { gt: 1 } } } as never)).rejects.toThrow(
+        unknownField,
+      );
     });
   });
 }

@@ -26,6 +26,7 @@ import {
   CLIENT_DIR,
   DIST_DIR,
   buildApp,
+  formatHostFiles,
   formatStaticOutputs,
   startHint,
   writtenLayout,
@@ -242,18 +243,31 @@ describe("rex build --target static", { timeout: STATIC_TEST_TIMEOUT_MS }, () =>
     }
   });
 
+  it("runs the static output list in order and the static host writer, which writes nothing", () => {
+    expect(built.outputs.map((run) => run.id)).toEqual([
+      "shell-documents",
+      "static-manifest",
+      "text-files",
+      "prerender-list",
+    ]);
+    expect(built.host).toBe("static");
+    expect(built.hostFiles).toEqual([]);
+    expect(formatHostFiles(built)).toBe("");
+  });
+
   it("prints every static output", () => {
     const client = `${DIST_DIR}/${CLIENT_DIR}`;
     expect(formatStaticOutputs(built)).toBe(
       [
+        `rex build: wrote ${client}/index.html (home, the shell document for /)`,
+        `rex build: wrote ${client}/console/index.html (console, the shell document for /console)`,
+        `rex build: wrote ${client}/404.html (the shell document for unknown routes)`,
         `rex build: wrote ${client}/rex/manifest`,
         `rex build: wrote ${client}/guide/index.md`,
         `rex build: wrote ${client}/news/index.md`,
         `rex build: wrote ${client}/topics/routing/index.md`,
         `rex build: wrote ${client}/topics/forms/index.md`,
-        `rex build: wrote ${client}/index.html (home, the shell document for /)`,
-        `rex build: wrote ${client}/console/index.html (console, the shell document for /console)`,
-        `rex build: wrote ${client}/404.html (the shell document for unknown routes)`,
+        `rex build: wrote ${DIST_DIR}/${PRERENDER_LIST_FILE}`,
         "",
       ].join("\n"),
     );

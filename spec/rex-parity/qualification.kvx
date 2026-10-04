@@ -1,1 +1,9 @@
 # rex-parity qualification log. One six-line entry per unrelated failure, contradiction or framework gap.
+
+[qualification.021]
+task = "0.2"
+file = "packages/rex/src/cli/cli.test.ts"
+symbol = "rex build --target option listing"
+observed = "Task 0.2 lets hostFor pick the build target from deploy.host when --target is absent, so rex build --target no longer carries the commander default node; cli/cli.test.ts line 386, outside the 0.2 touches and outside its verify_cmd, still expects { long: --target, value: target, default: node } in the rex build listing; evidence: revision 9f91ac13fc131e15e820505ccdb94cc690d9fb32 plus the 0.2 change, command pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/outputs.test.ts src/cli/hosts src/cli/commands/build.test.ts src/cli/static-target.test.ts src/core/store.memory.test.ts src/core/schema.test.ts src/store src/schema src/zod-boundary.test.ts src/size.test.ts && pnpm -C examples/demo exec rex build --target static --no-check, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-parity-0.2-private/logs/0.2-verify.log."
+assumption = "The feature manager or the task owning cli/cli.test.ts updates that listing expectation to { long: --target, value: target } with no default, as build.test.ts now asserts."
+severity = "contradiction"

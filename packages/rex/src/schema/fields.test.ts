@@ -7,7 +7,20 @@ import { FIELD_KIND_KEY, fieldKind, refTarget, unwrapSchema } from "../core/sche
 import { isZodSchema, validateStandard } from "../core/standard.ts";
 import { toJsonSchema } from "../manifest/json-schema.ts";
 import * as schemaEntry from "./index.ts";
-import { boolean, enumOf, id, integer, json, money, real, ref, text, timestamp } from "./index.ts";
+import {
+  boolean,
+  enumOf,
+  id,
+  integer,
+  json,
+  markdown,
+  money,
+  real,
+  ref,
+  text,
+  timestamp,
+  type MarkdownValue,
+} from "./index.ts";
 
 describe("field helpers validate values", () => {
   it("id", () => {
@@ -79,6 +92,25 @@ describe("field helpers validate values", () => {
     expect(() => ref("Token")).toThrow('invalid ref target "Token"');
   });
 
+  it("markdown", () => {
+    const value: MarkdownValue = {
+      source: "# Intro\n\nHello.",
+      html: '<h1 id="intro">Intro</h1>\n<p>Hello.</p>\n',
+      headings: [{ depth: 1, id: "intro", text: "Intro" }],
+      text: "Intro\n\nHello.",
+    };
+    expect(markdown().parse(value)).toEqual(value);
+    expect(markdown().safeParse("# Intro").success).toBe(false);
+    expect(markdown().safeParse({ ...value, html: undefined }).success).toBe(false);
+    expect(
+      markdown().safeParse({ ...value, headings: [{ depth: 7, id: "intro", text: "Intro" }] })
+        .success,
+    ).toBe(false);
+    expect(
+      markdown().safeParse({ ...value, headings: [{ depth: 2, id: "", text: "Intro" }] }).success,
+    ).toBe(false);
+  });
+
   it("timestamp", () => {
     expect(timestamp().parse("2026-10-04T12:00:00Z")).toBe("2026-10-04T12:00:00Z");
     expect(timestamp().safeParse("2026-10-04").success).toBe(false);
@@ -98,6 +130,8 @@ describe("field kinds", () => {
     expect(fieldKind(enumOf(["a", "b"]))).toBe("enum");
     expect(fieldKind(ref("token"))).toBe("ref");
     expect(fieldKind(timestamp())).toBe("timestamp");
+    expect(fieldKind(markdown())).toBe("markdown");
+    expect(fieldKind(markdown().optional())).toBe("markdown");
     expect(fieldKind(text().optional())).toBe("text");
     expect(fieldKind(integer().nullable())).toBe("integer");
     expect(fieldKind(boolean().default(false))).toBe("boolean");
@@ -106,6 +140,40 @@ describe("field kinds", () => {
     expect(fieldKind(z.string())).toBeUndefined();
     expect(refTarget(ref({ id: "account" }).optional())).toBe("account");
     expect(refTarget(text())).toBeUndefined();
+  });
+});
+
+describe("the markdown field", () => {
+  it("produces the JSON Schema of its rendered value", () => {
+    expect(toJsonSchema(markdown())).toEqual({
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+      properties: {
+        source: { type: "string" },
+        html: { type: "string" },
+        headings: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              depth: {
+                type: "integer",
+                minimum: 1,
+                maximum: 6,
+              },
+              id: { type: "string", minLength: 1 },
+              text: { type: "string" },
+            },
+            required: ["depth", "id", "text"],
+            additionalProperties: false,
+          },
+        },
+        text: { type: "string" },
+      },
+      required: ["source", "html", "headings", "text"],
+      additionalProperties: false,
+      "x-rex-field": "markdown",
+    });
   });
 });
 
@@ -127,6 +195,7 @@ describe("field helpers are built on zod/mini", () => {
       "ref",
       "timestamp",
       "json",
+      "markdown",
     ];
     for (const name of helpers) expect(Object.hasOwn(exported, name)).toBe(false);
     for (const name of [
@@ -149,7 +218,8 @@ describe("field helpers are built on zod/mini", () => {
       schemaEntry.ref,
       schemaEntry.timestamp,
       schemaEntry.json,
-    ]).toEqual([id, text, money, integer, real, boolean, enumOf, ref, timestamp, json]);
+      schemaEntry.markdown,
+    ]).toEqual([id, text, money, integer, real, boolean, enumOf, ref, timestamp, json, markdown]);
     expect(Object.hasOwn(schemaEntry as Readonly<Record<string, unknown>>, "z")).toBe(false);
     expect(z.string()).toBeInstanceOf(zm.ZodMiniString);
     expect(z.string()).not.toBeInstanceOf(zc.ZodType);
@@ -166,6 +236,7 @@ describe("field helpers are built on zod/mini", () => {
       ref("token"),
       timestamp(),
       json(),
+      markdown(),
     ]) {
       expect(isZodSchema(schema)).toBe(true);
       expect(schema).not.toBeInstanceOf(zc.ZodType);
