@@ -208,6 +208,24 @@
   - [ ] 6.3 Release 0.2.0
     - Set version 0.2.0, write the CHANGELOG 0.2.0 entry from the git log grouped by area, add the standards table to README.md with every [standard.*] item and its status, regenerate docs/api and docs/errors, and verify the pack test and the link check.
     - _Requirements: 35.2, 4.3_
+  - [ ] 7.1 Integration repair: green typecheck, one Origin rule, shared nonce, config flags wired, SSR from the node entry
+    - Close qualification.082, .083, .311, .581 and .411: cast through ZodSchemaLike in manifest/build.ts, assert a zod/mini object in core/entity.test.ts, make the two demo hooks import z from zod/mini and use z.string().check(z.maxLength(n)), pass a manifest built with buildManifest into the buildSidecarPayload call in core/serialize.test.ts, and add security to the default rule order in check/check.test.ts; pnpm -r typecheck must exit 0.
+    - Close qualification.421: seed RequestContext.nonce from requestNonce(request) in server/context.ts so the CSP header, SSR and the sidecar share one per-request nonce, make server/ssr.ts use it, and send an Origin header in every existing test that POSTs to /rex/* from Node (server, node, runtime, act, agent, flow and CLI tests); the Origin rule is not relaxed.
+    - Close qualification.141: the form route checks Origin through the security middleware helper with resolveSecurityPolicy(options).security.origins; remove the duplicate helper so rex/server exports one isAllowedOrigin.
+    - Close qualification.04, .361 and .431: cli/commands/dev.ts, cli/commands/build.ts and cli/load.ts pass compiler, devtools, tailwind, ui and security.secretNames from the loaded rex.config into rex(); extend cli/commands.test.ts.
+    - Close qualification.111: server/adapters/node.ts serves static assets first and forwards GET page paths to the app when a page renderer is registered, with no index.html fallback for SSR pages, so node dist/server.js renders pages on the server; extend server/node.test.ts.
+    - Close the qualification.521 follow-ups: cli/new.test.ts runs rex new with --ui none for the token expectations and adds a real designx case; client/overlay.tsx, client/agent/palette.tsx and client/agent/outcome.tsx render through useShellComponents(); shell overrides move to rex.config ui.components per [decision] shell_components (remove chrome.components from page options, resolve the module in client/shell/components.ts, set it in the demo rex.config); run pnpm -C examples/demo exec rex check and fix what it reports inside the demo.
+    - _Requirements: 3.3, 25.2, 25.3, 2.4, 8.2, 29.1, 29.3_
+  - [ ] 7.2 Budgets: curated core exports, prebuilt manifest for server bundles, trimmed client runtime and vendor-free page chunks
+    - Implement [decision] core_exports: remove the z namespace re-export from the core entry (apps and templates import z from zod/mini; update cli/templates.ts and the rex new fixtures), keep the field helpers and validateStandard, and make the size test measure the core with React excluded and nothing else.
+    - Prebuild the manifest: rex build writes dist/manifest.json and the generated server entry passes it to createRexServer({ manifest }), buildManifest runs only in dev and the CLI, and the JSON Schema generator leaves the server bundles; the edge size entry measures server/adapters/edge.ts.
+    - Trim the client runtime to the 30 KB budget: no @orpc/server value import on the client, the palette and devtools loaded lazily, agent modules importing only what they use.
+    - Make vite/split.ts put only modules under a page's folder into its page-<id> chunk and everything shared into shared chunks; extend vite/vite.test.ts with the fixture build and a demo build asserting every page chunk is under its budget.
+    - Run the unchanged size test, the package build and the demo build; if a budget still fails, record the measured number, the five largest contributors and the cause as a blocker; never relax a budget.
+    - _Requirements: 3.4, 7.1, 7.2, 5.1, 5.4, 11.3_
+  - [ ] 7.3 Re-qualify the tasks that ended implemented once their blockers are merged
+    - For each of 0.7, 0.8, 3.7, 5.2 and 5.5 (and 6.2 if it ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release.
+    - _Requirements: 7.1, 22.2, 29.1, 32.1, 3.4_
 
 ## Task Dependency Graph
 
@@ -220,7 +238,8 @@
     { "id": 3,  "tasks": ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"] },
     { "id": 4,  "tasks": ["4.1", "4.2", "4.3", "4.4", "4.5"] },
     { "id": 5,  "tasks": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9"] },
-    { "id": 6,  "tasks": ["6.1", "6.2", "6.3"] }
+    { "id": 6,  "tasks": ["6.1", "6.2", "6.3"] },
+    { "id": 7,  "tasks": ["7.1", "7.2", "7.3"] }
   ]
 }
 ```

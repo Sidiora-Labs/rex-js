@@ -32,6 +32,8 @@ ui               = "rex new installs DesignX UI (theme plus a base component set
 interop          = "A part can be exported as a custom element with defineElement, a Rex page can be mounted into a foreign app with mountRexPage, and parts may use custom elements and refs to plain DOM. This is also the incremental adoption path."
 modern           = "Img requires width and height and lazy-loads by default; fonts declared in rex.config are preloaded with font-display swap; Script carries a loading strategy. Route changes use the View Transitions API and intercept the Navigation API when present. A text renderer serves every page as markdown for terminal agents."
 versioning       = "Semantic versioning. deprecated() warns once per code. rex migrate runs registered codemods built on the TypeScript compiler API; the first migrates 0.1 apps. Governance, maintainers, security policy and code of conduct files are part of the package repository."
+core_exports     = "The core entry does not re-export zod or zod/mini: a namespace re-export defeats tree-shaking and pulls locales and the JSON Schema generator into every bundle. Apps import z from zod/mini themselves; the Rex surface is the field helpers, validateStandard and the declaration functions. The manifest, with its JSON Schema, is built once by rex build and loaded by the server entry, so the JSON Schema generator never ships in a server bundle; buildManifest runs only in dev and the CLI. Page chunks contain only modules under their page folder; shared app modules, the runtime and vendor code live in shared chunks."
+shell_components = "Shell component overrides are app-wide: rex.config ui.components names a module under app/components exporting ShellComponents, and the shell, overlays, palette and outcome region render through useShellComponents(). page.ts stays free of React imports, so chrome.components is not a page option."
 vitals           = "The operability walk measures LCP, CLS and INP with the web-vitals library on the built demo and fails above 2500 ms, 0.1 and 200 ms; a Lighthouse run requires performance 90 and accessibility 95 or higher. Reports are committed."
 
 [design]
@@ -1324,4 +1326,64 @@ max_builds = 1
 max_verify_runs = 1
 max_repair_cycles = 2
 time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.7.1]
+title = "Integration repair: green typecheck, one Origin rule, shared nonce, config flags wired, SSR from the node entry"
+status = "pending"
+mode = "BUILD"
+wave = 7
+requires = ["0.8", "1.1", "1.4", "4.2", "4.3", "5.2", "3.6", "4.1", "3.1"]
+reqs = ["3.3", "25.2", "25.3", "2.4", "8.2", "29.1", "29.3"]
+do_1 = "Close qualification.082, .083, .311, .581 and .411: cast through ZodSchemaLike in manifest/build.ts, assert a zod/mini object in core/entity.test.ts, make the two demo hooks import z from zod/mini and use z.string().check(z.maxLength(n)), pass a manifest built with buildManifest into the buildSidecarPayload call in core/serialize.test.ts, and add security to the default rule order in check/check.test.ts; pnpm -r typecheck must exit 0."
+do_2 = "Close qualification.421: seed RequestContext.nonce from requestNonce(request) in server/context.ts so the CSP header, SSR and the sidecar share one per-request nonce, make server/ssr.ts use it, and send an Origin header in every existing test that POSTs to /rex/* from Node (server, node, runtime, act, agent, flow and CLI tests); the Origin rule is not relaxed."
+do_3 = "Close qualification.141: the form route checks Origin through the security middleware helper with resolveSecurityPolicy(options).security.origins; remove the duplicate helper so rex/server exports one isAllowedOrigin."
+do_4 = "Close qualification.04, .361 and .431: cli/commands/dev.ts, cli/commands/build.ts and cli/load.ts pass compiler, devtools, tailwind, ui and security.secretNames from the loaded rex.config into rex(); extend cli/commands.test.ts."
+do_5 = "Close qualification.111: server/adapters/node.ts serves static assets first and forwards GET page paths to the app when a page renderer is registered, with no index.html fallback for SSR pages, so node dist/server.js renders pages on the server; extend server/node.test.ts."
+do_6 = "Close the qualification.521 follow-ups: cli/new.test.ts runs rex new with --ui none for the token expectations and adds a real designx case; client/overlay.tsx, client/agent/palette.tsx and client/agent/outcome.tsx render through useShellComponents(); shell overrides move to rex.config ui.components per [decision] shell_components (remove chrome.components from page options, resolve the module in client/shell/components.ts, set it in the demo rex.config); run pnpm -C examples/demo exec rex check and fix what it reports inside the demo."
+touches = ["packages/rex/src/manifest/build.ts", "packages/rex/src/core/entity.test.ts", "examples/demo/app/pages/send/hooks/useSendDraft.ts", "examples/demo/app/pages/portfolio/hooks/useHoldingsFilter.ts", "packages/rex/src/core/serialize.test.ts", "packages/rex/src/check/check.test.ts", "packages/rex/src/server/context.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/server.test.ts", "packages/rex/src/server/node.test.ts", "packages/rex/src/client/runtime.test.tsx", "packages/rex/src/client/act.test.tsx", "packages/rex/src/client/agent", "packages/rex/src/cli/commands.test.ts", "packages/rex/src/server/flow.test.ts", "packages/rex/src/server/form.ts", "packages/rex/src/server/routes/form.ts", "packages/rex/src/server/form.test.tsx", "packages/rex/src/server/middleware/security.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/server/adapters/node.ts", "packages/rex/src/cli/new.test.ts", "packages/rex/src/client/overlay.tsx", "packages/rex/src/client/shell/components.ts", "packages/rex/src/core/config.ts", "packages/rex/src/core/config.test.ts", "packages/rex/src/core/page.ts", "packages/rex/src/core/page.test.ts", "examples/demo/rex.config.ts", "examples/demo/app/components", "examples/demo/.rex/manifest.json", "examples/demo/AGENTS.md"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/server/server.test.ts src/server/node.test.ts src/server/form.test.tsx src/core/serialize.test.ts src/core/entity.test.ts src/check/check.test.ts src/cli/new.test.ts src/cli/commands.test.ts src/client/runtime.test.tsx && pnpm -C packages/rex build && pnpm -C examples/demo exec rex check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.7.2]
+title = "Budgets: curated core exports, prebuilt manifest for server bundles, trimmed client runtime and vendor-free page chunks"
+status = "pending"
+mode = "BUILD"
+wave = 7
+requires = ["7.1", "1.5", "5.6"]
+reqs = ["3.4", "7.1", "7.2", "5.1", "5.4", "11.3"]
+do_1 = "Implement [decision] core_exports: remove the z namespace re-export from the core entry (apps and templates import z from zod/mini; update cli/templates.ts and the rex new fixtures), keep the field helpers and validateStandard, and make the size test measure the core with React excluded and nothing else."
+do_2 = "Prebuild the manifest: rex build writes dist/manifest.json and the generated server entry passes it to createRexServer({ manifest }), buildManifest runs only in dev and the CLI, and the JSON Schema generator leaves the server bundles; the edge size entry measures server/adapters/edge.ts."
+do_3 = "Trim the client runtime to the 30 KB budget: no @orpc/server value import on the client, the palette and devtools loaded lazily, agent modules importing only what they use."
+do_4 = "Make vite/split.ts put only modules under a page's folder into its page-<id> chunk and everything shared into shared chunks; extend vite/vite.test.ts with the fixture build and a demo build asserting every page chunk is under its budget."
+do_5 = "Run the unchanged size test, the package build and the demo build; if a budget still fails, record the measured number, the five largest contributors and the cause as a blocker; never relax a budget."
+touches = ["packages/rex/src/core/schema.ts", "packages/rex/src/core/schema.test.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/fixtures", "packages/rex/src/manifest/build.ts", "packages/rex/src/server/app.ts", "packages/rex/src/server/routes/manifest.ts", "packages/rex/src/server/adapters/edge.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/vite/budgets.ts", "packages/rex/src/vite/budgets.test.ts", "packages/rex/src/vite/split.ts", "packages/rex/src/vite/vite.test.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/src/size.test.ts", "packages/rex/src/client/context.ts", "packages/rex/src/client/agent/palette.tsx", "packages/rex/src/client/devtools", "packages/rex/src/client/shell"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts src/vite/vite.test.ts && pnpm -C packages/rex build && pnpm -C examples/demo exec rex build"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.7.3]
+title = "Re-qualify the tasks that ended implemented once their blockers are merged"
+status = "pending"
+mode = "BUILD"
+wave = 7
+requires = ["7.1", "7.2", "2.6"]
+reqs = ["7.1", "22.2", "29.1", "32.1", "3.4"]
+do_1 = "For each of 0.7, 0.8, 3.7, 5.2 and 5.5 (and 6.2 if it ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release."
+touches = ["spec/rex-v02/spec.kvx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/cli/designx.test.ts && pnpm -C examples/demo exec rex check && pnpm -C examples/demo exec playwright test e2e/axe.spec.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
