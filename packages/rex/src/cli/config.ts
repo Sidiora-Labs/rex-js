@@ -20,6 +20,23 @@ import { DEFAULT_APP_DIR } from "../vite/virtual.ts";
 
 export { CONFIG_FILE };
 
+export function nodeEnvRestorer(): () => void {
+  const previous = process.env.NODE_ENV;
+  return () => {
+    if (previous === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previous;
+  };
+}
+
+export async function restoringNodeEnv<T>(run: () => Promise<T>): Promise<T> {
+  const restore = nodeEnvRestorer();
+  try {
+    return await run();
+  } finally {
+    restore();
+  }
+}
+
 export interface LoadedRexConfig {
   readonly file: string;
   readonly read: RexConfigExport;
@@ -94,6 +111,7 @@ export async function loadRexConfig(
 ): Promise<LoadedRexConfig> {
   const appRoot = resolve(root);
   const file = requireConfig(appRoot);
+  const restoreNodeEnv = nodeEnvRestorer();
   const vite = await createServer({
     root: appRoot,
     configFile: false,
@@ -106,5 +124,6 @@ export async function loadRexConfig(
     return { file, read: readConfigExport(await importConfigExport(vite), options.warn) };
   } finally {
     await vite.close();
+    restoreNodeEnv();
   }
 }

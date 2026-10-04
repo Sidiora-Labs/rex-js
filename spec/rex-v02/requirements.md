@@ -372,3 +372,13 @@ Rex 0.1 proved the convention and the agent contract. Rex 0.2 brings the framewo
 2. The checker reports ui/designx-primitive for a raw button, input, select, textarea, table or dialog element in a region, part or overlay of an app whose ui.kit is designx, layout/fixed-size for pixel widths and heights on parts, and layout/touch-target for controls declared under 44 px, each with a fix hint naming the primitive or token to use.
 3. docs/convention.md and docs/recipes document the screen-fit contract and the DesignX map, and the agent contract documents the screen, pointer and density fields of the sidecar.
 
+## Requirement 39: Freshness: the README, manifests, docs, templates and community files match the code
+
+**User Story:** As a maintainer, I want every statement in the README, the package manifests, the docs and the community files to match the code and the spec decisions, and a gate that fails when they drift, so that nothing the project publishes about itself is stale.
+
+### Acceptance Criteria
+
+1. Every entry in spec/rex-v02/freshness.kvx is closed: the stale statement is replaced by the recorded fix (or a better one proven against the code), and a re-run of the same audit over the merged tree reports no confirmed entry.
+2. tools/freshness.mjs --check (run by the demo test script, the CI docs job and src/freshness.test.ts) fails when a package export has no reference section or API page, when a CLI command or flag differs between the CLI and README.md or docs/cli.md, when the Node floor, the rex version in templates or the CHANGELOG head disagree with package.json, when docs/errors.md, docs/api or a generated pointer file is stale, or when a relative link is broken.
+3. npm shows a package README and LICENSE for @sidioralabs/rex, package.json carries repository, homepage and bugs, and the CHANGELOG has the 0.2.0 entry that the release task finalises.
+

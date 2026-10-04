@@ -37,7 +37,7 @@ import {
   type OutputAssetLike,
   type OutputChunkLike,
 } from "../../vite/split.ts";
-import { loadRexConfig } from "../config.ts";
+import { loadRexConfig, restoringNodeEnv } from "../config.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
 import {
   configPluginOptions,
@@ -62,6 +62,19 @@ export const BUILD_TARGETS = ["node", "edge", "bun", "deno", "static"] as const;
 export type BuildTarget = (typeof BUILD_TARGETS)[number];
 export type ServerTarget = Exclude<BuildTarget, "static">;
 export const DEFAULT_BUILD_TARGET: BuildTarget = "node";
+export const BUILD_NODE_ENV = "production";
+
+function productionBuildConfig(): {
+  readonly mode: string;
+  readonly define: Record<string, string>;
+  readonly oxc: { readonly jsx: { readonly development: boolean } };
+} {
+  return {
+    mode: BUILD_NODE_ENV,
+    define: { "process.env.NODE_ENV": JSON.stringify(BUILD_NODE_ENV) },
+    oxc: { jsx: { development: false } },
+  };
+}
 
 export function isBuildTarget(value: string): value is BuildTarget {
   return (BUILD_TARGETS as readonly string[]).includes(value);
@@ -296,33 +309,36 @@ export interface ServerBuildOptions {
 }
 
 export async function buildServer(options: ServerBuildOptions): Promise<string> {
-  await build({
-    root: options.root,
-    configFile: false,
-    logLevel: options.logLevel,
-    plugins: [
-      serverEntryPlugin({
-        root: options.root,
-        config: options.config,
-        target: options.target,
-        manifest: options.manifest,
-        assets: options.assets,
-      }),
-      ...rex(options.rex),
-    ],
-    ssr: { noExternal: true, target: options.target === "edge" ? "webworker" : "node" },
-    build: {
-      ssr: true,
-      outDir: options.outDir,
-      emptyOutDir: false,
-      copyPublicDir: false,
-      minify: false,
-      rolldownOptions: {
-        input: { server: SERVER_ENTRY_ID },
-        output: { format: "es", entryFileNames: SERVER_FILE },
+  await restoringNodeEnv(() =>
+    build({
+      root: options.root,
+      configFile: false,
+      ...productionBuildConfig(),
+      logLevel: options.logLevel,
+      plugins: [
+        serverEntryPlugin({
+          root: options.root,
+          config: options.config,
+          target: options.target,
+          manifest: options.manifest,
+          assets: options.assets,
+        }),
+        ...rex(options.rex),
+      ],
+      ssr: { noExternal: true, target: options.target === "edge" ? "webworker" : "node" },
+      build: {
+        ssr: true,
+        outDir: options.outDir,
+        emptyOutDir: false,
+        copyPublicDir: false,
+        minify: false,
+        rolldownOptions: {
+          input: { server: SERVER_ENTRY_ID },
+          output: { format: "es", entryFileNames: SERVER_FILE },
+        },
       },
-    },
-  });
+    }),
+  );
   return join(options.outDir, SERVER_FILE);
 }
 
@@ -425,14 +441,16 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
   const outDir = join(appRoot, DIST_DIR);
   const clientDir = join(outDir, CLIENT_DIR);
   rmSync(outDir, { recursive: true, force: true });
-
-  const client = await build({
-    root: appRoot,
-    configFile: false,
-    logLevel,
-    plugins: rex(pluginOptions),
-    build: { outDir: clientDir, emptyOutDir: true, manifest: true },
-  });
+  const client = await restoringNodeEnv(() =>
+    build({
+      root: appRoot,
+      configFile: false,
+      ...productionBuildConfig(),
+      logLevel,
+      plugins: rex(pluginOptions),
+      build: { outDir: clientDir, emptyOutDir: true, manifest: true },
+    }),
+  );
   const chunks = chunkTable(outputItems(client), chunkBudgets(budgets));
   const result = { target, outDir, clientDir, apiOrigin, chunks };
   if (target === "static") {

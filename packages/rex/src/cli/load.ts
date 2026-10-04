@@ -5,7 +5,7 @@ import type { RexAppBundle } from "../vite/app-module.ts";
 import { rex, type RexPluginOptions } from "../vite/plugin.ts";
 import { locateAppError } from "../vite/overlay.ts";
 import { APP_MODULE_ID, DEFAULT_APP_DIR } from "../vite/virtual.ts";
-import { hasConfig, loadRexConfig } from "./config.ts";
+import { hasConfig, loadRexConfig, nodeEnvRestorer } from "./config.ts";
 
 export interface ModuleLoaderOptions {
   readonly logLevel?: LogLevel;
@@ -22,7 +22,9 @@ export interface ModuleLoader {
 
 export function fontSpec(font: ResolvedFont): FontSpec {
   const { family, src, weight, style, preload } = font;
-  return weight === null ? { family, src, style, preload } : { family, src, weight, style, preload };
+  return weight === null
+    ? { family, src, style, preload }
+    : { family, src, weight, style, preload };
 }
 
 export function configPluginOptions(read: RexConfigExport): RexPluginOptions {
@@ -59,6 +61,7 @@ export async function createModuleLoader(
   const appRoot = resolve(root);
   const pluginOptions = await pluginOptionsFor(appRoot, options);
   const appPath = join(appRoot, pluginOptions.appDir ?? DEFAULT_APP_DIR);
+  const restoreNodeEnv = nodeEnvRestorer();
   const vite = await createServer({
     root: appRoot,
     configFile: false,
@@ -66,7 +69,7 @@ export async function createModuleLoader(
     appType: "custom",
     server: { middlewareMode: true, hmr: false, watch: null },
     plugins: [...rex(pluginOptions), ...(options.plugins ?? [])],
-  });
+  }).finally(restoreNodeEnv);
   return {
     root: appRoot,
     vite,
@@ -95,7 +98,7 @@ export async function withModuleLoader<T>(
 }
 
 export function loadAppBundle(loader: ModuleLoader): Promise<RexAppBundle> {
-  return loader.load<{ readonly default: RexAppBundle }>(APP_MODULE_ID).then(
-    (loaded) => loaded.default,
-  );
+  return loader
+    .load<{ readonly default: RexAppBundle }>(APP_MODULE_ID)
+    .then((loaded) => loaded.default);
 }

@@ -65,7 +65,7 @@ media_api          = "Img props: src, alt, width, height (required), priority (s
 text_renderer      = "GET /rex/pages/<id>.md renders a page as markdown for text-only agents: title, route, current data state for the actor, regions with their actions (id, label, effect, allowed, how to invoke by URL and form), overlays, and the sidecar JSON in a fenced block. It is the second rendering target and proves the core is renderer-neutral."
 platform_output    = "rex build --target node (default), edge, bun, deno or static. static writes dist/client only and bakes client.apiOrigin into the entry so the client talks to a remote server; the server enables CORS for security.origins with credentials. docs/platforms.md covers Electron, Tauri and Capacitor using these outputs."
 migrate            = "rex migrate [--from 0.1] lists and applies codemods from cli/codemods/*.ts using the TypeScript compiler API, idempotently: 0.1-config (wrap a Hono default export in defineConfig), 0.1-page-render (add render: ssr explicitly only when the app relied on csr behaviour, otherwise nothing), 0.1-raw-img (img to Img with width and height placeholders flagged as REX610 for the author)."
-budgets            = "Defaults: core 15 KB gzip (rex entry; React and zod excluded, and no module reachable from the core entry imports zod), client 30 KB gzip (rex/client excluding React, TanStack Query, cmdk, wouter, oRPC client and zod), edge 40 KB gzip (rex/server/edge excluding the client externals and zod; hono and @orpc/server included), page 50 KB gzip per page chunk. A budget is measured on the fully minified production entry chunk alone; chunks the entry loads lazily (the palette, devtools, overlay hosts) are measured on their own at 10 KB each, since they never ship before first use. The client entry holds what every page needs at first paint (runtime, router, act, loaders, states, shell frame, sidecar, forms, screen); surfaces that only appear on interaction (the confirmation dialog, the overlay host, the flow gate UI, the error and not-found renderers, the message formatter) load lazily on first use behind the same data-rex addresses and sidecar entries, each within the 10 KB lazy budget; optional capabilities (interop, media, i18n message formatting) live behind rex/client/interop, rex/client/media and rex/client/i18n so an app that does not import them never ships them. The size test builds the entries in production mode with Vite's build API and asserts the budgets; rex build asserts the app's page budgets. The first paint is the entry chunk plus every chunk it imports statically, and the client budget applies to the first paint; locale negotiation and the i18n provider load with registerI18n, keyboard shortcuts load on the first modified keydown, URL invocation only when the URL carries act, the density switcher on first use, and Page.List windowing and Form internals go lazy through the same pattern when the budget still needs it (7.20)."
+budgets            = "Defaults: core 15 KB gzip (rex entry; React and zod excluded, and no module reachable from the core entry imports zod), client 30 KB gzip (rex/client excluding React, TanStack Query, cmdk, wouter, oRPC client and zod), edge 40 KB gzip (rex/server/edge excluding the client externals and zod; hono and @orpc/server included), page 50 KB gzip per page chunk. A budget is measured on the fully minified production entry chunk alone; chunks the entry loads lazily (the palette, devtools, overlay hosts) are measured on their own at 10 KB each, since they never ship before first use. The client entry holds what every page needs at first paint (runtime, router, act, loaders, states, shell frame, sidecar, forms, screen); surfaces that only appear on interaction (the confirmation dialog, the overlay host, the flow gate UI, the error and not-found renderers, the message formatter) load lazily on first use behind the same data-rex addresses and sidecar entries, each within the 10 KB lazy budget; optional capabilities (interop, media, i18n message formatting) live behind rex/client/interop, rex/client/media and rex/client/i18n so an app that does not import them never ships them. The size test builds the entries in production mode with Vite's build API and asserts the budgets; rex build asserts the app's page budgets. The first paint is the entry chunk plus every chunk it imports statically, and the client budget applies to the first paint; locale negotiation and the i18n provider load with registerI18n, keyboard shortcuts load on the first modified keydown, URL invocation only when the URL carries act, the density switcher on first use, and Page.List windowing and Form internals go lazy through the same pattern when the budget still needs it (7.20). The client budget is measured on the runtime an app ships: the bundle of src/client/entry.tsx (createRexEntry and startRexEntry) plus its static imports, since a library build of the whole rex/client export surface retains code no app necessarily imports; the export surface is printed for information, and every exported-only surface must tree-shake away from an app that does not import it (7.21)."
 vitals_gate        = "examples/demo/e2e/vitals.spec.ts loads each page in Chromium with the web-vitals attribution build injected, interacts (opens the palette, invokes a reversible action) and reads LCP, CLS and INP; thresholds 2500 ms, 0.1, 200 ms. e2e/lighthouse.ts runs lighthouse programmatically against the running build for each page and asserts performance 90 and accessibility 95 or higher; both write JSON to e2e/report."
 shared_lists       = "Registration lists and export maps are shared files that any task may append one entry to without listing them in touches: vite/hooks.ts, server/routes.ts, server/middleware.ts, client/shell/slots.ts, client/providers.ts, check/rules/index.ts, cli/generators.ts, cli/index.ts, every index.ts under packages/rex/src, packages/rex/package.json, examples/demo/package.json, the root package.json and pnpm-lock.yaml. Generated files examples/demo/.rex/manifest.json and examples/demo/AGENTS.md are regenerated with rex manifest by whoever changes the demo. Merge conflicts in shared files are resolved by the feature manager by union; conflicts in generated files by regenerating."
 release            = "packages/rex/package.json: version 0.2.0, license MIT, sideEffects false except CSS, exports with types first, files dist only, publishConfig provenance true. .github/workflows/ci.yml runs install, typecheck, test, check, walk, vitals, audit and license review on push and pull request; release.yml publishes on a v* tag with --provenance using OIDC. The pack test runs npm pack --dry-run and asserts every export resolves in the tarball with its types."
@@ -518,6 +518,13 @@ ac_1  = "rex/designx exports the surface-to-registry map and the standard set; r
 ac_2  = "The checker reports ui/designx-primitive for a raw button, input, select, textarea, table or dialog element in a region, part or overlay of an app whose ui.kit is designx, layout/fixed-size for pixel widths and heights on parts, and layout/touch-target for controls declared under 44 px, each with a fix hint naming the primitive or token to use."
 ac_3  = "docs/convention.md and docs/recipes document the screen-fit contract and the DesignX map, and the agent contract documents the screen, pointer and density fields of the sidecar."
 
+[req.39]
+title = "Freshness: the README, manifests, docs, templates and community files match the code"
+story = "As a maintainer, I want every statement in the README, the package manifests, the docs and the community files to match the code and the spec decisions, and a gate that fails when they drift, so that nothing the project publishes about itself is stale."
+ac_1  = "Every entry in spec/rex-v02/freshness.kvx is closed: the stale statement is replaced by the recorded fix (or a better one proven against the code), and a re-run of the same audit over the merged tree reports no confirmed entry."
+ac_2  = "tools/freshness.mjs --check (run by the demo test script, the CI docs job and src/freshness.test.ts) fails when a package export has no reference section or API page, when a CLI command or flag differs between the CLI and README.md or docs/cli.md, when the Node floor, the rex version in templates or the CHANGELOG head disagree with package.json, when docs/errors.md, docs/api or a generated pointer file is stale, or when a relative link is broken."
+ac_3  = "npm shows a package README and LICENSE for @sidioralabs/rex, package.json carries repository, homepage and bugs, and the CHANGELOG has the 0.2.0 entry that the release task finalises."
+
 [task.0.1]
 title = "Split the Vite plugin, server and client entry points into per-concern modules with registration lists"
 status = "done"
@@ -793,7 +800,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.1.7]
 title = "rex build targets for node, edge, bun, deno and static output"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 1
 requires = ["1.1", "1.5"]
@@ -1175,7 +1182,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.2]
 title = "DesignX UI installed by rex new and used by the demo and the shell"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["3.6", "0.8"]
@@ -1231,7 +1238,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.5.5]
 title = "Governance, maintainers, security policy, code of conduct and funding"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 5
 requires = ["0.7"]
@@ -1512,7 +1519,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.8]
 title = "The core entry is the declaration surface, imports no zod and meets its 15 KB budget"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = ["5.7", "7.2", "7.5", "7.6"]
@@ -1567,6 +1574,75 @@ max_builds = 1
 max_verify_runs = 1
 max_repair_cycles = 2
 time_limit_minutes = 30
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.8.4]
+title = "Current README, package manifests, community files and templates: the 58 freshness entries of README.md, package.json, packages/rex, CONTRIBUTING, SECURITY, GOVERNANCE, MAINTAINERS, CHANGELOG, FUNDING, the generated pointer files and the DesignX installer"
+status = "pending"
+mode = "BUILD"
+wave = 8
+requires = ["9.3", "7.14"]
+reqs = ["39.1", "39.3"]
+do_1 = "Read spec/rex-v02/freshness.kvx and close every [stale.N] entry whose task field is this task: replace the stale statement with the recorded fix after checking it against the code once more (a fix that is itself wrong is corrected, not applied), keep the file's voice and structure, and make no other edits; an entry that cannot be closed inside the touches is recorded in the qualification log with the entry id. This task owns README.md (the stack table, quick start, rex new output, page declaration, demo table and known gaps), package.json and packages/rex/package.json (engines, repository, homepage, bugs, devDependencies, the stray root vitest), a new packages/rex/README.md and packages/rex/LICENSE (copied by the package build or listed in files) so npm shows them, CONTRIBUTING.md, SECURITY.md, GOVERNANCE.md, MAINTAINERS.md, .github/FUNDING.yml, the CHANGELOG 0.2.0 (unreleased) entry built from git log --format=%s main grouped by spec tag, packages/rex/src/designx/index.ts and packages/rex/src/cli/designx.ts; the AGENTS.md, CLAUDE.md and .github/copilot-instructions.md entries are closed by editing spec/workflow.kvx (step_1, step_5, the time limit string, the specgen banner) and running cg spec render, never by hand."
+touches = ["README.md", "package.json", "packages/rex/package.json", "packages/rex/README.md", "packages/rex/LICENSE", "packages/rex/tools", "CONTRIBUTING.md", "SECURITY.md", "GOVERNANCE.md", "MAINTAINERS.md", "CHANGELOG.md", ".github/FUNDING.yml", "spec/workflow.kvx", "AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md", ".cursor", "packages/rex/src/designx/index.ts", "packages/rex/src/designx/index.test.ts", "packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "pnpm-lock.yaml"]
+verify_cmd = "pnpm install --frozen-lockfile && pnpm -r typecheck && cg spec render --check && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/cli/designx.test.ts src/designx && pnpm -C packages/rex build && ls packages/rex/README.md packages/rex/LICENSE"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 90
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.8.5]
+title = "Current CLI and API reference, and the freshness gate: the 44 entries of docs/cli.md, docs/reference.md and docs/api, plus tools/freshness.mjs with its test and CI step"
+status = "pending"
+mode = "BUILD"
+wave = 8
+requires = ["7.14", "7.16"]
+reqs = ["39.1", "39.2"]
+do_1 = "Read spec/rex-v02/freshness.kvx and close every [stale.N] entry whose task field is this task: replace the stale statement with the recorded fix after checking it against the code once more (a fix that is itself wrong is corrected, not applied), keep the file's voice and structure, and make no other edits; an entry that cannot be closed inside the touches is recorded in the qualification log with the entry id. This task owns docs/cli.md and docs/reference.md (every command, flag, default, exit code, export and error code against packages/rex/src/cli and the entries), regenerates docs/api with pnpm docs:api so the interop, media, i18n, schema, config, manifest and designx entries have pages, and fixes typedoc.json entry points."
+do_2 = "tools/freshness.mjs --check fails on drift: every key of packages/rex/package.json exports has a section in docs/reference.md, a docs/api page and an existing source file; every command the CLI registers (read from the RexCommand tree in packages/rex/src/cli/index.ts, exposed as a JSON listing by rex --help --json or an exported function) appears in README.md and docs/cli.md with the same flags, and no documented command or flag is unknown to the CLI; the Node floor quoted in README.md, docs/development.md and CONTRIBUTING.md equals package.json engines; the @sidioralabs/rex version written by rex new equals REX_VERSION; the CHANGELOG head is REX_VERSION or an unreleased entry; docs/errors.md (tools/docs-errors.mjs --check), docs/api (typedoc into a temp dir compared with the committed tree) and the generated pointer files (cg spec render --check) are current; node tools/check-links.mjs passes. src/freshness.test.ts runs the script, the root package.json gains a freshness script, and the CI docs job runs it."
+touches = ["docs/cli.md", "docs/reference.md", "docs/api", "typedoc.json", "tools/freshness.mjs", "packages/rex/src/freshness.test.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/cli.test.ts", ".github/workflows/ci.yml"]
+verify_cmd = "pnpm -r typecheck && node tools/freshness.mjs --check && node tools/check-links.mjs && pnpm -C packages/rex exec vitest run src/freshness.test.ts src/cli/cli.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 90
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.8.6]
+title = "Current concept docs: the 44 entries of docs/architecture.md, docs/convention.md, docs/primitives.md, docs/agent-contract.md and docs/platforms.md against the spec decisions and the code"
+status = "pending"
+mode = "BUILD"
+wave = 8
+requires = ["7.21", "9.3"]
+reqs = ["39.1"]
+do_1 = "Read spec/rex-v02/freshness.kvx and close every [stale.N] entry whose task field is this task: replace the stale statement with the recorded fix after checking it against the code once more (a fix that is itself wrong is corrected, not applied), keep the file's voice and structure, and make no other edits; an entry that cannot be closed inside the touches is recorded in the qualification log with the entry id. This task owns the five concept docs: the page declaration fields, the lazy surfaces and first-paint rule (7.16, 7.20, 7.21), screen_fit, designx_standard, core_exports, zod_boundary, shell_components, the data states and the sidecar, the runtime adapters and static cache, each statement checked against packages/rex/src."
+touches = ["docs/architecture.md", "docs/convention.md", "docs/primitives.md", "docs/agent-contract.md", "docs/platforms.md"]
+verify_cmd = "node tools/check-links.mjs && node tools/docs-errors.mjs --check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 75
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.8.7]
+title = "Current guides and recipes: the 50 entries of docs/tutorial.md, docs/development.md, docs/migration.md, docs/versioning.md and docs/recipes"
+status = "pending"
+mode = "BUILD"
+wave = 8
+requires = ["7.16", "9.3"]
+reqs = ["39.1"]
+do_1 = "Read spec/rex-v02/freshness.kvx and close every [stale.N] entry whose task field is this task: replace the stale statement with the recorded fix after checking it against the code once more (a fix that is itself wrong is corrected, not applied), keep the file's voice and structure, and make no other edits; an entry that cannot be closed inside the touches is recorded in the qualification log with the entry id. This task owns the tutorial, development, migration and versioning guides and every recipe: import paths (rex/client/interop, rex/client/media, rex/client/i18n, rex/schema, rex/config, rex/manifest, rex/designx), code samples against the current signatures, commands against the CLI, the codemod list against packages/rex/src/cli/codemods, the rex new output against the generators, and every relative link; each code sample is checked by hand against the signatures it uses."
+touches = ["docs/tutorial.md", "docs/development.md", "docs/migration.md", "docs/versioning.md", "docs/recipes"]
+verify_cmd = "node tools/check-links.mjs && node tools/docs-errors.mjs --check"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 90
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
 
 [task.8.1]
@@ -1754,6 +1830,24 @@ max_repair_cycles = 2
 time_limit_minutes = 75
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
 
+[task.7.21]
+title = "The client budget measured on the runtime an app ships: startRexEntry plus its static imports, with every exported-only rex/client surface proven tree-shakeable"
+status = "pending"
+mode = "BUILD"
+wave = 7
+requires = ["7.20"]
+reqs = ["7.1", "1.1"]
+do_1 = "Per the revised [design] budgets (qualification.7201): entryBudgets' client target builds src/client/entry.tsx (createRexEntry and startRexEntry, what the generated rex:entry module imports) instead of the whole src/client/index.ts export surface, fully minified in production mode with the same externals; the first paint is that entry chunk plus the chunks it imports statically and must fit the unchanged 30 KB budget, each lazy chunk its 10 KB; the size test still bundles src/client/index.ts and prints its size and every first-paint and lazy chunk for information, without asserting a budget on the export surface."
+do_2 = "A new budgets test bundles an app module that imports only createRexEntry and startRexEntry from rex/client and asserts that the exported-only surfaces (overlay, flow, address, store, boundary, form, list, interop, media, i18n formatting) are absent from its output, so a surface an app does not import never ships; any module-level side effect in src/client that defeats that tree-shaking is removed; docs/primitives.md and docs/architecture.md state the rule; qualification.7161 and qualification.7201 close."
+touches = ["packages/rex/src/vite/budgets.ts", "packages/rex/src/vite/budgets.test.ts", "packages/rex/src/size.test.ts", "packages/rex/src/client", "docs/primitives.md", "docs/architecture.md"]
+verify_cmd = "pnpm -r typecheck && pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts src/zod-boundary.test.ts src/client && pnpm -C packages/rex build"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 60
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
 [task.7.20]
 title = "The first paint at 30 KB: locale negotiation and the i18n provider load with registerI18n, shortcuts, URL invocation and density switching load on first use, and Page.List windowing and Form internals go lazy if still needed"
 status = "implemented"
@@ -1774,7 +1868,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.19]
 title = "rex build emits production bundles: config loading no longer leaks Vite's development NODE_ENV into the build"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 7
 requires = ["7.14"]
@@ -1907,7 +2001,7 @@ title = "Second re-qualification: the full suite green and every implemented tas
 status = "pending"
 mode = "BUILD"
 wave = 7
-requires = ["7.3", "7.16", "9.5", "7.19", "7.20"]
+requires = ["7.3", "7.16", "9.5", "7.19", "7.20", "7.21"]
 reqs = ["7.1", "22.2", "29.1", "32.1", "3.4", "16.2", "34.1", "35.1"]
 do_1 = "Run pnpm -r typecheck and pnpm -C packages/rex test on the integrated branch; for every failure make the task-scoped repair in the test or the code it covers without weakening a check, and record what cannot be repaired within the limit; then for every task whose status is implemented, in id order, run its unchanged verify_cmd once, run cg spec done <id> when it passes, and record one qualification entry with the measured result when it fails; every task must end done for the release, and the list of tasks still implemented, if any, is the task report's first line."
 touches = ["spec/rex-v02/spec.kvx", "packages/rex/src", "examples/demo"]
