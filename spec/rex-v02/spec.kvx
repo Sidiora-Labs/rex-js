@@ -1413,7 +1413,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.7.3]
 title = "Re-qualify the tasks that ended implemented once their blockers are merged"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 7
 requires = ["7.1", "7.2", "7.4", "7.5", "7.6", "7.8", "7.9", "7.10", "7.11", "7.12", "7.13", "7.14", "7.15", "6.2", "2.6"]

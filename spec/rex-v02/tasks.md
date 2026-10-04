@@ -231,7 +231,7 @@
     - Make vite/split.ts put only modules under a page's folder into its page-<id> chunk and everything shared into shared chunks; extend vite/vite.test.ts with the fixture build and a demo build asserting every page chunk is under its budget.
     - Run the unchanged size test, the package build and the demo build; if a budget still fails, record the measured number, the five largest contributors and the cause as a blocker; never relax a budget.
     - _Requirements: 3.4, 7.1, 7.2, 5.1, 5.4, 11.3_
-  - [ ] 7.3 Re-qualify the tasks that ended implemented once their blockers are merged
+  - [ ] 7.3 Re-qualify the tasks that ended implemented once their blockers are merged — **Implemented - qualification pending**
     - For each of 0.7, 0.8, 1.7, 2.7, 3.7, 5.2, 5.5, 6.1, 6.2, 7.1, 7.4, 7.5, 7.6, 7.8, 7.9 and 7.12 (and 7.11, 7.13, 7.14 or 7.15 if they ended implemented): run its unchanged verify_cmd once; when it passes run cg spec done <id>; when it fails record one qualification entry with the measured result and leave the status; never edit the verify_cmd or relax a check. Every one of these must end done for the release.
     - _Requirements: 7.1, 22.2, 29.1, 32.1, 3.4, 16.2, 34.1, 12.3, 3.3, 25.2_
   - [ ] 7.4 rex/testing sends the request Origin and the demo page tests pass — **Implemented - qualification pending**
