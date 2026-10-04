@@ -19,6 +19,7 @@
     "./client": "./src/client/index.ts",
     "./server": "./src/server/index.ts",
     "./server/node": "./src/server/node.ts",
+    "./server-only": "./src/server-only.ts",
     "./store/drizzle": "./src/store/index.ts",
     "./vite": "./src/vite/index.ts",
     "./check": "./src/check/index.ts",
@@ -47,6 +48,10 @@
       "./server/node": {
         "types": "./dist/server/node.d.ts",
         "import": "./dist/server/node.js"
+      },
+      "./server-only": {
+        "types": "./dist/server-only.d.ts",
+        "import": "./dist/server-only.js"
       },
       "./store/drizzle": {
         "types": "./dist/store/index.d.ts",

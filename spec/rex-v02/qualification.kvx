@@ -39,3 +39,11 @@ symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowSt
 observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
 assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
 severity = "blocker"
+
+[qualification.431]
+task = "4.3"
+file = "packages/rex/src/core/errors.ts, packages/rex/src/cli/commands/build.ts"
+symbol = "REX_ERROR_CATALOG, buildApp, RexPluginOptions.secretNames, boundaryError"
+observed = "The boundary fails client builds with REX440 and REX441 carried as the Rolldown plugin code with a hint and docs link, but REX440 and REX441 are not in the catalog in core/errors.ts (owned by 2.1) so RexError cannot be raised yet, and rex build calls rex() without config.security.secretNames (cli/commands/build.ts is outside the 4.3 touches), so the secret-name scan only runs when rex({ secretNames }) is passed; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/vite/boundary.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.3-private/logs/4.3-verify.log."
+assumption = "Task 2.1 adds REX440 and REX441 to the catalog and 5.7 converts vite/boundary.ts to RexError; the owner of cli/commands/build.ts passes { secretNames: config.security.secretNames } into rex() for the client build."
+severity = "assumption"

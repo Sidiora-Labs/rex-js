@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import type { Plugin } from "vite";
 import { DEFAULT_APP_NAME } from "../manifest/build.ts";
 import { appModuleHook } from "./app-module.ts";
+import { boundaryHook } from "./boundary.ts";
 import { compilerHook } from "./compiler.ts";
 import { devServerHook } from "./dev-server.ts";
 import { entryModuleHook } from "./entry-module.ts";
@@ -54,4 +55,5 @@ export const REX_HOOKS: readonly RexHook[] = [
   devServerHook,
   compilerHook,
   reactHook,
+  boundaryHook,
 ];
