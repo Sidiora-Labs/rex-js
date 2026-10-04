@@ -17,9 +17,6 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
-      vitest:
-        specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(happy-dom@20.14.5)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   examples/demo:
     dependencies:
@@ -141,9 +138,6 @@ importers:
       '@orpc/tanstack-query':
         specifier: ^1.15.4
         version: 1.15.4(@opentelemetry/api@1.9.1)(@orpc/client@1.15.4(@opentelemetry/api@1.9.1))(@tanstack/query-core@5.104.1)
-      '@tailwindcss/vite':
-        specifier: ^4.1.0
-        version: 4.3.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       hono:
         specifier: ^4.13.12
         version: 4.13.12
@@ -163,6 +157,9 @@ importers:
       '@opentelemetry/sdk-trace-base':
         specifier: ^2.11.0
         version: 2.11.0(@opentelemetry/api@1.9.1)
+      '@tailwindcss/vite':
+        specifier: ^4.3.0
+        version: 4.3.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       '@tanstack/react-query':
         specifier: ^5.104.1
         version: 5.104.1(react@19.3.0)

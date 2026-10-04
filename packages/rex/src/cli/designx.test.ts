@@ -23,12 +23,15 @@ import {
 import {
   DESIGNX_BASE,
   DESIGNX_CONFIG_FILE,
+  DESIGNX_DATA_TABLE,
+  DESIGNX_MENU_GROUP,
   DESIGNX_STANDARD_SET,
   DESIGNX_STYLESHEET_HREF,
   DESIGNX_THEME_FILE,
   DESIGNX_UI_DIR,
   TAILWIND_PACKAGES,
   designxFiles,
+  groupDataTableMenu,
   parseDependency,
   parseDesignxItem,
   providedDesignxNames,
@@ -186,6 +189,91 @@ describe("DesignX provided items", () => {
   });
 });
 
+const UNGROUPED_DATA_TABLE = [
+  'import { Button } from "@/components/ui/button";',
+  'import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";',
+  "export function Columns({ table }: { table: { getAllColumns(): { id: string }[] } }) {",
+  "  return (",
+  "    <DropdownMenu>",
+  '      <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>View</DropdownMenuTrigger>',
+  '      <DropdownMenuContent align="end" className="min-w-40">',
+  "        <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>",
+  "        {table.getAllColumns().map((c) => (",
+  "          <DropdownMenuCheckboxItem key={c.id}>{c.id}</DropdownMenuCheckboxItem>",
+  "        ))}",
+  "      </DropdownMenuContent>",
+  "    </DropdownMenu>",
+  "  );",
+  "}",
+  "",
+].join("\n");
+
+function registryItem(name: string, path: string, content: string, registryDependencies: string[]) {
+  return parseDesignxItem(
+    {
+      name,
+      type: "registry:ui",
+      registryDependencies,
+      files: [{ path, type: "registry:ui", content }],
+    },
+    name,
+  );
+}
+
+describe("DesignX data-table column menu", () => {
+  it("groups the column menu label of the installed data-table and imports the group", async () => {
+    const files = designxFiles([
+      registryItem("button", "ui/button.tsx", "export const Button = () => null;\n", []),
+      registryItem(
+        "dropdown-menu",
+        "ui/dropdown-menu.tsx",
+        "export const DropdownMenuGroup = () => null;\n",
+        [],
+      ),
+      registryItem(DESIGNX_DATA_TABLE, "ui/data-table.tsx", UNGROUPED_DATA_TABLE, [
+        "@dx/button",
+        "@dx/dropdown-menu",
+      ]),
+    ]);
+    const table = files.find((file) => file.path === `${DESIGNX_UI_DIR}/data-table.tsx`);
+    expect(table).toBeDefined();
+    const content = table?.content ?? "";
+    expect(content).toContain(
+      'import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "./dropdown-menu.tsx";',
+    );
+    const formatted = await format(content, {
+      ...rexPrettierConfig,
+      filepath: `${DESIGNX_UI_DIR}/data-table.tsx`,
+    });
+    expect(formatted).toMatch(
+      /<DropdownMenuContent align="end" className="min-w-40">\s*<DropdownMenuGroup>\s*<DropdownMenuLabel>Toggle columns<\/DropdownMenuLabel>\s*\{table\s*\.getAllColumns\(\)[\s\S]*<\/DropdownMenuCheckboxItem>\s*\)\)\}\s*<\/DropdownMenuGroup>\s*<\/DropdownMenuContent>/,
+    );
+    expect(formatted.match(/<DropdownMenuGroup>/g)).toHaveLength(1);
+    expect(files.find((file) => file.path === `${DESIGNX_UI_DIR}/button.tsx`)?.content).toBe(
+      "export const Button = () => null;\n",
+    );
+  });
+
+  it("passes a data-table that already groups its label through unchanged", async () => {
+    const once = groupDataTableMenu(UNGROUPED_DATA_TABLE);
+    expect(once).not.toBe(UNGROUPED_DATA_TABLE);
+    expect(groupDataTableMenu(once)).toBe(once);
+    const formatted = await format(once, { ...rexPrettierConfig, filepath: "data-table.tsx" });
+    expect(groupDataTableMenu(formatted)).toBe(formatted);
+    const unlabelled = UNGROUPED_DATA_TABLE.replace(
+      "        <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>\n",
+      "",
+    );
+    expect(groupDataTableMenu(unlabelled)).toBe(unlabelled);
+    expect(unlabelled).not.toContain(DESIGNX_MENU_GROUP);
+  });
+
+  it("refuses an ungrouped label it cannot import the group for", () => {
+    const withoutImport = UNGROUPED_DATA_TABLE.split("\n").slice(2).join("\n");
+    expect(() => groupDataTableMenu(withoutImport)).toThrow(/imports no dropdown-menu/);
+  });
+});
+
 describe("rex new --ui", { timeout: DESIGNX_TEST_TIMEOUT_MS }, () => {
   it("installs the DesignX standard set from the registry into an app that passes rex check", async () => {
     const cwd = tempDir();
@@ -234,6 +322,12 @@ describe("rex new --ui", { timeout: DESIGNX_TEST_TIMEOUT_MS }, () => {
     expect(dx.items).toEqual(expect.arrayContaining([...DESIGNX_STANDARD_SET]));
     expect(dx.items).not.toContain("use-mobile");
     expect(dx.provided).toEqual({ "use-mobile": useScreen });
+
+    const dataTable = readFileSync(join(root, DESIGNX_UI_DIR, "data-table.tsx"), "utf8");
+    expect(dataTable).toContain(`  ${DESIGNX_MENU_GROUP},\n`);
+    expect(dataTable).toMatch(
+      /<DropdownMenuContent[^>]*>\s*<DropdownMenuGroup>\s*<DropdownMenuLabel>Toggle columns<\/DropdownMenuLabel>/,
+    );
 
     const command = readFileSync(join(root, DESIGNX_UI_DIR, "command.tsx"), "utf8");
     expect(command).not.toContain('"@/');

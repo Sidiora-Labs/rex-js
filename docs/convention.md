@@ -13,6 +13,11 @@ app/
   policies/<policy>.ts         one policy() per file
   flows/<flow>.ts              one flow() per file
   components/                  shared components
+  components/ui/               the installed DesignX primitives (rex new --ui designx)
+  components/Shell.tsx         the shell component overrides named by ui.components
+  theme.css                    the DesignX theme
+  locales/<locale>.json        messages per locale (i18n)
+  server/                      server-only modules, never bundled for the client
   data/                        stores and queries
   pages/<page>/
     page.ts                    page() declaration
@@ -25,7 +30,7 @@ app/
     test/
 ```
 
-Next to `app/` an app has `package.json`, `tsconfig.json`, `index.html` (with `<div id="root">` and a module script `/@rex/entry`) and `rex.config.ts`, which default-exports the app's Hono server. `rex new` writes all of these.
+Next to `app/` an app has `package.json` (with `lint` and `format` scripts), `tsconfig.json`, `index.html` (with `<div id="root">` and a module script `/@rex/entry`), `rex.config.ts`, which default-exports `defineConfig({ app, server?, ... })` from `@sidioralabs/rex/config` (the `server` factory returns the app's Hono server; a bare Hono default export still works with the `REX101` deprecation), `eslint.config.js`, `.prettierrc` and `.prettierignore` using the `@sidioralabs/rex/eslint` and `@sidioralabs/rex/prettier` presets, and `app/locales/en.json`. With the default `--ui designx`, `rex new` also writes `dx.json`, `app/theme.css`, `app/components/ui/*`, `app/components/Button.tsx` and `app/components/Shell.tsx`. `rex new` writes all of these.
 
 A page folder is named after its page id. `page.ts`, `view.tsx` and `states.tsx` are required: the Vite plugin refuses to build an app whose page folder lacks one of them (`RexAppScanError`, "`<dir>` is missing ..."), and the checker reports `parity/missing-file`.
 
@@ -75,11 +80,11 @@ The `boundaries` rule enforces this table (`IMPORT_TABLE` in `packages/rex/src/c
 | --- | --- |
 | `page.ts` | page.ts may import app/entities, app/actions, app/policies, @sidioralabs/rex, @sidioralabs/rex/schema and zod, never React. |
 | `view.tsx` | view.tsx may import its page's regions, react types and the layout primitives from @sidioralabs/rex/client; hooks, data and parts belong in region.tsx. |
-| `region.tsx` | region.tsx may import its page's hooks, its own parts, its page's overlays, its own page.ts, app/actions, app/flows, app/components, react, @sidioralabs/rex and @sidioralabs/rex/client, never other regions or pages. (Entity imports must be type-only.) |
-| part | parts may import app/components, sibling parts of their region, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client; fetching, actions and navigation belong in region.tsx. |
-| hook | hooks may import app/data, app/actions, app/entities, app/policies, app/flows, sibling hooks, their own page.ts, react, @tanstack/react-query, zod, @sidioralabs/rex, @sidioralabs/rex/schema and @sidioralabs/rex/client, never components. |
-| overlay | overlays may import their page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client, never data fetching. |
-| `states.tsx` | states.tsx may import its page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client, never hooks. |
+| `region.tsx` | region.tsx may import its page's hooks, its own parts, its page's overlays, its own page.ts, app/actions, app/flows, app/components, react, @sidioralabs/rex and @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never other regions or pages. (Entity imports must be type-only.) |
+| part | parts may import app/components, sibling parts of their region, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n; fetching, actions and navigation belong in region.tsx. |
+| hook | hooks may import app/data, app/actions, app/entities, app/policies, app/flows, sibling hooks, their own page.ts, react, @tanstack/react-query, zod, @sidioralabs/rex, @sidioralabs/rex/schema and @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never components. |
+| overlay | overlays may import their page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never data fetching. |
+| `states.tsx` | states.tsx may import its page's parts, app/components, entity and action types, react, @sidioralabs/rex types and non-hook exports of @sidioralabs/rex/client and the optional client entries @sidioralabs/rex/client/interop, @sidioralabs/rex/client/media, @sidioralabs/rex/client/i18n, never hooks. |
 | component | app/components may import other app/components, entity types and UI packages, never app data, actions or pages. |
 | data | app/data may import app/data, app/entities, app/actions, app/policies and packages. |
 | action | actions may import app/entities, app/policies, app/actions, app/data and non-React packages; declarations never import React. |
@@ -107,7 +112,7 @@ Further boundary rules:
 
 ## What the checker reports
 
-`rex check` runs eight rules in this order (`defaultRules` in `packages/rex/src/check/rules/index.ts`): `typecheck`, `boundaries`, `states`, `parity`, `naming`, `traps`, `tokens`, `manifest`. Each finding has a rule id of the form `<rule>/<code>`, a severity (`error` unless noted), a file, a line and column, a message and a hint. The command exits 1 when any finding is an error. Output formats are described in [cli.md](cli.md#rex-check).
+`rex check` runs sixteen rules in this order (`defaultRules` in `packages/rex/src/check/rules/index.ts`): `typecheck`, `boundaries`, `states`, `parity`, `naming`, `traps`, `tokens`, `manifest`, `security`, `a11y`, `render`, `i18n`, `media`, `format`, `ui`, `layout`. `rex check --runtime` additionally mounts every page in happy-dom per actor and state and reports `parity/runtime` for sidecar actions without a visible control and controls without a sidecar entry. Each finding has a rule id of the form `<rule>/<code>`, a severity (`error` unless noted), a file, a line and column, a message and a hint. The command exits 1 when any finding is an error. Output formats are described in [cli.md](cli.md#rex-check).
 
 ### typecheck
 
@@ -172,6 +177,8 @@ A region "references" an action when `region.tsx` imports it (non-type-only) fro
 | `traps/canvas` | `<canvas> has no data-rex-alternative` |
 | `traps/motion-only` | `<tag> conveys state only through "<class>"`: an `animate-*` class (other than `animate-none`) on an element with no text content and no `aria-label`, `aria-labelledby` or `title` |
 | `traps/overlay-dismiss` | `overlay "<Id>" of page <page> declares no dismiss`, or declares an unknown dismiss |
+| `traps/custom-element` | `custom element <tag> has no tabIndex or data-rex-alternative` (a custom element tag in a part without `tabIndex` or a declared keyboard equivalent) |
+| `traps/infinite-list` | `<trigger> loads list items on scroll without Page.List` (the trigger is the scroll listener or observer that loads items; the hint points at `Page.List`) |
 
 The traps rule reads every `.tsx` file that is not a test. The declared alternative is the attribute `data-rex-alternative="<page>/<action>"`.
 
@@ -184,8 +191,10 @@ The tokens rule reads every file except components and tests.
 | `tokens/raw-color` | `raw color utility "<class>" outside app/components` (Tailwind palette colors such as `bg-red-500`, `text-white`) |
 | `tokens/arbitrary-value` | `arbitrary value utility "<class>" outside app/components` (any class with `[...]`) |
 | `tokens/inline-color` | `inline style <key> is not a token reference` or `inline style <key> uses the raw value "<value>"` |
+| `tokens/inline-spacing` | `inline style <key> uses the raw value "<value>"` (a `padding`, `margin`, `inset`, `gap`, `rowGap`, `columnGap`, `top`, `right`, `bottom` or `left` key, with sides, whose value is a raw length rather than `var(--token)`) |
+| `tokens/config` | `check.tokens` in `rex.config.ts` is not a literal list |
 
-Color style keys (`color`, `backgroundColor`, any key ending in `color`, `background`, `fill`, `stroke`) must be `var(--token)` or a keyword (`inherit`, `initial`, `unset`, `revert`, `currentcolor`, `transparent`, `none`). Shorthand keys such as `border` and `boxShadow` may not contain raw colors.
+Color style keys (`color`, `backgroundColor`, any key ending in `color`, `background`, `fill`, `stroke`) must be `var(--token)` or a keyword (`inherit`, `initial`, `unset`, `revert`, `currentcolor`, `transparent`, `none`). Shorthand keys that may not contain raw colors are `border` and its sides, `outline`, `boxShadow`, `textShadow` and `textDecoration`. Values listed under `check.tokens.colors`, `check.tokens.spacing` and `check.tokens.classes` in `rex.config.ts` are allowed.
 
 ### manifest
 
@@ -200,6 +209,61 @@ The manifest rule runs only once `.rex/` exists (after the first `rex manifest`)
 | `manifest/agents-stale` | warning | `AGENTS.md is stale: it differs from a fresh build of the declarations` |
 
 The hint for the missing and stale findings is "Run rex manifest to regenerate .rex/manifest.json and AGENTS.md, then commit both."
+
+### security
+
+The security rule reads every file except tests.
+
+| Rule id | Message |
+| --- | --- |
+| `security/unsafe-html` | `<tag> sets dangerouslySetInnerHTML outside unsafeHtml()`, or `dangerouslySetInnerHTML is set outside unsafeHtml()` when it is set outside a JSX attribute (an object property, a property access or `createElement` props) |
+
+### a11y
+
+The a11y rule reads every `.tsx` file that is not a test.
+
+| Rule id | Message |
+| --- | --- |
+| `a11y/img-alt` | `<img> has no alt text` (also `<input type="image">` and `<area>` with `href`) |
+| `a11y/control-name` | `<control> has no accessible name` |
+| `a11y/label-for` | `<tag> has no label` for a field, or `<label> is not associated with a field` |
+| `a11y/heading-order` | `<hN> follows <hM> and skips <hM+1>` |
+| `a11y/no-positive-tabindex` | `<tag> sets tabIndex to <n>` |
+| `a11y/no-autofocus-outside-overlay` | `<tag> sets autoFocus in a <role> file` |
+
+### render
+
+| Rule id | Message |
+| --- | --- |
+| `render/static-needs-js` | `static page "<page>" declares action "<id>" with shortcut "<shortcut>", which needs JavaScript (declared in <file>)` or `static page "<page>" declares overlay "<Id>" bound to region state, which needs JavaScript` |
+
+### i18n
+
+| Rule id | Message |
+| --- | --- |
+| `i18n/literal` | `<site> "<text>" is a literal; with i18n configured, labels and titles are msg: keys` or `<site> "<text>" is not a valid msg: key` |
+| `i18n/config` | `check` or `check.i18n` in `rex.config.ts` is not a static object, or `check.i18n.allow` is not a literal list of strings |
+
+### media
+
+The media rule reads regions and parts.
+
+| Rule id | Message |
+| --- | --- |
+| `media/no-raw-img` | `<img> in a <role> bypasses Img` or `createElement("img") in a <role> bypasses Img` |
+
+### format
+
+| Rule id | Severity | Message |
+| --- | --- | --- |
+| `format/prettier` | warning | `<file> is not formatted: prettier --check would rewrite it from line <n>` |
+| `format/unavailable` | warning | `prettier is not installed, so rex check cannot verify formatting` |
+
+### runtime
+
+| Rule id | Reports |
+| --- | --- |
+| `parity/runtime` | only with `rex check --runtime`: a sidecar action without a visible control or a control without a sidecar entry |
 
 ### ui
 
