@@ -110,12 +110,19 @@ describe("discoverApp", () => {
       ["pages/send/overlays/TokenSelectorSheet.tsx", "overlay"],
       ["pages/send/test/send.test.tsx", "test"],
       ["actions/send.ts", "action"],
+      ["actions/home/read-home-meta.ts", "action"],
+      ["actions/wallet/transfers/send.ts", "action"],
+      ["actions/fixtures/send-input.ts", "test"],
+      ["actions/home/read-home-meta.test.ts", "test"],
       ["entities/token.ts", "entity"],
       ["policies/wallet.ts", "policy"],
       ["flows/payout.ts", "flow"],
       ["components/Button.tsx", "component"],
       ["components/forms/Field.tsx", "component"],
       ["data/tokens.ts", "data"],
+      ["server/ledger.ts", "server"],
+      ["server/content/docs.ts", "server"],
+      ["server/content/render.tsx", "server"],
     ];
     for (const [file, role] of table) expect(classify(file)?.role, file).toBe(role);
     expect(new Set(table.map(([, role]) => role))).toEqual(new Set(FILE_ROLES));
@@ -123,6 +130,12 @@ describe("discoverApp", () => {
       role: "part",
       page: "send",
       region: "form",
+    });
+    expect(classify("actions/home/read-home-meta.ts")).toEqual(classify("actions/send.ts"));
+    expect(classify("server/content/docs.ts")).toEqual({
+      role: "server",
+      page: null,
+      region: null,
     });
     for (const file of [
       "pages/send/page.tsx",
@@ -132,8 +145,9 @@ describe("discoverApp", () => {
       "pages/send/regions/form/parts/nested/Deep.tsx",
       "pages/send/overlays/nested/Sheet.tsx",
       "pages/index.ts",
-      "actions/nested/send.ts",
       "actions/send.tsx",
+      "actions/home/send.tsx",
+      "server",
       "main.tsx",
     ]) {
       expect(classify(file), file).toBeNull();
@@ -155,12 +169,14 @@ describe("discoverApp", () => {
       "app/pages/send/helpers.ts": "export const x = 1;\n",
       "app/pages/portfolio/page.ts": 'export default page("portfolio", { route: "/" });\n',
       "app/actions/send.ts": "export {};\n",
+      "app/actions/wallet/receive.ts": "export {};\n",
       "app/entities/token.ts": "export {};\n",
       "app/policies/wallet.ts": "export {};\n",
       "app/flows/payout.ts": "export {};\n",
       "app/components/Button.tsx": "export default function Button() { return null; }\n",
       "app/data/tokens.ts": "export {};\n",
       "app/data/types.d.ts": "export {};\n",
+      "app/server/content/ledger.ts": "export {};\n",
       "app/node_modules/pkg/index.ts": "export {};\n",
       "app/styles.css": "body {}\n",
     });
@@ -177,6 +193,11 @@ describe("discoverApp", () => {
     expect(send?.tests.map((test) => test.file)).toEqual(["app/pages/send/test/send.test.tsx"]);
     expect(app.pageOf("portfolio")?.view).toBeNull();
     expect(app.unclassified).toEqual(["app/pages/send/helpers.ts"]);
+    expect(app.byRole("action").map((file) => file.file)).toEqual([
+      "app/actions/send.ts",
+      "app/actions/wallet/receive.ts",
+    ]);
+    expect(app.byRole("server").map((file) => file.file)).toEqual(["app/server/content/ledger.ts"]);
     const roles = new Set(app.files.map((file) => file.role));
     expect(roles).toEqual(new Set(FILE_ROLES));
     const sorted = [...app.files.map((file) => file.file)].sort();

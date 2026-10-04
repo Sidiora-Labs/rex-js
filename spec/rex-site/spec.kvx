@@ -217,14 +217,14 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.7]
 title = "Action folders and the app/server role in the scanner and the checker"
-status = "pending"
+status = "implemented"
 mode = "BUILD"
 wave = 1
 requires = []
 reqs = ["6.1", "1.1"]
 do_1 = "Implement [decision] action_folders: packages/rex/src/vite/scan.ts declarationFiles (and whatever the app module generator and rex manifest use to list actions) register every .ts module under app/actions at any depth except *.test.ts and fixtures; check/engine.ts classify gives those modules the action role and gives every module under app/server the server role; the boundaries import table lets actions and server modules import app/server and reports a client-side role that imports it; naming rules apply to nested action files as to flat ones. The qualification entries 211, 212, 221, 222, 231 to 235 and 241 to 244 are the observations; read them first and mark each resolved with the commit."
 do_2 = "Tests: a scan test with an app/actions/<folder>/<file>.ts action asserting it is registered and addressed like a flat one, a classify test for app/server/<file>.ts, a boundaries test with an action importing app/server (allowed) and a region importing it (finding); docs/convention.md documents both; the checker fixtures gain the two cases; rex check on examples/demo still reports zero findings."
-touches = ["packages/rex/src/vite/scan.ts", "packages/rex/src/vite/scan.test.ts", "packages/rex/src/vite/app-module.ts", "packages/rex/src/check/engine.ts", "packages/rex/src/check/engine.test.ts", "packages/rex/src/check/rules/boundaries.ts", "packages/rex/src/check/rules/boundaries.test.ts", "packages/rex/src/check/rules/naming.ts", "packages/rex/src/check/check.test.ts", "packages/rex/src/check/fixtures", "packages/rex/src/cli/commands/manifest.ts", "docs/convention.md"]
+touches = ["packages/rex/src/vite/scan.ts", "packages/rex/src/vite/scan.test.ts", "packages/rex/src/check/engine.ts", "packages/rex/src/check/engine.test.ts", "packages/rex/src/check/rules/boundaries.ts", "packages/rex/src/check/rules/boundaries.test.ts", "packages/rex/src/check/rules/naming.ts", "packages/rex/src/check/check.test.ts", "packages/rex/src/check/fixtures", "docs/convention.md"]
 verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/scan.test.ts src/check && pnpm -C examples/demo exec rex check && pnpm -C site check"
 gate_kind = "planned"
 max_builds = 1
