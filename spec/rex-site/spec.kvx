@@ -145,7 +145,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.2.3]
 title = "The error catalog pages"
-status = "implemented"
+status = "done"
 mode = "BUILD"
 wave = 1
 requires = ["1.1", "2.7"]

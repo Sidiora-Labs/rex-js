@@ -5,9 +5,10 @@ import { describe, expect, it } from "vitest";
 import {
   REX_ERROR_AREAS,
   REX_ERROR_DOCS,
-  type RexErrorArea,
+  errorArea,
 } from "../../../../packages/rex/src/core/errors.docs.ts";
 import {
+  ERRORS_DOC,
   ERROR_AREA_DOCS,
   REPOSITORY_ROOT,
   errorCatalog,
@@ -18,9 +19,16 @@ import {
 } from "./errors.ts";
 
 const CODES = (Object.keys(REX_ERROR_CATALOG) as RexErrorCode[]).sort();
-const AREAS = Object.keys(REX_ERROR_AREAS) as RexErrorArea[];
+const AREAS = Object.values(REX_ERROR_AREAS);
+const PREFIXES = AREAS.map((area) => area.prefix);
 
 describe("error catalog reader", () => {
+  it("reads the areas and hints from docs/errors.md, generated from the package's catalog", () => {
+    const doc = readFileSync(ERRORS_DOC, "utf8");
+    for (const area of AREAS) expect(doc).toContain(`\n## ${area.prefix}xx ${area.title}\n`);
+    for (const code of CODES) expect(doc).toContain(`| [${code}](${errorDocs(code)}) |`);
+  });
+
   it("reads every code of the package's catalog", () => {
     expect(errorCodes()).toEqual(CODES);
     expect(CODES.length).toBeGreaterThan(100);
@@ -29,8 +37,8 @@ describe("error catalog reader", () => {
   it("carries the code, area, message, hint and the docs URL a RexError emits", () => {
     for (const code of CODES) {
       const entry = errorEntry(code);
-      const area = REX_ERROR_AREAS[entry.area];
-      expect(code.startsWith(area.prefix)).toBe(true);
+      const area = REX_ERROR_AREAS[errorArea(code)];
+      expect(entry.prefix).toBe(area.prefix);
       expect(entry.areaTitle).toBe(area.title);
       expect(entry.message).toBe(REX_ERROR_CATALOG[code]);
       expect(entry.hint).toBe(REX_ERROR_DOCS[code].hint);
@@ -42,21 +50,23 @@ describe("error catalog reader", () => {
   it("groups the catalog by area in the framework's order", () => {
     const catalog = errorCatalog();
     expect(catalog.count).toBe(CODES.length);
-    expect(catalog.areas.map((area) => area.id)).toEqual(AREAS);
+    expect(catalog.areas.map((area) => area.prefix)).toEqual(PREFIXES);
+    expect(catalog.areas.map((area) => area.title)).toEqual(AREAS.map((area) => area.title));
     expect(catalog.areas.flatMap((area) => area.entries.map((entry) => entry.code))).toEqual(CODES);
     for (const area of catalog.areas) {
-      expect(area.prefix).toBe(REX_ERROR_AREAS[area.id].prefix);
-      expect(area.title).toBe(REX_ERROR_AREAS[area.id].title);
-      for (const entry of area.entries) expect(entry.area).toBe(area.id);
+      for (const entry of area.entries) {
+        expect(entry.prefix).toBe(area.prefix);
+        expect(REX_ERROR_AREAS[errorArea(entry.code)].prefix).toBe(area.prefix);
+      }
     }
   });
 
   it("links every area to a doc page that exists in the repository", () => {
-    expect(Object.keys(ERROR_AREA_DOCS).sort()).toEqual([...AREAS].sort());
+    expect(Object.keys(ERROR_AREA_DOCS).sort()).toEqual([...PREFIXES].sort());
     for (const area of errorCatalog().areas) {
-      const file = resolve(REPOSITORY_ROOT, "docs", `${ERROR_AREA_DOCS[area.id]}.md`);
+      const file = resolve(REPOSITORY_ROOT, "docs", `${ERROR_AREA_DOCS[area.prefix]}.md`);
       expect(existsSync(file), file).toBe(true);
-      expect(area.doc.href).toBe(`/docs/${ERROR_AREA_DOCS[area.id]}`);
+      expect(area.doc.href).toBe(`/docs/${ERROR_AREA_DOCS[area.prefix]}`);
       expect(readFileSync(file, "utf8").split("\n")[0]).toBe(`# ${area.doc.title}`);
     }
   });
