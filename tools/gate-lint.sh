@@ -3,5 +3,5 @@
 set -eu
 cd "$(dirname "$0")/.."
 pnpm -r typecheck
-if [ -d examples/demo/app ]; then pnpm -C examples/demo exec rex check; fi
+if [ -f examples/demo/rex.config.ts ]; then pnpm -C examples/demo exec rex check; fi
 cg spec render --check

@@ -6,4 +6,4 @@ set -eu
 cd "$(dirname "$0")/.."
 pnpm install --frozen-lockfile
 pnpm -C packages/rex test
-if [ -d examples/demo/app ]; then pnpm -C examples/demo test; fi
+if [ -f examples/demo/rex.config.ts ]; then pnpm -C examples/demo test; fi
