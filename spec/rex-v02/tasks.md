@@ -161,7 +161,7 @@
     - Add onOutcome and onNavigate options to createRexApp in client/app.tsx.
     - Write server/telemetry.test.ts with the in-memory span exporter from @opentelemetry/sdk-trace-base (dev dependency) asserting span names, attributes and the audit trace id, and client/app.test.tsx cases for the hooks.
     - _Requirements: 26.1, 26.2_
-  - [ ] 4.5 Continuous integration, release workflow with provenance, audit and license review
+  - [x] 4.5 Continuous integration, release workflow with provenance, audit and license review
     - Add .github/workflows/ci.yml (install with frozen lockfile, typecheck, test, check, walk, vitals, pnpm audit --prod, license review) and .github/workflows/release.yml publishing on a v* tag with npm provenance through OIDC; add tools/license-review.mjs allowing MIT, ISC, BSD, Apache-2.0, 0BSD and CC0 and failing otherwise.
     - Extend tools/gate-lint.sh to run pnpm audit --prod and the license review.
     - _Requirements: 27.1, 27.2_

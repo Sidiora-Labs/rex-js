@@ -159,3 +159,11 @@ symbol = "serialize sidecar source test (line 81)"
 observed = "The single typecheck reports TS2345 in serialize.test.ts line 81 (SidecarSource now requires manifest) beside the build.ts and entity.test.ts errors already in qualification.082; no error is in the 5.8 touches; evidence: revision 38cf5c40ed17355f6d3eb94753febc986b22d27c, command pnpm -C packages/rex typecheck, exit 2, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.8-private/logs/5.8-typecheck.log."
 assumption = "A follow-up owning core/serialize.test.ts passes the manifest in its sidecar source as 0.8 made SidecarSource require it; the 5.8 verify_cmd passes with exit 0."
 severity = "minor"
+
+[qualification.451]
+task = "4.5"
+file = "tools/license-review.mjs"
+symbol = "license review scope"
+observed = "The review walks the dependencies and optionalDependencies closure of every published workspace package (packages/rex: 20 packages, MIT and (MIT OR CC0-1.0)) and passes; the adopter-installed peer and private demo closure that pnpm licenses list --prod reports also holds lightningcss (MPL-2.0, via the vite peer), caniuse-lite (CC-BY-4.0) and wouter (Unlicense, optional peer), which are outside the allowlist and are not gated; evidence: revision f9c42dfc20de556bf9ada91733d3a9c72463ff79, command node tools/license-review.mjs && pnpm audit --prod, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-4.5-private/logs/4.5-verify.log."
+assumption = "Peers are the adopter's own toolchain and are not distributed by Rex, so the gate covers what installing @sidioralabs/rex brings in; if the release owner wants peers gated too, the allowlist decision for MPL-2.0, CC-BY-4.0 and Unlicense belongs in [design] supply_chain."
+severity = "note"
