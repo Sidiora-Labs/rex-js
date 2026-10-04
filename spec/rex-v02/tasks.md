@@ -183,7 +183,7 @@
     - Finish core/deprecated.ts (warn once per code with the docs link) and add cli/commands/migrate.ts with cli/codemods/ implementing [design] migrate on the TypeScript compiler API, idempotent, reporting changed files; register the command.
     - Add cli/fixtures/app-01 (a 0.1-shaped app) and write cli/migrate.test.ts: migrate it, assert the config wrap, the img conversion with REX610 flags, idempotency, and that the migrated app passes runCheck; add the codemod section to docs/versioning.md.
     - _Requirements: 31.1, 31.2_
-  - [ ] 5.5 Governance, maintainers, security policy, code of conduct and funding
+  - [ ] 5.5 Governance, maintainers, security policy, code of conduct and funding — **Implemented - qualification pending**
     - Write GOVERNANCE.md (decision process, roles, release authority), MAINTAINERS.md, SECURITY.md (reporting channel, supported versions, disclosure timeline), CODE_OF_CONDUCT.md and .github/FUNDING.yml, and link them from README.md.
     - _Requirements: 32.1_
   - [ ] 5.6 Page.List paged lists and the infinite-list trap rule

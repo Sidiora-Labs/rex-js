@@ -39,3 +39,11 @@ symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowSt
 observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
 assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
 severity = "blocker"
+
+[qualification.551]
+task = "5.5"
+file = "tools/check-links.mjs"
+symbol = "verify_cmd of task 5.5"
+observed = "The 5.5 verify_cmd runs tools/check-links.mjs, which task 2.6 creates, but 5.5 requires only 0.7 while 2.6 requires 5.4 and 5.6, so the script is absent when 5.5 runs and node exits with MODULE_NOT_FOUND; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command node tools/check-links.mjs, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-5.5-private/logs/5.5-verify.log."
+assumption = "Once 2.6 lands tools/check-links.mjs, the unchanged verify_cmd can qualify 5.5 (its README.md and governance links all point at files present in the tree); alternatively 5.5 gains requires 2.6."
+severity = "blocker"
