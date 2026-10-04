@@ -128,7 +128,7 @@
     - Add client/shell/announcer.tsx (aria-live polite region with the page title after navigation) registered in slots.ts; make RexRoutes move focus to the page heading or main after commit; wrap route changes in document.startViewTransition when the page transition is view and the API exists; intercept same-origin window.navigation navigate events when present.
     - Write client/navigation.test.tsx with injected globals of the real shapes for startViewTransition and navigation: focus target, announcer text, transition invoked, navigate intercepted and routed.
     - _Requirements: 21.1, 21.2_
-  - [ ] 3.4 Accessibility checker rules
+  - [x] 3.4 Accessibility checker rules
     - Add check/rules/a11y.ts with the rules in [design] a11y_rules, each with a passing and failing fixture, registered in the rules list; write check/rules/a11y.test.ts.
     - _Requirements: 22.1_
   - [ ] 3.5 Internationalisation: messages, locale resolution, prefixed routing and the i18n rule

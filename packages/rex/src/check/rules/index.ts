@@ -1,6 +1,7 @@
 import { discoverApp, runRules, type CheckResult } from "../engine.ts";
 import { formatFindings } from "../report.ts";
 import type { Rule } from "../rule.ts";
+import { a11yRule } from "./a11y.ts";
 import { boundariesRule } from "./boundaries.ts";
 import { manifestRule } from "./manifest.ts";
 import { namingRule } from "./naming.ts";
@@ -19,6 +20,7 @@ export const defaultRules: readonly Rule[] = Object.freeze([
   trapsRule,
   tokensRule,
   manifestRule,
+  a11yRule,
 ]);
 
 export interface RunCheckOptions {

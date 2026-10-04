@@ -39,3 +39,11 @@ symbol = "z export, sidecarSchema, sidecarJsonSchema, confirmInputSchema, flowSt
 observed = "The size test measures core 114.85 KB, client 56.52 KB and edge 53.72 KB gzipped against 15, 30 and 40 KB because those modules (outside the 0.7 touches) still import classic zod and the sidecar schema builds its JSON Schema at import time, the remainder recorded in qualification.01; evidence: revision 226881fb634a41e32a46698e32ba5fc6a01446eb, command pnpm -C packages/rex exec vitest run src/size.test.ts src/vite/budgets.test.ts, exit 1, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-0-private/logs/0.7-verify.log."
 assumption = "Once a task owning those files moves them to zod/mini, re-exports zod/mini as the core z and defers the sidecar JSON Schema, the unchanged size test can pass; the budgets were not relaxed."
 severity = "blocker"
+
+[qualification.341]
+task = "3.4"
+file = "packages/rex/src/check/check.test.ts"
+symbol = "default rule set runs the rules in execution order"
+observed = "Registering a11yRule as the ninth entry of defaultRules in check/rules/index.ts (as do_1 and shared_lists require) contradicts check.test.ts, outside the 3.4 touches, which pins the eight 0.1 rule ids; the combined fail fixture gained an a11y finding so the every-rule assertion holds; evidence: revision 013c50fdde6d4fbcc0499f3a0586325cde5ea074, command pnpm -C packages/rex exec vitest run src/check/rules/a11y.test.ts, exit 0, log /tmp/claude-0/-root-rex-js/515dae63-ecbb-496d-92f1-ca9ddb32fa48/scratchpad/w-rex-v02-3.4-private/logs/3.4-verify.log."
+assumption = "The feature manager, or the next owner of check.test.ts, appends a11y (and the other wave 3 to 5 rule ids such as render, i18n, security and media) to the pinned execution-order list when merging the wave."
+severity = "assumption"
