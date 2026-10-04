@@ -184,7 +184,8 @@ Flow statuses are `running`, `paused`, `completed`, `rejected`, `failed`. The `J
 interface Store<T> {
   get(id: string): Promise<T | undefined>;
   list(query?: {
-    filter?: Partial<T>;
+    filter?: { [field: string]: unknown | { lt?; lte?; gt?; gte?; in?: unknown[] } };
+    sort?: { field: string; direction?: "asc" | "desc" };
     page?: number;
     size?: number;
   }): Promise<{ items: T[]; page: number; size: number; total: number }>;
@@ -193,12 +194,18 @@ interface Store<T> {
 }
 ```
 
-Pages start at 1; `size` defaults to 50 (`DEFAULT_PAGE_SIZE`) and may not exceed 500 (`MAX_PAGE_SIZE`). Filters match fields by equality. `bind(entity, store)` returns an `EntityStore` that validates ids, rejects unknown filter fields, and parses records with the entity schema on `put`.
+Pages start at 1; `size` defaults to 50 (`DEFAULT_PAGE_SIZE`) and may not exceed 500 (`MAX_PAGE_SIZE`). A filter value matches its field by equality; an object of operators (`RangeFilter`: `lt`, `lte`, `gt`, `gte` and `in`, a list) is a range filter, allowed on `integer`, `real`, `timestamp` and `text` fields (`RANGE_FIELD_KINDS`), and several operators on one field all apply. `sort` orders by one field of kind `id`, `text`, `money`, `integer`, `real`, `boolean`, `enum`, `ref` or `timestamp` (`SORT_FIELD_KINDS`), `asc` by default, with ties broken by the key ascending; without `sort` a list is in key order. Values compare by field kind (`compareFieldValues`): numbers and money by amount, timestamps by instant, text by code point; an absent value sorts first ascending and last descending and matches no range. `normalizeListQuery(query, entity.fieldKinds, entity.id)` validates paging, operators, operands and sort with `REX329` (an unknown operator, an empty operator object, a non-list `in`, an operand of the wrong type, a range on another kind, a direction other than `asc` or `desc`) and names an undeclared filter or sort field with `REX305`; it returns the equality and range `conditions` the adapters apply. `bind(entity, store)` returns an `EntityStore` that validates ids, rejects unknown filter and sort fields, and parses records with the entity schema on `put`.
 
-- **Memory.** `memoryStore(entity, seed?)` keeps records in a map keyed by `entity.keyOf`, returns copies, and lists in key order.
-- **Drizzle.** `drizzleStore(entity, db, { table?, createTable? })` in `packages/rex/src/store/drizzle.ts` maps an entity to a SQLite table on an async Drizzle database (libsql in the tests). The table name defaults to the entity id with dots and dashes replaced by underscores. Column types follow the field kind (`id`, `text`, `money`, `enum`, `ref`, `timestamp` as text, `integer` as integer, `boolean` as integer in boolean mode, other numbers as real, other values as JSON text). The key field is the primary key. Unless `createTable` is `false`, it runs `CREATE TABLE IF NOT EXISTS` before the first query. `put` is an upsert. A field that is both optional and nullable and a table name that is not lowercase snake_case are rejected with a `RexError` coded `REX329`, and a list filter on an undeclared field with `REX305`, as in the memory store. It is imported from `@sidioralabs/rex/store/drizzle`, which also exports `entityTable`, `createTableStatement`, `columnSpecs` and `tableNameFor`.
+- **Memory.** `memoryStore(entity, seed?)` keeps records in a map keyed by `entity.keyOf`, returns copies, lists in key order and applies range filters and the sort with the field kind's comparator.
+- **Drizzle.** `drizzleStore(entity, db, { table?, createTable? })` in `packages/rex/src/store/drizzle.ts` maps an entity to a SQLite table on an async Drizzle database (libsql in the tests). The table name defaults to the entity id with dots and dashes replaced by underscores. Column types follow the field kind (`id`, `text`, `money`, `enum`, `ref`, `timestamp` as text, `integer` as integer, `boolean` as integer in boolean mode, other numbers as real, `markdown` and other values as JSON text). The key field is the primary key. Unless `createTable` is `false`, it runs `CREATE TABLE IF NOT EXISTS` before the first query. `put` is an upsert. Range filters become `where` comparisons and `sort` an `orderBy` followed by the key, comparing timestamps through `julianday()` and money as `REAL`, so the order is the memory store's. A field that is both optional and nullable and a table name that is not lowercase snake_case are rejected with a `RexError` coded `REX329`, and a list filter on an undeclared field with `REX305`, as in the memory store. It is imported from `@sidioralabs/rex/store/drizzle`, which also exports `entityTable`, `createTableStatement`, `columnSpecs` and `tableNameFor`.
 
-Both adapters are tested against the shared conformance suite in `packages/rex/src/core/store.conformance.ts` (`runStoreConformance`).
+Both adapters are tested against the shared conformance suite in `packages/rex/src/core/store.conformance.ts`: `runStoreConformance(name, makeStore)` runs the record cases and the query cases, and `runStoreQueryConformance(name, makeSeeded)` runs the sort, range and `in` cases against a store created from seed records, for an adapter that cannot `put`.
+
+### Markdown fields
+
+`markdown()` in `@sidioralabs/rex/schema` is the field kind `markdown`, whose value is the rendered document `{ source, html, headings, text }` (`MarkdownValue`): the markdown source, the HTML, the headings as `{ depth, id, text }` (depth 1 to 6, a non-empty id) and the plain text of every block, with the JSON Schema of that object tagged `x-rex-field: markdown`. The field is never sorted or ranged.
+
+`renderMarkdown(source, { slug?, links? })` in `packages/rex/src/store/markdown.ts` renders a document to that value on `marked` (GitHub-flavoured) and `shiki`, optional peer dependencies of Rex that only server code imports: every heading gets a GitHub-style id (`slugify`; repeats get `-1`, `-2`, an empty slug becomes `section`), fenced code is highlighted with shiki's CSS-variables theme (`css-variables`, variables prefixed `--shiki-`, so the app's stylesheet colours it in both schemes; an unknown language renders as plain text), and each relative link (no scheme and not starting with `/`, `#` or `?`) is replaced by `links(href, { slug })`, where `slug` is the entry being rendered.
 
 ## The audit ledger
 

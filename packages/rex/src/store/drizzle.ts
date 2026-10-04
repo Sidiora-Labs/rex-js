@@ -1,4 +1,4 @@
-import { and, asc, count, eq, getTableColumns, isNull, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, getTableColumns, isNull, sql, type SQL } from "drizzle-orm";
 import {
   integer,
   real,
@@ -15,6 +15,7 @@ import type { StandardSchemaV1 } from "../core/standard.ts";
 import {
   normalizeListQuery,
   validateStoreId,
+  type StoreCondition,
   type ListQuery,
   type ListResult,
   type Store,
@@ -50,6 +51,7 @@ const KIND_COLUMNS: Readonly<Record<FieldKind, ColumnType>> = {
   ref: "text",
   timestamp: "text",
   json: "json",
+  markdown: "json",
 };
 
 const SQL_TYPES: Readonly<Record<ColumnType, string>> = {
@@ -186,14 +188,53 @@ export function drizzleStore<E extends AnyEntity>(
     return record as T;
   };
 
-  const condition = (field: string, value: unknown): SQL => {
+  const columnOf = (field: string): SQLiteColumn => {
     const column = columns[field];
-    const spec = specByField.get(field);
-    if (column === undefined || spec === undefined) {
+    if (column === undefined || !specByField.has(field)) {
       throw new RexError("REX305", `drizzleStore ${declared.id}: unknown filter field "${field}"`);
     }
-    if (value === null) return spec.optional ? sql`0` : isNull(column);
-    return eq(column, value);
+    return column;
+  };
+
+  const ordered = (field: string): SQL | SQLiteColumn => {
+    const column = columnOf(field);
+    const kind = declared.fieldKinds[field];
+    if (kind === "timestamp") return sql`julianday(${column})`;
+    if (kind === "money") return sql`CAST(${column} AS REAL)`;
+    return column;
+  };
+
+  const operand = (field: string, value: unknown): SQL | unknown =>
+    declared.fieldKinds[field] === "timestamp" ? sql`julianday(${value})` : value;
+
+  const condition = (entry: StoreCondition): SQL => {
+    const { field } = entry;
+    const column = columnOf(field);
+    if (entry.op === "eq") {
+      if (entry.value === null) {
+        return (specByField.get(field) as ColumnSpec).optional ? sql`0` : isNull(column);
+      }
+      return eq(column, entry.value);
+    }
+    const left = ordered(field);
+    if (entry.op === "in") {
+      if (entry.value.length === 0) return sql`0`;
+      return sql`${left} IN (${sql.join(
+        entry.value.map((value) => sql`${operand(field, value)}`),
+        sql`, `,
+      )})`;
+    }
+    const right = operand(field, entry.value);
+    switch (entry.op) {
+      case "lt":
+        return sql`${left} < ${right}`;
+      case "lte":
+        return sql`${left} <= ${right}`;
+      case "gt":
+        return sql`${left} > ${right}`;
+      case "gte":
+        return sql`${left} >= ${right}`;
+    }
   };
 
   return Object.freeze({
@@ -205,11 +246,17 @@ export function drizzleStore<E extends AnyEntity>(
       return row === undefined ? undefined : decode(row as Record<string, unknown>);
     },
     async list(query?: ListQuery<T>): Promise<ListResult<T>> {
-      const { filter, page, size, offset } = normalizeListQuery(query);
-      const conditions = Object.entries(filter as Record<string, unknown>)
-        .filter(([, value]) => value !== undefined)
-        .map(([field, value]) => condition(field, value));
+      const normalized = normalizeListQuery(query, declared.fieldKinds, declared.id);
+      const { sort, page, size, offset } = normalized;
+      const conditions = normalized.conditions.map(condition);
       const where = conditions.length === 0 ? undefined : and(...conditions);
+      const order =
+        sort === null
+          ? [asc(keyColumn)]
+          : [
+              sort.direction === "desc" ? desc(ordered(sort.field)) : asc(ordered(sort.field)),
+              asc(keyColumn),
+            ];
       await init();
       const [counted] = await db.select({ total: count() }).from(table).where(where);
       if (counted === undefined)
@@ -218,7 +265,7 @@ export function drizzleStore<E extends AnyEntity>(
         .select()
         .from(table)
         .where(where)
-        .orderBy(asc(keyColumn))
+        .orderBy(...order)
         .limit(size)
         .offset(offset);
       return {

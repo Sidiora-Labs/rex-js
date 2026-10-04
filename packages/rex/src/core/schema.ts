@@ -6,7 +6,17 @@ export const STANDARD_VENDOR_KEY = "x-rex-standard";
 export const REX_SCHEMA_VENDOR = "rex";
 
 export type FieldKind =
-  "id" | "text" | "money" | "integer" | "real" | "boolean" | "enum" | "ref" | "timestamp" | "json";
+  | "id"
+  | "text"
+  | "money"
+  | "integer"
+  | "real"
+  | "boolean"
+  | "enum"
+  | "ref"
+  | "timestamp"
+  | "json"
+  | "markdown";
 
 export const FIELD_KINDS: readonly FieldKind[] = [
   "id",
@@ -19,6 +29,7 @@ export const FIELD_KINDS: readonly FieldKind[] = [
   "ref",
   "timestamp",
   "json",
+  "markdown",
 ];
 
 export type JsonSchema = { [key: string]: unknown };

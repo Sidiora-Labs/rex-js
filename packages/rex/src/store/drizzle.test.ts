@@ -2,7 +2,7 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { describe, expect, it } from "vitest";
 import { entity } from "../core/entity.ts";
-import { boolean, id, integer, json, real, text } from "../schema/index.ts";
+import { boolean, id, integer, json, markdown, real, text, timestamp } from "../schema/index.ts";
 import { z } from "zod/mini";
 import { bind } from "../core/store.ts";
 import {
@@ -30,13 +30,14 @@ describe("drizzleStore", () => {
     expect(createTableStatement(conformanceEntity)).toBe(
       'CREATE TABLE IF NOT EXISTS "conformance_item" (' +
         '"id" text PRIMARY KEY NOT NULL, "name" text NOT NULL, "quantity" integer NOT NULL, ' +
-        '"active" integer NOT NULL, "price" text NOT NULL, "tier" text NOT NULL, ' +
+        '"weight" real NOT NULL, "active" integer NOT NULL, "price" text NOT NULL, "tier" text NOT NULL, ' +
         '"owner" text NOT NULL, "createdAt" text NOT NULL, "note" text)',
     );
     expect(columnSpecs(conformanceEntity).map((spec) => [spec.field, spec.type])).toEqual([
       ["id", "text"],
       ["name", "text"],
       ["quantity", "integer"],
+      ["weight", "real"],
       ["active", "boolean"],
       ["price", "text"],
       ["tier", "text"],
@@ -135,6 +136,71 @@ describe("drizzleStore", () => {
     expect(rows.rows.map((row) => [row.value, JSON.parse(String(row.payload))])).toEqual([
       [2.75, record.payload],
     ]);
+  });
+
+  it("stores a markdown field in a json column and sorts and ranges the other fields", async () => {
+    const doc = entity("doc", {
+      fields: {
+        id: id(),
+        title: text(),
+        step: integer(),
+        updatedAt: timestamp(),
+        body: markdown(),
+      },
+      label: (record) => record.title,
+    });
+    expect(columnSpecs(doc).map((spec) => [spec.field, spec.type])).toEqual([
+      ["id", "text"],
+      ["title", "text"],
+      ["step", "integer"],
+      ["updatedAt", "text"],
+      ["body", "json"],
+    ]);
+    const body = (title: string) => ({
+      source: `# ${title}`,
+      html: `<h1 id="${title.toLowerCase()}">${title}</h1>`,
+      headings: [{ depth: 1, id: title.toLowerCase(), text: title }],
+      text: title,
+    });
+    const store = bind(doc, drizzleStore(doc, memoryDb()));
+    const intro = {
+      id: "intro",
+      title: "Intro",
+      step: 2,
+      updatedAt: "2026-10-04T10:00:00Z",
+      body: body("Intro"),
+    };
+    const setup = {
+      id: "setup",
+      title: "Setup",
+      step: 1,
+      updatedAt: "2026-10-04T09:30:00.250Z",
+      body: body("Setup"),
+    };
+    const usage = {
+      id: "usage",
+      title: "Usage",
+      step: 3,
+      updatedAt: "2026-10-05T00:00:00Z",
+      body: body("Usage"),
+    };
+    for (const record of [intro, setup, usage]) await store.put(record);
+    expect(await store.get("intro")).toEqual(intro);
+    expect((await store.list({ sort: { field: "step" } })).items).toEqual([setup, intro, usage]);
+    expect(
+      (
+        await store.list({
+          filter: { updatedAt: { lt: "2026-10-05T00:00:00Z" } },
+          sort: { field: "updatedAt", direction: "desc" },
+        })
+      ).items.map((record) => record.id),
+    ).toEqual(["intro", "setup"]);
+    await expect(store.list({ sort: { field: "body" } })).rejects.toThrow(
+      expect.objectContaining({ name: "RexError", code: "REX329" }),
+    );
+    await expect(store.list({ sort: { field: "nope" } } as never)).rejects.toThrow(
+      'store doc: unknown sort field "nope"',
+    );
   });
 
   it("refuses fields that are both optional and nullable", () => {

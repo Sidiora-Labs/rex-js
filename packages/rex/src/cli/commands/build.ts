@@ -1,5 +1,5 @@
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, extname, join, resolve } from "node:path";
+import { dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { InvalidArgumentError, type RexCommand as Command } from "../args.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
@@ -11,14 +11,16 @@ import {
   STATIC_MANIFEST_FILE,
   formatPrerenderList,
   prerenderPages,
-  prerenderedTextFile,
-  writePrerenderList,
-  writeShellDocuments,
-  writeStaticManifest,
   type PrerenderRuntime,
   type PrerenderTextRuntime,
   type ShellDocumentEntry,
 } from "../../vite/prerender.ts";
+import { outputFiles, runStaticOutputs, type StaticOutputRun } from "../../vite/outputs.ts";
+import { prerenderListOutput } from "../../vite/outputs/prerender-list.ts";
+import { shellDocumentsOutput } from "../../vite/outputs/shell-documents.ts";
+import { staticManifestOutput } from "../../vite/outputs/static-manifest.ts";
+import { textFilesOutput } from "../../vite/outputs/text-files.ts";
+import { buildWriter, hostFor, writeHostFiles, type RexHostWriter } from "../hosts/index.ts";
 import type { RexAppBundle, RexAppConfig } from "../../vite/app-module.ts";
 import { SERVER_SPECIFIER } from "../../vite/boundary.ts";
 import { resolveRuntimeEntry, type ResolveContext } from "../../vite/resolve.ts";
@@ -56,6 +58,7 @@ import {
 import { ensureCheckPasses } from "./check.ts";
 import { appConfigPath, cliWarn, rexCliExit } from "./dev.ts";
 import type { ResolvedBudgets } from "../../core/config.ts";
+import { RexError } from "../../core/errors.ts";
 import type { DeprecationWarn } from "../../core/deprecated.ts";
 
 export const DIST_DIR = "dist";
@@ -308,6 +311,9 @@ export interface BuildResult {
   readonly staticManifestFile: string | null;
   readonly textFiles: readonly string[];
   readonly shells: readonly ShellDocumentEntry[];
+  readonly outputs: readonly StaticOutputRun[];
+  readonly host: string | null;
+  readonly hostFiles: readonly string[];
 }
 
 export interface ServerBuildOptions {
@@ -360,6 +366,7 @@ export function usesStaticPages(target: BuildTarget): boolean {
 }
 
 export interface PrerenderBuildOptions {
+  readonly target?: BuildTarget;
   readonly outDir: string;
   readonly clientDir: string;
   readonly static?: StaticOutputOptions;
@@ -383,6 +390,12 @@ export interface PrerenderBuildResult {
   readonly list: PrerenderList;
   readonly file: string;
   readonly static: StaticOutputs | null;
+  readonly manifest: Manifest;
+  readonly outputs: readonly StaticOutputRun[];
+}
+
+function clientRelative(clientDir: string, file: string): string {
+  return normalizePath(relative(resolve(clientDir), file));
 }
 
 export async function prerenderBuild(
@@ -421,19 +434,38 @@ export async function prerenderBuild(
       ...(options.plugins === undefined ? {} : { plugins: options.plugins }),
     },
   );
-  const file = writePrerenderList(options.outDir, built.list);
-  if (staticOptions === undefined) return { list: built.list, file, static: null };
+  const target = options.target ?? (staticOptions === undefined ? DEFAULT_BUILD_TARGET : "static");
+  const outputs = await runStaticOutputs({
+    target,
+    outDir: resolve(options.outDir),
+    clientDir: resolve(options.clientDir),
+    manifest: built.manifest,
+    prerendered: built.list,
+    shell: staticOptions?.shell ?? null,
+  });
+  const listed = outputFiles(outputs, prerenderListOutput.id)[0];
+  if (listed === undefined) {
+    throw new RexError("REX400", `prerenderBuild: the ${target} target wrote no prerender list`);
+  }
+  const base = { list: built.list, file: listed.file, manifest: built.manifest, outputs };
+  if (target !== "static") return { ...base, static: null };
+  const [manifestFile] = outputFiles(outputs, staticManifestOutput.id);
+  if (manifestFile === undefined) {
+    throw new RexError("REX400", "prerenderBuild: the static target wrote no manifest file");
+  }
   return {
-    list: built.list,
-    file,
+    ...base,
     static: {
-      manifestFile: writeStaticManifest(options.clientDir, stableStringify(built.manifest)),
-      textFiles: built.list.pages.map((entry) => prerenderedTextFile(entry.path)),
-      shells: writeShellDocuments(
-        options.clientDir,
-        staticOptions.shell,
-        built.manifest,
-        built.list,
+      manifestFile: manifestFile.file,
+      textFiles: outputFiles(outputs, textFilesOutput.id).map((written) =>
+        clientRelative(options.clientDir, written.file),
+      ),
+      shells: outputFiles(outputs, shellDocumentsOutput.id).map((written) =>
+        Object.freeze({
+          path: written.path,
+          page: written.page,
+          file: clientRelative(options.clientDir, written.file),
+        }),
       ),
     },
   };
@@ -472,7 +504,8 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
   const appRoot = resolve(root);
   const config = appConfigPath(appRoot);
   const logLevel = options.logLevel ?? "warn";
-  const target = options.target ?? DEFAULT_BUILD_TARGET;
+  let target: BuildTarget;
+  let writer: RexHostWriter | null;
   let budgets: ResolvedBudgets;
   let pluginOptions: RexPluginOptions;
   let clientOptions: RexPluginOptions;
@@ -482,6 +515,8 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
       appRoot,
       options.warn === undefined ? {} : { warn: options.warn },
     );
+    target = options.target ?? hostFor(loaded.read.options)?.target ?? DEFAULT_BUILD_TARGET;
+    writer = buildWriter(loaded.read.options, target);
     budgets = resolveBudgets(loaded.read);
     pluginOptions = configPluginOptions(loaded.read);
     clientOptions = pluginOptions;
@@ -519,10 +554,18 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     staticManifestFile: null,
     textFiles: [],
     shells: [],
+    outputs: [],
+    host: writer?.host ?? null,
+    hostFiles: [],
   };
+  const hosted = async (built: BuildResult, manifest: Manifest): Promise<BuildResult> => ({
+    ...built,
+    hostFiles: await writeHostFiles(writer, built, manifest),
+  });
   if (target === "static") {
     const shell = readFileSync(join(clientDir, SHELL_DOCUMENT_FILE), "utf8");
     const prerendered = await prerenderBuild(appRoot, {
+      target,
       outDir,
       clientDir,
       assets: readSsrAssets(clientDir, { root: appRoot }),
@@ -531,16 +574,20 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
       static: { shell },
     });
     const outputs = prerendered.static as StaticOutputs;
-    return {
-      ...result,
-      serverFile: null,
-      manifestFile: null,
-      prerendered: prerendered.list.pages,
-      prerenderFile: prerendered.file,
-      staticManifestFile: outputs.manifestFile,
-      textFiles: outputs.textFiles,
-      shells: outputs.shells,
-    };
+    return hosted(
+      {
+        ...result,
+        serverFile: null,
+        manifestFile: null,
+        prerendered: prerendered.list.pages,
+        prerenderFile: prerendered.file,
+        staticManifestFile: outputs.manifestFile,
+        textFiles: outputs.textFiles,
+        shells: outputs.shells,
+        outputs: prerendered.outputs,
+      },
+      prerendered.manifest,
+    );
   }
 
   const assets = readSsrAssets(clientDir, { root: appRoot });
@@ -556,10 +603,14 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     logLevel,
   });
   if (!usesStaticPages(target)) {
-    return { ...result, serverFile, manifestFile, prerendered: [], prerenderFile: null };
+    return hosted(
+      { ...result, serverFile, manifestFile, prerendered: [], prerenderFile: null },
+      JSON.parse(readFileSync(manifestFile, "utf8")) as Manifest,
+    );
   }
 
   const prerendered = await prerenderBuild(appRoot, {
+    target,
     outDir,
     clientDir,
     assets,
@@ -567,13 +618,17 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     logLevel,
   });
 
-  return {
-    ...result,
-    serverFile,
-    manifestFile,
-    prerendered: prerendered.list.pages,
-    prerenderFile: prerendered.file,
-  };
+  return hosted(
+    {
+      ...result,
+      serverFile,
+      manifestFile,
+      prerendered: prerendered.list.pages,
+      prerenderFile: prerendered.file,
+      outputs: prerendered.outputs,
+    },
+    prerendered.manifest,
+  );
 }
 
 export function writtenLayout(result: BuildResult): string {
@@ -582,19 +637,31 @@ export function writtenLayout(result: BuildResult): string {
     : `${DIST_DIR}/${CLIENT_DIR}/ and ${DIST_DIR}/${SERVER_FILE}`;
 }
 
+function distPath(result: BuildResult, file: string): string {
+  return `${DIST_DIR}/${normalizePath(relative(result.outDir, file))}`;
+}
+
+function wroteLines(lines: readonly string[]): string {
+  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+}
+
 export function formatStaticOutputs(result: BuildResult): string {
-  if (result.staticManifestFile === null) return "";
-  const client = `${DIST_DIR}/${CLIENT_DIR}`;
-  const lines = [`rex build: wrote ${client}/${STATIC_MANIFEST_FILE}`];
-  for (const file of result.textFiles) lines.push(`rex build: wrote ${client}/${file}`);
-  for (const shell of result.shells) {
-    lines.push(
-      shell.page === null
-        ? `rex build: wrote ${client}/${shell.file} (the shell document for unknown routes)`
-        : `rex build: wrote ${client}/${shell.file} (${shell.page}, the shell document for ${shell.path})`,
-    );
-  }
-  return `${lines.join("\n")}\n`;
+  return wroteLines(
+    result.outputs.flatMap((run) =>
+      run.files.map(
+        (written) =>
+          `rex build: wrote ${distPath(result, written.file)}${written.note === null ? "" : ` (${written.note})`}`,
+      ),
+    ),
+  );
+}
+
+export function formatHostFiles(result: BuildResult): string {
+  return wroteLines(
+    result.hostFiles.map(
+      (file) => `rex build: wrote ${distPath(result, file)} (the ${result.host} host file)`,
+    ),
+  );
 }
 
 export function startHint(result: BuildResult): string {
@@ -621,14 +688,16 @@ export function register(program: Command, io: RexCliIO): void {
     )
     .option(
       "--target <target>",
-      `runtime to build for: ${BUILD_TARGETS.join(", ")}`,
+      `runtime to build for: ${BUILD_TARGETS.join(", ")}; without it, the target of deploy.host in rex.config.ts, else ${DEFAULT_BUILD_TARGET}`,
       parseTarget,
-      DEFAULT_BUILD_TARGET,
     )
     .option("--no-check", "build without running rex check first")
-    .action(async (options: { check: boolean; target: BuildTarget }) => {
+    .action(async (options: { check: boolean; target?: BuildTarget }) => {
       if (options.check) await ensureCheckPasses(io.cwd, io, "build");
-      const result = await buildApp(io.cwd, { warn: cliWarn(io), target: options.target });
+      const result = await buildApp(io.cwd, {
+        warn: cliWarn(io),
+        ...(options.target === undefined ? {} : { target: options.target }),
+      });
       io.out(formatChunkTable(result.chunks));
       io.out(`rex build: wrote ${writtenLayout(result)} for the ${result.target} target\n`);
       if (result.manifestFile !== null) io.out(`rex build: wrote ${DIST_DIR}/${MANIFEST_OUTPUT}\n`);
@@ -641,6 +710,7 @@ export function register(program: Command, io: RexCliIO): void {
         );
       }
       io.out(formatStaticOutputs(result));
+      io.out(formatHostFiles(result));
       const over = overBudget(result.chunks);
       if (over.length > 0) {
         throw new RexCliExit(
