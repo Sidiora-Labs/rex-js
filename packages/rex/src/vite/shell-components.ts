@@ -19,7 +19,7 @@ export function shellComponentsFile(root: string, configured: string): string {
       "REX120",
       `rex.config.ts: field "ui.components" names ${configured}, which does not exist`,
       {
-        hint: "Create the module under app/components exporting Button, Sheet, PaletteItem or Outcome, or remove ui.components.",
+        hint: "Create the module under app/components exporting Button, Sheet, PaletteItem, Outcome, Frame or Nav, or remove ui.components.",
       },
     );
   }

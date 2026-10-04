@@ -20,6 +20,7 @@ import {
   type StaticCacheErrorHandler,
   type StaticPageStore,
 } from "./adapters/static-cache.ts";
+import { screenFromRequest } from "./ssr.ts";
 
 export * from "./adapters/node.ts";
 
@@ -74,6 +75,7 @@ export async function installNodeStaticPages(
   const cache = createStaticCache({
     pages: list.pages,
     store: nodeStaticStore(options.clientDir),
+    screen: screenFromRequest,
     ...(options.onError === undefined ? {} : { onError: options.onError }),
   });
   registerStaticCache(registry, cache);

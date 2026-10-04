@@ -23,6 +23,16 @@ function sheetOpen(view: RexRenderResult, id: string): boolean | undefined {
   return view.sidecar().overlays.find((entry) => entry.id === id)?.open;
 }
 
+function draftOf(view: RexRenderResult): unknown {
+  const last = view.history.at(-1) ?? "";
+  const search = new URLSearchParams(last.includes("?") ? last.slice(last.indexOf("?") + 1) : "");
+  return JSON.parse(search.get(DRAFT_QUERY_KEY) ?? "null");
+}
+
+function draftHref(amount: string): string {
+  return `/send?${new URLSearchParams({ [DRAFT_QUERY_KEY]: JSON.stringify({ amount }) }).toString()}`;
+}
+
 async function click(element: Element): Promise<void> {
   await act(async () => {
     fireEvent.click(element);
@@ -46,8 +56,10 @@ describe("send form region", () => {
     await waitFor(() => expect(selected(view, "token")).toBe("ETH"));
     expect(selected(view, "contact")).toBe("Alice");
     const scope = within(view.container);
-    expect(scope.getByText("ETH (Ether), balance 25")).toBeTruthy();
-    expect(scope.getByText("Alice (0xa11ce00000000000000000000000000000000001)")).toBeTruthy();
+    expect(scope.getByText("ETH (Ether)")).toBeTruthy();
+    expect(scope.getByText("Balance 25")).toBeTruthy();
+    expect(scope.getByText("Alice")).toBeTruthy();
+    expect(scope.getByText("0xa11ce00000000000000000000000000000000001")).toBeTruthy();
     expect(scope.getByLabelText("Amount in ETH")).toBeTruthy();
     expect(
       scope.getByText("Available 25 ETH. Leave empty to send the default 0.001."),
@@ -130,21 +142,24 @@ describe("send form region", () => {
     const amount = within(view.container).getByLabelText("Amount in ETH");
 
     await act(async () => {
-      fireEvent.change(amount, { target: { value: "abc" } });
-    });
-    expect(within(view.container).getByRole("alert").textContent).toBe(
-      "Enter a decimal amount such as 0.5",
-    );
-    expect(amount.getAttribute("aria-invalid")).toBe("true");
-    const last = view.history.at(-1) ?? "";
-    const search = new URLSearchParams(last.slice(last.indexOf("?") + 1));
-    expect(JSON.parse(search.get(DRAFT_QUERY_KEY) ?? "null")).toEqual({ amount: "abc" });
-
-    await act(async () => {
       fireEvent.change(amount, { target: { value: "0.5" } });
     });
+    await waitFor(() => expect(draftOf(view)).toEqual({ amount: "0.5" }));
     expect(within(view.container).queryByRole("alert")).toBeNull();
     expect(amount.getAttribute("aria-invalid")).toBe("false");
+    expect(view.container.querySelector("[data-demo-fiat]")?.textContent).not.toBe("Not available");
+
+    act(() => view.navigate(draftHref("abc"), { replace: true }));
+    await waitFor(() =>
+      expect(within(view.container).getByRole("alert").textContent).toBe(
+        "Enter a decimal amount such as 0.5",
+      ),
+    );
+    expect(
+      within(view.container).getByLabelText("Amount in ETH").getAttribute("aria-invalid"),
+    ).toBe("true");
+    expect(view.container.querySelector("[data-demo-fiat]")?.textContent).toBe("Not available");
+    expect(draftOf(view)).toEqual({ amount: "abc" });
   });
 
   it("disables the pick controls for the guest", async () => {

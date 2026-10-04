@@ -1,6 +1,16 @@
+import {
+  DEFAULT_POINTER,
+  DEFAULT_SCREEN,
+  DEFAULT_SCREEN_DENSITY,
+  SCREEN_ATTRIBUTES,
+  screenAttributes,
+  type ScreenState,
+} from "../../client/screen.ts";
 import { anonymousActor, type Actor } from "../../core/actor.ts";
 import { isPlainObject } from "../../core/entity.ts";
 import { RexError } from "../../core/errors.ts";
+import { SIDECAR_ELEMENT_ID, SIDECAR_MIME_TYPE } from "../../core/protocol.ts";
+import { escapeInlineJson } from "../../core/serialize.ts";
 import { DEFAULT_DENSITY, type RexRequestContext } from "../context.ts";
 import { CSRF_FIELD, ensureCsrfToken } from "../form.ts";
 import type { RexPageRenderer } from "../routes/render.ts";
@@ -14,6 +24,13 @@ export const PRERENDER_LIST_VERSION = 1;
 export const PRERENDER_INDEX_FILE = "index.html";
 export const PRERENDER_NONCE = "rex-prerender-nonce";
 export const STATIC_HEADER = "x-rex-static";
+export const PRERENDER_SCREEN: ScreenState = Object.freeze({
+  screen: DEFAULT_SCREEN,
+  pointer: DEFAULT_POINTER,
+  density: DEFAULT_SCREEN_DENSITY,
+});
+
+export type StaticScreenClassifier = (request: Request, context: RexRequestContext) => ScreenState;
 
 export interface StaticPageEntry {
   readonly path: string;
@@ -189,6 +206,48 @@ export function fillNonce(html: string, nonce: string): string {
   return html.replaceAll(`nonce="${PRERENDER_NONCE}"`, `nonce="${escaped}"`);
 }
 
+const HTML_OPEN_TAG = /<html\b[^>]*>/i;
+const SIDECAR_SCRIPT = new RegExp(
+  `(<script\\b(?=[^>]*\\btype="${SIDECAR_MIME_TYPE.replace("+", "\\+")}")(?=[^>]*\\bid="${SIDECAR_ELEMENT_ID}")[^>]*>)([\\s\\S]*?)(</script>)`,
+);
+const SIDECAR_SCREEN_FIELDS = ["screen", "pointer", "density"] as const;
+
+function withRootAttributes(tag: string, state: ScreenState): string {
+  let next = tag;
+  for (const [name, value] of Object.entries(screenAttributes(state))) {
+    const written = ` ${name}="${value}"`;
+    const present = new RegExp(`\\s${name}="[^"]*"`);
+    next = present.test(next) ? next.replace(present, written) : next.replace(/\s*>$/, `${written}>`);
+  }
+  return next;
+}
+
+function withSidecarScreen(json: string, state: ScreenState): string {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(json);
+  } catch {
+    return json;
+  }
+  if (!isPlainObject(payload) || !SIDECAR_SCREEN_FIELDS.every((field) => field in payload)) return json;
+  if (SIDECAR_SCREEN_FIELDS.every((field) => payload[field] === state[field])) return json;
+  return escapeInlineJson({ ...payload, screen: state.screen, pointer: state.pointer, density: state.density });
+}
+
+export function applyScreenAttributes(html: string, state: ScreenState): string {
+  if (!HTML_OPEN_TAG.test(html)) {
+    throw new RexError(
+      "REX400",
+      `applyScreenAttributes: the page has no html element to carry ${Object.values(SCREEN_ATTRIBUTES).join(", ")}`,
+    );
+  }
+  return html
+    .replace(HTML_OPEN_TAG, (tag) => withRootAttributes(tag, state))
+    .replace(SIDECAR_SCRIPT, (_script, open: string, json: string, close: string) => {
+      return `${open}${withSidecarScreen(json, state)}${close}`;
+    });
+}
+
 export interface StaticPageStore {
   read(path: string): Promise<string | null>;
   write(path: string, html: string): Promise<void>;
@@ -224,6 +283,7 @@ export type StaticCacheErrorHandler = (error: unknown, entry: StaticPageEntry) =
 export interface StaticCacheOptions {
   readonly pages: readonly StaticPageEntry[];
   readonly store: StaticPageStore;
+  readonly screen: StaticScreenClassifier;
   readonly actor?: Actor;
   readonly onError?: StaticCacheErrorHandler;
 }
@@ -233,7 +293,11 @@ export interface StaticCache {
   has(pathname: string): boolean;
   entry(pathname: string): StaticPageEntry | undefined;
   entries(): readonly StaticPageEntry[];
-  serve(request: Request, renderer: RexPageRenderer | undefined, nonce: string): Promise<StaticHit | null>;
+  serve(
+    request: Request,
+    renderer: RexPageRenderer | undefined,
+    context: RexRequestContext,
+  ): Promise<StaticHit | null>;
   regenerate(pathname: string, origin: string, renderer: RexPageRenderer | undefined): Promise<StaticPageEntry>;
   settled(): Promise<void>;
 }
@@ -248,6 +312,13 @@ export function isStale(entry: StaticPageEntry, now: number): boolean {
 
 export function createStaticCache(options: StaticCacheOptions): StaticCache {
   const { store } = options;
+  if (typeof options.screen !== "function") {
+    throw new RexError(
+      "REX400",
+      "createStaticCache: screen must classify each request the way the render route does",
+    );
+  }
+  const classify = options.screen;
   const actor = options.actor ?? anonymousActor;
   const onError = options.onError ?? reportRegenerationFailure;
   const entries = new Map<string, StaticPageEntry>();
@@ -284,7 +355,7 @@ export function createStaticCache(options: StaticCacheOptions): StaticCache {
         `cannot be regenerated: the path now renders page "${rendered.page}"`,
       );
     }
-    await store.write(entry.path, rendered.html);
+    await store.write(entry.path, applyScreenAttributes(rendered.html, PRERENDER_SCREEN));
     const next = Object.freeze({ ...entry, generatedAt: Date.now() });
     entries.set(entry.path, next);
     return next;
@@ -311,7 +382,7 @@ export function createStaticCache(options: StaticCacheOptions): StaticCache {
   async function serve(
     request: Request,
     renderer: RexPageRenderer | undefined,
-    nonce: string,
+    context: RexRequestContext,
   ): Promise<StaticHit | null> {
     const url = new URL(request.url);
     const entry = lookup(url.pathname);
@@ -334,7 +405,7 @@ export function createStaticCache(options: StaticCacheOptions): StaticCache {
       }
     }
     let setCookie: string | null = null;
-    let body = fillNonce(html, nonce);
+    let body = applyScreenAttributes(fillNonce(html, context.nonce), classify(request, context));
     if (hasCsrfField(body)) {
       const grant = ensureCsrfToken(request);
       setCookie = grant.setCookie;

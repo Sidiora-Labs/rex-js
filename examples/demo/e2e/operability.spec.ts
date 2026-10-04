@@ -7,6 +7,7 @@ import {
   checkForms,
   checkHitTargets,
   checkParity,
+  checkRootDensity,
   checkStylesheetOrder,
   checkTextRenderer,
   checkZeroJs,
@@ -17,6 +18,7 @@ import {
   outcomeMark,
   pageUrl,
   readSidecar,
+  rootDensity,
   startDemo,
   waitForOutcome,
   waitForSidecar,
@@ -114,12 +116,9 @@ async function walkDensity(
     checkTextRenderer(page, base, pageInfo.id, await readSidecar(page)),
   );
 
-  await recorder.check(`root density is ${density}`, async () => {
-    const attribute = await page.evaluate(() =>
-      document.documentElement.getAttribute("data-rex-density"),
-    );
-    if (attribute !== density) throw new Error(`data-rex-density is ${String(attribute)}`);
-  });
+  await recorder.check(`root density is ${rootDensity(density)} for ${density}`, () =>
+    checkRootDensity(page, density),
+  );
   await recorder.check("page, region and outcome landmarks are addressed", async () => {
     const found = await page.evaluate((id) => {
       return {
@@ -197,12 +196,9 @@ async function walkStaticDensity(
     return recorder;
   }
   await recorder.check("the page ships zero JavaScript", () => checkZeroJs(page));
-  await recorder.check(`root density is ${density}`, async () => {
-    const attribute = await page.evaluate(() =>
-      document.documentElement.getAttribute("data-rex-density"),
-    );
-    if (attribute !== density) throw new Error(`data-rex-density is ${String(attribute)}`);
-  });
+  await recorder.check(`root density is ${rootDensity(density)} for ${density}`, () =>
+    checkRootDensity(page, density),
+  );
   await recorder.check("stylesheet links precede the first body content", async () =>
     checkStylesheetOrder(
       await fetchDocument(page, base, pageUrl(base, pageInfo.route, { density })),

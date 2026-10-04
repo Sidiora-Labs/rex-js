@@ -385,6 +385,10 @@ describe("rex check --runtime", () => {
         (mount) => mount.page === "vault" && mount.actor === GRANTED_ACTOR_ID,
       );
       expect(granted?.controls).toEqual(["vault/open-vault"]);
+      for (const mount of result.mounts) {
+        expect(mount.nav, `${mount.page} ${mount.actor} ${mount.state}`).toEqual(["home", "vault"]);
+      }
+      expect(ready?.controls).not.toContain("home");
     },
     RUNTIME_TEST_TIMEOUT_MS,
   );
@@ -446,6 +450,7 @@ describe("rex check --runtime", () => {
       );
       expect(ready?.actions).toEqual(["publish", "archive"]);
       expect(ready?.controls).toEqual(["board/ghost", "board/publish"]);
+      expect(ready?.nav).toEqual(["board"]);
 
       const cli = captureIO(root);
       const code = await run(["check", "--runtime", "--json"], cli.io);
