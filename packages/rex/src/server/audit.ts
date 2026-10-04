@@ -7,6 +7,8 @@ export const AUDIT_ERROR_FILTER = "error";
 
 export const ERROR_CODE_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 export const DIGEST_PATTERN = /^[0-9a-f]{64}$/;
+export const TRACE_ID_PATTERN = /^[0-9a-f]{32}$/;
+export const SPAN_ID_PATTERN = /^[0-9a-f]{16}$/;
 
 export type AuditOutcome = typeof AUDIT_OK | (string & {});
 
@@ -19,6 +21,8 @@ export interface AuditRecord {
   readonly effect: ActionEffect;
   readonly durationMs: number;
   readonly at: string;
+  readonly traceId?: string;
+  readonly spanId?: string;
 }
 
 export type AuditEntry = Omit<AuditRecord, "id">;
@@ -44,9 +48,21 @@ export interface AuditEntryInput {
   readonly effect: ActionEffect;
   readonly durationMs: number;
   readonly at: string;
+  readonly traceId?: string | null;
+  readonly spanId?: string | null;
 }
 
-const ENTRY_KEYS = ["actor", "actionId", "inputDigest", "outcome", "effect", "durationMs", "at"];
+const ENTRY_KEYS = [
+  "actor",
+  "actionId",
+  "inputDigest",
+  "outcome",
+  "effect",
+  "durationMs",
+  "at",
+  "traceId",
+  "spanId",
+];
 const FILTER_KEYS = new Set(["actor", "actionId", "outcome", "from", "to"]);
 
 function toHex(buffer: ArrayBuffer): string {
@@ -111,7 +127,16 @@ export function validateAuditEntry(entry: AuditEntry): AuditEntry {
     throw new TypeError("audit: durationMs must be a finite non-negative number");
   }
   timeOf("at", entry.at);
-  return {
+  if ((entry.traceId === undefined) !== (entry.spanId === undefined)) {
+    throw new TypeError("audit: traceId and spanId must be given together");
+  }
+  if (entry.traceId !== undefined && !TRACE_ID_PATTERN.test(entry.traceId)) {
+    throw new TypeError("audit: traceId must be 32 lowercase hex characters");
+  }
+  if (entry.spanId !== undefined && !SPAN_ID_PATTERN.test(entry.spanId)) {
+    throw new TypeError("audit: spanId must be 16 lowercase hex characters");
+  }
+  const valid: AuditEntry = {
     actor: entry.actor,
     actionId: entry.actionId,
     inputDigest: entry.inputDigest,
@@ -120,10 +145,13 @@ export function validateAuditEntry(entry: AuditEntry): AuditEntry {
     durationMs: entry.durationMs,
     at: entry.at,
   };
+  return entry.traceId === undefined || entry.spanId === undefined
+    ? valid
+    : { ...valid, traceId: entry.traceId, spanId: entry.spanId };
 }
 
 export async function createAuditEntry(params: AuditEntryInput): Promise<AuditEntry> {
-  return validateAuditEntry({
+  const entry: AuditEntry = {
     actor: params.actor,
     actionId: params.actionId,
     inputDigest: await digest(params.input),
@@ -131,6 +159,11 @@ export async function createAuditEntry(params: AuditEntryInput): Promise<AuditEn
     effect: params.effect,
     durationMs: params.durationMs,
     at: params.at,
+  };
+  return validateAuditEntry({
+    ...entry,
+    ...(params.traceId === undefined || params.traceId === null ? {} : { traceId: params.traceId }),
+    ...(params.spanId === undefined || params.spanId === null ? {} : { spanId: params.spanId }),
   });
 }
 
