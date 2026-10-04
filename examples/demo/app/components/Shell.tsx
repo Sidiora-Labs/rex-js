@@ -44,8 +44,10 @@ import {
   BreadcrumbSeparator,
 } from "./ui/breadcrumb.tsx";
 import { Button as DesignxButton } from "./ui/button.tsx";
+import { DialogHeader } from "./ui/dialog.tsx";
 import { Kbd } from "./ui/kbd.tsx";
 import { Separator } from "./ui/separator.tsx";
+import { SheetHeader } from "./ui/sheet.tsx";
 import {
   Sidebar,
   SidebarContent,
@@ -91,15 +93,31 @@ export function Button({ type = "button", ...props }: ShellButtonProps) {
 }
 
 export function Sheet({ title, titleId, form, children }: ShellSheetProps) {
+  const heading = (
+    <h2 id={titleId} className="m-0 text-lg leading-tight font-medium tracking-[-0.01em]">
+      {title}
+    </h2>
+  );
+  if (form === "bottom-sheet") {
+    return (
+      <div
+        data-slot="sheet-content"
+        data-side="bottom"
+        className="flex flex-col gap-4"
+        {...{ [SHEET_FORM_ATTRIBUTE]: form }}
+      >
+        <SheetHeader className="p-0">{heading}</SheetHeader>
+        <div className="flex flex-col gap-3">{children}</div>
+      </div>
+    );
+  }
   return (
     <div
       data-slot="dialog-content"
       className="flex flex-col gap-4"
       {...{ [SHEET_FORM_ATTRIBUTE]: form }}
     >
-      <h2 id={titleId} className="m-0 text-lg leading-tight font-medium tracking-[-0.01em]">
-        {title}
-      </h2>
+      <DialogHeader className="pr-0">{heading}</DialogHeader>
       <div className="flex flex-col gap-3">{children}</div>
     </div>
   );

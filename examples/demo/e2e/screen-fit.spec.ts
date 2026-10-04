@@ -3,7 +3,6 @@ import {
   MIN_AGENT_HIT_TARGET,
   SIDECAR_SELECTOR,
   STEP_TIMEOUT,
-  buildDemo,
   committedManifest,
   openOverlay,
   pageUrl,
@@ -100,7 +99,6 @@ test.beforeAll(async () => {
     demo = { url: external, stop: () => Promise.resolve() };
     return;
   }
-  buildDemo();
   demo = await startDemo();
 });
 
@@ -252,8 +250,12 @@ for (const listed of committed.pages) {
       payload.page,
     ]);
 
+    expect(payload.overlays.map((entry) => entry.id).sort()).toEqual(
+      listed.overlays.map((entry) => entry.id).sort(),
+    );
     for (const overlay of listed.overlays) {
       const address = `${listed.id}/${overlay.id}`;
+      expect(payload.overlays.find((entry) => entry.id === overlay.id)?.open).toBe(false);
       await openOverlay(page, listed.id, overlay.id);
       const surface = page.locator(`[data-rex-overlay="${address}"]`);
       expect(await surface.getAttribute("data-rex-overlay-form")).toBe(expected.sheet);
