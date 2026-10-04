@@ -3,11 +3,12 @@ import { Route, Switch, useLocation, useSearch } from "wouter";
 import type { Actor } from "../core/actor.ts";
 import { parseRoute, type AnyPage } from "../core/page.ts";
 import { evaluate, type PolicyResult } from "../core/policy.ts";
+import { RESERVED_QUERY_KEYS, isReservedQueryKey } from "../core/protocol.ts";
 import type { RegistrySnapshot } from "../core/registry.ts";
 import type { z } from "../core/schema.ts";
 import { useActor, useRegistry } from "./context.ts";
 
-export const RESERVED_QUERY_KEYS: readonly string[] = ["act", "input", "draft", "density"];
+export { RESERVED_QUERY_KEYS };
 export const DRAFT_QUERY_KEY = "draft";
 
 export interface ParamIssue {
@@ -79,7 +80,7 @@ export function parsePageParams(
   const candidate: Record<string, unknown> = {};
   const query = new URLSearchParams(search);
   for (const [key, raw] of query) {
-    if (RESERVED_QUERY_KEYS.includes(key) || declared.routeParams.includes(key)) continue;
+    if (isReservedQueryKey(key) || declared.routeParams.includes(key)) continue;
     if (!(key in shape)) continue;
     candidate[key] = coerceParam(shape[key], raw);
   }
@@ -111,7 +112,7 @@ export function pageHref(
   for (const key of Object.keys(values).sort()) {
     const value = values[key];
     if (value === undefined || !(key in shape) || declared.routeParams.includes(key)) continue;
-    if (RESERVED_QUERY_KEYS.includes(key)) {
+    if (isReservedQueryKey(key)) {
       issues.push({ path: key, message: `"${key}" is reserved by Rex URL invocation` });
       continue;
     }

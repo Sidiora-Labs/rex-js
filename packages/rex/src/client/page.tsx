@@ -10,6 +10,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from "react";
+import type { ActionInput, AnyAction } from "../core/action.ts";
 import { regionAddress, regionName } from "../core/ids.ts";
 import type { AnyPage, PageStatesModule } from "../core/page.ts";
 import { titleFromId } from "../core/page.ts";
@@ -19,7 +20,9 @@ import {
   type RexDataState,
   type StateProps,
 } from "../core/states.ts";
-import { useAct } from "./act.ts";
+import type { ActResult, RunOptions } from "./act.ts";
+import { AddressScope } from "./agent/address.tsx";
+import { ConfirmContext, ConfirmProvider, useInvoke, type InvokeHandle } from "./agent/confirm.tsx";
 import { useNav, type Nav } from "./nav.ts";
 import { useActivePage, type PageResolution } from "./router.tsx";
 import { useDataState } from "./states.ts";
@@ -58,12 +61,23 @@ export function view<P = PageParamsValue>(render: (ctx: ViewContext<P>) => React
   return Object.assign(RexView, { rexKind: "view" as const });
 }
 
+export function useRegionAct<A extends AnyAction>(declared: A): InvokeHandle<A> {
+  const handle = useInvoke(declared);
+  const { invoke, run } = handle;
+  const confirmed = useCallback(
+    (input: ActionInput<A>, options: RunOptions = {}): Promise<ActResult<A>> =>
+      options.confirmToken === undefined ? invoke(input) : run(input, options),
+    [invoke, run],
+  );
+  return { ...handle, run: confirmed };
+}
+
 export interface RegionContext<P = PageParamsValue> {
   readonly page: string;
   readonly region: string;
   readonly params: P;
   readonly state: RexDataState;
-  readonly act: typeof useAct;
+  readonly act: typeof useRegionAct;
   readonly nav: Nav;
 }
 
@@ -79,12 +93,14 @@ export interface RegionProps {
 
 export function Region({ name, children }: RegionProps) {
   const runtime = usePageRuntime();
+  const confirm = useContext(ConfirmContext);
   if (!runtime.page.regions.includes(name)) {
     throw new Error(`rex: region "${name}" is not declared by page "${runtime.page.id}"`);
   }
+  const scoped = <AddressScope region={name}>{children}</AddressScope>;
   return (
     <section aria-label={titleFromId(name)} data-rex-region={regionAddress(runtime.page.id, name)}>
-      {children}
+      {confirm === null ? <ConfirmProvider>{scoped}</ConfirmProvider> : scoped}
     </section>
   );
 }
@@ -105,7 +121,7 @@ export function region<P = PageParamsValue>(
           region: name,
           params: runtime.params as P,
           state: runtime.state,
-          act: useAct,
+          act: useRegionAct,
           nav,
         })}
       </>

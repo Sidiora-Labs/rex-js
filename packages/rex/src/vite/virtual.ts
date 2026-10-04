@@ -17,6 +17,9 @@ export const ENTRY_MODULE_ID = "/@rex/entry";
 export const RESOLVED_ENTRY_MODULE_ID = "\0rex:entry";
 export const DEFAULT_APP_DIR = "app";
 export const ROOT_ELEMENT_ID = "root";
+export const CORE_SPECIFIER = "@sidioralabs/rex";
+export const CLIENT_SPECIFIER = "@sidioralabs/rex/client";
+export const RUNTIME_STYLESHEETS = ["tokens.css", "agent/density.css"] as const;
 
 export const DECLARATION_FOLDERS = {
   entity: "entities",
@@ -280,20 +283,26 @@ export interface EntryModuleOptions {
   readonly rootElement?: string;
 }
 
+export function runtimeStylesheets(client: string): readonly string[] {
+  const dir = dirname(client);
+  return RUNTIME_STYLESHEETS.map((file) => normalizePath(join(dir, file)));
+}
+
 export function generateEntryModule(options: EntryModuleOptions): string {
   const rootElement = options.rootElement ?? ROOT_ELEMENT_ID;
   return [
+    ...runtimeStylesheets(options.client).map((file) => `import ${JSON.stringify(file)};`),
     'import { StrictMode, createElement } from "react";',
     'import { createRoot } from "react-dom/client";',
-    `import { createRexApp } from ${JSON.stringify(options.client)};`,
+    `import { createRexEntry } from ${JSON.stringify(options.client)};`,
     `import app from ${JSON.stringify(APP_MODULE_ID)};`,
     "",
     `const container = document.getElementById(${JSON.stringify(rootElement)});`,
     "if (container === null) {",
     `  throw new Error(${JSON.stringify(`rex: index.html has no element with id "${rootElement}"`)});`,
     "}",
-    "const RexApp = createRexApp(app);",
-    "createRoot(container).render(createElement(StrictMode, null, createElement(RexApp)));",
+    "const RexEntry = createRexEntry(app);",
+    "createRoot(container).render(createElement(StrictMode, null, createElement(RexEntry)));",
     "",
   ].join("\n");
 }

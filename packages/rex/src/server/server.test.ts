@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, expectTypeOf, it } from "vitest";
 import { action } from "../core/action.ts";
 import { actor, anonymousActor, type Actor } from "../core/actor.ts";
 import { entity } from "../core/entity.ts";
+import { flow } from "../core/flow.ts";
+import { memoryJournal } from "../core/journal.ts";
 import { page } from "../core/page.ts";
 import { always, never, policy } from "../core/policy.ts";
 import { createRegistry } from "../core/registry.ts";
@@ -16,12 +18,15 @@ import {
   DENSITY_HEADER,
   HEALTH_PATH,
   MANIFEST_PATH,
+  FLOW_RPC_PREFIX,
   createRexContext,
   createRexServer,
   memoryLedger,
+  type FlowRouter,
   type Ledger,
   type RegistryRouterClient,
 } from "./index.ts";
+import type { RouterClient } from "@orpc/server";
 
 const wallet = policy("wallet", {
   permissions: ["send"],
@@ -168,7 +173,7 @@ describe("createRexServer", () => {
       attributes: { unlocked: true },
     });
     const anonymous = await app.request(MANIFEST_PATH);
-    expect(anonymous.headers.get(REX_DENSITY_HEADER)).toBe("default");
+    expect(anonymous.headers.get(REX_DENSITY_HEADER)).toBeNull();
     expect(JSON.parse(decodeURIComponent(anonymous.headers.get(REX_ACTOR_HEADER) ?? ""))).toEqual({
       id: "anonymous",
       roles: [],
@@ -302,5 +307,55 @@ describe("createRexServer", () => {
     });
     expect(response.status).toBe(404);
     expect((await app.request("/rex/unknown")).status).toBe(404);
+  });
+
+  it("sends x-rex-density on the manifest response only when the request carried it", async () => {
+    const plain = await app.request(MANIFEST_PATH);
+    expect(plain.status).toBe(200);
+    expect(plain.headers.has(REX_DENSITY_HEADER)).toBe(false);
+    const fallback = await app.request(MANIFEST_PATH, { headers: { [DENSITY_HEADER]: "default" } });
+    expect(fallback.headers.get(REX_DENSITY_HEADER)).toBe("default");
+  });
+
+  it("mounts the registry flows at /rex/flow with the resolved actor", async () => {
+    const review = flow("review", {
+      steps: [
+        { action: toggleDust, input: () => ({ hide: true }) },
+        { approval: "sign-off", label: "Sign off", approvers: wallet.can("send") },
+      ],
+      journal: memoryJournal(),
+    });
+    const server = createRexServer({
+      registry: { ...source, flows: [review] },
+      ledger,
+      actor: resolveActor,
+    });
+    const flows = (as: string): RouterClient<FlowRouter> =>
+      createORPCClient(
+        new RPCLink({
+          url: `http://rex.test${FLOW_RPC_PREFIX}`,
+          headers: { authorization: `Bearer ${as}` },
+          fetch: async (request) => server.fetch(request),
+        }),
+      );
+    expect(await flows("alice").status({ flow: "review", instance: "one" })).toEqual({
+      flow: "review",
+      instance: "one",
+      status: "idle",
+      gate: null,
+      completed: 0,
+    });
+    const paused = await flows("alice").start({ flow: "review", instance: "one" });
+    expect(paused).toMatchObject({ status: "paused", gate: { id: "sign-off", label: "Sign off" } });
+    const denied = await rejection(
+      flows("nobody").decide({ flow: "review", instance: "one", decision: "approve" }),
+    );
+    expect(denied.code).toBe("FORBIDDEN");
+    const approved = await flows("alice").decide({
+      flow: "review",
+      instance: "one",
+      decision: "approve",
+    });
+    expect(approved).toMatchObject({ status: "completed", gate: null, completed: 2 });
   });
 });

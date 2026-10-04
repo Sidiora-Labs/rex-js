@@ -4,6 +4,7 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { Hono } from "hono";
 import type { AnyAction } from "../core/action.ts";
 import type { Actor } from "../core/actor.ts";
+import type { AnyFlow } from "../core/flow.ts";
 import { REX_ACTOR_HEADER, REX_MANIFEST_PATH, REX_RPC_PREFIX } from "../core/protocol.ts";
 import { buildManifest, stableStringify, type ManifestSource } from "../manifest/build.ts";
 import type { Ledger } from "./audit.ts";
@@ -16,11 +17,13 @@ import {
   type RexContext,
   type RexDensity,
 } from "./context.ts";
+import { mountFlows } from "./flow.ts";
 import { buildActionRouter, type ActionRouter } from "./router.ts";
 
 export * from "./audit.ts";
 export * from "./context.ts";
 export * from "./router.ts";
+export * from "./flow.ts";
 
 export const RPC_PREFIX = REX_RPC_PREFIX;
 export const MANIFEST_PATH = REX_MANIFEST_PATH;
@@ -31,6 +34,7 @@ export type ActorResolver = (request: Request) => Actor | Promise<Actor>;
 
 export type RexServerRegistry<A extends AnyAction> = ManifestSource & {
   readonly actions: readonly A[];
+  readonly flows?: readonly AnyFlow[];
 };
 
 export interface RexServerOptions<A extends AnyAction> {
@@ -115,11 +119,12 @@ export function createRexServer<A extends AnyAction>(options: RexServerOptions<A
       }
       throw error;
     }
-    return c.body(manifestBody, 200, {
+    const headers: Record<string, string> = {
       "content-type": "application/json; charset=utf-8",
       [ACTOR_HEADER]: encodeActorHeaderValue(context.actor),
-      [DENSITY_HEADER]: context.density,
-    });
+    };
+    if (c.req.raw.headers.get(DENSITY_HEADER) !== null) headers[DENSITY_HEADER] = context.density;
+    return c.body(manifestBody, 200, headers);
   });
 
   app.get(HEALTH_PATH, (c) => c.json({ status: "ok" }));
@@ -146,6 +151,8 @@ export function createRexServer<A extends AnyAction>(options: RexServerOptions<A
     result.headers.set(DENSITY_HEADER, context.density);
     return result;
   });
+
+  mountFlows(app, { flows: options.registry.flows ?? [], actor: options.actor });
 
   return app;
 }

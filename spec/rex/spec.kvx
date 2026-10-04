@@ -1000,7 +1000,7 @@ status  = "pending"
 
 [task.6.0]
 title = "Assemble the runtime: mount the shell and agent surfaces in the generated entry, route region actions through confirmation, and export the agent modules"
-status = "pending"
+status = "done"
 mode = "BUILD"
 wave = 6
 requires = ["4.5", "5.7"]
