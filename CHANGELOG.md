@@ -8,15 +8,16 @@ reference is the `[spec:<feature>/<task>]` a snapshot or fleet worker tagged the
 
 ### Highlights
 
-Rex 0.3 ships a full static-site pipeline and deployment to GitHub Pages, streaming SSR with Suspense boundary inlining, a DesignX-based demo and shell system, a catalogued REX error system with hints and docs, per-locale i18n, a `rex/testing` test harness on the real server, and a complete CI/release workflow with provenance. `rex build` now targets node, bun, deno, edge, and static; `rex check` gains parity/runtime and a11y rules; and the docs site is generated from the package exports with search.
+Rex 0.3.0 lands three major feature sets: the static-site pipeline with GitHub Pages deployment and streaming SSR with Suspense inlining, the DesignX demo and shell system with catalogued error codes and per-locale i18n, and the full CI/release workflow with provenance and multi-target builds. The release completes the rex-v02 union gate with every package test file passing, adds the rex/testing harness and parity/runtime/a11y checks, and ships the generated docs site with search and API reference pages.
 
-- `rex build --target static` prerenders SSG and static pages, writes `dist/client`, bakes `client.apiOrigin`, and deploys to GitHub Pages with e2e and sitemap verification
-- Streaming SSR via the `/rex/render` route with `renderToReadableStream`, nonce-based CSP, and inlined Suspense boundaries so forms render without JavaScript
-- DesignX shell slots (`Button`, `Sheet`, `PaletteItem`, `Outcome`, `Nav`) overrideable through `useShellComponents`; demo redesigned with wallet card, sortable holdings, and two-column send
-- Catalogued `RexError` codes (REX1xx–REX6xx) raised from core, manifest, CLI, and Vite; hints live in `errors.docs.ts`; `rex check --runtime` mounts pages in happy-dom for parity findings
-- `rex/testing` with `createTestApp`, `renderPage`, `renderRegion`, `testServer`, `readSidecar`; Playwright operability walk across phone/tablet/desktop; CI pipeline with coverage, test-ratio, license review, and OIDC-provenanced release
+- `rex build --target static` completes the static build target with prerendered pages, rex/manifest, route shells, and 404.html
+- `rex new --ui designx` generates a Shell.tsx mapping Button, Sheet, PaletteItem, Outcome, and Nav to installed DesignX primitives
+- Streaming SSR via the GET render route inlines every completed Suspense boundary, with nonce-based CSP and the rex-outcome cookie
+- `rex check --runtime` mounts every page in happy-dom per actor, reporting parity/runtime findings merged with static check
+- Generated docs site with search, API reference pages at /api,
 
 ### Other
+- Rex-main fm-rex-site 2026-10-05 feature/rex-site 36aeaa8ea89f "Add Rex 0.3.0 changelog: static-site pipeline with GitHub Pages deployment, streaming SSR with Suspense inlining, DesignX demo and shell system, catalogued error codes with hints, per-locale i18n, rex/testing harness, complete CI/release workflow with provenance, multi-target builds, parity/runtime/a11y checks, and generated docs site with search" ([f5a1001](https://github.com/Sidiora-Labs/rex-js/commit/f5a1001d2697a5266b8a2f49defd7ab5ca5287f0), task rex-site/3.10)
 - Rex-main fm-rex-site 2026-10-05 feature/rex-site 36aeaa8ea89f "Refactor build command output formatting: add buildReporter and formatBuildChunks, phase callbacks, color and column detection to RexCliIO; add debugName to PageChunkGroup; enhance build test assertions for success and failure messages; update Playwright test timings" ([0ad3ac4](https://github.com/Sidiora-Labs/rex-js/commit/0ad3ac40df4b046231579611fdcf32fbabfdaee6), task rex-site/3.9)
 - Rex-main fm-rex-site 2026-10-05 feature/rex-site 36aeaa8ea89f "Add qualification gate wiring and test-to-code ratio checks to CI and release workflows; enable npm provenance; add build output preservation, staging directory and publication atomicity with rollback on failure" ([cebbb02](https://github.com/Sidiora-Labs/rex-js/commit/cebbb02362debfd8c5a42af42e9f1120d29afadf), task rex-site/3.8)
 - Rex-main fm-rex-site 2026-10-05 feature/rex-site 36aeaa8ea89f "add  the site-verify.mjs step to  the site workflow" ([fa2ad09](https://github.com/Sidiora-Labs/rex-js/commit/fa2ad0989ca4d463dff45b007ab155ca98015804), task rex-site/3.7)
