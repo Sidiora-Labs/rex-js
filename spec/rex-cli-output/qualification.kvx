@@ -1,0 +1,14 @@
+[meta]
+feature = "rex-cli-output"
+status = "qualified_focused"
+
+[qualification.typecheck]
+evidence = "6727573a2d77 | pnpm -C packages/rex typecheck | 0 | /tmp/rex-cli-output-typecheck.log"
+
+[qualification.regression]
+observation = "27 tests passed across four files, including actual successful and failed static builds. Existing budget and publication assertions retained."
+evidence = "6727573a2d77 | pnpm -C packages/rex exec vitest run src/cli/build-output.test.ts src/cli/commands/build.test.ts src/vite/split.test.ts src/vite/split-closure.test.ts | 0 | /tmp/rex-cli-output-verify.log"
+
+[qualification.site]
+observation = "Compiled CLI and normal site build passed; 168 pages prerendered. Logo, stage timings, aligned size table and output summary inspected. Rex-owned redirected output is plain; third-party warnings remain verbatim and may carry ANSI under forced color."
+evidence = "6727573a2d77 | pnpm -C site build | 0 | /tmp/rex-cli-output-site.log"

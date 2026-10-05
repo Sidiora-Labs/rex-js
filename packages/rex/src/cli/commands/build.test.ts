@@ -449,6 +449,9 @@ describe("buildApp and rex build", () => {
       "over budget",
     );
     expect(captured.out()).toContain("OVER");
+    expect(captured.out()).toContain("RexJS v");
+    expect(captured.out()).toContain("Build failed");
+    expect(captured.out()).not.toContain("Build complete");
     expect(captured.out()).toContain(
       "static JS closure (own chunk + static imports; measurements, not budgets)",
     );
@@ -478,6 +481,16 @@ describe("buildApp and rex build", () => {
       expect(existsSync(file as string)).toBe(true);
     }
     expect(readdirSync(root).filter((name) => name.startsWith(".rex-build-"))).toEqual([]);
+    const success = captureIO(root);
+    const successfulCommand = new RexCommand("rex");
+    register(successfulCommand, success.io);
+    await successfulCommand.parseAsync(["build", "--target", "static", "--no-check"]);
+    expect(success.out()).toContain("[ok] Prerendering static pages");
+    expect(success.out()).toContain("[ok] Publishing output");
+    expect(success.out()).toContain("Build complete");
+    expect(success.out()).toContain("Prerendered  1 pages");
+    expect(success.out()).toContain("Next: serve dist/client/");
+    expect(success.out()).not.toContain("\u001b");
   }, 240_000);
 
   it("refuses a root without rex.config.ts before writing anything", async () => {

@@ -7,7 +7,7 @@ scope = "Focused task evidence is not full-domain or release certification."
 status = "open_browser_contract"
 observation = "Native destination status, content and sidecars pass, but JavaScript-disabled Chromium reports 22 modulepreload request failures with reason csp even after nonce repair. Static host sends no CSP header; home has no CSP meta policy. Initial CSP-mismatch diagnosis was not established."
 resolution = "Renderer nonce correctness qualified separately. Browser JavaScript-disabled preload behavior needs explicit contract analysis; request watcher and assertions remain unchanged."
-evidence = "72cd5068fc64 | task 1.16 desktop no-JavaScript repair gate | running_with_failures | /tmp/rex-production-1.16-verify-repair.log"
+evidence = "72cd5068fc64 | pnpm -C site exec playwright test e2e/site.spec.ts --project=desktop --grep 'content and navigation without JavaScript' | 1 (164 failed) | /tmp/rex-production-1.16-verify-repair.log"
 
 [qualification.provenance_contract]
 status = "resolved_metadata"
@@ -134,8 +134,8 @@ observation = "Workspace typecheck passed; this does not substitute for browser,
 evidence = "72cd5068fc64 | pnpm -r --workspace-concurrency=1 typecheck | 0 | /tmp/rex-production-wave-typecheck.log"
 
 [qualification.static_navigation_first_pass]
-status = "failed_repair_pending"
-observation = "164 no-JavaScript browser cases failed on the initial artifact; representative evidence shows CSP-blocked module preloads after native navigation. Renderer task 1.21 passed separately; rebuilt artifact retry remains pending."
+status = "failed_evidence_preserved"
+observation = "164 no-JavaScript browser cases failed on the initial artifact; representative evidence reports preload request failures with browser reason csp after native navigation. First report and representative failure preserved in /tmp/rex-production-nojs-first/."
 evidence = "72cd5068fc64 | pnpm -C site exec playwright test e2e/site.spec.ts --project=desktop --grep 'content and navigation without JavaScript' | 1 | /tmp/rex-production-1.16-verify.log"
 
 [qualification.wave_tests]
@@ -144,11 +144,16 @@ observation = "15-minute bounded run timed out without final totals: observed fo
 evidence = "72cd5068fc64 (mixed working revisions) | timeout 900s pnpm -C packages/rex exec vitest run --maxWorkers=2 | 124 | /tmp/rex-production-wave-tests.log"
 
 [qualification.site_rebuild]
-status = "built_browser_retry_pending"
-observation = "Static rebuild emitted 168 sitemap URLs. Parsed home HTML contains 22 modulepreloads and 22 nonempty nonce attributes; browser operability remains a separate gate."
+status = "built_browser_gate_failed"
+observation = "Static rebuild emitted 168 sitemap URLs. Parsed home HTML contains 22 modulepreloads and 22 nonempty nonce attributes; all 164 browser repair cases still failed, so artifact construction does not qualify operability."
 evidence = "72cd5068fc64 | pnpm -C site build:static | 0 | /tmp/rex-production-site-build-csp.log"
 
 [qualification.package_build]
 status = "built"
 observation = "Compiled package refreshed after combined-suite workers exited; package build and frozen offline dependency reconciliation passed."
 evidence = "72cd5068fc64 | pnpm -C packages/rex build | 0 | /tmp/rex-production-package-build-final.log"
+
+[qualification.static_navigation_repair]
+status = "implemented_not_qualified"
+observation = "Repair pass finished in 537071ms: 164 failed, zero passed/skipped/flaky. Task 1.16 remains in progress; status/content/sidecar assertions precede the unchanged request-watcher failure. Further browser-contract diagnosis requires separate scoped work."
+evidence = "72cd5068fc64 | pnpm -C site exec playwright test e2e/site.spec.ts --project=desktop --grep 'content and navigation without JavaScript' | 1 | /tmp/rex-production-1.16-verify-repair.log"

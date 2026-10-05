@@ -19,6 +19,7 @@ export function pageIdOfModule(moduleId: string, appPath: string): string | null
 }
 
 export interface PageChunkGroup {
+  readonly debugName: string;
   readonly name: (moduleId: string) => string | null;
   readonly includeDependenciesRecursively: false;
 }
@@ -26,6 +27,7 @@ export interface PageChunkGroup {
 export function pageChunkGroups(appPath: string): PageChunkGroup[] {
   return [
     {
+      debugName: "rex-pages",
       name: (moduleId) => {
         const pageId = pageIdOfModule(moduleId, appPath);
         return pageId === null ? null : pageChunkName(pageId);

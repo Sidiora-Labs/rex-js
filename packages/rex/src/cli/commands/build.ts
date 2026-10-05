@@ -15,7 +15,6 @@ import { rex, type RexPluginOptions } from "../../vite/index.ts";
 import { chunkBudgets, resolveBudgets } from "../../vite/budgets.ts";
 import {
   SHELL_DOCUMENT_FILE,
-  formatPrerenderList,
   prerenderPages,
   type PrerenderRuntime,
   type PrerenderTextRuntime,
@@ -38,7 +37,6 @@ import {
 import { APP_MODULE_ID } from "../../vite/virtual.ts";
 import {
   PRERENDER_LIST_FILE,
-  PRERENDER_LIST_VERSION,
   type PrerenderList,
   type StaticPageEntry,
 } from "../../server/adapters/static-cache.ts";
@@ -49,7 +47,6 @@ import type { Manifest } from "../../manifest/types.ts";
 import {
   chunkTable,
   formatChunkTable,
-  formatStaticImportClosures,
   staticImportClosures,
   type ChunkRow,
   type OutputAssetLike,
@@ -69,6 +66,7 @@ import { appConfigPath, cliWarn, rexCliExit } from "./dev.ts";
 import type { ResolvedBudgets } from "../../core/config.ts";
 import { RexError } from "../../core/errors.ts";
 import type { DeprecationWarn } from "../../core/deprecated.ts";
+import { buildReporter, formatBuildChunks } from "../build-output.ts";
 
 export const DIST_DIR = "dist";
 export const CLIENT_DIR = "client";
@@ -291,6 +289,7 @@ export interface BuildOptions {
   readonly logLevel?: LogLevel;
   readonly warn?: DeprecationWarn;
   readonly target?: BuildTarget;
+  readonly onPhase?: (label: string) => void;
   readonly reportChunks?: (
     chunks: readonly ChunkRow[],
     closures: readonly StaticImportClosure[],
@@ -537,6 +536,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
         files: run.files.map((file) => ({ ...file, file: relocate(file.file) })),
       })),
     };
+    options.onPhase?.("Publishing output");
     if (existsSync(destination)) renameSync(destination, backup);
     try {
       renameSync(output, destination);
@@ -566,6 +566,7 @@ async function buildStagedApp(
   let pluginOptions: RexPluginOptions;
   let clientOptions: RexPluginOptions;
   let apiOrigin: string | null = null;
+  options.onPhase?.("Loading configuration");
   try {
     const loaded = await loadRexConfig(
       appRoot,
@@ -588,6 +589,7 @@ async function buildStagedApp(
     return rexCliExit(error);
   }
   const clientDir = join(outDir, CLIENT_DIR);
+  options.onPhase?.("Building client bundles");
   const client = await restoringNodeEnv(() =>
     build({
       root: appRoot,
@@ -622,6 +624,7 @@ async function buildStagedApp(
     hostFiles: await writeHostFiles(writer, built, manifest),
   });
   if (target === "static") {
+    options.onPhase?.("Prerendering static pages");
     const shell = readFileSync(join(clientDir, SHELL_DOCUMENT_FILE), "utf8");
     const prerendered = await prerenderBuild(appRoot, {
       target,
@@ -650,6 +653,7 @@ async function buildStagedApp(
   }
 
   const assets = readSsrAssets(clientDir, { root: appRoot });
+  options.onPhase?.("Building server and manifest");
   const manifestFile = await writeBuildManifest(appRoot, outDir, pluginOptions, logLevel);
   const serverFile = await buildServer({
     root: appRoot,
@@ -668,6 +672,7 @@ async function buildStagedApp(
     );
   }
 
+  options.onPhase?.("Prerendering pages");
   const prerendered = await prerenderBuild(appRoot, {
     target,
     outDir,
@@ -743,26 +748,39 @@ export async function executeBuild(
   options: { check: boolean; target?: BuildTarget },
   io: RexCliIO,
 ): Promise<void> {
-  if (options.check) await ensureCheckPasses(io.cwd, io, "build");
-  const result = await buildApp(io.cwd, {
-    warn: cliWarn(io),
-    reportChunks: (chunks, closures) => {
-      io.out(formatChunkTable(chunks));
-      io.out(formatStaticImportClosures(closures));
-    },
-    ...(options.target === undefined ? {} : { target: options.target }),
-  });
-  io.out(`rex build: wrote ${writtenLayout(result)} for the ${result.target} target\n`);
-  if (result.manifestFile !== null) io.out(`rex build: wrote ${DIST_DIR}/${MANIFEST_OUTPUT}\n`);
-  if (result.prerenderFile !== null) {
-    io.out(
-      formatPrerenderList(
-        { version: PRERENDER_LIST_VERSION, pages: result.prerendered },
-        `${DIST_DIR}/${CLIENT_DIR}`,
-      ),
-    );
+  const reporter = buildReporter(io);
+  let result: BuildResult;
+  let report = "";
+  try {
+    if (options.check) {
+      reporter.phase("Checking application");
+      await ensureCheckPasses(io.cwd, io, "build");
+    }
+    result = await buildApp(io.cwd, {
+      warn: cliWarn(io),
+      onPhase: reporter.phase,
+      reportChunks: (chunks, closures) => {
+        report = formatBuildChunks(chunks, closures, io.columns);
+      },
+      ...(options.target === undefined ? {} : { target: options.target }),
+    });
+  } catch (error) {
+    if (report) io.out(report);
+    reporter.failed();
+    throw error;
   }
-  io.out(formatStaticOutputs(result));
-  io.out(formatHostFiles(result));
-  io.out(`rex build: ${startHint(result)}\n`);
+  reporter.complete(result.target);
+  io.out(report);
+  io.out(`\n  Output       ${writtenLayout(result)}\n`);
+  if (result.manifestFile !== null) io.out(`  Manifest     ${DIST_DIR}/${MANIFEST_OUTPUT}\n`);
+  if (result.staticManifestFile !== null)
+    io.out(`  Manifest     ${distPath(result, result.staticManifestFile)}\n`);
+  if (result.prerenderFile !== null)
+    io.out(
+      `  Prerendered  ${result.prerendered.length} pages (${distPath(result, result.prerenderFile)})\n`,
+    );
+  if (result.shells.length > 0) io.out(`  Shells       ${result.shells.length} documents\n`);
+  if (result.textFiles.length > 0) io.out(`  Text         ${result.textFiles.length} documents\n`);
+  for (const file of result.hostFiles) io.out(`  Host         ${distPath(result, file)}\n`);
+  io.out(`\n  Next: ${startHint(result)}\n\n`);
 }

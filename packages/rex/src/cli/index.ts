@@ -16,6 +16,8 @@ export const USAGE_ERROR_CODES: readonly RexErrorCode[] = [ARGS_USAGE_CODE, MAKE
 
 export interface RexCliIO {
   readonly cwd: string;
+  readonly color?: boolean;
+  readonly columns?: number;
   out(text: string): void;
   err(text: string): void;
 }
@@ -63,6 +65,11 @@ function isCommandModule(value: unknown): value is RexCommandModule {
 export function processIO(): RexCliIO {
   return {
     cwd: process.cwd(),
+    color:
+      process.stdout.isTTY === true &&
+      process.env.NO_COLOR === undefined &&
+      process.env.TERM !== "dumb",
+    columns: process.stdout.columns || 80,
     out: (text) => {
       process.stdout.write(text);
     },

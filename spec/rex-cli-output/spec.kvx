@@ -1,0 +1,31 @@
+[meta]
+feature = "rex-cli-output"
+name = "Branded build output"
+slug = "rex-cli-output"
+status = "in_progress"
+goal = "Make rex build readable in terminals and redirected logs using the Rex logo."
+
+[decision]
+scope = "Presentation only; retain build behavior, warnings, budget enforcement and exit codes."
+
+[design]
+output = "Use the supplied assets/rex.asc artwork, sized to terminal columns, a version header, real phase events, one aligned size report and a timed output summary. Color only interactive terminals; no cursor animations in redirected logs. Embed the artwork in the CLI module so clean published installs do not depend on repository assets."
+
+[req.1]
+title = "Readable build reporting"
+ac_1 = "Build starts with Rex artwork and version before checks, reports actual phases and completion duration; failures never print completion."
+ac_2 = "Chunk report distinguishes own gzip, static-import gzip and own-chunk budgets without changing measurements or suppressing warnings."
+ac_3 = "Artwork fits terminal width; plain redirected output has no ANSI sequences. Compiled CLI includes artwork without reading repository files."
+
+[task.1.1]
+title = "Brand and structure CLI build output"
+status = "done"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["1"]
+touches = ["packages/rex/src/cli/build-output.ts", "packages/rex/src/cli/build-output.test.ts", "packages/rex/src/cli/logo.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands/build.test.ts", "packages/rex/src/vite/split.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/build-output.test.ts src/cli/commands/build.test.ts src/vite/split.test.ts src/vite/split-closure.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
