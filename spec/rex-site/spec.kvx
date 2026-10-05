@@ -271,7 +271,7 @@ stop_condition = "Stop on the bounded gate result or time limit; record revision
 
 [task.3.2]
 title = "The site gates: operability walk, no-JS walk, axe, vitals, Lighthouse, screen-fit and links on phone, tablet and desktop"
-status = "pending"
+status = "in_progress"
 mode = "BUILD"
 wave = 3
 requires = ["2.1", "2.2", "2.3", "2.4", "2.6", "3.1"]
@@ -303,6 +303,61 @@ max_builds = 1
 max_verify_runs = 1
 max_repair_cycles = 2
 time_limit_minutes = 120
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.4]
+title = "Reduce site dev startup cost without skipping checks"
+status = "done"
+mode = "BUILD"
+wave = 3
+requires = []
+reqs = ["6.1"]
+do_1 = "Isolate config and module-loader Vite caches from the browser dev-server cache and avoid browser entry discovery in SSR-only loaders. Honor TypeScript incremental configuration in rex check and enable it for the site without emitting application JavaScript."
+do_2 = "Test cache isolation and incremental diagnostic parity across unchanged, edited, added, deleted and configuration-changed inputs. Measure site cold and warm checks and startup; retain default preflight checks."
+touches = ["packages/rex/src/cli/config.ts", "packages/rex/src/cli/config.test.ts", "packages/rex/src/cli/load.ts", "packages/rex/src/check/rules/typecheck.ts", "packages/rex/src/check/rules/typecheck.test.ts", "site/tsconfig.json"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/config.test.ts src/cli/commands/dev.test.ts src/check/rules/typecheck.test.ts src/check/check.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 60
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.5]
+title = "Render dev documents with the default server in the Vite runtime"
+status = "done"
+mode = "BUILD"
+wave = 3
+requires = ["3.4"]
+reqs = ["6.1"]
+do_1 = "Create the default config server through Vite's SSR module graph so its renderer registration is shared with rex:render. Preserve custom and legacy server behavior."
+do_2 = "Test browser-style GET and HEAD requests against a real default-config dev server, including the rendered page, sidecar, manifest and unknown-route status; verify the site's live desktop and phone documents."
+touches = ["packages/rex/src/cli/config.ts", "packages/rex/src/cli/commands/dev.test.ts"]
+symbols = ["defaultAppServer", "serverForExport", "loadConfigServer"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/config.test.ts src/cli/commands/dev.test.ts src/vite/ssr.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
+
+[task.3.6]
+title = "Keep dev documents on one runtime with authored assets and valid CSP nonces"
+status = "done"
+mode = "BUILD"
+wave = 3
+requires = ["3.5"]
+reqs = ["6.1"]
+do_1 = "Resolve the renderer and default server through the application's installed Rex server entry, including workspace source exports when the CLI is compiled. Preserve index.html head assets in dev and bind its generated nonce to each response nonce."
+do_2 = "Exercise the compiled CLI against a real generated workspace app, asserting HTML success, stylesheet and metadata retention, and matching fresh script/header nonces over repeated requests. Check desktop and phone browser hydration on the site."
+touches = ["packages/rex/src/cli/config.ts", "packages/rex/src/cli/commands/dev.test.ts", "packages/rex/src/vite/ssr.ts", "packages/rex/src/vite/ssr.test.ts", "packages/rex/src/server/ssr.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/config.test.ts src/cli/commands/dev.test.ts src/vite/ssr.test.ts src/server/ssr.test.ts"
+gate_kind = "planned"
+max_builds = 1
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
 stop_condition = "Stop on the bounded gate result or time limit; record revision, command, exit code and log path. Do not mark done without the declared evidence."
 
 [task.4.1]

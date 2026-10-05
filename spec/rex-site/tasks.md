@@ -46,13 +46,25 @@
     - app/server/content/api.ts lists docs/api/**/*.md with the path flattened to a dash-separated slug, the entry (package export path) and the title, and reads each through the markdown renderer with links between API files rewritten to /api/<slug>; page api (/api, ssg) with the Entries region listing every package entry with its exported symbols grouped by kind and a Search region over the API part of the index; page api-doc (/api/:slug, static, paths from the reader) with Article and Toc; the read actions live in app/actions/api.
     - Tests asserting the page set equals the file set, every link in a rendered API page points at an existing slug or an external URL, the entries region lists every export path of packages/rex/package.json, and the sidecar of both pages.
     - _Requirements: 2.3, 1.2_
-  - [ ] 3.2 The site gates: operability walk, no-JS walk, axe, vitals, Lighthouse, screen-fit and links on phone, tablet and desktop
+  - [-] 3.2 The site gates: operability walk, no-JS walk, axe, vitals, Lighthouse, screen-fit and links on phone, tablet and desktop
     - site/e2e per [decision] hosting_gates against the built directory served by tools/serve-static.mjs: operability.spec.ts walks every route the manifest lists plus every prerendered path on the three projects, opens every popup trigger and closes it with Escape, reads every sidecar, invokes the addressable controls, and fails on a REX3xx region error, a page error, a console error or a failed request; nojs.spec.ts reads every static page with JavaScript disabled; axe.spec.ts; vitals.spec.ts with the thresholds; lighthouse.ts with the scores; screen-fit.spec.ts (no horizontal overflow, 44 px controls on phone, dock on phone and sidebar on desktop in the sidecar); links.spec.ts over every internal href; reports written under site/e2e/report and committed.
     - Fix every finding in the site's theme, components and e2e helpers without weakening a threshold; a finding that needs a framework change or a page change goes to the qualification log for 3.3; site/package.json test:e2e runs the suite and test runs check, unit and e2e; the workflow's e2e job runs it.
     - _Requirements: 5.1, 5.2, 5.3, 4.2_
   - [ ] 3.3 What the site taught the framework: fix every recorded gap in packages/rex
     - Read spec/rex-site/qualification.kvx; for every entry that names a framework gap, fix it in packages/rex with a test (an export the site needed, a checker rule that rejected a legitimate pattern, a route shape, a build output, a runtime request a static host cannot answer, a testing helper the site tests needed), or add a [decision] to this spec when the framework is right and the site should adapt, and adapt the site in that case; mark each entry resolved with the commit that resolved it.
     - The task report's first section lists every gap with its resolution; docs touched by a fix are updated in the same task; the site still passes its check and unit tests after the fixes.
+    - _Requirements: 6.1_
+  - [x] 3.4 Reduce site dev startup cost without skipping checks
+    - Isolate config and module-loader Vite caches from the browser dev-server cache and avoid browser entry discovery in SSR-only loaders. Honor TypeScript incremental configuration in rex check and enable it for the site without emitting application JavaScript.
+    - Test cache isolation and incremental diagnostic parity across unchanged, edited, added, deleted and configuration-changed inputs. Measure site cold and warm checks and startup; retain default preflight checks.
+    - _Requirements: 6.1_
+  - [x] 3.5 Render dev documents with the default server in the Vite runtime
+    - Create the default config server through Vite's SSR module graph so its renderer registration is shared with rex:render. Preserve custom and legacy server behavior.
+    - Test browser-style GET and HEAD requests against a real default-config dev server, including the rendered page, sidecar, manifest and unknown-route status; verify the site's live desktop and phone documents.
+    - _Requirements: 6.1_
+  - [x] 3.6 Keep dev documents on one runtime with authored assets and valid CSP nonces
+    - Resolve the renderer and default server through the application's installed Rex server entry, including workspace source exports when the CLI is compiled. Preserve index.html head assets in dev and bind its generated nonce to each response nonce.
+    - Exercise the compiled CLI against a real generated workspace app, asserting HTML success, stylesheet and metadata retention, and matching fresh script/header nonces over repeated requests. Check desktop and phone browser hydration on the site.
     - _Requirements: 6.1_
   - [ ] 4.1 Ship rex.sidioralabs.com: Pages enabled, the deployment green, the error links resolving
     - Enable GitHub Pages on Sidiora-Labs/rex-js with the workflow source and the custom domain rex.sidioralabs.com through the gh API (gh api -X POST repos/Sidiora-Labs/rex-js/pages -f build_type=workflow, then PUT the cname and https_enforced), confirm the site workflow's latest run on main is green through gh run list, and verify the deployment: when rex.sidioralabs.com resolves, fetch /, /docs/tutorial and /errors/REX330 and assert data-rex-page, the sidecar script and the error message; otherwise verify the deployment status through gh api repos/Sidiora-Labs/rex-js/pages/deployments and the uploaded artifact's index.html, and record the pending DNS record in the task report's first line.
@@ -67,7 +79,7 @@
     { "id": 0,  "tasks": ["1.1"] },
     { "id": 1,  "tasks": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.7", "2.8"] },
     { "id": 2,  "tasks": ["2.6", "3.1"] },
-    { "id": 3,  "tasks": ["3.2", "3.3"] },
+    { "id": 3,  "tasks": ["3.2", "3.3", "3.4", "3.5", "3.6"] },
     { "id": 4,  "tasks": ["4.1"] }
   ]
 }

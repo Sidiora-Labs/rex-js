@@ -99,6 +99,7 @@ export interface RexPageAssets {
 export interface RexDocumentAssets extends RexPageAssets {
   readonly scripts: readonly string[];
   readonly head?: string;
+  readonly headNonce?: string;
   readonly pages: Readonly<Record<string, RexPageAssets>>;
 }
 
@@ -309,6 +310,11 @@ interface DocumentParts {
 
 function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): string {
   const nonce = escapeHtml(parts.nonce);
+  const head = options.assets.head ?? "";
+  const requestHead =
+    options.assets.headNonce === undefined
+      ? head
+      : head.replaceAll(options.assets.headNonce, nonce);
   const stylesheets = parts.links.stylesheets.map(
     (href) => `<link rel="stylesheet" href="${escapeHtml(href)}">`,
   );
@@ -334,7 +340,7 @@ function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): s
       : `<style data-rex-fonts="">${fontFaceCss(options.fonts)}</style>`,
     ...stylesheets,
     ...preloads,
-    options.assets.head === undefined ? "" : nonceInlineScripts(options.assets.head, parts.nonce),
+    nonceInlineScripts(requestHead, parts.nonce),
     `<script type="${REX_DATA_MIME_TYPE}" id="${REX_DATA_ELEMENT_ID}" nonce="${nonce}">${serializeRexData(parts.data)}</script>`,
     "</head>",
     "<body>",

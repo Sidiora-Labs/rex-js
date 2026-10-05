@@ -11,7 +11,7 @@ export default defineConfig({
   retries: 0,
   timeout: 240_000,
   forbidOnly: true,
-  reporter: [["list"]],
+  reporter: [["list"], ["json", { outputFile: "e2e/report/results.json" }]],
   use: {
     baseURL: SITE_URL,
     actionTimeout: 15_000,

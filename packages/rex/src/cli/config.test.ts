@@ -311,6 +311,25 @@ describe("loadRexConfig on a generated app", { timeout: CONFIG_TEST_TIMEOUT_MS }
     expect(failure.detail).toContain(`${CONFIG_FILE} is missing in ${empty}`);
   });
 
+  it("keeps browser dependency artifacts intact while loading server modules", async () => {
+    const browserCache = join(root, "node_modules/.vite/deps/browser.js");
+    const source = "export const ready = true;\n";
+    mkdirSync(dirname(browserCache), { recursive: true });
+    writeFileSync(browserCache, source);
+    await loadRexConfig(root);
+    expect(readFileSync(browserCache, "utf8")).toBe(source);
+    const loader = await createModuleLoader(root);
+    try {
+      expect(loader.vite.config.cacheDir).toBe(join(root, "node_modules/.cache/rex/loader"));
+      expect(loader.vite.config.optimizeDeps.noDiscovery).toBe(true);
+      expect(isDefinedConfig(await importConfigExport(loader.vite))).toBe(true);
+      expect(readFileSync(browserCache, "utf8")).toBe(source);
+    } finally {
+      await loader.close();
+    }
+    expect(readFileSync(browserCache, "utf8")).toBe(source);
+  });
+
   it("rejects a config module without defineConfig by its REX code and passes module errors through", async () => {
     writeFileSync(configPath(root), "export default 42;\n");
     const notConfig = await rexRejection(() => loadRexConfig(root));

@@ -109,11 +109,30 @@ export function typecheckApp(app: RexApp): Finding[] {
   const input = programInput(app);
   const diagnostics: ts.Diagnostic[] = [...input.configDiagnostics];
   if (input.configDiagnostics.length === 0) {
-    const program = ts.createProgram({ rootNames: input.rootNames, options: input.options });
-    diagnostics.push(...ts.getPreEmitDiagnostics(program));
+    if (input.options.incremental || input.options.composite) {
+      const program = ts.createIncrementalProgram({
+        rootNames: input.rootNames,
+        options: input.options,
+      });
+      diagnostics.push(
+        ...program.getConfigFileParsingDiagnostics(),
+        ...program.getOptionsDiagnostics(),
+        ...program.getSyntacticDiagnostics(),
+        ...program.getGlobalDiagnostics(),
+        ...program.getSemanticDiagnostics(),
+      );
+      if (input.options.declaration || input.options.composite) {
+        diagnostics.push(...program.getDeclarationDiagnostics());
+      }
+      // noEmit preserves only TypeScript's incremental state, never application output.
+      diagnostics.push(...program.emit().diagnostics);
+    } else {
+      const program = ts.createProgram({ rootNames: input.rootNames, options: input.options });
+      diagnostics.push(...ts.getPreEmitDiagnostics(program));
+    }
   }
   const findings: Finding[] = [];
-  for (const diagnostic of diagnostics) {
+  for (const diagnostic of ts.sortAndDeduplicateDiagnostics(diagnostics)) {
     const mapped = diagnosticToFinding(app, diagnostic);
     if (mapped) findings.push(mapped);
   }

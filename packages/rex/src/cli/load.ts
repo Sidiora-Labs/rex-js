@@ -65,6 +65,8 @@ export async function createModuleLoader(
   const vite = await createServer({
     root: appRoot,
     configFile: false,
+    cacheDir: join(appRoot, "node_modules/.cache/rex/loader"),
+    optimizeDeps: { noDiscovery: true },
     logLevel: options.logLevel ?? "silent",
     appType: "custom",
     server: { middlewareMode: true, hmr: false, watch: null },

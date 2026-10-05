@@ -1,10 +1,12 @@
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getRequestListener } from "@hono/node-server";
 import { normalizePath, type Plugin, type ViteDevServer } from "vite";
 import type { RexDocumentAssets } from "../server/ssr.ts";
 import { forwardDensity, isApiPath, type RexServerSource } from "./dev-server.ts";
 import type { RexHookContext } from "./hooks.ts";
+import { resolveRuntimeEntry } from "./resolve.ts";
 import { APP_MODULE_ID, ENTRY_MODULE_ID, ROOT_ELEMENT_ID } from "./virtual.ts";
 
 export const RENDER_MODULE_ID = "rex:render";
@@ -39,19 +41,30 @@ export function generateRenderModule(options: RenderModuleOptions): string {
 
 export type RenderAssetsSource = () => RexDocumentAssets | Promise<RexDocumentAssets>;
 
-export function renderModulePlugin(
-  assets: RenderAssetsSource,
-  ssr: string = ssrRuntimePath(),
-): Plugin {
+export function renderModulePlugin(assets: RenderAssetsSource, ssr?: string): Plugin {
+  let root: string | null = null;
   return {
     name: "rex:render",
     enforce: "pre",
+    configResolved(config) {
+      root = config.root;
+    },
     resolveId(id) {
       return id === RENDER_MODULE_ID ? RESOLVED_RENDER_MODULE_ID : null;
     },
     async load(id) {
       if (id !== RESOLVED_RENDER_MODULE_ID) return null;
-      return generateRenderModule({ ssr, assets: await assets() });
+      let runtime = ssr ?? ssrRuntimePath();
+      if (ssr === undefined && root !== null) {
+        const entry = await resolveRuntimeEntry(
+          this,
+          root,
+          "@sidioralabs/rex/server",
+          normalizePath(join(dirname(runtime), `index${extname(runtime)}`)),
+        );
+        runtime = normalizePath(join(dirname(entry), `ssr${extname(entry)}`));
+      }
+      return generateRenderModule({ ssr: runtime, assets: await assets() });
     },
   };
 }
@@ -64,12 +77,14 @@ export function devHeadHtml(transformed: string): string {
 }
 
 export function devAssets(head: string): RexDocumentAssets {
+  const headNonce = /<meta\s+property="csp-nonce"\s+nonce="([^"]+)"\s*\/?\s*>/i.exec(head)?.[1];
   return Object.freeze({
     scripts: Object.freeze([ENTRY_MODULE_ID]),
     stylesheets: Object.freeze([]),
     preloads: Object.freeze([]),
     pages: Object.freeze({}),
     head,
+    ...(headNonce === undefined ? {} : { headNonce }),
   });
 }
 
@@ -114,7 +129,9 @@ export function ssrHook(context: RexHookContext): readonly Plugin[] {
   let server: ViteDevServer | null = null;
   const assets: RenderAssetsSource = async () => {
     if (server === null) return devAssets("");
-    return devAssets(devHeadHtml(await server.transformIndexHtml("/", DEV_DOCUMENT_TEMPLATE)));
+    const index = join(server.config.root, "index.html");
+    const template = existsSync(index) ? readFileSync(index, "utf8") : DEV_DOCUMENT_TEMPLATE;
+    return devAssets(devHeadHtml(await server.transformIndexHtml("/", template)));
   };
   return [
     renderModulePlugin(assets),

@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { Hono } from "hono";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CONFIG_FILE } from "../../core/config.ts";
@@ -229,5 +229,96 @@ describe("startDev on a generated app", { timeout: DEV_TEST_TIMEOUT_MS }, () => 
       await vite.close();
     }
     expect(devUrls(vite)).toEqual([]);
+  });
+
+  it("serves browser documents when defineConfig uses the default server", async () => {
+    const config = configPath(root);
+    const original = readFileSync(config, "utf8");
+    writeFileSync(
+      config,
+      [
+        'import { defineConfig } from "@sidioralabs/rex/config";',
+        'import app from "rex:app";',
+        'export default defineConfig({ app, ui: "none" });',
+        "",
+      ].join("\n"),
+    );
+    try {
+      const vite = await startDev(root, { port: 0, host: "127.0.0.1", logLevel: "silent" });
+      try {
+        const [base] = devUrls(vite);
+        if (base === undefined) throw new Error("Dev server has no URL");
+        const headers = { accept: "text/html,application/xhtml+xml,*/*;q=0.8" };
+        const response = await fetch(base, { headers });
+        expect(response.status).toBe(200);
+        expect(response.headers.get("content-type")).toContain("text/html");
+        expect(response.headers.get("x-rex-page")).toBe("home");
+        const html = await response.text();
+        expect(html).toContain('data-rex-page="home"');
+        expect(html).toContain('type="application/rex+json"');
+        expect(html).toContain('"page":"home"');
+        expect(html).toContain("/@rex/entry");
+        const head = await fetch(base, { method: "HEAD", headers });
+        expect(head.status).toBe(200);
+        expect(await head.text()).toBe("");
+        const missing = await fetch(new URL("missing", base), { headers });
+        expect(missing.status).toBe(404);
+        expect(missing.headers.get("content-type")).toContain("text/html");
+        const manifest = await fetch(new URL("rex/manifest", base));
+        expect(manifest.status).toBe(200);
+        expect(((await manifest.json()) as Manifest).app.name).toBe(APP_NAME);
+      } finally {
+        await vite.close();
+      }
+    } finally {
+      writeFileSync(config, original);
+    }
+  });
+
+  it("serves workspace source components through the built CLI with authored head assets and fresh CSP nonces", async () => {
+    const built = (await import(
+      pathToFileURL(join(packageRoot, "dist/cli/commands/dev.js")).href
+    )) as typeof import("./dev.ts");
+    const index = join(root, "index.html");
+    const original = readFileSync(index, "utf8");
+    writeFileSync(
+      index,
+      original.replace(
+        "</head>",
+        '<meta name="description" content="Dev document"><link rel="stylesheet" href="/app/theme.css"></head>',
+      ),
+    );
+    try {
+      const vite = await built.startDev(root, { port: 0, host: "127.0.0.1", logLevel: "silent" });
+      try {
+        const [base] = built.devUrls(vite);
+        if (base === undefined) throw new Error("Dev server has no URL");
+        const nonces = new Set<string>();
+        for (let i = 0; i < 2; i += 1) {
+          const response = await fetch(base, { headers: { accept: "text/html" } });
+          expect(response.status).toBe(200);
+          const html = await response.text();
+          expect(html).toContain('data-rex-page="home"');
+          expect(html).toContain('<meta name="description" content="Dev document">');
+          expect(html).toContain('href="/app/theme.css"');
+          const nonce = /'nonce-([^']+)'/.exec(
+            response.headers.get("content-security-policy") ?? "",
+          )?.[1];
+          if (nonce === undefined) throw new Error("Document has no CSP nonce");
+          nonces.add(nonce);
+          const scriptNonces = [...html.matchAll(/<script\b[^>]*\bnonce="([^"]+)"/g)].map(
+            (match) => match[1],
+          );
+          expect(scriptNonces.length).toBeGreaterThan(0);
+          expect(scriptNonces.every((value) => value === nonce)).toBe(true);
+          expect(html).toContain(`<meta property="csp-nonce" nonce="${nonce}">`);
+        }
+        expect(nonces.size).toBe(2);
+      } finally {
+        await vite.close();
+      }
+    } finally {
+      writeFileSync(index, original);
+    }
   });
 });

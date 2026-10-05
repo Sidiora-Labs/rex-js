@@ -111,6 +111,13 @@ describe("the dev document", () => {
     expect(Object.isFrozen(assets.scripts)).toBe(true);
     expect(Object.isFrozen(assets.pages)).toBe(true);
   });
+
+  it("retains the transformed head nonce for request-specific rebinding", () => {
+    const head =
+      '<meta property="csp-nonce" nonce="generated-nonce"><script nonce="generated-nonce">start()</script>';
+    expect(devAssets(head).headNonce).toBe("generated-nonce");
+    expect(devAssets(head).head).toBe(head);
+  });
 });
 
 describe("isDocumentRequest", () => {

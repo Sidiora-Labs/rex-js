@@ -9,6 +9,7 @@ import {
   type RexConfigApp,
   type RexConfigExport,
   type RexFetchHandler,
+  type DefaultServerFactory,
 } from "../core/config.ts";
 import type { DeprecationWarn } from "../core/deprecated.ts";
 import { RexError } from "../core/errors.ts";
@@ -61,8 +62,11 @@ export function requireConfig(root: string): string {
   return file;
 }
 
-export function defaultAppServer(app: RexConfigApp): RexFetchHandler {
-  return createRexServer({
+export function defaultAppServer(
+  app: RexConfigApp,
+  create: typeof createRexServer = createRexServer,
+): RexFetchHandler {
+  return create({
     registry: app.registry,
     ledger: memoryLedger(),
     actor: () => anonymousActor,
@@ -83,12 +87,16 @@ export async function importConfigExport(vite: ViteDevServer): Promise<unknown> 
 
 const servers = new WeakMap<object, RexFetchHandler>();
 
-export function serverForExport(exported: unknown, warn?: DeprecationWarn): RexFetchHandler {
+export function serverForExport(
+  exported: unknown,
+  warn?: DeprecationWarn,
+  fallback: DefaultServerFactory = defaultAppServer,
+): RexFetchHandler {
   if (typeof exported === "object" && exported !== null) {
     const cached = servers.get(exported);
     if (cached !== undefined) return cached;
   }
-  const server = configServer(readConfigExport(exported, warn), defaultAppServer);
+  const server = configServer(readConfigExport(exported, warn), fallback);
   if (typeof exported === "object" && exported !== null) servers.set(exported, server);
   return server;
 }
@@ -97,7 +105,12 @@ export async function loadConfigServer(
   vite: ViteDevServer,
   warn?: DeprecationWarn,
 ): Promise<RexFetchHandler> {
-  return serverForExport(await importConfigExport(vite), warn);
+  const exported = await importConfigExport(vite);
+  const runtime = (await vite.ssrLoadModule("@sidioralabs/rex/server")) as Pick<
+    typeof import("../server/app.ts"),
+    "createRexServer"
+  >;
+  return serverForExport(exported, warn, (app) => defaultAppServer(app, runtime.createRexServer));
 }
 
 export interface LoadRexConfigOptions {
@@ -115,6 +128,8 @@ export async function loadRexConfig(
   const vite = await createServer({
     root: appRoot,
     configFile: false,
+    cacheDir: join(appRoot, "node_modules/.cache/rex/config"),
+    optimizeDeps: { noDiscovery: true },
     logLevel: options.logLevel ?? "silent",
     appType: "custom",
     server: { middlewareMode: true, hmr: false, watch: null },

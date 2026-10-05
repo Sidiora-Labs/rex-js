@@ -1,0 +1,20 @@
+[gotcha.site_browser_gates]
+symptom = "The static site's production browser gates are not qualified."
+cause = "Initial Lighthouse performance and SEO scores miss the declared thresholds; the full walk is incomplete."
+resolution = "Executable browser specs now exist; task 3.2 remains in progress with findings recorded."
+evidence = "spec/rex-site/qualification.kvx qualification.321 and qualification.322"
+status = "open"
+
+[gotcha.dev_startup]
+symptom = "Repeated site dev starts rerun full typechecking and invalidate browser dependencies."
+cause = "Config and server-only loaders shared Vite's browser cache; rex check discarded incremental compiler state."
+resolution = "Isolated loader caches and incremental site typechecking reduce measured warm preflight from 34.1 seconds to 15.8 seconds."
+evidence = "spec/rex-site/qualification.kvx qualification.341"
+status = "resolved"
+
+[gotcha.dev_documents]
+symptom = "Browser HTML requests fail despite the dev server serving the Vite index to non-HTML requests."
+cause = "Separate server/renderer runtimes and source/dist contexts, stale head nonces, and omitted authored head assets."
+resolution = "One application-resolved SSR runtime, preserved head assets and request-specific nonces; real desktop and phone hydration verified."
+evidence = "spec/rex-site/qualification.kvx qualification.351 and qualification.361"
+status = "resolved"

@@ -239,3 +239,38 @@ symbol = "INDEXED and the search-region assertion of the docs page test, the Doc
 observed = "Per [decision] search 3.1 adds the API pages to buildSearchIndex (section API, one entry per docs/api page) in site/app/server/content/search.ts, but the 2.2 docs test asserts the docs search lists exactly guides, recipes and errors (INDEXED = GUIDES + RECIPES + ERRORS), so it now sees 22 more results, and the DocSearch placeholder names guides, recipes and errors only; read from docs.test.tsx and search.ts at revision 00976d6 plus the 3.1 changes; outside the 3.1 touches, not run by the 3.1 verify_cmd."
 assumption = "Task 3.3 (which touches site/app/pages) adds the /api/<slug> routes to the expected docs search results and names the API in the DocSearch placeholder; the index keeps the API section, as [decision] search requires."
 severity = "medium"
+
+[qualification.321]
+task = "3.2"
+file = "site/e2e/lighthouse.ts"
+observed = "Static build produced 166 URLs. Phone home Lighthouse performance scored 52 against 95; home and about SEO scored 92, consistent with qualification.112. The 1521-test walk was interrupted after initial failures to address dev startup; task remains in_progress and browser qualification is incomplete."
+evidence = "3f024bb; pnpm -C site build:static && pnpm -C site test:e2e; 143; /tmp/rex-site-32-verify.log"
+severity = "high"
+
+[qualification.341]
+task = "3.4"
+file = "packages/rex/src/cli/config.ts, packages/rex/src/cli/load.ts, packages/rex/src/check/rules/typecheck.ts"
+observed = "Site preflight checks measured 34084 ms before, 31779 ms with cold incremental state and 15755 ms warm after. Config-only loading previously invalidated the browser dependency cache; loaders now use isolated caches and no browser discovery."
+evidence = "f917eb34ad72; pnpm -C packages/rex exec vitest run src/cli/config.test.ts src/cli/commands/dev.test.ts src/check/rules/typecheck.test.ts src/check/check.test.ts; 0; /tmp/rex-site-34-completion.log"
+status = "resolved"
+
+[qualification.351]
+task = "3.5"
+file = "packages/rex/src/cli/config.ts"
+observed = "The site's dev server returns plain-text 404 to Accept: text/html requests because defaultAppServer is created in the CLI runtime while rex:render registers its renderer in Vite's SSR runtime. Requests without an HTML Accept header only exercise Vite's index fallback."
+evidence = "dac119b87fbc; pnpm -C packages/rex exec vitest run src/cli/config.test.ts src/cli/commands/dev.test.ts src/vite/ssr.test.ts; 0; /tmp/rex-site-35-completion.log"
+status = "resolved"
+
+[qualification.361]
+task = "3.6"
+file = "packages/rex/src/vite/ssr.ts, packages/rex/src/server/ssr.ts, packages/rex/src/cli/config.ts"
+observed = "The compiled CLI mixed source and dist React contexts, its head nonce differed from the CSP header, and the dev template omitted authored head assets. Runtime resolution and request-bound head nonces fix these. Desktop and phone now render HTTP 200 and hydrate without browser errors; copy-addresses, Docs navigation and palette open/close pass live."
+evidence = "36aeaa8ea89f; pnpm -C packages/rex exec vitest run src/cli/config.test.ts src/cli/commands/dev.test.ts src/vite/ssr.test.ts src/server/ssr.test.ts; 0; /tmp/rex-site-36-completion.log"
+status = "resolved"
+
+[qualification.322]
+task = "3.2"
+file = "site/app/components/Shell.tsx"
+observed = "At 390 CSS pixels the hydrated phone dock's Standards and Changelog labels touch despite no document-level horizontal overflow. The screen-fit gate needs element-level geometry coverage and a task-scoped layout repair."
+evidence = "36aeaa8ea89f; Playwright Pixel 7 viewport 390x844; HTTP 200; /tmp/rex-site-final-phone.png"
+severity = "medium"
