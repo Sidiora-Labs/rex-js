@@ -1,10 +1,10 @@
-import type { AnyAction } from "./action.ts";
+import { ACTION_EFFECTS, type ActionEffect, type AnyAction } from "./action.ts";
 import { RexDeclarationError, declarationName, isPlainObject } from "./entity.ts";
 import { RexDeclarationOptionError, RexError, errorDetail, type RexErrorCode } from "./errors.ts";
 import { isValidName, validateName } from "./ids.ts";
 import { overlayDeclaration, type OverlayDeclaration } from "./overlay.ts";
 import { always, isPredicate, type Predicate } from "./policy.ts";
-import { acceptsSync, objectSchema, objectShape, schemaType } from "./schema.ts";
+import { acceptsSync, objectSchema, objectShape, schemaType, type JsonSchema } from "./schema.ts";
 import {
   isStandardSchema,
   isZodSchema,
@@ -117,6 +117,14 @@ export function parseRoute(route: string): ParsedRoute {
 
 export type PageParamsSchema = StandardSchemaV1;
 
+export interface PageAffordance {
+  readonly id: string;
+  readonly label: string;
+  readonly effect: ActionEffect;
+  readonly input: JsonSchema;
+  readonly via: readonly ("click" | "palette")[];
+}
+
 export type EmptyPageParams = StandardSchemaV1<{}, {}>;
 
 export interface PageConfig<
@@ -139,6 +147,7 @@ export interface PageConfig<
   readonly recovery?: string;
   readonly draft?: PageDraft;
   readonly actions?: readonly A[];
+  readonly affordances?: readonly PageAffordance[];
   readonly chrome?: PageChromeConfig;
   readonly regions?: readonly R[];
   readonly overlays?: readonly OverlayDeclaration<O>[];
@@ -164,6 +173,7 @@ export interface PageDeclaration<
   readonly recovery: string | null;
   readonly draft: PageDraft;
   readonly actions: readonly A[];
+  readonly affordances: readonly PageAffordance[];
   readonly chrome: PageChrome;
   readonly regions: readonly R[];
   readonly overlays: readonly OverlayDeclaration<O>[];
@@ -217,6 +227,7 @@ const PAGE_KEYS = new Set([
   "recovery",
   "draft",
   "actions",
+  "affordances",
   "chrome",
   "regions",
   "overlays",
@@ -343,6 +354,59 @@ export function page<
     if (actionIds.has(declared.id)) fail(`actions.${index}`, `repeats action "${declared.id}"`);
     actionIds.add(declared.id);
   }
+
+  const affordanceInputs = config.affordances ?? [];
+  if (!Array.isArray(affordanceInputs))
+    fail("affordances", "must be a list of browser affordances");
+  const affordanceIds = new Set(actionIds);
+  const affordances = affordanceInputs.map((entry, index): PageAffordance => {
+    const field = `affordances.${index}`;
+    if (!isPlainObject(entry)) fail(field, "must be a browser affordance descriptor");
+    for (const key of Object.keys(entry)) {
+      if (!["id", "label", "effect", "input", "via"].includes(key))
+        fail(`${field}.${key}`, "is not part of an affordance descriptor");
+    }
+    if (!isValidName(entry.id)) fail(`${field}.id`, "must be an action address id");
+    if (affordanceIds.has(entry.id))
+      fail(`${field}.id`, `repeats action or affordance "${entry.id}"`);
+    affordanceIds.add(entry.id);
+    if (typeof entry.label !== "string" || entry.label.trim() === "")
+      fail(`${field}.label`, "must be a non-empty string");
+    if (!ACTION_EFFECTS.includes(entry.effect)) fail(`${field}.effect`, "must be an action effect");
+    if (!isPlainObject(entry.input)) fail(`${field}.input`, "must be a JSON Schema object");
+    if (
+      !Array.isArray(entry.via) ||
+      entry.via.length === 0 ||
+      entry.via.some((route: unknown) => route !== "click" && route !== "palette") ||
+      new Set(entry.via).size !== entry.via.length
+    ) {
+      fail(`${field}.via`, "must list unique supported browser routes: click, palette");
+    }
+    const ancestors = new Set<object>();
+    const cloneJson = (value: unknown): unknown => {
+      if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+      if (typeof value === "number" && Number.isFinite(value)) return value;
+      if (Array.isArray(value) || isPlainObject(value)) {
+        if (ancestors.has(value)) return fail(`${field}.input`, "must not contain cycles");
+        ancestors.add(value);
+        const copy = Array.isArray(value)
+          ? value.map(cloneJson)
+          : Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cloneJson(item)]));
+        ancestors.delete(value);
+        return Object.freeze(copy);
+      }
+      return fail(`${field}.input`, "must contain only JSON values");
+    };
+    return Object.freeze({
+      id: entry.id,
+      label: entry.label,
+      effect: entry.effect,
+      input: cloneJson(entry.input) as JsonSchema,
+      via: Object.freeze([...entry.via]),
+    });
+  });
+  if (config.render === "static" && affordances.length > 0)
+    fail("affordances", "browser affordances require a hydrated page");
 
   const chromeConfig: PageChromeConfig = config.chrome ?? {};
   if (!isPlainObject(chromeConfig as unknown)) fail("chrome", "must be an object");
@@ -519,6 +583,7 @@ export function page<
     recovery,
     draft,
     actions: Object.freeze([...actions]),
+    affordances: Object.freeze(affordances),
     chrome,
     regions: Object.freeze([...regions]),
     overlays: Object.freeze(overlays),

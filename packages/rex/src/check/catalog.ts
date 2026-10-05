@@ -1,0 +1,18 @@
+export const DEFAULT_RULE_IDS = Object.freeze([
+  "typecheck",
+  "boundaries",
+  "states",
+  "parity",
+  "naming",
+  "traps",
+  "tokens",
+  "manifest",
+  "security",
+  "a11y",
+  "render",
+  "i18n",
+  "media",
+  "format",
+  "ui",
+  "layout",
+] as const);

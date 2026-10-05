@@ -290,7 +290,8 @@ export function useAffordances(page: string): readonly Affordance[] {
   return useSyncExternalStore(
     registry.subscribe,
     () => registry.list(page),
-    () => registry.list(page),
+    // Browser handlers from hydrated siblings are not part of the server snapshot.
+    () => EMPTY_AFFORDANCES,
   );
 }
 
@@ -362,6 +363,7 @@ export interface SidecarSource {
   readonly stores?: Readonly<Record<string, unknown>>;
   readonly text?: TextResolver;
   readonly screen?: ScreenState | null;
+  readonly browserReady?: boolean;
 }
 
 export function sidecarRegions(
@@ -395,7 +397,22 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
     sidecarAction(entry, source.actor, manifestInputSchema(source.manifest, entry), text),
   );
   const ids = new Set(actions.map((entry) => entry.id));
-  for (const affordance of source.affordances ?? []) {
+  const registered = source.affordances ?? [];
+  const missing = declared.affordances.filter(
+    (entry) => !registered.some((live) => live.id === entry.id),
+  );
+  const entries: readonly Omit<Affordance, "invoke">[] = [
+    ...declared.affordances.map(
+      (entry) =>
+        registered.find((live) => live.id === entry.id) ?? {
+          ...entry,
+          allowed: false,
+          reason: "Requires an active browser control",
+        },
+    ),
+    ...registered.filter((entry) => !declared.affordances.some((known) => known.id === entry.id)),
+  ];
+  for (const affordance of entries) {
     if (ids.has(affordance.id)) {
       throw new RexError(
         "REX318",
@@ -431,7 +448,14 @@ export function buildSidecarPayload(source: SidecarSource): SidecarPayload {
     version: SIDECAR_VERSION,
     page: declared.id,
     params: jsonParams(source.params),
-    state: failures.length > 0 && source.state === "ready" ? "recoverable-error" : source.state,
+    state:
+      source.state !== "ready"
+        ? source.state
+        : failures.length > 0
+          ? "recoverable-error"
+          : missing.length > 0 || source.browserReady === false
+            ? "loading"
+            : "ready",
     actions,
     overlays,
     outcome: sidecarOutcome(source.outcome, text),
@@ -471,6 +495,11 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
   const stores = useExposedStores();
   const text = useText();
   const screen = useContext(ScreenContext);
+  const hydrated = useSyncExternalStore(subscribeHydration, browserHydrated, serverHydrated);
+  const browserReady =
+    (resolution.page.render ??
+      manifest.pages.find((entry) => entry.id === resolution.page.id)?.render) === "static" ||
+    hydrated;
   return useMemo(
     () =>
       buildSidecarPayload({
@@ -486,6 +515,7 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
         stores,
         text,
         screen,
+        browserReady,
       }),
     [
       manifest,
@@ -499,8 +529,19 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
       stores,
       text,
       screen,
+      browserReady,
     ],
   );
+}
+
+function subscribeHydration(): () => void {
+  return () => {};
+}
+function browserHydrated(): boolean {
+  return true;
+}
+function serverHydrated(): boolean {
+  return false;
 }
 
 export function serializeSidecar(payload: SidecarPayload): string {

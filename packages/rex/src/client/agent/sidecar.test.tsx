@@ -26,9 +26,11 @@ import {
   AffordanceRegistryProvider,
   OverlayRegistryProvider,
   RexSidecar,
+  buildSidecarPayload,
   createAffordanceRegistry,
   createOverlayRegistry,
   readSidecar,
+  useAffordances,
   type AffordanceRegistry,
   type OverlayRegistry,
 } from "./sidecar.tsx";
@@ -243,6 +245,111 @@ afterEach(() => {
 });
 
 describe("RexSidecar", () => {
+  it("hydrates against the server snapshot when another boundary has already registered handlers", async () => {
+    function Reader() {
+      const affordances = useAffordances("browser");
+      return <pre>{JSON.stringify(affordances)}</pre>;
+    }
+    const tree = (registry: AffordanceRegistry) => (
+      <AffordanceRegistryProvider registry={registry}>
+        <Reader />
+      </AffordanceRegistryProvider>
+    );
+    const container = document.createElement("div");
+    container.innerHTML = await serverHtml(tree(createAffordanceRegistry()));
+    document.body.append(container);
+    const original = container.querySelector("pre");
+    expect(original?.textContent).toBe("[]");
+    const registry = createAffordanceRegistry();
+    const unregister = registry.register("browser", [
+      {
+        id: "copy",
+        label: "Copy",
+        allowed: true,
+        reason: null,
+        effect: "read",
+        input: {},
+        via: ["click"],
+        invoke: async () => navigator.clipboard.writeText("browser/copy"),
+      },
+    ]);
+    const errors: unknown[] = [];
+    let root: Root | undefined;
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, tree(registry), {
+          onRecoverableError: (error) => errors.push(error),
+        });
+      });
+      await waitFor(() => expect(container.textContent).toContain('"id":"copy"'));
+      expect(errors).toEqual([]);
+      expect(container.querySelector("pre")).toBe(original);
+      await act(async () => unregister());
+      expect(original?.textContent).toBe("[]");
+    } finally {
+      await act(async () => root?.unmount());
+      container.remove();
+    }
+  });
+  it("keeps declared controls discoverable and pending until their browser handlers exist", () => {
+    const copy = {
+      id: "copy",
+      label: "Copy",
+      effect: "read",
+      input: {},
+      via: ["click", "palette"],
+    } as const;
+    const declared = page("browser", { route: "/browser", affordances: [copy] });
+    const source = {
+      manifest: buildManifest(createRegistry().register(declared).freeze()),
+      page: declared,
+      params: {},
+      state: "ready",
+      actor: owner,
+      openOverlays: [],
+      outcome: null,
+    } as const;
+    const pending = buildSidecarPayload(source);
+    expect(pending.state).toBe("loading");
+    expect(pending.actions).toEqual([
+      { ...copy, allowed: false, reason: "Requires an active browser control" },
+    ]);
+    const affordances = [{ ...copy, allowed: true, reason: null, invoke: async () => null }];
+    expect(buildSidecarPayload({ ...source, affordances, browserReady: false }).state).toBe(
+      "loading",
+    );
+    expect(buildSidecarPayload({ ...source, affordances, browserReady: true })).toMatchObject({
+      state: "ready",
+      actions: [{ id: "copy", allowed: true, reason: null }],
+    });
+    expect(buildSidecarPayload({ ...source, state: "permission-denied" }).state).toBe(
+      "permission-denied",
+    );
+    expect(buildSidecarPayload({ ...source, affordances: [] }).state).toBe("loading");
+  });
+
+  it("does not emit a ready interactive sidecar in server HTML before hydration", async () => {
+    const previousUrl = window.location.href;
+    window.history.replaceState(null, "", "/about");
+    const container = document.createElement("div");
+    container.innerHTML = await serverHtml(documentTree("/about", createOverlayRegistry()));
+    expect(readSidecar(container)).toMatchObject({ page: "about", state: "loading" });
+    const hydrated: { root: Root | null } = { root: null };
+    document.body.append(container);
+    try {
+      await act(async () => {
+        hydrated.root = hydrateRoot(container, documentTree("/about", createOverlayRegistry()));
+      });
+      await waitFor(() =>
+        expect(readSidecar(container)).toMatchObject({ page: "about", state: "ready" }),
+      );
+      expect(readSidecar(container)).toEqual(window.__rex);
+    } finally {
+      await act(async () => hydrated.root?.unmount());
+      container.remove();
+      window.history.replaceState(null, "", previousUrl);
+    }
+  });
   it("renders one valid application/rex+json payload for the active page", async () => {
     mount("/?currency=usd");
     expect(sidecarElements()).toHaveLength(1);

@@ -8,10 +8,14 @@ import {
 } from "@sidioralabs/rex/client";
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import homePage from "../page.ts";
+const copyAddresses = (() => {
+  const declared = homePage.affordances.find((entry) => entry.id === "copy-addresses");
+  if (declared === undefined) throw new Error("The home page must declare copy-addresses");
+  return declared;
+})();
 
-const COPY_ID = "copy-addresses";
-const COPY_LABEL = "Copy addresses";
-const NO_INPUT = Object.freeze({ type: "object", properties: {}, additionalProperties: false });
+const COPY_ID = copyAddresses.id;
+const COPY_LABEL = copyAddresses.label;
 
 type CopyResult =
   | { readonly ok: true; readonly addresses: readonly string[] }
@@ -65,13 +69,9 @@ export function useLiveSidecar(): {
   const affordances = useMemo<readonly Affordance[]>(
     () => [
       {
-        id: COPY_ID,
-        label: COPY_LABEL,
+        ...copyAddresses,
         allowed: true,
         reason: null,
-        effect: "read",
-        input: NO_INPUT,
-        via: ["click", "palette"],
         invoke: () => copy(),
       },
     ],

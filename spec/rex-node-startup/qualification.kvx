@@ -1,0 +1,17 @@
+[qualification.catalog_barrel]
+status = "resolved"
+observation = "First bundle test passed catalog parity but rejected emitted TypeScript/Vite/Rolldown. Re-exporting metadata through the executable check barrel retains initialization. Dedicated package metadata entry requires separate task 1.2. Assertion retained."
+evidence = "working tree | pnpm -C packages/rex exec vitest run src/check/catalog.test.ts | 1 | /tmp/rex-node-startup-verify.log"
+
+[qualification.typecheck]
+evidence = "0ad3ac4 working tree | pnpm -C packages/rex typecheck | 0 | /tmp/rex-node-startup-exports-typecheck.log"
+
+[qualification.startup]
+status = "qualified_focused"
+observation = "Two catalog tests passed, Node build prerendered 169 pages, and actual node dist/server.js returned health/manifest/home/docs 200 and missing route 404. Owned server child stopped cleanly. No CommonJS globals were injected into production."
+evidence = "0ad3ac4 working tree | pnpm -C packages/rex exec vitest run src/check/catalog.test.ts && pnpm -C site build && node site/scripts/smoke-node.mjs | 0 | /tmp/rex-node-startup-verify-repair.log"
+
+[qualification.export_version]
+status = "unrelated_release_conflict"
+observation = "Three package artifact tests passed, including exports and declaration inclusion. Version assertion still requires 0.2.0 while the package manifest is 0.3.0. Existing version edits and assertion retained; task 1.2 remains in progress."
+evidence = "0ad3ac4 working tree | pnpm -C packages/rex exec vitest run src/cli/pack.test.ts | 1 | /tmp/rex-node-startup-exports-verify.log"

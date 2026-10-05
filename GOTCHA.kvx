@@ -1,3 +1,10 @@
+[gotcha.site_node_toolchain]
+symptom = "Built Node site crashes at TypeScript __filename initialization; a global shim then exposes missing Rolldown native bindings."
+cause = "Site metadata imports executable defaultRules solely for a count, bundling the checker and its build toolchain into the production server."
+resolution = "The site uses check/catalog, which excludes executable checker imports. A real built-server smoke gate verifies health, manifest, home, docs and 404 responses."
+evidence = "spec/rex-node-startup/qualification.kvx qualification.startup"
+status = "resolved"
+
 [gotcha.site_browser_gates]
 symptom = "The static site's production browser gates are not qualified."
 cause = "Initial Lighthouse performance and SEO scores miss the declared thresholds; the full walk is incomplete."

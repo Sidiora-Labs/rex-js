@@ -1,0 +1,45 @@
+[meta]
+feature = "rex-node-startup"
+name = "Site Node production startup"
+slug = "rex-node-startup"
+status = "in_progress"
+goal = "The site's built Node artifact starts and serves real pages without initializing build tools."
+
+[decision]
+scope = "Preserve the ESM server and standalone bundling contract. Do not shim CommonJS globals or externalize undeclared deployment dependencies to mask an unnecessary runtime checker import."
+
+[design]
+metadata = "A lightweight frozen rule-ID catalog supplies both checker ordering and metadata consumers through the dedicated check/catalog entry. The executable check barrel retains toolchain initialization and is not a runtime metadata boundary. Checker implementations remain typed against the catalog."
+qualification = "Check catalog parity and a real bundled metadata consumer, then build the site and spawn node dist/server.js with an ephemeral port. Assert health, manifest, SSR page content, documentation and 404 status; always stop the owned child."
+
+[req.1]
+title = "Production startup"
+ac_1 = "The site metadata rule count equals the real registered checker count without bundling TypeScript, Vite or Rolldown into the metadata consumer."
+ac_2 = "The built site starts under Node and returns correct health, manifest, home, documentation and not-found responses. Failure to start or answer requests fails qualification."
+
+[task.1.1]
+title = "Keep checker implementations out of site runtime metadata"
+status = "done"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["1"]
+touches = ["packages/rex/src/check/catalog.ts", "packages/rex/src/check/catalog.test.ts", "packages/rex/src/check/rules/index.ts", "site/app/server/content/meta.ts", "site/scripts/smoke-node.mjs", "GOTCHA.kvx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/check/catalog.test.ts && pnpm -C site build && node site/scripts/smoke-node.mjs"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.2]
+title = "Publish the lightweight checker catalog entry"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["1"]
+touches = ["packages/rex/package.json", "typedoc.json", "docs/reference.md", "docs/api/README.md", "docs/api/@sidioralabs/rex/check/catalog.md"]
+do_1 = "Expose check/catalog in workspace and published exports with declarations, preserve package version changes, and generate its API reference so the site can enumerate every public export."
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/pack.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45

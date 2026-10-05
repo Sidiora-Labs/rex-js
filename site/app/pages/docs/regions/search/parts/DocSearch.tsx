@@ -7,6 +7,7 @@ import {
   CommandList,
 } from "../../../../../components/ui/command.tsx";
 import { Typography } from "../../../../../components/ui/typography.tsx";
+import type { RefObject } from "react";
 
 interface DocSearchEntry {
   readonly section: string;
@@ -19,6 +20,10 @@ interface DocSearchEntry {
 interface DocSearchProps {
   readonly entries: readonly DocSearchEntry[];
   readonly onOpen: (route: string) => void;
+  readonly query: string;
+  readonly inputRef: RefObject<HTMLInputElement | null>;
+  readonly onQueryChange: (query: string) => void;
+  readonly address: string;
 }
 
 const SEARCH_LABEL = "Search the docs";
@@ -33,7 +38,14 @@ function sections(entries: readonly DocSearchEntry[]): readonly [string, DocSear
   return [...grouped.entries()];
 }
 
-export default function DocSearch({ entries, onOpen }: DocSearchProps) {
+export default function DocSearch({
+  entries,
+  onOpen,
+  query,
+  inputRef,
+  onQueryChange,
+  address,
+}: DocSearchProps) {
   return (
     <div className="flex flex-col gap-4">
       <Typography variant="h3" as="h2" className="m-0">
@@ -44,7 +56,15 @@ export default function DocSearch({ entries, onOpen }: DocSearchProps) {
         data-site-search=""
         className="rounded-xl border border-outline-variant"
       >
-        <CommandInput placeholder="Search guides, recipes, errors and their headings" />
+        <CommandInput
+          ref={inputRef}
+          aria-label={SEARCH_LABEL}
+          data-rex={address}
+          data-rex-allowed="true"
+          value={query}
+          onValueChange={onQueryChange}
+          placeholder="Search guides, recipes, errors and their headings"
+        />
         <CommandList className="max-h-96">
           <CommandEmpty>No page matches the search.</CommandEmpty>
           {sections(entries).map(([section, items]) => (

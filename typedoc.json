@@ -21,6 +21,7 @@
     "packages/rex/src/store/index.ts",
     "packages/rex/src/vite/index.ts",
     "packages/rex/src/check/index.ts",
+    "packages/rex/src/check/catalog.ts",
     "packages/rex/src/testing/index.ts",
     "packages/rex/src/client/devtools/index.ts",
     "packages/rex/src/eslint/index.ts",

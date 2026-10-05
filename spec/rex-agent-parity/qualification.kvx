@@ -1,0 +1,13 @@
+[qualification.1]
+task = "1.1"
+status = "resolved"
+finding = "Framework and site typechecks, 108 focused tests, the production checker and Node build pass. Browser readiness, copy, theme, search, navigation, mobile and text-discovery assertions pass, but the strict browser-error assertion captures three React hydration errors (#418)."
+evidence = "0ad3ac4+working-tree | verify_cmd from spec.kvx task.1.1 | exit 1 | /tmp/rex-agent-parity-verify-repair2.log"
+report = "/tmp/rex-agent-parity/report.json"
+
+[qualification.2]
+task = "1.1"
+status = "qualified"
+finding = "A hydrated sibling changed the affordance hook's server snapshot before the home JSON panel hydrated. A stable empty server-handler snapshot fixes the mismatch; 109 focused tests, both typechecks, the production build and the strict desktop/mobile browser journey pass with zero browser errors."
+evidence = "0ad3ac4+working-tree | verify_cmd from spec.kvx task.1.1 | exit 0 | /tmp/rex-agent-hydration-verify.log"
+report = "/tmp/rex-agent-parity/report.json"

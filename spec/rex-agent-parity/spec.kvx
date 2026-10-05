@@ -1,0 +1,34 @@
+[meta]
+feature = "rex-agent-parity"
+name = "Agent discovery and browser readiness"
+slug = "rex-agent-parity"
+status = "done"
+goal = "The site exposes browser controls consistently before and after hydration and never advertises premature readiness."
+
+[decision]
+scope = "Extend the existing affordance registration contract with page-declared metadata; browser-only operations remain browser-only and never acquire fictional RPC or form routes."
+
+[design]
+affordances = "Page affordances declare serializable metadata; useRegisterAffordances attaches live handlers. Missing browser handlers are unavailable with an explicit reason. Interactive sidecars remain loading until hydration and declared handlers are committed. Static pages retain their server-ready contract."
+hydration = "Affordance readers use the empty server handler snapshot during hydration, even when a sibling boundary has already registered browser handlers. After commit, the live registry subscription supplies the current controls."
+site = "Declare copy, theme and docs-search affordances with matching visible addresses. Hide browser-only theme controls on zero-JavaScript pages. Text output lists browser affordances and only their supported invocation routes."
+
+[req.1]
+title = "Agent parity"
+ac_1 = "No ready interactive sidecar precedes hydration or registered declared controls; navigation does not retain old-page controls."
+ac_2 = "Copy, theme and docs search are addressable, described and operable with machine-readable outcomes."
+ac_3 = "Home markdown and HTML identify the same declared controls without advertising server execution for browser-only operations."
+ac_4 = "Focused unit tests and a real built-site browser journey cover initial readiness, actions, navigation, mobile and the markdown endpoint."
+
+[task.1.1]
+title = "Align declared affordances, browser readiness and site controls"
+status = "done"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["1"]
+touches = ["packages/rex/src/core/page.ts", "packages/rex/src/core/page.test.ts", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/sidecar.test.tsx", "packages/rex/src/client/agent/palette.tsx", "packages/rex/src/server/routes/pages-text.ts", "packages/rex/src/server/routes/pages-text.test.ts", "site/app/components/Shell.tsx", "site/app/pages/home/page.ts", "site/app/pages/home/hooks/useLiveSidecar.ts", "site/app/pages/docs/page.ts", "site/app/pages/docs/hooks/useDocSearch.ts", "site/app/pages/docs/regions/search/region.tsx", "site/app/pages/docs/regions/search/parts/DocSearch.tsx", "site/app/pages/api/page.ts", "site/app/pages/errors/page.ts", "site/scripts/agent-parity.mjs", "site/app/pages/home/test/home.test.tsx", "site/app/pages/docs/test/docs.test.tsx", "spec/rex-agent-parity"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/page.test.ts src/client/agent/sidecar.test.tsx src/client/agent/palette.test.tsx src/server/routes/pages-text.test.ts && pnpm -C site exec vitest run app/pages/home/test/home.test.tsx app/pages/docs/test/docs.test.tsx && pnpm -C site build && node site/scripts/agent-parity.mjs"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45

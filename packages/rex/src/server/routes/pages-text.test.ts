@@ -129,6 +129,41 @@ describe("pageTextPath", () => {
 });
 
 describe("renderPageText", () => {
+  it("discovers browser controls without inventing RPC, URL or form execution", () => {
+    const browser = page("browser", {
+      route: "/browser",
+      affordances: [
+        { id: "copy", label: "Copy", effect: "read", input: {}, via: ["click", "palette"] },
+      ],
+    });
+    const result = renderPageText({
+      manifest: buildManifest({ ...registry, pages: [browser] }),
+      page: browser,
+      params: {},
+      issues: [],
+      href: "/browser",
+      actor: carol,
+      policy: { allowed: true, reason: null },
+      state: "ready",
+    });
+    expect(result.sidecar).toMatchObject({
+      state: "loading",
+      actions: [
+        {
+          id: "copy",
+          allowed: false,
+          reason: "Requires an active browser control",
+          via: ["click", "palette"],
+        },
+      ],
+    });
+    expect(result.markdown).toContain('[data-rex="browser/copy"]');
+    expect(result.markdown).toContain("| State | `loading` |");
+    expect(result.markdown).not.toContain("act=copy");
+    expect(result.markdown).not.toContain("/rex/form/copy");
+    expect(result.markdown).not.toContain("/rex/rpc/copy");
+    expect(result.markdown).toContain("no server form or RPC handler");
+  });
   it("writes the summary, regions, actions and overlays as tables with a sidecar that parses back", () => {
     const rendered = renderPageText({
       manifest,

@@ -1,6 +1,6 @@
 {
   "name": "@sidioralabs/rex",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Sidiora Labs' framework for web application interfaces that AI agents can write and operate.",
   "type": "module",
   "license": "MIT",
@@ -40,6 +40,7 @@
     "./store/drizzle": "./src/store/index.ts",
     "./vite": "./src/vite/index.ts",
     "./check": "./src/check/index.ts",
+    "./check/catalog": "./src/check/catalog.ts",
     "./testing": "./src/testing/index.ts",
     "./devtools": "./src/client/devtools/index.ts",
     "./eslint": "./src/eslint/index.ts",
@@ -118,6 +119,10 @@
       "./check": {
         "types": "./dist/check/index.d.ts",
         "import": "./dist/check/index.js"
+      },
+      "./check/catalog": {
+        "types": "./dist/check/catalog.d.ts",
+        "import": "./dist/check/catalog.js"
       },
       "./testing": {
         "types": "./dist/testing/index.d.ts",

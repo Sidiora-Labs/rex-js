@@ -83,7 +83,7 @@ describe("docs page", () => {
   it(
     "searches the loaded index with the command item and filters it as the reader types",
     async () => {
-      const view = await renderRegion(siteApp(), "docs", "search");
+      const view = await renderPage(siteApp(), "docs");
       const search = await waitFor(() => {
         expect(view.sidecar().state).toBe("ready");
         const region = view.container.querySelector('[data-rex-region="docs/search"]');
@@ -100,24 +100,35 @@ describe("docs page", () => {
       expect(within(search).getByText("Recipes")).toBeTruthy();
       expect(within(search).getByText("Errors")).toBeTruthy();
       const input = within(search).getByRole("combobox");
+      expect(input.getAttribute("data-rex")).toBe("docs/search-docs");
+      expect(view.sidecar().actions.find((entry) => entry.id === "search-docs")).toMatchObject({
+        allowed: true,
+        input: { properties: { query: { type: "string" } } },
+      });
       fireEvent.change(input, { target: { value: "regeneration" } });
       await waitFor(() => {
         const shown = results();
         expect(shown).toContain("/docs/recipes/static-page");
         expect(shown.length).toBeLessThan(INDEXED);
       }, READY);
+      expect(view.sidecar().outcome).toMatchObject({
+        action: "search-docs",
+        ok: true,
+        message: "Searching docs for regeneration",
+      });
     },
     RENDER_TIMEOUT,
   );
 
   it(
-    "publishes its sidecar with no actions and its loaders in the manifest",
+    "publishes search and theme controls with its loaders in the manifest",
     async () => {
       const view = await renderPage(siteApp(), "docs");
       await waitFor(() => expect(view.sidecar().state).toBe("ready"), READY);
       const sidecar = view.sidecar();
       expect(sidecar.page).toBe("docs");
-      expect(sidecar.actions).toEqual([]);
+      expect(sidecar.actions.map((entry) => entry.id)).toEqual(["search-docs", "toggle-theme"]);
+      expect(sidecar.actions.every((entry) => entry.allowed)).toBe(true);
       expect(sidecar.overlays).toEqual([]);
       expect(manifest.pages.find((entry) => entry.id === "docs")?.loaders).toEqual([
         { name: "docs", action: "list-docs", input: "params", invalidatedBy: [] },

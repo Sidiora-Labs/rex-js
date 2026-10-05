@@ -148,7 +148,13 @@ export function RexPalette({ defaultOpen = false }: RexPaletteProps) {
     if (open) return;
     const previous = opener.current;
     opener.current = null;
-    if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
+    const focused = globalThis.document?.activeElement;
+    if (
+      previous instanceof HTMLElement &&
+      previous.isConnected &&
+      (focused === null || focused === globalThis.document?.body)
+    )
+      previous.focus();
   }, [open]);
 
   const close = useCallback(() => setOpen(false), []);

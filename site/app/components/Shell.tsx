@@ -3,6 +3,10 @@ import {
   ariaKeyShortcuts,
   outcomeStatusText,
   useOutcome,
+  useActivePage,
+  useOutcomeStore,
+  useRegisterAffordances,
+  type Affordance,
   useShellComponent,
   useShortcutText,
   type ShellButtonProps,
@@ -14,6 +18,8 @@ import {
   type ShellPaletteTriggerProps,
   type ShellSheetProps,
 } from "@sidioralabs/rex/client";
+import { actionAddress } from "@sidioralabs/rex";
+import { useCallback, useMemo } from "react";
 import {
   BookOpenIcon,
   BracesIcon,
@@ -234,8 +240,31 @@ function PaletteTrigger({ label, shortcut, address, onOpen }: ShellPaletteTrigge
 
 function ThemeToggle() {
   const { resolvedTheme, toggleTheme } = useTheme();
+  const active = useActivePage();
+  const outcomes = useOutcomeStore();
+  const themeAffordance = active?.page.affordances.find((entry) => entry.id === "toggle-theme");
+  const pageId = active !== null && themeAffordance !== undefined ? active.page.id : null;
   const dark = resolvedTheme === "dark";
   const label = dark ? "Switch to light theme" : "Switch to dark theme";
+  const invoke = useCallback(async () => {
+    toggleTheme();
+    if (pageId !== null)
+      outcomes.set(pageId, {
+        actionId: "toggle-theme",
+        ok: true,
+        message: dark ? "Light theme selected" : "Dark theme selected",
+        at: new Date().toISOString(),
+      });
+  }, [toggleTheme, pageId, outcomes, dark]);
+  const affordances = useMemo<readonly Affordance[]>(
+    () =>
+      themeAffordance === undefined
+        ? []
+        : [{ ...themeAffordance, label, allowed: true, reason: null, invoke }],
+    [themeAffordance, label, invoke],
+  );
+  useRegisterAffordances(pageId, affordances);
+  if (pageId === null || themeAffordance === undefined) return null;
   return (
     <DesignxButton
       type="button"
@@ -243,9 +272,11 @@ function ThemeToggle() {
       size="icon"
       className="pointer-coarse:min-h-11 pointer-coarse:min-w-11"
       data-site-theme-toggle={resolvedTheme}
+      data-rex={actionAddress(pageId, themeAffordance.id)}
+      data-rex-allowed="true"
       aria-label={label}
       title={label}
-      onClick={toggleTheme}
+      onClick={() => void invoke()}
     >
       {dark ? <SunIcon aria-hidden="true" /> : <MoonIcon aria-hidden="true" />}
     </DesignxButton>

@@ -299,7 +299,7 @@ describe("home page", () => {
   it("lists the copy action in the sidecar and addresses its control", async () => {
     const { view, main } = await renderHome();
     await waitFor(() =>
-      expect(view.sidecar().actions).toEqual([
+      expect(view.sidecar().actions.filter((entry) => entry.id === COPY_ID)).toEqual([
         {
           id: COPY_ID,
           label: "Copy addresses",
@@ -311,6 +311,7 @@ describe("home page", () => {
         },
       ]),
     );
+    expect(view.sidecar().actions.map((entry) => entry.id)).toEqual([COPY_ID, "toggle-theme"]);
     const control = regionOf(main, "live-sidecar").querySelector(`[data-rex="home/${COPY_ID}"]`);
     expect(control).not.toBeNull();
     expect(control?.getAttribute("data-rex-allowed")).toBe("true");
@@ -319,7 +320,9 @@ describe("home page", () => {
 
   it("shows the page's own sidecar and keeps it equal to the sidecar script", async () => {
     const { view, main } = await renderHome();
-    await waitFor(() => expect(view.sidecar().actions.map((entry) => entry.id)).toEqual([COPY_ID]));
+    await waitFor(() =>
+      expect(view.sidecar().actions.map((entry) => entry.id)).toEqual([COPY_ID, "toggle-theme"]),
+    );
     await waitFor(() => expect(liveSidecarJson(main)).toEqual(view.sidecar()));
     const caption = normalized(
       regionOf(main, "live-sidecar").querySelector("figcaption")?.textContent ?? null,
@@ -336,9 +339,16 @@ describe("home page", () => {
       expect(found).not.toBeNull();
       return found as HTMLElement;
     });
-    await waitFor(() => expect(view.sidecar().actions.map((entry) => entry.id)).toEqual([COPY_ID]));
+    await waitFor(() =>
+      expect(view.sidecar().actions.map((entry) => entry.id)).toEqual([COPY_ID, "toggle-theme"]),
+    );
     fireEvent.click(control);
-    const expected = ["home", ...HEADINGS.map(([region]) => `home/${region}`), `home/${COPY_ID}`];
+    const expected = [
+      "home",
+      ...HEADINGS.map(([region]) => `home/${region}`),
+      `home/${COPY_ID}`,
+      "home/toggle-theme",
+    ];
     await waitFor(() => expect(view.sidecar().outcome?.action).toBe(COPY_ID));
     expect(view.sidecar().outcome?.ok).toBe(true);
     expect(view.sidecar().outcome?.message).toBe(
@@ -362,11 +372,30 @@ describe("home page", () => {
     const github = view.container.querySelector("[data-site-github]");
     expect(github?.getAttribute("href")).toBe(REPOSITORY_URL);
     expect(view.container.querySelector("[data-site-theme-toggle]")).not.toBeNull();
+    const toggle = view.container.querySelector<HTMLElement>('[data-rex="home/toggle-theme"]');
+    expect(toggle).not.toBeNull();
+    expect(view.sidecar().actions.find((entry) => entry.id === "toggle-theme")).toMatchObject({
+      allowed: true,
+      effect: "reversible",
+      via: ["click", "palette"],
+    });
+    const before = toggle?.getAttribute("data-site-theme-toggle");
+    fireEvent.click(toggle as HTMLElement);
+    await waitFor(() =>
+      expect(toggle?.getAttribute("data-site-theme-toggle")).toBe(
+        before === "dark" ? "light" : "dark",
+      ),
+    );
+    expect(view.sidecar().outcome).toMatchObject({ action: "toggle-theme", ok: true });
   });
 
   it("renders a region alone on the page runtime", async () => {
     const view = await renderRegion(siteApp(), "home", "install");
-    await waitFor(() => expect(view.sidecar().state).toBe("ready"));
+    await waitFor(() => expect(view.sidecar().state).toBe("loading"));
+    expect(view.sidecar().actions.find((entry) => entry.id === COPY_ID)).toMatchObject({
+      allowed: false,
+      reason: "Requires an active browser control",
+    });
     const install = await waitFor(() => {
       const found = view.container.querySelector<HTMLElement>('[data-rex-region="home/install"]');
       expect(found).not.toBeNull();

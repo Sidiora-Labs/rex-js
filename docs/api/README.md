@@ -4,6 +4,7 @@
 
 - [@sidioralabs/rex](@sidioralabs/rex.md)
 - [@sidioralabs/rex/check](@sidioralabs/rex/check.md)
+- [@sidioralabs/rex/check/catalog](@sidioralabs/rex/check/catalog.md)
 - [@sidioralabs/rex/client](@sidioralabs/rex/client.md)
 - [@sidioralabs/rex/client/i18n](@sidioralabs/rex/client/i18n.md)
 - [@sidioralabs/rex/client/interop](@sidioralabs/rex/client/interop.md)

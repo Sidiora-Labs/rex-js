@@ -31,6 +31,39 @@ import {
 
 const wallet = policy("wallet", { permissions: ["view", "send"], resolve: () => ["view"] });
 
+describe("declared browser affordances", () => {
+  const copy = {
+    id: "copy",
+    label: "Copy",
+    effect: "read",
+    input: { type: "object", properties: {} },
+    via: ["click", "palette"],
+  } as const;
+  it("retains immutable discovery metadata without executable handlers", () => {
+    const declared = page("browser", { route: "/browser", affordances: [copy] });
+    expect(declared.affordances).toEqual([copy]);
+    expect(Object.isFrozen(declared.affordances[0]?.input)).toBe(true);
+    expect(Object.isFrozen(declared.affordances[0]?.via)).toBe(true);
+  });
+  it("rejects duplicates, server transports, executable schemas and zero-JS pages", () => {
+    expect(() => page("browser", { route: "/", affordances: [copy, copy] })).toThrow(/repeats/);
+    expect(() =>
+      page("browser", { route: "/", affordances: [{ ...copy, via: ["url"] } as never] }),
+    ).toThrow(/browser routes/);
+    expect(() =>
+      page("browser", { route: "/", affordances: [{ ...copy, input: { execute: () => null } }] }),
+    ).toThrow(/JSON values/);
+    expect(() => page("browser", { route: "/", render: "static", affordances: [copy] })).toThrow(
+      /hydrated page/,
+    );
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    expect(() =>
+      page("browser", { route: "/", affordances: [{ ...copy, input: cyclic }] }),
+    ).toThrow(/cycles/);
+  });
+});
+
 const send = action("send", {
   input: z.object({ amount: text() }),
   output: z.object({ ok: z.boolean() }),

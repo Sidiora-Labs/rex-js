@@ -146,7 +146,7 @@ export function renderPageText(source: PageTextSource): PageText {
         ["URL", source.href === null ? "-" : code(source.href)],
         ["Render", listed.render],
         ["Actor", code(actor.id)],
-        ["State", code(source.state)],
+        ["State", code(sidecar.state)],
         ["Access", cell(access)],
       ],
     ),
@@ -179,7 +179,8 @@ export function renderPageText(source: PageTextSource): PageText {
     ...table(
       ["Action", "Label", "Effect", "Allowed", "Control", "Fields", "URL", "Form"],
       sidecar.actions.map((entry) => {
-        const url = invocationUrl(source.href, entry.id);
+        const url = entry.via.includes("url") ? invocationUrl(source.href, entry.id) : null;
+        const serverAction = declared.actions.some((action) => action.id === entry.id);
         const fields = inputFields(entry.input);
         return [
           code(entry.id),
@@ -189,11 +190,17 @@ export function renderPageText(source: PageTextSource): PageText {
           code(`[data-rex="${actionAddress(declared.id, entry.id)}"]`),
           fields.length === 0 ? "-" : fields.map(code).join(", "),
           url === null ? "-" : code(`GET ${url}`),
-          code(`POST ${formPath(entry.id)}`),
+          serverAction ? code(`POST ${formPath(entry.id)}`) : "-",
         ];
       }),
     ),
     "",
+    ...(declared.affordances.length === 0
+      ? []
+      : [
+          "Browser affordances require the hydrated page. Use only the invocation routes listed in the sidecar; they have no server form or RPC handler.",
+          "",
+        ]),
     `Invoke an action by its control, by opening its URL with \`input\` set to the URL-encoded JSON input, by posting its form, or through \`POST ${REX_RPC_PREFIX}/<action>\`. A form post sends the fields by name plus \`${CSRF_FIELD}\` matching the \`${CSRF_COOKIE}\` cookie; an irreversible action answers with a confirmation page until the post carries \`${CONFIRM_FIELD}\`. A disallowed action is refused on every route with its reason.`,
     "",
     "## Overlays",

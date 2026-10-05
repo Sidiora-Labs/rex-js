@@ -5,7 +5,7 @@ import {
   REX_ERROR_CATALOG,
   type InvocationRoute,
 } from "@sidioralabs/rex";
-import { defaultRules } from "@sidioralabs/rex/check";
+import { DEFAULT_RULE_IDS } from "@sidioralabs/rex/check/catalog";
 import { DEFAULT_BUDGETS } from "@sidioralabs/rex/config";
 import rexPackage from "@sidioralabs/rex/package.json" with { type: "json" };
 
@@ -25,7 +25,7 @@ export function readRexMeta(): RexMeta {
   return {
     version: rexPackage.version,
     errorCodes: Object.keys(REX_ERROR_CATALOG).length,
-    checkerRules: defaultRules.length,
+    checkerRules: DEFAULT_RULE_IDS.length,
     clientBudgetKb: DEFAULT_BUDGETS.client,
     dataStates: REX_DATA_STATES.length,
     declarationKinds: [...DECLARATION_KINDS],

@@ -74,6 +74,10 @@ Export `./vite`, source [`packages/rex/src/vite/index.ts`](../packages/rex/src/v
 
 Export `./check`, source [`packages/rex/src/check/index.ts`](../packages/rex/src/check/index.ts), API page [@sidioralabs/rex/check](api/@sidioralabs/rex/check.md).
 
+### `@sidioralabs/rex/check/catalog`
+
+Export `./check/catalog`, source [`packages/rex/src/check/catalog.ts`](../packages/rex/src/check/catalog.ts), API page [@sidioralabs/rex/check/catalog](api/@sidioralabs/rex/check/catalog.md). `DEFAULT_RULE_IDS` provides the ordered checker catalog without loading checker implementations or build tools.
+
 ### `@sidioralabs/rex/testing`
 
 Export `./testing`, source [`packages/rex/src/testing/index.ts`](../packages/rex/src/testing/index.ts), API page [@sidioralabs/rex/testing](api/@sidioralabs/rex/testing.md).
