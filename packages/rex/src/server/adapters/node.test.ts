@@ -6,17 +6,24 @@ import { createElement } from "react";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod/mini";
 import { definePageModules, view } from "../../client/page.tsx";
+import { ActionForm } from "../../client/form.tsx";
 import { action } from "../../core/action.ts";
-import { actor } from "../../core/actor.ts";
+import { actor, anonymousActor } from "../../core/actor.ts";
 import { page } from "../../core/page.ts";
-import { always } from "../../core/policy.ts";
+import { always, can } from "../../core/policy.ts";
 import { createRegistry } from "../../core/registry.ts";
 import { buildManifest, stableStringify } from "../../manifest/build.ts";
 import { boolean } from "../../schema/index.ts";
 import { createRexServer } from "../app.ts";
 import { memoryLedger } from "../audit.ts";
 import { RENDER_KIND_HEADER, RENDER_PAGE_HEADER } from "../routes/render.ts";
-import { createRexRenderer, registerPageRenderer } from "../ssr.ts";
+import { createRexRenderer, registerPageRenderer, screenFromRequest } from "../ssr.ts";
+import {
+  createStaticCache,
+  memoryStaticStore,
+  registerStaticCache,
+  renderPrerenderedHtml,
+} from "./static-cache.ts";
 import { ACCEPT_CH, ACCEPT_CH_HEADER } from "./client-hints.ts";
 import {
   API_PREFIX,
@@ -91,6 +98,142 @@ describe("path classification", () => {
 });
 
 describe("createNodeApp", () => {
+  it("routes explicit and encoded index aliases through document policy and security", async () => {
+    const member = actor({ id: "member", permissions: ["read-secret"] });
+    const secret = page("secret", {
+      route: "/secret",
+      render: "ssg",
+      policy: can("read-secret"),
+      actions: [toggleDust],
+    });
+    const home = page("home", { route: "/", render: "ssg" });
+    const registry = createRegistry().register(secret, home, toggleDust).freeze();
+    const renderer = createRexRenderer({
+      bundle: {
+        registry,
+        manifest: buildManifest(registry, { app: APP }),
+        pages: [secret, home].map((declared) =>
+          definePageModules({
+            page: declared,
+            view: view(() =>
+              createElement(
+                "div",
+                null,
+                createElement(
+                  "p",
+                  null,
+                  declared === secret ? "Protected report" : "Home document",
+                ),
+                declared === secret ? createElement(ActionForm, { action: toggleDust }) : null,
+              ),
+            ),
+            states: {
+              Loading: () => createElement("p", null, "Loading document"),
+              Empty: () => createElement("p", null, "Empty document"),
+              Stale: () => createElement("p", null, "Stale document"),
+              Partial: () => createElement("p", null, "Partial document"),
+              Offline: () => createElement("p", null, "Offline document"),
+              PermissionDenied: () => createElement("p", null, "Document access denied"),
+              RecoverableError: () => createElement("p", null, "Document failed"),
+              TerminalError: () => createElement("p", null, "Document unavailable"),
+            },
+          }),
+        ),
+      },
+    });
+    const rendered = await renderPrerenderedHtml(
+      renderer,
+      new URL("http://localhost/secret"),
+      member,
+    );
+    const cache = createStaticCache({
+      pages: [
+        {
+          path: "/secret",
+          page: secret.id,
+          render: "ssg",
+          revalidate: null,
+          file: "secret/index.html",
+          generatedAt: Date.now(),
+        },
+      ],
+      store: memoryStaticStore([["/secret", rendered.html]]),
+      screen: screenFromRequest,
+    });
+    const unregisterRenderer = registerPageRenderer(registry, renderer);
+    const unregisterCache = registerStaticCache(registry, cache);
+    mkdirSync(join(clientDir, "secret"), { recursive: true });
+    mkdirSync(join(clientDir, "orphan"), { recursive: true });
+    writeFileSync(join(clientDir, "secret", INDEX_FILE), rendered.html);
+    writeFileSync(join(clientDir, "orphan", INDEX_FILE), "Unregistered private artifact");
+    const observedUrls: string[] = [];
+    const outer = createNodeApp(
+      createRexServer({
+        registry,
+        ledger: memoryLedger(),
+        app: APP,
+        actor: (request) => {
+          observedUrls.push(request.url);
+          return request.headers.get("authorization") === "Bearer member" ? member : anonymousActor;
+        },
+      }),
+      clientDir,
+    );
+    try {
+      for (const path of ["/secret/index.html", "/secret/%69ndex%2ehtml", "/%73ecret/index.html"]) {
+        for (const method of ["GET", "HEAD"]) {
+          const denied = await outer.request(`${path}?audit=retained`, { method });
+          expect(denied.status).toBe(403);
+          expect(denied.headers.get(RENDER_KIND_HEADER)).toBe("denied");
+          expect(await denied.text()).not.toContain("Protected report");
+        }
+        const nonces = new Set<string>();
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const allowed = await outer.request(`${path}?audit=retained`, {
+            headers: { authorization: "Bearer member" },
+          });
+          expect(allowed.status).toBe(200);
+          expect(allowed.headers.get("cache-control")).toBe("no-store");
+          const nonce = allowed.headers
+            .get("content-security-policy")
+            ?.match(/'nonce-([^']+)'/)?.[1];
+          expect(nonce).toBeTruthy();
+          nonces.add(nonce as string);
+          const html = await allowed.text();
+          expect(html).toContain("Protected report");
+          expect(html).toContain(`nonce="${nonce}"`);
+          expect(html).not.toContain("rex-prerender-nonce");
+          expect(allowed.headers.get("set-cookie")).toContain("rex-csrf=");
+          expect(html).toMatch(/name="_csrf"[^>]*value="[0-9a-f]+"/);
+        }
+        expect(nonces.size).toBe(2);
+        const head = await outer.request(path, {
+          method: "HEAD",
+          headers: { authorization: "Bearer member" },
+        });
+        expect(head.status).toBe(200);
+        expect(await head.text()).toBe("");
+      }
+      expect(observedUrls).toContain("http://localhost/secret?audit=retained");
+      for (const path of ["/orphan/index.html", "/orphan/%69ndex.html"]) {
+        const missing = await outer.request(path);
+        expect(missing.status).toBe(404);
+        expect(await missing.text()).not.toContain("Unregistered private artifact");
+      }
+      const root = await outer.request("/%69ndex.html");
+      expect(root.status).toBe(200);
+      expect(await root.text()).toContain("Home document");
+      expect(await (await outer.request("/assets/app.js")).text()).toBe(APP_JS);
+      const noRenderer = createNodeApp(rexApp(), clientDir);
+      const orphan = await noRenderer.request("/orphan/index.html");
+      expect(orphan.status).toBe(404);
+      expect(await orphan.text()).not.toContain("Unregistered private artifact");
+    } finally {
+      unregisterCache();
+      unregisterRenderer();
+    }
+  });
+
   it("refuses a client directory that is missing or has no index.html with REX406", () => {
     const app = rexApp();
     expect(() => createNodeApp(app, join(clientDir, "nope"))).toThrow(

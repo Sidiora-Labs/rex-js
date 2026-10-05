@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
-import { action, type AnyAction } from "../../core/action.ts";
+import { action, type ActionInput, type AnyAction } from "../../core/action.ts";
 import { actor, type Actor } from "../../core/actor.ts";
 import { page } from "../../core/page.ts";
 import { always, never, policy } from "../../core/policy.ts";
@@ -49,12 +49,16 @@ const hideDust = action("hide-dust", {
 });
 
 const send = action("send", {
-  input: z.object({ to: text({ min: 1 }).default("bob"), amount: money().default("1") }),
+  input: z.object({
+    to: text({ min: 1 }).default("bob"),
+    amount: money().default("1"),
+    recipient: z.optional(z.object({ name: text({ min: 1 }) })),
+  }),
   output: z.object({ txId: text() }),
   policy: wallet.can("send"),
   effect: "irreversible",
   label: "Send",
-  handler: (input) => ({ txId: `tx-${input.to}-${input.amount}` }),
+  handler: (input) => ({ txId: `tx-${input.recipient?.name ?? input.to}-${input.amount}` }),
 });
 
 const purge = action("purge", {
@@ -73,7 +77,12 @@ const portfolio = page("portfolio", {
 });
 const about = page("about", { route: "/about", states: ["ready"] });
 
-function Controls() {
+interface InvocationInput {
+  readonly input?: ActionInput<typeof send>;
+  readonly afterInvoke?: () => void;
+}
+
+function Controls({ input = {}, afterInvoke }: InvocationInput) {
   const hide = useInvoke(hideDust);
   const sending = useInvoke(send);
   const purging = useInvoke(purge);
@@ -91,7 +100,14 @@ function Controls() {
       >
         Hide dust
       </button>
-      <button type="button" {...sending.controlProps} onClick={() => show(sending.invoke({}))}>
+      <button
+        type="button"
+        {...sending.controlProps}
+        onClick={() => {
+          show(sending.invoke(input));
+          afterInvoke?.();
+        }}
+      >
         Send
       </button>
       <button type="button" onClick={() => show(sending.invoke({ to: "", amount: "1" }))}>
@@ -156,13 +172,16 @@ const clerk = actor({ id: "clerk" });
 interface Mounted {
   readonly ledger: Ledger;
   readonly store: OutcomeStore;
+  readonly requests: string[];
 }
 
-function mount(path: string, serverActor: Actor = owner): Mounted {
+function mount(path: string, serverActor: Actor = owner, invocation?: InvocationInput): Mounted {
   const ledger = memoryLedger();
+  const requests: string[] = [];
   const server = createRexServer({ registry, ledger, actor: () => serverActor });
   const fetch: RexFetch = async (input, init) => {
     const request = input instanceof Request ? input : new Request(input, init);
+    requests.push(new URL(request.url).pathname);
     if (request.method !== "GET" && !request.headers.has("origin")) {
       request.headers.set("origin", new URL(request.url).origin);
     }
@@ -182,13 +201,31 @@ function mount(path: string, serverActor: Actor = owner): Mounted {
       <RexApp>
         <Router hook={memory.hook}>
           <ConfirmProvider>
-            <Shell pages={pages} outcome={AgentSlot} />
+            <Shell
+              pages={
+                invocation === undefined
+                  ? pages
+                  : [
+                      definePageModules({
+                        page: portfolio,
+                        view: view(() => <Controls {...invocation} />),
+                        states: {},
+                      }),
+                      definePageModules({
+                        page: about,
+                        view: view(() => <p>About Rex</p>),
+                        states: {},
+                      }),
+                    ]
+              }
+              outcome={AgentSlot}
+            />
           </ConfirmProvider>
         </Router>
       </RexApp>
     </OutcomeProvider>,
   );
-  return { ledger, store };
+  return { ledger, store, requests };
 }
 
 function Asker({
@@ -323,6 +360,49 @@ describe("ConfirmProvider and useConfirm", () => {
 });
 
 describe("useInvoke", () => {
+  it("isolates nested input before validation and preserves displayed consent through execution", async () => {
+    const input = { recipient: { name: "bob" }, amount: "1" };
+    const { ledger } = mount("/", owner, {
+      input,
+      afterInvoke: () => {
+        input.recipient.name = "mallory";
+      },
+    });
+    await click(screen.getByRole("button", { name: "Send" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Confirm Send" });
+    expect(dialog.textContent).toContain('"name":"bob"');
+    expect(dialog.textContent).not.toContain("mallory");
+    input.recipient.name = "eve";
+    input.amount = "99";
+    await click(within(dialog).getByRole("button", { name: "Confirm Send" }));
+    await waitFor(() =>
+      expect(result()).toBe(JSON.stringify({ ok: true, output: { txId: "tx-bob-1" } })),
+    );
+    expect(await audited(ledger)).toEqual(["send:ok"]);
+  });
+
+  it("does not request a grant or execute when isolated consent is cancelled", async () => {
+    const input = { recipient: { name: "bob" }, amount: "1" };
+    const { ledger, requests } = mount("/", owner, { input });
+    await click(screen.getByRole("button", { name: "Send" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Confirm Send" });
+    input.recipient.name = "eve";
+    await click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(result()).toContain('"code":"CANCELLED"'));
+    expect(requests.filter((path) => path.startsWith("/rex/rpc"))).toEqual([]);
+    expect(await audited(ledger)).toEqual([]);
+  });
+
+  it("rejects input that cannot be isolated without granting or executing", async () => {
+    const input = { to: "bob", callback: () => undefined };
+    const { ledger, requests } = mount("/", owner, { input });
+    await click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(result()).toContain('"code":"BAD_REQUEST"'));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(requests.filter((path) => path.startsWith("/rex/rpc"))).toEqual([]);
+    expect(await audited(ledger)).toEqual([]);
+  });
+
   it("runs a reversible action without confirmation", async () => {
     const { ledger, store } = mount("/");
     await click(screen.getByRole("button", { name: "Hide dust" }));

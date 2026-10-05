@@ -364,7 +364,7 @@ describe("streaming server-side rendering", () => {
       expect(at).toBeLessThan(bodyAt);
     }
     for (const href of [...homeAssets.preloads, ...pageChunks]) {
-      const at = html.indexOf(`<link rel="modulepreload" href="${href}">`);
+      const at = html.indexOf(`<link rel="modulepreload" href="${href}" nonce="`);
       expect(at).toBeGreaterThan(-1);
       expect(at).toBeLessThan(bodyAt);
     }
@@ -387,6 +387,9 @@ describe("streaming server-side rendering", () => {
       html,
     )?.[1];
     expect(nonce).toMatch(/^[0-9a-f]{32}$/);
+    for (const href of homeAssets.preloads) {
+      expect(html).toContain(`<link rel="modulepreload" href="${href}" nonce="${nonce}">`);
+    }
     for (const attributes of executableInlineScripts(html)) {
       expect(attributes).toContain(`nonce="${nonce}"`);
     }
@@ -799,6 +802,46 @@ describe("a posted form outcome in the server-rendered document", () => {
 });
 
 describe("the stores a server render exposes", () => {
+  it("isolates concurrent server snapshots from shared mutations and hydrates their initial values", async () => {
+    const shared = watchedStore();
+    shared.set(["tenant-a-secret"]);
+    let html: string;
+    try {
+      const first = renderStorePage("/watch");
+      shared.set(["tenant-b-secret"]);
+      const second = renderStorePage("/watch");
+      const documents = await Promise.all([first, second, renderStorePage("/plain")]);
+      for (const document of documents) {
+        expect(document).not.toContain("tenant-a-secret");
+        expect(document).not.toContain("tenant-b-secret");
+      }
+      for (const document of documents.slice(0, 2)) {
+        expect(serverSidecarOf(document).stores).toEqual({ watched: WATCHED_INITIAL });
+        expect(document).toContain("<li>eth</li>");
+        expect(document).toContain("<li>pax</li>");
+      }
+      expect(serverSidecarOf(documents[2]!)).not.toHaveProperty("stores");
+      expect(shared.get()).toEqual(["tenant-b-secret"]);
+      html = documents[0]!;
+    } finally {
+      shared.reset();
+    }
+    const container = mountDocument(html, "/watch");
+    const server = readSidecar(container);
+    const mismatches: HydrationMismatch[] = [];
+    await act(async () => {
+      started = startRexEntry(container, storeBundle, {
+        dev: true,
+        fetch: serverFetch,
+        onHydrationMismatch: (mismatch) => mismatches.push(mismatch),
+      });
+    });
+    expect(started?.mode).toBe("hydrate");
+    await waitFor(() => expect(window.__rex).toEqual(server));
+    expect(readSidecar(container)).toEqual(server);
+    expect(mismatches).toEqual([]);
+  });
+
   it("lists only the stores the rendered page uses after another page exposed one", async () => {
     const before = serverSidecarOf(await renderStorePage("/plain"));
     expect(before).not.toHaveProperty("stores");

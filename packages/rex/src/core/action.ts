@@ -250,7 +250,10 @@ export function action<
     const { redirect, confirmTitle } = config.form;
     if (
       redirect !== undefined &&
-      (typeof redirect !== "string" || !redirect.startsWith("/") || redirect.startsWith("//"))
+      (typeof redirect !== "string" ||
+        !redirect.startsWith("/") ||
+        redirect.startsWith("//") ||
+        /[\\\u0000-\u001f\u007f]/.test(redirect))
     ) {
       reject("REX207", "form.redirect", "must be a path on this origin starting with /");
     }

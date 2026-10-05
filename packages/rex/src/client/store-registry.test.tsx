@@ -37,6 +37,40 @@ afterEach(() => {
 });
 
 describe("createStoreRegistry", () => {
+  it("isolates immutable declaration snapshots from mutable stores and other server registries", () => {
+    const initial = { items: ["public"] };
+    const declared = store("server-snapshot", { initial });
+    initial.items.push("private");
+    declared.set({ items: ["tenant-secret"] });
+    const first = createStoreRegistry({ follow: false, server: true });
+    const second = createStoreRegistry({ follow: false, server: true });
+    first.register(declared);
+    second.register(declared);
+    first.register(entry(cart));
+    second.register(entry(cart));
+    cart.set({ items: ["tenant-secret"] });
+    const snapshot = first.toJSON()[declared.id] as typeof initial;
+    expect(snapshot).toEqual({ items: ["public"] });
+    expect(second.toJSON()[declared.id]).toEqual(snapshot);
+    expect(second.toJSON()[declared.id]).not.toBe(snapshot);
+    expect(first.exposed()).toEqual({ cart: { items: [] } });
+    expect(second.exposed()).toEqual(first.exposed());
+    expect(second.exposed().cart).not.toBe(first.exposed().cart);
+    expect(Object.isFrozen(snapshot.items)).toBe(true);
+    expect(() => snapshot.items.push("changed")).toThrow(TypeError);
+    declared.set({ items: ["another-secret"] });
+    expect(first.toJSON()).toEqual({
+      cart: { items: [] },
+      "server-snapshot": { items: ["public"] },
+    });
+    expect(second.toJSON()).toEqual(first.toJSON());
+    expect(declared.get()).toEqual({ items: ["another-secret"] });
+    function Value() {
+      return <span>{declared.useStore().items.join(",")}</span>;
+    }
+    expect(renderToString(<Value />)).toBe("<span>public</span>");
+  });
+
   it("registers stores once by id and serialises every one in id order", () => {
     const registry = createStoreRegistry();
     registry.register(entry(theme));

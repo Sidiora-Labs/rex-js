@@ -1,4 +1,8 @@
 import { createClient } from "@libsql/client";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { drizzle } from "drizzle-orm/libsql";
 import { describe, expect, it } from "vitest";
 import { entity } from "../core/entity.ts";
@@ -23,6 +27,90 @@ function memoryDb() {
 }
 
 runStoreConformance("drizzle libsql", (declaration) => drizzleStore(declaration, memoryDb()));
+
+describe("caller-owned transactions", () => {
+  const account = entity("transaction.account", {
+    fields: { id: id(), balance: integer() },
+    label: (record) => record.id,
+  });
+  const transfer = entity("transaction.transfer", {
+    fields: { id: id(), amount: integer() },
+    label: (record) => record.id,
+  });
+
+  it("commits two stores together and rolls both back when the callback throws", async () => {
+    const db = memoryDb();
+    try {
+      await db.run(createTableStatement(account));
+      await db.run(createTableStatement(transfer));
+      const accounts = bind(account, drizzleStore(account, db, { createTable: false }));
+      const transfers = bind(transfer, drizzleStore(transfer, db, { createTable: false }));
+      await accounts.put({ id: "owner", balance: 100 });
+      const result = await db.transaction(async (tx) => {
+        const accounts = bind(account, drizzleStore(account, tx, { createTable: false }));
+        const transfers = bind(transfer, drizzleStore(transfer, tx, { createTable: false }));
+        await accounts.put({ id: "owner", balance: 80 });
+        return transfers.put({ id: "committed", amount: 20 });
+      });
+      expect(result).toEqual({ id: "committed", amount: 20 });
+      expect(await accounts.get("owner")).toEqual({ id: "owner", balance: 80 });
+      expect(await transfers.get("committed")).toEqual(result);
+
+      const failure = new Error("abort transfer");
+      await expect(
+        db.transaction(async (tx) => {
+          const accounts = bind(account, drizzleStore(account, tx, { createTable: false }));
+          const transfers = bind(transfer, drizzleStore(transfer, tx, { createTable: false }));
+          await accounts.put({ id: "owner", balance: 60 });
+          await transfers.put({ id: "rolled-back", amount: 20 });
+          expect(await accounts.get("owner")).toEqual({ id: "owner", balance: 60 });
+          expect(await transfers.get("rolled-back")).toEqual({ id: "rolled-back", amount: 20 });
+          throw failure;
+        }),
+      ).rejects.toBe(failure);
+      expect(await accounts.get("owner")).toEqual({ id: "owner", balance: 80 });
+      expect(await transfers.get("rolled-back")).toBeUndefined();
+      expect((await transfers.list()).items).toEqual([result]);
+    } finally {
+      db.$client.close();
+    }
+  });
+
+  it("isolates an uncommitted transaction from a concurrent connection to the same database", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "rex-transactions-"));
+    const url = pathToFileURL(join(directory, "database.db")).href;
+    const writer = drizzle(createClient({ url }));
+    const reader = drizzle(createClient({ url }));
+    try {
+      await writer.run("PRAGMA journal_mode = WAL");
+      await writer.run(createTableStatement(account));
+      await writer.run(createTableStatement(transfer));
+      const accounts = bind(account, drizzleStore(account, writer, { createTable: false }));
+      await accounts.put({ id: "owner", balance: 100 });
+      const observedAccounts = bind(account, drizzleStore(account, reader, { createTable: false }));
+      const observedTransfers = bind(
+        transfer,
+        drizzleStore(transfer, reader, { createTable: false }),
+      );
+
+      await writer.transaction(async (tx) => {
+        const accounts = bind(account, drizzleStore(account, tx, { createTable: false }));
+        const transfers = bind(transfer, drizzleStore(transfer, tx, { createTable: false }));
+        await accounts.put({ id: "owner", balance: 75 });
+        await transfers.put({ id: "isolated", amount: 25 });
+        expect(await accounts.get("owner")).toEqual({ id: "owner", balance: 75 });
+        expect(await observedAccounts.get("owner")).toEqual({ id: "owner", balance: 100 });
+        expect(await observedTransfers.get("isolated")).toBeUndefined();
+      });
+      expect(await observedAccounts.get("owner")).toEqual({ id: "owner", balance: 75 });
+      expect(await observedTransfers.get("isolated")).toEqual({ id: "isolated", amount: 25 });
+    } finally {
+      writer.$client.close();
+      reader.$client.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("drizzleStore", () => {
   it("maps entity fields to a sqlite table definition", () => {

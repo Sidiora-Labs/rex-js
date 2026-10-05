@@ -10,7 +10,7 @@ import { always, can } from "../../core/policy.ts";
 import { REX_RPC_PREFIX } from "../../core/protocol.ts";
 import { buildManifest, stableStringify } from "../../manifest/build.ts";
 import { boolean, text } from "../../schema/index.ts";
-import { type RegistryRouterClient, type RexServerSetup } from "../app.ts";
+import { createRexServer, type RegistryRouterClient, type RexServerSetup } from "../app.ts";
 import { memoryLedger, type Ledger } from "../audit.ts";
 import { DENSITY_HEADER } from "../context.ts";
 import {
@@ -78,6 +78,92 @@ function clientFor(
 }
 
 describe("installRpcRoute", () => {
+  it("rejects non-POST methods before resolving a cookie actor or executing a mutation", async () => {
+    const ledger = memoryLedger();
+    const recipients: string[] = [];
+    let resolutions = 0;
+    const deliver = action("deliver", {
+      input: z.object({ to: text({ min: 1 }) }),
+      output: z.object({ to: text() }),
+      policy: can("send"),
+      effect: "reversible",
+      handler: (input) => {
+        recipients.push(input.to);
+        return input;
+      },
+    });
+    const app = createRexServer({
+      registry: { entities: [], actions: [deliver], pages: [], policies: [] },
+      ledger,
+      actor: (request) => {
+        resolutions++;
+        return request.headers.get("cookie") === "session=alice" ? alice : anonymousActor;
+      },
+    });
+    const data = encodeURIComponent(JSON.stringify({ json: { to: "bob" } }));
+    for (const method of ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "DELETE"]) {
+      const response = await app.request(`${ORIGIN}${RPC_PREFIX}/deliver?data=${data}`, {
+        method,
+        headers: {
+          cookie: "session=alice",
+          ...(method === "GET" || method === "HEAD" ? {} : { origin: ORIGIN }),
+        },
+      });
+      expect(response.status, method).toBe(405);
+      expect(response.headers.get("allow"), method).toBe("POST");
+      if (method === "HEAD") expect(await response.text()).toBe("");
+      else
+        expect(await response.json()).toEqual({
+          code: "METHOD_NOT_SUPPORTED",
+          message: "RPC requests require POST",
+        });
+      expect(resolutions, method).toBe(0);
+      expect(recipients, method).toEqual([]);
+      expect(await ledger.list(), method).toEqual([]);
+    }
+    const response = await app.request(`${ORIGIN}${RPC_PREFIX}/deliver`, {
+      method: "POST",
+      headers: { cookie: "session=alice", origin: ORIGIN, "content-type": "application/json" },
+      body: JSON.stringify({ json: { to: "bob" } }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ json: { to: "bob" } });
+    expect(resolutions).toBe(1);
+    expect(recipients).toEqual(["bob"]);
+    expect(
+      (await ledger.list()).map((entry) => [entry.actor, entry.actionId, entry.outcome]),
+    ).toEqual([["alice", "deliver", "ok"]]);
+  });
+
+  it("preserves configured CORS preflight before RPC admission", async () => {
+    const ledger = memoryLedger();
+    let resolutions = 0;
+    const clientOrigin = "https://client.rex.test";
+    const app = createRexServer({
+      registry,
+      ledger,
+      security: { origins: [clientOrigin] },
+      actor: () => {
+        resolutions++;
+        return alice;
+      },
+    });
+    const response = await app.request(`${ORIGIN}${RPC_PREFIX}/send`, {
+      method: "OPTIONS",
+      headers: {
+        origin: clientOrigin,
+        "access-control-request-method": "POST",
+        "access-control-request-headers": "content-type",
+      },
+    });
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe(clientOrigin);
+    expect(response.headers.get("access-control-allow-methods")?.split(",")).toContain("POST");
+    expect(await response.text()).toBe("");
+    expect(resolutions).toBe(0);
+    expect(await ledger.list()).toEqual([]);
+  });
+
   it("runs the matched procedure for the resolved actor and echoes the density on the response", async () => {
     expect(RPC_PREFIX).toBe(REX_RPC_PREFIX);
     expect(REX_ROUTES).toContain(installRpcRoute);

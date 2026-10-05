@@ -16,6 +16,8 @@ An app pins Rex with a caret range. `rex new` writes `"@sidioralabs/rex": "^<ver
 
 ### The public API
 
+The [extension contracts](extensions.md) identify supported native composition and the limits of exported assembly values. Public exports are covered by versioning; their presence does not establish per-application mutation, resource cleanup or platform guarantees.
+
 These parts of Rex are covered by the version number. A change to any of them that makes a working app fail, or makes `rex check` report a new error on an app that passed before, is a breaking change:
 
 - the package entries listed in `exports` of `packages/rex/package.json` and every symbol they export, as documented in the generated [API reference](api/README.md);

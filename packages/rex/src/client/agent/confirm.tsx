@@ -137,12 +137,25 @@ export function useInvoke<A extends AnyAction>(declared: A): InvokeHandle<A> {
 
   const invoke = useCallback(
     async (input: ActionInput<A>): Promise<ActResult<A>> => {
+      let snapshot: ActionInput<A>;
+      try {
+        snapshot = structuredClone(input);
+      } catch {
+        const message = `${actionLabel(declared)}: invalid input: input cannot be isolated for invocation`;
+        outcomes.set(pageId ?? APP_OUTCOME_KEY, {
+          actionId: declared.id,
+          ok: false,
+          message,
+          at: new Date().toISOString(),
+        });
+        return { ok: false, code: "BAD_REQUEST", message };
+      }
       if (
         declared.effect !== "irreversible" ||
         !allowed ||
-        (await validateStandard(declared.input, input)).issues !== undefined
+        (await validateStandard(declared.input, snapshot)).issues !== undefined
       ) {
-        return run(input);
+        return run(snapshot);
       }
       const label = actionLabel(declared);
       const record = (message: string) =>
@@ -152,7 +165,7 @@ export function useInvoke<A extends AnyAction>(declared: A): InvokeHandle<A> {
           message,
           at: new Date().toISOString(),
         });
-      const accepted = await confirm({ page: pageId, action: declared, input });
+      const accepted = await confirm({ page: pageId, action: declared, input: snapshot });
       if (!accepted) {
         const message = `${label} cancelled`;
         record(message);
@@ -160,13 +173,13 @@ export function useInvoke<A extends AnyAction>(declared: A): InvokeHandle<A> {
       }
       let token: string;
       try {
-        token = (await requestConfirm(input)).token;
+        token = (await requestConfirm(snapshot)).token;
       } catch (error) {
         const { code, message } = describeError(error);
         record(`${label} failed: ${message}`);
         return { ok: false, code, message };
       }
-      return run(input, { confirmToken: token });
+      return run(snapshot, { confirmToken: token });
     },
     [allowed, confirm, declared, outcomes, pageId, requestConfirm, run],
   );

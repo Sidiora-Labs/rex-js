@@ -7,7 +7,7 @@ import { view, type LazyPageModuleSet, type LoadedPageModules } from "../../clie
 import { action } from "../../core/action.ts";
 import { actor } from "../../core/actor.ts";
 import { page, type AnyPage } from "../../core/page.ts";
-import { always, never } from "../../core/policy.ts";
+import { always, can, never } from "../../core/policy.ts";
 import { createRegistry } from "../../core/registry.ts";
 import { STATE_EXPORT_NAMES } from "../../core/states.ts";
 import { buildManifest } from "../../manifest/build.ts";
@@ -267,7 +267,8 @@ describe("installRenderRoute", () => {
   });
 
   it("serves a registered static cache entry, even without a renderer, and still skips the rest", async () => {
-    const registry = createRegistry().register(portfolio).freeze();
+    const landing = page("landing", { route: "/landing", render: "static" });
+    const registry = createRegistry().register(portfolio, landing).freeze();
     const server = createRexServer({
       registry,
       ledger: memoryLedger(),
@@ -315,5 +316,109 @@ describe("installRenderRoute", () => {
     const gone = await server.request("/landing");
     expect(gone.status).toBe(404);
     expect(gone.headers.has(STATIC_HEADER)).toBe(false);
+  });
+
+  it.each([false, true])(
+    "authorizes cached documents before delivery with renderer=%s",
+    async (withRenderer) => {
+      const protectedPage = page("protected", {
+        route: "/protected",
+        render: "ssg",
+        policy: can("vault.read"),
+      });
+      const reader = actor({ id: "reader", permissions: ["vault.read"] });
+      const registry = createRegistry().register(protectedPage).freeze();
+      const ledger = memoryLedger();
+      const server = createRexServer({
+        registry,
+        ledger,
+        actor: (request) => (request.headers.get("authorization") === "reader" ? reader : alice),
+        app: APP,
+      });
+      if (withRenderer) {
+        registerPageRenderer(
+          registry,
+          createRexRenderer({
+            bundle: {
+              registry,
+              manifest: buildManifest(registry, { app: APP }),
+              pages: [
+                lazySet(protectedPage, {
+                  view: view(() => createElement("p", null, "Regenerated protected contents")),
+                  states: statesFor("Protected"),
+                }),
+              ],
+            },
+          }),
+        );
+      }
+      const html = "<html><body>Cached protected contents</body></html>";
+      const store = memoryStaticStore([["/protected", html]]);
+      const cache = createStaticCache({
+        pages: [
+          {
+            path: "/protected",
+            page: "protected",
+            render: "ssg",
+            revalidate: 1,
+            file: "protected/index.html",
+            generatedAt: 0,
+          },
+        ],
+        store,
+        actor: reader,
+        screen: screenFromRequest,
+      });
+      registerStaticCache(registry, cache);
+      const denied = await server.request("/protected/");
+      expect(denied.status).toBe(403);
+      expect(denied.headers.get(RENDER_KIND_HEADER)).toBe("denied");
+      expect(denied.headers.get(RENDER_PAGE_HEADER)).toBe("protected");
+      expect(denied.headers.get("cache-control")).toBe("no-store");
+      expect(denied.headers.has(STATIC_HEADER)).toBe(false);
+      expect(await denied.text()).not.toContain("protected contents");
+      await cache.settled();
+      expect(cache.entry("/protected")?.generatedAt).toBe(0);
+      expect(await store.read("/protected")).toBe(html);
+      const allowed = await server.request("/protected", { headers: { authorization: "reader" } });
+      expect(allowed.status).toBe(200);
+      expect(allowed.headers.get(STATIC_HEADER)).toBe("stale");
+      expect(await allowed.text()).toContain("Cached protected contents");
+      await cache.settled();
+      if (withRenderer) {
+        expect(cache.entry("/protected")?.generatedAt).toBeGreaterThan(0);
+        expect(await store.read("/protected")).toContain("Regenerated protected contents");
+      }
+      const deniedAgain = await server.request("/protected");
+      expect(deniedAgain.status).toBe(403);
+      expect(await deniedAgain.text()).not.toContain("protected contents");
+    },
+  );
+
+  it("fails closed when a cached page is absent from the registry", async () => {
+    const { server, registry } = renderedApp();
+    registerStaticCache(
+      registry,
+      createStaticCache({
+        pages: [
+          {
+            path: "/removed",
+            page: "removed",
+            render: "static",
+            revalidate: null,
+            file: "removed/index.html",
+            generatedAt: Date.now(),
+          },
+        ],
+        store: memoryStaticStore([["/removed", "Removed private document"]]),
+        screen: screenFromRequest,
+      }),
+    );
+    const response = await server.request("/removed");
+    expect(response.status).toBe(404);
+    expect(response.headers.get(RENDER_KIND_HEADER)).toBe("not-found");
+    expect(response.headers.has(STATIC_HEADER)).toBe(false);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.text()).not.toContain("Removed private document");
   });
 });

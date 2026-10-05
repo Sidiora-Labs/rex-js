@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/client";
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ActionInput, ActionOutput, AnyAction } from "../core/action.ts";
 import { RexError, isRexError } from "../core/errors.ts";
 import { actionAddress } from "../core/ids.ts";
@@ -84,7 +84,8 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
   const outcomes = useOutcomeStore();
   const active = useActivePage();
   const pageId = active === null ? null : active.page.id;
-  const [confirming, setConfirming] = useState(false);
+  const admitted = useRef(false);
+  const [running, setRunning] = useState(false);
 
   const policy = useMemo(() => evaluate(declared.policy, subject), [declared, subject]);
 
@@ -147,26 +148,26 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
   const run = useCallback(
     async (input: ActionInput<A>, options: RunOptions = {}): Promise<ActResult<A>> => {
       const label = actionLabel(declared);
-      const problem = await inputProblem(declared, input);
-      if (problem !== null) {
-        const message = problem;
-        record(false, message);
-        return { ok: false, code: "BAD_REQUEST", message };
+      if (admitted.current) {
+        return { ok: false, code: "CONFLICT", message: `${label} is already running` };
       }
-      if (!policy.allowed) {
-        const message = `${label}: not allowed (${policy.reason})`;
-        record(false, message);
-        return { ok: false, code: "FORBIDDEN", message };
-      }
+      admitted.current = true;
+      setRunning(true);
       try {
+        const problem = await inputProblem(declared, input);
+        if (problem !== null) {
+          const message = problem;
+          record(false, message);
+          return { ok: false, code: "BAD_REQUEST", message };
+        }
+        if (!policy.allowed) {
+          const message = `${label}: not allowed (${policy.reason})`;
+          record(false, message);
+          return { ok: false, code: "FORBIDDEN", message };
+        }
         let confirmToken = options.confirmToken;
         if (declared.effect === "irreversible" && confirmToken === undefined) {
-          setConfirming(true);
-          try {
-            confirmToken = (await requestConfirm(input)).token;
-          } finally {
-            setConfirming(false);
-          }
+          confirmToken = (await requestConfirm(input)).token;
         }
         const output = await mutateAsync({ input, confirmToken });
         record(true, `${label} succeeded`);
@@ -175,12 +176,15 @@ export function useAct<A extends AnyAction>(declared: A): ActHandle<A> {
         const { code, message } = describeError(error);
         record(false, `${label} failed: ${message}`);
         return { ok: false, code, message };
+      } finally {
+        admitted.current = false;
+        setRunning(false);
       }
     },
     [declared, mutateAsync, policy, record, requestConfirm],
   );
 
-  const pending = confirming || mutation.isPending;
+  const pending = running || mutation.isPending;
   const controlProps = useMemo<ActControlProps>(() => {
     const base = {
       "data-rex-allowed": policy.allowed ? ("true" as const) : ("false" as const),

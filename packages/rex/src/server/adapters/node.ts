@@ -55,6 +55,17 @@ export function createNodeApp(app: NodeFetchApp, clientDir: string): Hono {
 
   outer.use("*", async (c, next) => {
     if (isApiPath(c.req.path) || !isReadMethod(c.req.method)) return next();
+    let decodedPath: string;
+    try {
+      decodedPath = decodeURI(c.req.path);
+    } catch {
+      return c.text("Bad Request", 400);
+    }
+    if (decodedPath.endsWith(`/${INDEX_FILE}`)) {
+      const url = new URL(c.req.url);
+      url.pathname = decodedPath.slice(0, -INDEX_FILE.length - 1) || "/";
+      return app.fetch(new Request(url, c.req.raw), c.env);
+    }
     if (!isPageRoutePath(c.req.path)) return assets(c, next);
     const rendered = await app.fetch(c.req.raw, c.env);
     if (rendered.headers.has(RENDER_KIND_HEADER)) return rendered;

@@ -319,7 +319,7 @@ function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): s
     (href) => `<link rel="stylesheet" href="${escapeHtml(href)}">`,
   );
   const preloads = parts.links.preloads.map(
-    (href) => `<link rel="modulepreload" href="${escapeHtml(href)}">`,
+    (href) => `<link rel="modulepreload" href="${escapeHtml(href)}" nonce="${nonce}">`,
   );
   const root = parts.hydrate
     ? `<div id="${escapeHtml(options.rootElement)}" ${SSR_ATTRIBUTE}="">`
@@ -442,7 +442,7 @@ type RenderedStream = Awaited<ReturnType<typeof renderToReadableStream>>;
 type RenderStreamOptions = NonNullable<Parameters<typeof renderToReadableStream>[1]>;
 
 function renderStores(seed: readonly RexStore<unknown>[]): StoreRegistry {
-  const stores = createStoreRegistry({ follow: false });
+  const stores = createStoreRegistry({ follow: false, server: true });
   for (const entry of seed) stores.register(entry);
   return stores;
 }

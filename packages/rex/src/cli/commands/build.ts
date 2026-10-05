@@ -1,14 +1,20 @@
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { InvalidArgumentError, type RexCommand as Command } from "../args.ts";
+import { DEFAULT_BUILD_TARGET, type BuildTarget } from "../registrations/build.ts";
+export {
+  BUILD_TARGETS,
+  DEFAULT_BUILD_TARGET,
+  isBuildTarget,
+  parseTarget,
+  register,
+  type BuildTarget,
+} from "../registrations/build.ts";
 import { build, normalizePath, type LogLevel, type Plugin } from "vite";
 import { rex, type RexPluginOptions } from "../../vite/index.ts";
 import { chunkBudgets, resolveBudgets } from "../../vite/budgets.ts";
 import {
-  NOT_FOUND_FILE,
   SHELL_DOCUMENT_FILE,
-  STATIC_MANIFEST_FILE,
   formatPrerenderList,
   prerenderPages,
   type PrerenderRuntime,
@@ -43,9 +49,12 @@ import type { Manifest } from "../../manifest/types.ts";
 import {
   chunkTable,
   formatChunkTable,
+  formatStaticImportClosures,
+  staticImportClosures,
   type ChunkRow,
   type OutputAssetLike,
-  type OutputChunkLike,
+  type StaticImportChunk,
+  type StaticImportClosure,
 } from "../../vite/split.ts";
 import { loadRexConfig, restoringNodeEnv } from "../config.ts";
 import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
@@ -69,10 +78,7 @@ export const DEFAULT_PORT = 3000;
 export const SERVER_ENTRY_ID = "rex:server";
 export const RESOLVED_SERVER_ENTRY_ID = "\0rex:server";
 export const SERVING_PREFIX = "rex: serving ";
-export const BUILD_TARGETS = ["node", "edge", "bun", "deno", "static"] as const;
-export type BuildTarget = (typeof BUILD_TARGETS)[number];
 export type ServerTarget = Exclude<BuildTarget, "static">;
-export const DEFAULT_BUILD_TARGET: BuildTarget = "node";
 export const BUILD_NODE_ENV = "production";
 
 function productionBuildConfig(): {
@@ -85,17 +91,6 @@ function productionBuildConfig(): {
     define: { "process.env.NODE_ENV": JSON.stringify(BUILD_NODE_ENV) },
     oxc: { jsx: { development: false } },
   };
-}
-
-export function isBuildTarget(value: string): value is BuildTarget {
-  return (BUILD_TARGETS as readonly string[]).includes(value);
-}
-
-export function parseTarget(value: string): BuildTarget {
-  if (!isBuildTarget(value)) {
-    throw new InvalidArgumentError(`the target must be one of ${BUILD_TARGETS.join(", ")}`);
-  }
-  return value;
 }
 
 const MODULE_EXTENSION = import.meta.url.endsWith(".ts") ? ".ts" : ".js";
@@ -296,6 +291,10 @@ export interface BuildOptions {
   readonly logLevel?: LogLevel;
   readonly warn?: DeprecationWarn;
   readonly target?: BuildTarget;
+  readonly reportChunks?: (
+    chunks: readonly ChunkRow[],
+    closures: readonly StaticImportClosure[],
+  ) => void;
 }
 
 export interface BuildResult {
@@ -489,10 +488,10 @@ export async function writeBuildManifest(
 
 type BuildOutput = Awaited<ReturnType<typeof build>>;
 
-export function outputItems(result: BuildOutput): (OutputChunkLike | OutputAssetLike)[] {
+export function outputItems(result: BuildOutput): (StaticImportChunk | OutputAssetLike)[] {
   const outputs = Array.isArray(result) ? result : [result];
   return outputs.flatMap((output) =>
-    "output" in output ? (output.output as readonly (OutputChunkLike | OutputAssetLike)[]) : [],
+    "output" in output ? (output.output as readonly (StaticImportChunk | OutputAssetLike)[]) : [],
   );
 }
 
@@ -500,7 +499,64 @@ export function overBudget(rows: readonly ChunkRow[]): readonly ChunkRow[] {
   return rows.filter((row) => row.over);
 }
 
+class BuildBudgetError extends RexCliExit {
+  constructor(readonly chunks: readonly ChunkRow[]) {
+    super(
+      EXIT_FAILURE,
+      `rex build: ${overBudget(chunks)
+        .map(
+          (row) => `${row.name} (${(row.gzip / 1024).toFixed(2)} KB gzip, budget ${row.budget} KB)`,
+        )
+        .join(", ")} over budget`,
+    );
+  }
+}
+
 export async function buildApp(root: string, options: BuildOptions = {}): Promise<BuildResult> {
+  const appRoot = resolve(root);
+  const staging = mkdtempSync(join(appRoot, ".rex-build-"));
+  const output = join(staging, DIST_DIR);
+  const destination = join(appRoot, DIST_DIR);
+  const backup = join(staging, "previous");
+  try {
+    const result = await buildStagedApp(appRoot, output, options);
+    const relocate = (file: string): string => join(destination, relative(output, file));
+    const optional = (file: string | null): string | null =>
+      file === null ? null : relocate(file);
+    const published: BuildResult = {
+      ...result,
+      outDir: destination,
+      clientDir: relocate(result.clientDir),
+      serverFile: optional(result.serverFile),
+      manifestFile: optional(result.manifestFile),
+      prerenderFile: optional(result.prerenderFile),
+      staticManifestFile: optional(result.staticManifestFile),
+      hostFiles: result.hostFiles.map(relocate),
+      outputs: result.outputs.map((run) => ({
+        ...run,
+        files: run.files.map((file) => ({ ...file, file: relocate(file.file) })),
+      })),
+    };
+    if (existsSync(destination)) renameSync(destination, backup);
+    try {
+      renameSync(output, destination);
+    } catch (error) {
+      if (existsSync(backup)) renameSync(backup, destination);
+      throw error;
+    }
+    rmSync(backup, { recursive: true, force: true });
+    return published;
+  } finally {
+    // Retain the backup if publication and restoration both failed.
+    if (!existsSync(backup)) rmSync(staging, { recursive: true, force: true });
+  }
+}
+
+async function buildStagedApp(
+  root: string,
+  outDir: string,
+  options: BuildOptions,
+): Promise<BuildResult> {
   const appRoot = resolve(root);
   const config = appConfigPath(appRoot);
   const logLevel = options.logLevel ?? "warn";
@@ -531,9 +587,7 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
   } catch (error) {
     return rexCliExit(error);
   }
-  const outDir = join(appRoot, DIST_DIR);
   const clientDir = join(outDir, CLIENT_DIR);
-  rmSync(outDir, { recursive: true, force: true });
   const client = await restoringNodeEnv(() =>
     build({
       root: appRoot,
@@ -545,6 +599,11 @@ export async function buildApp(root: string, options: BuildOptions = {}): Promis
     }),
   );
   const chunks = chunkTable(outputItems(client), chunkBudgets(budgets));
+  options.reportChunks?.(chunks, staticImportClosures(outputItems(client)));
+  const over = overBudget(chunks);
+  if (over.length > 0) {
+    throw new BuildBudgetError(chunks);
+  }
   const result = {
     target,
     outDir,
@@ -680,44 +739,30 @@ export function startHint(result: BuildResult): string {
   }
 }
 
-export function register(program: Command, io: RexCliIO): void {
-  program
-    .command("build")
-    .description(
-      `build the client into ${DIST_DIR}/${CLIENT_DIR} and, unless the target is static, the server into ${DIST_DIR}/${SERVER_FILE}; for static, every page as HTML (prerendered or the shell), index.md beside each prerendered page, ${NOT_FOUND_FILE} and ${DIST_DIR}/${CLIENT_DIR}/${STATIC_MANIFEST_FILE}`,
-    )
-    .option(
-      "--target <target>",
-      `runtime to build for: ${BUILD_TARGETS.join(", ")}; without it, the target of deploy.host in rex.config.ts, else ${DEFAULT_BUILD_TARGET}`,
-      parseTarget,
-    )
-    .option("--no-check", "build without running rex check first")
-    .action(async (options: { check: boolean; target?: BuildTarget }) => {
-      if (options.check) await ensureCheckPasses(io.cwd, io, "build");
-      const result = await buildApp(io.cwd, {
-        warn: cliWarn(io),
-        ...(options.target === undefined ? {} : { target: options.target }),
-      });
-      io.out(formatChunkTable(result.chunks));
-      io.out(`rex build: wrote ${writtenLayout(result)} for the ${result.target} target\n`);
-      if (result.manifestFile !== null) io.out(`rex build: wrote ${DIST_DIR}/${MANIFEST_OUTPUT}\n`);
-      if (result.prerenderFile !== null) {
-        io.out(
-          formatPrerenderList(
-            { version: PRERENDER_LIST_VERSION, pages: result.prerendered },
-            `${DIST_DIR}/${CLIENT_DIR}`,
-          ),
-        );
-      }
-      io.out(formatStaticOutputs(result));
-      io.out(formatHostFiles(result));
-      const over = overBudget(result.chunks);
-      if (over.length > 0) {
-        throw new RexCliExit(
-          EXIT_FAILURE,
-          `rex build: ${over.map((row) => `${row.name} (${(row.gzip / 1024).toFixed(2)} KB gzip, budget ${row.budget} KB)`).join(", ")} over budget`,
-        );
-      }
-      io.out(`rex build: ${startHint(result)}\n`);
-    });
+export async function executeBuild(
+  options: { check: boolean; target?: BuildTarget },
+  io: RexCliIO,
+): Promise<void> {
+  if (options.check) await ensureCheckPasses(io.cwd, io, "build");
+  const result = await buildApp(io.cwd, {
+    warn: cliWarn(io),
+    reportChunks: (chunks, closures) => {
+      io.out(formatChunkTable(chunks));
+      io.out(formatStaticImportClosures(closures));
+    },
+    ...(options.target === undefined ? {} : { target: options.target }),
+  });
+  io.out(`rex build: wrote ${writtenLayout(result)} for the ${result.target} target\n`);
+  if (result.manifestFile !== null) io.out(`rex build: wrote ${DIST_DIR}/${MANIFEST_OUTPUT}\n`);
+  if (result.prerenderFile !== null) {
+    io.out(
+      formatPrerenderList(
+        { version: PRERENDER_LIST_VERSION, pages: result.prerendered },
+        `${DIST_DIR}/${CLIENT_DIR}`,
+      ),
+    );
+  }
+  io.out(formatStaticOutputs(result));
+  io.out(formatHostFiles(result));
+  io.out(`rex build: ${startHint(result)}\n`);
 }

@@ -158,6 +158,39 @@ describe("createRexServer telemetry", () => {
     expect(lines).toEqual([]);
   });
 
+  it("reports audit validation failure after a successful handler as a failed invocation", async () => {
+    const provider = new BasicTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(exporter)],
+    });
+    app = createRexServer({
+      registry: source,
+      ledger,
+      actor: () => ({ ...ada, id: "" }),
+      telemetry: {
+        tracer: provider.getTracer("rex-audit-failure"),
+        logger: recordingLogger(lines),
+      },
+    });
+
+    await expect(client.echo({ text: "hi" })).rejects.toBeInstanceOf(ORPCError);
+    expect(await ledger.list()).toEqual([]);
+    const [span] = spansNamed(exporter, SPAN_ACTION);
+    expect(span?.attributes[ATTR_OUTCOME]).toBe("ERROR");
+    expect(span?.status).toEqual({ code: 2, message: "ERROR" });
+    expect(span?.ended).toBe(true);
+    expect(span?.events.map((event) => event.name)).toEqual(["exception"]);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({
+      level: "error",
+      message: "rex.action failed",
+      attributes: {
+        [ATTR_ACTION_ID]: "echo",
+        [ATTR_OUTCOME]: "ERROR",
+        error: "REX402 audit: actor must be a non-empty string",
+      },
+    });
+  });
+
   it("records a refused action with its error code on the span and the audit record", async () => {
     const error = await client.purge({}).then(
       () => null,

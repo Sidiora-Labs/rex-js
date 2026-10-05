@@ -228,6 +228,32 @@ describe("span", () => {
     ]);
   });
 
+  it("replaces provisional success when completion throws", async () => {
+    const failure = new Error("completion failed");
+    await expect(
+      traced.span(SPAN_ACTION, { [ATTR_ACTION_ID]: "echo" }, (span) => {
+        span.outcome(OUTCOME_OK);
+        throw failure;
+      }),
+    ).rejects.toBe(failure);
+    const [span] = exporter.getFinishedSpans();
+    expect(span?.attributes[ATTR_OUTCOME]).toBe(OUTCOME_ERROR);
+    expect(span?.status).toEqual({ code: SPAN_STATUS_ERROR, message: OUTCOME_ERROR });
+    expect(span?.ended).toBe(true);
+    expect(span?.events.map((event) => event.name)).toEqual(["exception"]);
+    expect(lines).toEqual([
+      {
+        level: "error",
+        message: `${SPAN_ACTION} failed`,
+        attributes: {
+          [ATTR_ACTION_ID]: "echo",
+          [ATTR_OUTCOME]: OUTCOME_ERROR,
+          error: failure.message,
+        },
+      },
+    ]);
+  });
+
   it("keeps an explicit outcome as the span status and logs only server faults", async () => {
     await traced.span(SPAN_ACTION, { [ATTR_ACTION_ID]: "purge" }, (span) => {
       span.outcome("FORBIDDEN");

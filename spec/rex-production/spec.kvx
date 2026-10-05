@@ -1,0 +1,669 @@
+[meta]
+feature = "rex-production"
+name = "Rex production qualification"
+slug = "rex-production"
+version = "0.3.0"
+status = "in_progress"
+goal = "Qualify Rex for static sites and dynamic applications using its own site and real application fixtures."
+completion = "All 38 capability domains and 12 failure probes have complete acceptance evidence; partial safety repairs do not certify production readiness."
+
+[decision]
+architecture = "React clients, Hono servers and oRPC procedures retain the Action boundary. No RSC or Next.js runtime."
+acceptance = "Requirements 1-38 are capability domains; 39-50 are explicit adversarial qualification probes. Source inspection, declarations and individual regression passes do not qualify a whole domain."
+roadmap = "Existing rex-site and rex-parity work remains authoritative for its owned implementations. This spec adds production acceptance and scoped repairs without duplicating those APIs."
+expanded_scope = "Base paths and nested layouts are now required for production acceptance despite older root-only and single-level exclusions. Their design and implementation remain pending; optional MDX and integrations require explicit supported contracts."
+qualification = "Unproven platform and integration responsibilities remain unqualified, never silently treated as implemented or inapplicable."
+
+[design]
+proof = "Use real framework paths and actual artifacts; separate focused regression evidence from browser, release, multi-process, field and long-running evidence."
+
+[baseline]
+security = "OWASP ASVS 5.0.0; versioned control selection and applicability mapping remain pending. https://owasp.org/projects/asvs"
+accessibility = "WCAG 2.2 AA, including manual qualification. https://www.w3.org/TR/WCAG22/"
+performance = "Core Web Vitals methodology includes field measurements, not Lighthouse alone. https://web.dev/articles/vitals"
+supply_chain = "SLSA v1.2 framework; no conformance level claimed. https://slsa.dev/spec/v1.2/"
+
+[req.1]
+title = "Architecture and contracts"
+status = "unqualified"
+remaining = "Public extension contracts are task 1.12; full lifecycle and compatibility qualification remains."
+ac_1 = "Clear server/client boundaries; consistent pages, layouts, actions and data; explicit execution lifecycles; stable extension points; documented defaults and limitations."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.2]
+title = "Routing"
+status = "unqualified"
+remaining = "Catch-all routes, nested layouts, redirects, base paths, normalization and typed URL edge cases need owned implementation; dotted routes are a confirmed candidate."
+ac_1 = "Static, dynamic and catch-all routes; nested layouts; precedence and collision detection; typed URLs; redirects and real 404s; base paths; trailing slashes; query parameters; URL encoding and normalization."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.3]
+title = "Rendering"
+status = "unqualified"
+remaining = "SSR currently awaits allReady; true early streaming and post-header failure recovery need implementation and real network proof."
+ac_1 = "Reliable SSR, static generation and client rendering; explicit per-route behavior; supported streaming; deterministic and selective hydration where promised; error boundaries and correct status codes."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.4]
+title = "Static output"
+status = "unqualified"
+remaining = "Static native forms with remote apiOrigin and CSRF need a declared supported contract; full route/static-host proof remains."
+ac_1 = "Complete route enumeration; portable assets; working deep links and navigation; useful no-JavaScript pages; actual zero-JavaScript output when requested; no accidental backend dependency."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.5]
+title = "Documents and SEO"
+status = "unqualified"
+remaining = "Shared head declarations and rendering depend on rex-parity 0.1 and 1.1; editorial noindex and resolved loader metadata remain."
+ac_1 = "Per-page titles, descriptions, canonical URLs, social metadata, structured data, sitemap, robots, language attributes; merging and deduplication; previews excluded from indexing."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.6]
+title = "Content workflows"
+status = "unqualified"
+remaining = "Build on rex-parity content groundwork; editorial draft preview/filtering, remote sources and relationship qualification remain."
+ac_1 = "Validated schemas; Markdown and optional MDX; highlighting; local and remote sources; asset references; draft previews; pagination and relationships; document-specific build errors."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.7]
+title = "Navigation and browser state"
+status = "unqualified"
+remaining = "Task 1.5 addresses deferred navigation races only; modifier clicks, scroll/anchors, bounded prefetch and broader cancellation remain."
+ac_1 = "History; scroll, anchor and focus restoration; active navigation; deep-linkable filters; URL state; controlled prefetching; cancellation of obsolete navigation."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.8]
+title = "Data loading"
+status = "unqualified"
+remaining = "Request deduplication, abort propagation, actor-aware client query identity and serialization edge cases need qualification."
+ac_1 = "Server and client loaders; parallel execution; deduplication; serialization; loading, empty and error states; cancellation; freshness; explicit dates, big integers and unsupported values."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.9]
+title = "Mutations and forms"
+status = "unqualified"
+remaining = "Task 1.4 addresses local duplicate admission only; file transport, structured field errors, optimistic rollback and durable retry safety remain."
+ac_1 = "Server validation; field/form errors; pending state; duplicate protection; progressive enhancement where promised; files; optimistic updates and rollback; consistent outcomes."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.10]
+title = "State management"
+status = "unqualified"
+remaining = "Task 1.6 isolates SSR declaration snapshots only; authenticated client reset, persistence/migrations and cross-tab behavior remain."
+ac_1 = "Request-scoped server state; isolated client stores; hydration-safe values; persistence and migrations; cross-tab behavior; subscription cleanup; logout and tenant reset."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.11]
+title = "HTTP correctness"
+status = "unqualified"
+remaining = "Task 1.1 closes unsafe RPC methods only; conditional requests, proxy trust, cookies and negotiation require broader tests."
+ac_1 = "Methods, headers, cookies and negotiation; GET/HEAD consistency; statuses; conditional requests; cache headers; redirects; compression ownership; proxy behavior."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.12]
+title = "Server APIs"
+status = "unqualified"
+remaining = "Body/multipart limits, deadline and cancellation propagation, streaming responses and API compatibility remain."
+ac_1 = "Typed validated inputs/outputs; middleware ordering; error envelopes; cancellation/deadlines; body limits; multipart and streaming; API compatibility."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.13]
+title = "Authentication integrations"
+status = "unqualified"
+remaining = "ActorResolver is an identity integration boundary, not a session/OIDC implementation; establish and test provider recipes and demo-safe defaults."
+ac_1 = "Established identity systems; secure sessions/cookies; rotation and revocation; OAuth/OIDC; logout; recovery and reauthentication hooks; no invented cryptography."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.14]
+title = "Authorization"
+status = "unqualified"
+remaining = "Tasks 1.2 and 1.13 guard cached documents; object/tenant input authorization and impersonation provenance remain application contracts needing tests."
+ac_1 = "Server policies on every protected operation; object and tenant checks; consistent loaders/actions/APIs/alternate transports; explicit impersonation rules."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.15]
+title = "Security defaults"
+status = "unqualified"
+remaining = "Task 1.3 addresses redirect normalization; versioned ASVS scope, upload/body limits, redaction and remaining attack surfaces remain."
+ac_1 = "XSS-safe rendering/serialization; CSRF, CORS, CSP/nonces, SSRF, traversal, redirects, uploads, secret redaction; scoped OWASP ASVS baseline."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.16]
+title = "Environment and secrets"
+status = "unqualified"
+remaining = "Typed env declarations and validation depend on rex-parity 0.1 and 3.3; packed bundle/map/sidecar/log secret scans and runtime rotation remain."
+ac_1 = "Typed validation; public/server separation; build/runtime semantics; rotation; missing-variable failures; no secrets in bundles, maps, logs or agent manifests."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.17]
+title = "Storage and transactions"
+status = "unqualified"
+remaining = "Task 1.18 qualifies native caller-owned transactions; pooling, migrations, safe pagination, deadlines and serverless capacity remain."
+ac_1 = "Database boundaries; pooling; transaction propagation; migration ownership; timeouts; pagination and consistency; serverless connection exhaustion prevention."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.18]
+title = "Background and real-time work"
+status = "unqualified"
+remaining = "No durable job or realtime contract is qualified; select established integrations and prove delivery/retry/replay/reconnect/shutdown."
+ac_1 = "Supported queues/jobs/webhooks/SSE/WebSockets; delivery, idempotency, retry/backoff, replay protection, reconnect and shutdown; durable work independent of abandoned requests."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.19]
+title = "Caching"
+status = "unqualified"
+remaining = "Document policy repairs do not provide locale/tenant cache variants, mutation invalidation, data caching or distributed regeneration coordination."
+ac_1 = "Separate browser/CDN/page/data/request caches; keys; authenticated isolation; invalidation; bounds; stale behavior; distributed coordination; poisoning and stampede prevention."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.20]
+title = "Runtime resilience"
+status = "unqualified"
+remaining = "Task 1.9 bounds confirmation grants only; admission, timeouts, cancellation, health semantics and graceful draining remain."
+ac_1 = "Limits, timeouts, backpressure, bounded queues; dependency failures; degradation; cancellation; graceful shutdown/draining; readiness and liveness."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.21]
+title = "Frontend performance"
+status = "unqualified"
+remaining = "Task 1.17 reports static transfer closures only; complete application budgets, hydration/images/fonts/layout-shift proof remain."
+ac_1 = "Route splitting; tree shaking; server exclusion; hydration costs; images/fonts/CSS; bounded prefetch; no layout shifts or unnecessary requests."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.22]
+title = "Measured budgets"
+status = "unqualified"
+remaining = "Warm dev preflight was previously measured at 15.8 seconds; startup/HMR/build/RSS field and slow-device regression gates remain."
+ac_1 = "Cold/warm startup, HMR, build time, memory, bundles, TTFB, interactions; representative routes/devices/networks; regression tracking and field Core Web Vitals."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.23]
+title = "Build system"
+status = "unqualified"
+remaining = "Task 1.11 preserves old output on build failure; true atomic publication, concurrent readers and reproducible clean/incremental artifacts remain."
+ac_1 = "Deterministic manifests; reproducibility; dependency invalidation; clean/incremental builds; diagnostics; maps; hashing; atomic publication; explicit partial-build failures."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.24]
+title = "Deployment"
+status = "unqualified"
+remaining = "Advertised runtime/host adapters, rollback, immutable version compatibility and real proxy/CDN behavior remain release qualification."
+ac_1 = "Each advertised adapter tested; immutable artifacts; runtime config; health; filesystem/proxy/CDN assumptions; rollout/rollback; old-client/new-server compatibility."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.25]
+title = "Observability"
+status = "unqualified"
+remaining = "Task 1.8 corrects late error classification only; redaction, correlation propagation, production maps and cache/job metrics remain."
+ac_1 = "Structured logs; correlation; loader/action traces; metrics; classification; production stacks; sampling/redaction; cache/slow request/job visibility."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.26]
+title = "Resource and cost control"
+status = "unqualified"
+remaining = "Task 1.9 supplies local confirmation caps only; tenant quotas, input limits, database/image CPU and memory amplification remain."
+ac_1 = "Memory/CPU/payload limits; bounded caches/logs; expensive queries; tenant quotas; image limits; amplification prevention."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.27]
+title = "Development tooling"
+status = "unqualified"
+remaining = "Task 1.14 fixes optional-peer bootstrap; config reconstruction, state-preserving browser HMR and sustained watcher proof remain."
+ac_1 = "Fast startup; correct HMR/overlays/source locations; config reload; shutdown; ports; watching; symlinks/monorepos; dev/production parity."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.28]
+title = "Type and package quality"
+status = "unqualified"
+remaining = "Task 1.14 proves minimal CLI artifact behavior only; full export/CSS/type/browser/peer deduplication compatibility remains."
+ac_1 = "Accurate public types/inference; bounded typechecking; exports/declarations; Node/React versions; deduplication; peers; browser-safe entries."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.29]
+title = "Accessibility and interaction"
+status = "unqualified"
+remaining = "Task 1.7 corrects focus eligibility only; background inertness and manual keyboard/screen-reader/WCAG AA matrix remain."
+ac_1 = "WCAG 2.2 AA with manual testing: semantics, keyboard, focus, announcements, forms, modals, motion, contrast, zoom/reflow, touch targets; no hover-only controls."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.30]
+title = "Responsive and international behavior"
+status = "unqualified"
+remaining = "Existing site phone dock labels collide; RTL/bidi, keyboards, safe areas, locale/timezone and long strings need browser proof."
+ac_1 = "Phone/tablet/desktop; keyboards/safe areas; long strings; RTL/bidi; locale routes/plurals/timezones/Unicode/date and number formatting."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.31]
+title = "Testing and qualification"
+status = "unqualified"
+remaining = "Tasks 1.15 and 1.16 strengthen gates; no aggregate release certification until all browser/artifact/security/load checks genuinely pass."
+ac_1 = "Unit/integration/browser/artifact/static/no-JS/security/accessibility/visual/performance/load tests; real server paths and installed packages; deterministic fixtures without fake success."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.32]
+title = "Documentation and ecosystem"
+status = "unqualified"
+remaining = "Task 1.12 documents native extension limits; all new production contracts need installation-to-deployment examples and accurate API/migration guidance."
+ac_1 = "Installation through deployment; runnable examples; searchable errors; API/migration/adapter/extension contracts; application recipes and explicit unsupported behavior."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.33]
+title = "Release and maintenance"
+status = "unqualified"
+remaining = "Task 1.19 aligns provenance metadata with the preserved release assertion; actual published attestation, upgrade/rollback and full supply-chain evidence remain."
+ac_1 = "Semver; deprecation; upgrades/codemods; rollback/support/security reporting/advisories; updates/licenses; artifact provenance/integrity with SLSA baseline."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.34]
+title = "Stable addressing"
+status = "unqualified"
+remaining = "Declaration addresses exist; repeated action instances lack item identity and need a compatible deterministic addressing contract."
+ac_1 = "Deterministic unique addresses for controls/pages/regions/overlays; repeated and dynamic item identity; compatibility across releases."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.35]
+title = "Machine-readable parity"
+status = "unqualified"
+remaining = "Declaration-derived sidecars lack per-instance operability proof; exposed store/parameter classification and pending outcome parity remain."
+ac_1 = "Sidecars match visible operable UI, input, permission, reason and state; no stale navigation actions; no secrets or unnecessary personal data."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.36]
+title = "Safe execution"
+status = "unqualified"
+remaining = "Tasks 1.9 and 1.10 protect local grants/consent; durable idempotency, replica grants, scoped credential and authorization matrices remain."
+ac_1 = "Server authorization independent of sidecars; explicit effects; scoped credentials; exact-operation confirmation; retry duplicate-effect protection."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.37]
+title = "Reliable automation"
+status = "unqualified"
+remaining = "Per-invocation machine state, correlation, cancellation and recovery after uncertain responses remain."
+ac_1 = "Ready/pending/blocked/failed/completed states; machine-readable outcomes; cancellation/correlation/idempotency; interruption recovery; no arbitrary sleeps."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.38]
+title = "Human control and auditability"
+status = "unqualified"
+remaining = "Task 1.10 binds visible consent to isolated input; navigation cancellation, delegated actor attribution, redaction and authority boundaries remain."
+ac_1 = "Visible action parity; meaningful consent/intervention/cancellation; actor/delegator attribution; redacted audit; untrusted content never expands authority."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.39]
+title = "Cross-request leakage"
+status = "unqualified"
+remaining = "Focused SSR store and cache policy repairs need a broader concurrent multi-tenant loader/action/query matrix."
+ac_1 = "Concurrent users and tenants never share authenticated state, cached responses, mutable stores or loader results."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.40]
+title = "Deployment version skew"
+status = "unqualified"
+remaining = "No real old-browser/new-server deployment-skew gate is qualified."
+ac_1 = "Old browser tabs survive deployment without lost work, endless missing chunks or incompatible action calls."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.41]
+title = "Replica behavior"
+status = "unqualified"
+remaining = "Confirmation grants remain per-router memory; multi-process sessions, caches, idempotency and scheduled work are unqualified."
+ac_1 = "Sessions, invalidation, idempotency and scheduled work are tested across real processes, not only one local server."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.42]
+title = "Races and disconnects"
+status = "unqualified"
+remaining = "Tasks 1.4, 1.5 and 1.10 cover selected races; uploads, disconnects, abort propagation and expensive dependency cleanup remain."
+ac_1 = "Rapid navigation, late responses, double clicks, cancelled uploads and disconnections cannot corrupt state or leave unnecessary expensive work running."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.43]
+title = "Streaming failures"
+status = "unqualified"
+remaining = "Current SSR allReady wait masks early delivery; real post-header failure and stream cancellation tests remain."
+ac_1 = "Post-header failures have explicit reporting, recovery and observability; they cannot be represented as a replacement HTTP 500."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.44]
+title = "Hydration nondeterminism"
+status = "unqualified"
+remaining = "Task 1.6 tests store hydration parity; time/random/locale/auth/responsive/React-copy matrix remains."
+ac_1 = "Test time, randomness, locale/timezone, IDs, authentication, responsive state and duplicate React copies."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.45]
+title = "Cache variants and CSP"
+status = "unqualified"
+remaining = "Task 1.13 tests document nonce/security path; broad cache variants and streaming nonce validation remain."
+ac_1 = "Correct locale/tenant/auth/cookie/header variants; valid request-specific nonces through HTML caching and streaming."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.46]
+title = "HTTP and path edge cases"
+status = "unqualified"
+remaining = "Tasks 1.1, 1.3 and 1.13 cover selected HTTP aliases/methods/redirects; malformed/Unicode/proxy/body/disconnect matrix remains."
+ac_1 = "Real HEAD/OPTIONS, malformed URLs, encoded separators, Unicode, case-sensitive hosts, proxy headers, body limits and disconnected-stream tests."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.47]
+title = "Actual npm artifact"
+status = "unqualified"
+remaining = "Task 1.14 qualifies minimal CLI install; complete packed app hydration, exports, CSS, types and production startup remain."
+ac_1 = "Clean packed installs prove exports, CSS, types, CLI and production startup independently of workspace success."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.48]
+title = "Static hosting reality"
+status = "unqualified"
+remaining = "Task 1.16 strengthens no-JS browser proof; base paths, directory redirects, forms, 404s and full static route matrix remain."
+ac_1 = "Actual static host proves directory redirects, base paths, nested assets, 404s, no-JS navigation and forms."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.49]
+title = "Long-running behavior"
+status = "unqualified"
+remaining = "No hours-long navigation/HMR/traffic/dependency-failure resource slope gate is qualified."
+ac_1 = "Watchers/subscriptions/timers/caches/pools stay bounded through hours of navigation, HMR, traffic and dependency failures."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[req.50]
+title = "Misleading green dashboards"
+status = "unqualified"
+remaining = "Task 1.15 enforces ratio and task 1.16 asserts real destinations; release claims still require aggregate behavioral evidence."
+ac_1 = "Build success, HTTP 200, ready sidecar or Lighthouse alone never substitutes for correct, hydrated, accessible, authorized and operable pages."
+ac_2 = "Record executable evidence and explicit remaining gaps before marking this domain qualified."
+
+[task.1.1]
+title = "Reject unsafe RPC methods before execution"
+status = "done"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["11","12","15","46"]
+do_1 = "Allow RPC POST only; reject GET, HEAD, OPTIONS, PUT, PATCH and DELETE with 405 and Allow POST before actor/handler/audit; preserve configured CORS preflight and unknown POST fallthrough. Test real mutating action and encoded GET input."
+touches = ["packages/rex/src/server/routes/rpc.ts","packages/rex/src/server/routes/rpc.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/routes/rpc.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.2]
+title = "Enforce page authorization before cached document delivery"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["14","19","39","45"]
+do_1 = "Authorize real declared pages before cache delivery; unknown cached declarations fail closed; denied actors receive 403 without cached content; retain public cache and stale/renderer-absent behavior."
+touches = ["packages/rex/src/server/routes/render.ts","packages/rex/src/server/routes/render.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/routes/render.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.3]
+title = "Reject cross-origin redirect normalization"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["15","46"]
+do_1 = "Reject redirect values that normalize to another origin including backslashes and controls; same-origin Referer with double-slash pathname cannot produce external Location. Test real form responses and retain CSRF/Origin enforcement."
+touches = ["packages/rex/src/core/action.ts","packages/rex/src/core/action.test.ts","packages/rex/src/server/form.ts","packages/rex/src/server/routes/form.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/core/action.test.ts src/server/routes/form.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.4]
+title = "Prevent duplicate client mutation admission"
+status = "done"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["9","37","42"]
+do_1 = "Synchronously guard a hook invocation before async validation; pending covers validation/token/execution; concurrent duplicates do not invoke handlers and return explicit non-success; all terminal outcomes release admission. This is not durable idempotency."
+touches = ["packages/rex/src/client/act.ts","packages/rex/src/client/act.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/act.test.tsx"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.5]
+title = "Cancel obsolete deferred navigation commits"
+status = "done"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["7","42"]
+do_1 = "Latest navigation wins across deferred view transitions, ordinary navigation and unmount; stale callbacks cannot change history, route or focus. Use real DOM behavior without fake implementation success."
+touches = ["packages/rex/src/client/router.tsx","tools/navigation-races.mjs","packages/rex/src/client/fixtures/navigation-races/index.html","packages/rex/src/client/fixtures/navigation-races/main.tsx"]
+verify_cmd = "node tools/navigation-races.mjs && pnpm -C packages/rex exec vitest run src/client/navigation.test.tsx src/client/nav.test.tsx"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.6]
+title = "Isolate SSR exposed store snapshots"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["10","35","39","44"]
+do_1 = "Per-render exposed stores use isolated declaration-initial snapshots consistent with server useStore, not module-global mutable client values; concurrent real SSR does not leak values and hydration agrees. Do not claim a new general request-scoped imperative state API."
+touches = ["packages/rex/src/client/store.ts","packages/rex/src/client/store-registry.ts","packages/rex/src/client/store-registry.test.tsx","packages/rex/src/server/ssr.ts","packages/rex/src/server/ssr.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/store.test.tsx src/client/store-registry.test.tsx src/server/ssr.test.tsx"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.7]
+title = "Keep modal focus on operable visible controls"
+status = "done"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["29","30"]
+do_1 = "Exclude hidden inputs, hidden/inert ancestors and disabled fieldset controls from initial and wrapped focus; preserve visible ordering, empty-surface focus, Escape and opener restoration."
+touches = ["packages/rex/src/client/overlay-surface.tsx","packages/rex/src/client/overlay-surface.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/overlay-surface.test.tsx src/client/overlay.test.tsx"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.8]
+title = "Report late invocation failures as telemetry failures"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["25","38","50"]
+do_1 = "Thrown exceptions override an earlier provisional successful outcome; preserve meaningful non-success classification. Test real router/exporter and real ledger validation failure, no fake ledger."
+touches = ["packages/rex/src/server/middleware/telemetry.ts","packages/rex/src/server/middleware/telemetry.test.ts","packages/rex/src/server/telemetry.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/middleware/telemetry.test.ts src/server/telemetry.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.9]
+title = "Bound pending confirmation grants"
+status = "done"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["20","26","36","49"]
+do_1 = "Finite global and per-actor pending capacity; reserve across asynchronous digest work; reject with TOO_MANY_REQUESTS rather than evict valid grants; expiry and consumption reclaim capacity; preserve exact actor/action/input binding and single use."
+touches = ["packages/rex/src/server/router.ts","packages/rex/src/server/confirmation-capacity.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/router.test.ts src/server/confirmation-capacity.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.10]
+title = "Bind consent to an isolated invocation input"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["36","38","42"]
+do_1 = "Snapshot invocation input before asynchronous validation; display, grant and execute exactly that isolated value; nested caller mutation cannot change approved execution; cancellation grants and executes nothing; preserve real-server token checks."
+touches = ["packages/rex/src/client/agent/confirm.tsx","packages/rex/src/client/agent/confirm.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/agent/confirm.test.tsx"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.11]
+title = "Preserve prior deployment output on failed builds"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["23","24","50"]
+do_1 = "Build into a sibling staging directory; enforce budgets within buildApp before publication; compilation/prerender/budget failure preserves prior output and cleans staging; successful paths refer to final output. Do not claim two renames are atomic for concurrent readers."
+do_2 = "Integrate the separately reported static import transfer closures without changing budget semantics, and retain build CLI behavior while moving registration metadata to its single lightweight registration module."
+touches = ["packages/rex/src/cli/commands/build.ts","packages/rex/src/cli/commands/build.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/commands/build.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.12]
+title = "Document and qualify native extension boundaries"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["1","32"]
+do_1 = "Document supported native Hono wrapping and Vite composition, lifetimes and isolation limitations; no global mutation presented as isolated app config. Real two-app test proves wrapper isolation and retained action policy."
+touches = ["docs/extensions.md","docs/architecture.md","docs/platforms.md","docs/versioning.md","packages/rex/src/server/extension-contract.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/extension-contract.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.13]
+title = "Protect explicit HTML aliases in the Node adapter"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["14","15","19","45","46"]
+do_1 = "Explicit index.html aliases including encoded spellings must follow canonical document policy and request-specific security processing, never raw protected artifacts; preserve query/headers, GET/HEAD behavior and ordinary assets. Unknown aliases fail closed. Use real server/cache/renderer tests."
+touches = ["packages/rex/src/server/adapters/node.ts","packages/rex/src/server/adapters/node.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/adapters/node.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.14]
+title = "Keep minimal installed CLI bootstrap independent of optional peers"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["27","28","47"]
+do_1 = "Lazy command execution must preserve complete help; a real packed clean install without optional peers runs help, version and new --ui none --no-install. A selected command missing its required dependency reports an actionable error. Preserve package metadata."
+touches = ["packages/rex/src/cli/index.ts","packages/rex/src/cli/index.test.ts","tools/smoke-cli-bootstrap.mjs","packages/rex/src/cli/registrations/build.ts","packages/rex/src/cli/registrations/check.ts","packages/rex/src/cli/registrations/dev.ts","packages/rex/src/cli/registrations/manifest.ts","packages/rex/src/cli/commands/check.ts","packages/rex/src/cli/commands/dev.ts","packages/rex/src/cli/commands/manifest.ts"]
+verify_cmd = "node tools/smoke-cli-bootstrap.mjs"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.15]
+title = "Enforce the existing test-ratio gate in CI and release"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["31","33","50"]
+do_1 = "Both workflows run the enforcing node tools/test-ratio.mjs --check command; structural tests verify gating without weakening ratio or existing release artifact reuse."
+touches = [".github/workflows/ci.yml",".github/workflows/release.yml","tools/qualification-gates.test.mjs"]
+verify_cmd = "node --test tools/qualification-gates.test.mjs && node tools/test-ratio.mjs --check"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.16]
+title = "Qualify no-JavaScript site destinations and failures"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["4","31","48","50"]
+do_1 = "No-JavaScript navigation asserts initial/destination status, expected content and sidecar, uses existing page error/request watcher, and preserves zero-JavaScript checks rather than treating URL changes alone as success."
+touches = ["site/e2e/site.spec.ts"]
+verify_cmd = "pnpm -C site exec playwright test e2e/site.spec.ts --project=desktop --grep 'content and navigation without JavaScript'"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.17]
+title = "Report complete static import transfer closures"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["21","22"]
+do_1 = "Report own chunk gzip separately from deduplicated static import closure; retain existing budget semantics and bounds; handle diamond graphs/cycles and exclude deferred dynamic imports. Use real Vite fixture proof."
+touches = ["packages/rex/src/vite/split.ts","packages/rex/src/vite/split-closure.test.ts"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/vite/split.test.ts src/vite/split-closure.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.18]
+title = "Qualify caller-owned database transactions"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["17","32"]
+do_1 = "Using native transaction-bound Drizzle stores and real libsql prove commit across two stores, rollback and concurrent isolation. Document caller ownership and createTable false for transactions; use actual supported types, no unsafe widening."
+touches = ["packages/rex/src/store/drizzle.test.ts","docs/recipes/database-transactions.md"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/store/drizzle.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.19]
+title = "Require package provenance consistently with release publishing"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["28", "33", "47"]
+do_1 = "Set publishConfig.provenance true, retaining the existing package assertion and provenance-enabled release workflow. Preserve all other package metadata."
+touches = ["packages/rex/package.json"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/cli/pack.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.20]
+title = "Preserve native modified link navigation"
+status = "in_progress"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["7", "29"]
+do_1 = "Shell links intercept only unmodified primary clicks for internal same-context navigation. Preserve ctrl/meta/shift/alt clicks, nonprimary clicks, prevented events, download links and alternate targets for native browser behavior, while retaining ordinary Rex navigation and addressing. Use real rendered links without API substitutes."
+touches = ["packages/rex/src/client/shell/nav.tsx", "packages/rex/src/client/nav-links.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/client/nav-links.test.tsx src/client/nav.test.tsx"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45
+
+[task.1.21]
+title = "Authorize framework module preloads with the document nonce"
+status = "done"
+mode = "BUILD"
+wave = 1
+requires = []
+reqs = ["4", "15", "21", "45", "48", "50"]
+do_1 = "Every renderer-owned modulepreload link carries the same escaped request nonce as its document scripts. Keep restrictive CSP, request freshness and static zero-JavaScript stripping intact; verify real renderer outputs for distinct nonces and no-JavaScript static behavior. This repairs the real site CSP request failures exposed by task 1.16, not a policy relaxation."
+touches = ["packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.ts", "packages/rex/src/server/ssr.test.tsx"]
+verify_cmd = "pnpm -C packages/rex exec vitest run src/server/ssr.test.ts src/server/ssr.test.tsx src/vite/prerender.test.ts"
+max_verify_runs = 1
+max_repair_cycles = 2
+time_limit_minutes = 45

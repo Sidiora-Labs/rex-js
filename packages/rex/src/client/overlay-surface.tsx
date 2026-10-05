@@ -5,7 +5,35 @@ const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function focusables(container: HTMLElement): HTMLElement[] {
-  return [...container.querySelectorAll<HTMLElement>(FOCUSABLE)];
+  return [...container.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((element) => {
+    if (
+      element.matches(
+        'input[type="hidden"], button[disabled], input[disabled], select[disabled], textarea[disabled]',
+      ) ||
+      element.tabIndex < 0
+    )
+      return false;
+    const view = element.ownerDocument.defaultView;
+    for (
+      let ancestor: HTMLElement | null = element;
+      ancestor !== null;
+      ancestor = ancestor.parentElement
+    ) {
+      if (ancestor.hasAttribute("hidden") || ancestor.hasAttribute("inert")) return false;
+      const style = view?.getComputedStyle(ancestor);
+      if (
+        style?.display === "none" ||
+        style?.visibility === "hidden" ||
+        style?.visibility === "collapse"
+      )
+        return false;
+      if (ancestor.matches("fieldset[disabled]")) {
+        const legend = [...ancestor.children].find((child) => child.tagName === "LEGEND");
+        if (legend === undefined || !legend.contains(element)) return false;
+      }
+    }
+    return true;
+  });
 }
 
 export function OverlaySurface({

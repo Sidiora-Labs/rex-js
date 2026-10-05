@@ -295,6 +295,15 @@ export function requestOrigin(request: Request): string {
   return new URL(request.url).origin;
 }
 
+function isLocalRedirect(path: string, request: Request): boolean {
+  if (!path.startsWith("/") || /[\\\u0000-\u001f\u007f]/.test(path)) return false;
+  try {
+    return new URL(path, request.url).origin === requestOrigin(request);
+  } catch {
+    return false;
+  }
+}
+
 export function refererPath(request: Request): string | null {
   const referer = request.headers.get("referer");
   if (referer === null || referer === "") return null;
@@ -305,11 +314,14 @@ export function refererPath(request: Request): string | null {
     return null;
   }
   if (url.origin !== requestOrigin(request)) return null;
-  return `${url.pathname}${url.search}`;
+  const path = `${url.pathname}${url.search}`;
+  return isLocalRedirect(path, request) ? path : null;
 }
 
 export function formRedirectTarget(request: Request, redirect: string | null): string {
-  return redirect ?? refererPath(request) ?? "/";
+  return redirect !== null && isLocalRedirect(redirect, request)
+    ? redirect
+    : (refererPath(request) ?? "/");
 }
 
 export function fieldErrors(issues: readonly StandardIssue[]): Record<string, string[]> {

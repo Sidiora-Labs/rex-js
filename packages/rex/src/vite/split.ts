@@ -48,6 +48,71 @@ export interface OutputAssetLike {
   readonly fileName: string;
 }
 
+export interface StaticImportChunk extends OutputChunkLike {
+  readonly imports: readonly string[];
+}
+
+export interface StaticImportClosure {
+  readonly name: string;
+  readonly file: string;
+  readonly files: readonly string[];
+  readonly externalImports: readonly string[];
+  readonly raw: number;
+  readonly gzip: number;
+}
+
+export function staticImportClosures(
+  items: readonly (StaticImportChunk | OutputAssetLike)[],
+): StaticImportClosure[] {
+  const chunks = items.filter((item): item is StaticImportChunk => item.type === "chunk");
+  const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+  const sizes = new Map(
+    chunks.map((chunk) => [
+      chunk.fileName,
+      { raw: Buffer.byteLength(chunk.code), gzip: gzipSync(chunk.code).byteLength },
+    ]),
+  );
+  return chunks
+    .map((chunk) => {
+      const files = new Set<string>();
+      const externalImports = new Set<string>();
+      const pending = [chunk];
+      let raw = 0;
+      let gzip = 0;
+      for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
+        if (files.has(next.fileName)) continue;
+        files.add(next.fileName);
+        const size = sizes.get(next.fileName)!;
+        raw += size.raw;
+        gzip += size.gzip;
+        for (const file of next.imports) {
+          const imported = byFile.get(file);
+          if (imported === undefined) externalImports.add(file);
+          else pending.push(imported);
+        }
+      }
+      return {
+        name: chunk.name,
+        file: chunk.fileName,
+        files: [...files].sort(),
+        externalImports: [...externalImports].sort(),
+        raw,
+        gzip,
+      };
+    })
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.file < b.file ? -1 : 1));
+}
+
+export function formatStaticImportClosures(rows: readonly StaticImportClosure[]): string {
+  return `${[
+    "static JS closure (own chunk + static imports; measurements, not budgets)",
+    ...rows.map(
+      (row) =>
+        `${row.file}  ${kilobytes(row.raw)} raw  ${kilobytes(row.gzip)} gzip  ${row.files.length} chunks${row.externalImports.length === 0 ? "" : `  external: ${row.externalImports.join(", ")}`}`,
+    ),
+  ].join("\n")}\n`;
+}
+
 export interface ChunkRow {
   readonly name: string;
   readonly file: string;

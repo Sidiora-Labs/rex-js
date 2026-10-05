@@ -13,6 +13,7 @@ import { createRegistry } from "../core/registry.ts";
 import { STATE_EXPORT_NAMES } from "../core/states.ts";
 import { buildManifest } from "../manifest/build.ts";
 import { text } from "../schema/index.ts";
+import { stripHydration } from "../vite/prerender.ts";
 import { CLIENT_HINT_HEADERS } from "./adapters/client-hints.ts";
 import { DENSITY_HEADER, createRexContext, type RexRequestContext } from "./context.ts";
 import { registerPageRenderer } from "./routes/render.ts";
@@ -380,7 +381,7 @@ describe("createRexRenderer", () => {
       '<style data-rex-fonts="">@font-face{font-family:"Inter";src:url("/fonts/inter.woff2") format("woff2");font-style:normal;font-display:swap}</style>',
     );
     expect(html).toContain('<link rel="stylesheet" href="/entry.css">');
-    expect(html).toContain('<link rel="modulepreload" href="/entry.js">');
+    expect(html).toContain(`<link rel="modulepreload" href="/entry.js" nonce="${context.nonce}">`);
     expect(html).toContain(`<script nonce="${context.nonce}">window.__rex=1</script>`);
     expect(html).toContain(
       `<script type="${REX_DATA_MIME_TYPE}" id="${REX_DATA_ELEMENT_ID}" nonce="${context.nonce}">`,
@@ -389,5 +390,44 @@ describe("createRexRenderer", () => {
     const closing = `</div><script type="module" src="/entry.js" nonce="${context.nonce}"></script></body></html>`;
     expect(html.slice(-closing.length)).toBe(closing);
     expect(html).not.toContain("Home sweet home");
+  });
+
+  it("uses each request's escaped nonce for entry and page module preloads and strips them for static output", async () => {
+    const registry = createRegistry().register(home).freeze();
+    const HomeView = view(() => createElement("p", null, "Home sweet home"));
+    const renderer = createRexRenderer({
+      bundle: {
+        registry,
+        manifest: buildManifest(registry),
+        pages: [lazySet(home, { view: HomeView, states: statesFor("Home") })],
+      },
+      assets: {
+        scripts: ["/entry.js"],
+        stylesheets: ["/entry.css"],
+        preloads: ["/entry.js"],
+        pages: { home: { stylesheets: [], preloads: ["/home.js"] } },
+      },
+    });
+    const request = new Request("http://rex.test/");
+    const context = await contextFor(request);
+    for (const nonce of ['first"<&', "second-request"]) {
+      const rendered = await renderer.render(request, { ...context, nonce });
+      const html = await new Response(rendered.body).text();
+      for (const href of ["/entry.js", "/home.js"]) {
+        expect(html).toContain(
+          `<link rel="modulepreload" href="${href}" nonce="${escapeHtml(nonce)}">`,
+        );
+      }
+      expect(html).toContain(
+        `<script type="module" src="/entry.js" nonce="${escapeHtml(nonce)}"></script>`,
+      );
+      const stripped = stripHydration(html);
+      expect(stripped).not.toContain('rel="modulepreload"');
+      expect(stripped).not.toContain('type="module"');
+      expect(stripped).not.toContain(REX_DATA_MIME_TYPE);
+      expect(stripped).not.toContain(SSR_ATTRIBUTE);
+      expect(stripped).toContain('<link rel="stylesheet" href="/entry.css">');
+      expect(stripped).toContain("Home sweet home");
+    }
   });
 });

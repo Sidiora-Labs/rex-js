@@ -2,7 +2,13 @@ import { useSyncExternalStore } from "react";
 import { RexError } from "../core/errors.ts";
 import { validateName } from "../core/ids.ts";
 import { registerReset } from "./reset.ts";
-import { defaultStoreRegistry, toJsonValue, useRenderedStore } from "./store-registry.ts";
+import {
+  defaultStoreRegistry,
+  immutableJsonSnapshot,
+  registerStoreInitialSnapshot,
+  toJsonValue,
+  useRenderedStore,
+} from "./store-registry.ts";
 
 export {
   createStoreRegistry,
@@ -75,6 +81,7 @@ export function store<T>(id: string, options: StoreOptions<T>): RexStore<T> {
     throw new RexError("REX315", `rex: store "${id}" expose must be a boolean`);
   }
   assertSerialisable(id, initial);
+  const serverInitial = immutableJsonSnapshot(initial);
 
   let current = initial;
   let listeners: readonly Listener[] = [];
@@ -110,7 +117,7 @@ export function store<T>(id: string, options: StoreOptions<T>): RexStore<T> {
     subscribe,
     useStore(): T {
       useRenderedStore(created as RexStore<unknown>);
-      return useSyncExternalStore(subscribe, get, () => initial);
+      return useSyncExternalStore(subscribe, get, () => serverInitial);
     },
     reset() {
       set(initial);
@@ -118,6 +125,7 @@ export function store<T>(id: string, options: StoreOptions<T>): RexStore<T> {
     toJSON: (): T => toJsonValue(current),
   });
 
+  registerStoreInitialSnapshot(created as RexStore<unknown>, serverInitial);
   defaultStoreRegistry.register(created as RexStore<unknown>);
   registerReset(created.reset);
   return created;

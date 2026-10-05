@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { existsSync, readdirSync, realpathSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { RexErrorCode } from "../core/errors.ts";
 import { REX_VERSION } from "../index.ts";
@@ -87,7 +87,10 @@ export async function createProgram(
       io.out(`${REX_VERSION}\n`);
     });
   for (const file of commandModuleFiles(commandsDir)) {
-    const loaded: unknown = await import(pathToFileURL(file).href);
+    const registration = join(dirname(commandsDir), "registrations", basename(file));
+    const loaded: unknown = await import(
+      pathToFileURL(existsSync(registration) ? registration : file).href
+    );
     if (!isCommandModule(loaded)) {
       throw new Error(`rex: ${file} must export register(program, io)`);
     }
@@ -113,6 +116,21 @@ export async function run(
     await program.parseAsync([...argv]);
     return EXIT_OK;
   } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ERR_MODULE_NOT_FOUND") {
+      const missing = /Cannot find package '([^']+)'/.exec(error.message)?.[1];
+      const manifest = JSON.parse(
+        readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+      ) as {
+        readonly peerDependencies: Readonly<Record<string, string>>;
+        readonly peerDependenciesMeta: Readonly<Record<string, { readonly optional?: boolean }>>;
+      };
+      if (missing !== undefined && manifest.peerDependenciesMeta[missing]?.optional === true) {
+        io.err(
+          `rex: this command requires the optional dependency ${missing}; install it in your project with npm install ${missing}@'${manifest.peerDependencies[missing]}' and retry.\n`,
+        );
+        return EXIT_FAILURE;
+      }
+    }
     if (error instanceof RexCliExit) {
       if (error.message !== "") io.err(`${error.message}\n`);
       const frame = causeFrame(error.cause);

@@ -176,4 +176,131 @@ describe("OverlaySurface", () => {
     );
     expect(buttonOnly.hides()).toBe(1);
   });
+
+  it.each([
+    { name: "hidden input", control: <input type="hidden" value="token" /> },
+    { name: "hidden control", control: <button hidden>Hidden</button> },
+    {
+      name: "hidden ancestor",
+      control: (
+        <div hidden>
+          <button>Hidden</button>
+        </div>
+      ),
+    },
+    {
+      name: "inert ancestor",
+      control: (
+        <div inert>
+          <button>Inert</button>
+        </div>
+      ),
+    },
+    {
+      name: "display none ancestor",
+      control: (
+        <div style={{ display: "none" }}>
+          <button>Hidden</button>
+        </div>
+      ),
+    },
+    {
+      name: "invisible ancestor",
+      control: (
+        <div style={{ visibility: "hidden" }}>
+          <button>Hidden</button>
+        </div>
+      ),
+    },
+    {
+      name: "disabled fieldset",
+      control: (
+        <fieldset disabled>
+          <input aria-label="Disabled field" />
+        </fieldset>
+      ),
+    },
+    { name: "negative tabindex", control: <button tabIndex={-1}>Programmatic focus only</button> },
+    {
+      name: "disabled control with tabindex",
+      control: (
+        <button disabled tabIndex={0}>
+          Disabled
+        </button>
+      ),
+    },
+  ])("excludes $name from initial focus and both wrapping boundaries", async ({ control }) => {
+    const trigger = opener();
+    const { dialog, unmount } = mount({
+      closeLabel: null,
+      children: (
+        <>
+          {control}
+          <button>First</button>
+          <button>Last</button>
+          {control}
+        </>
+      ),
+    });
+    const surface = dialog();
+    const first = within(surface).getByRole("button", { name: "First" });
+    const last = within(surface).getByRole("button", { name: "Last" });
+    expect(document.activeElement).toBe(first);
+    expect(await key(first, { key: "Tab", shiftKey: true })).toBe(false);
+    expect(document.activeElement).toBe(last);
+    expect(await key(last, { key: "Tab" })).toBe(false);
+    expect(document.activeElement).toBe(first);
+    unmount();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("keeps controls in the first legend of a disabled fieldset operable", async () => {
+    const { dialog } = mount({
+      closeLabel: null,
+      children: (
+        <>
+          <fieldset disabled>
+            <legend>
+              <button>Legend control</button>
+            </legend>
+            <input aria-label="Disabled field" />
+            <legend>
+              <button>Second legend control</button>
+            </legend>
+          </fieldset>
+          <button>Last</button>
+        </>
+      ),
+    });
+    const first = within(dialog()).getByRole("button", { name: "Legend control" });
+    const last = within(dialog()).getByRole("button", { name: "Last" });
+    expect(document.activeElement).toBe(first);
+    expect(await key(first, { key: "Tab", shiftKey: true })).toBe(false);
+    expect(document.activeElement).toBe(last);
+    expect(await key(last, { key: "Tab" })).toBe(false);
+    expect(document.activeElement).toBe(first);
+  });
+
+  it("focuses the surface when all controls are inoperable", async () => {
+    const { dialog } = mount({
+      closeLabel: null,
+      children: (
+        <>
+          <input type="hidden" />
+          <div hidden>
+            <button>Hidden</button>
+          </div>
+          <fieldset disabled>
+            <input />
+          </fieldset>
+        </>
+      ),
+    });
+    const surface = dialog();
+    expect(document.activeElement).toBe(surface);
+    expect(await key(surface, { key: "Tab" })).toBe(false);
+    expect(document.activeElement).toBe(surface);
+    expect(await key(surface, { key: "Tab", shiftKey: true })).toBe(false);
+    expect(document.activeElement).toBe(surface);
+  });
 });

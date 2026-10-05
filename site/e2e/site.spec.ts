@@ -99,16 +99,37 @@ for (const stop of stops) {
       });
       try {
         const page = await context.newPage();
-        await page.goto(new URL(stop.path, String(info.project.use.baseURL)).href);
+        const watch = watchPage(page);
+        const response = await page.goto(new URL(stop.path, String(info.project.use.baseURL)).href);
+        expect(response?.status()).toBe(200);
         await waitForSidecar(page, stop.page.id, { mirror: false });
+        await expect(page.locator(`[data-rex-page="${stop.page.id}"]`)).toBeVisible();
+        await expect(page.locator("[data-rex-error-code]")).toHaveCount(0);
         await expect(page.locator("main")).toBeVisible();
         expect((await page.locator("main").innerText()).trim().length).toBeGreaterThan(0);
         await checkZeroJs(page);
         const link = page.locator("a[data-rex-nav][href]").first();
         const href = await link.getAttribute("href");
         expect(href).not.toBeNull();
-        await link.click();
-        await expect(page).toHaveURL(new URL(href!, String(info.project.use.baseURL)).href);
+        const destination = new URL(href!, page.url());
+        const expected = stops.find(
+          (entry) => entry.path.replace(/\/$/, "") === destination.pathname.replace(/\/$/, ""),
+        );
+        if (expected === undefined)
+          throw new Error(`Unlisted navigation destination: ${destination.href}`);
+        const [navigated] = await Promise.all([
+          page.waitForNavigation({ waitUntil: "load" }),
+          link.click(),
+        ]);
+        expect(navigated?.status()).toBe(200);
+        await expect(page).toHaveURL(destination.href);
+        await waitForSidecar(page, expected.page.id, { mirror: false });
+        await expect(page.locator(`[data-rex-page="${expected.page.id}"]`)).toBeVisible();
+        await expect(page.locator("[data-rex-error-code]")).toHaveCount(0);
+        await expect(page.locator("main")).toBeVisible();
+        expect((await page.locator("main").innerText()).trim().length).toBeGreaterThan(0);
+        if (expected.page.render === "static") await checkZeroJs(page);
+        expect(watch.stop()).toEqual([]);
       } finally {
         await context.close();
       }

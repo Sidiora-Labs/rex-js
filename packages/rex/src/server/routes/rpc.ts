@@ -7,6 +7,10 @@ export const RPC_PREFIX = REX_RPC_PREFIX;
 
 export function installRpcRoute(app: Hono, setup: RexServerSetup): void {
   app.use(`${RPC_PREFIX}/*`, async (c, next) => {
+    if (c.req.raw.method !== "POST") {
+      c.header("Allow", "POST");
+      return c.json({ code: "METHOD_NOT_SUPPORTED", message: "RPC requests require POST" }, 405);
+    }
     let context: RexContext;
     try {
       context = await createRexContext(c.req.raw, setup.options.actor);

@@ -186,6 +186,19 @@ describe("processIO", () => {
 });
 
 describe("createProgram and commandListing", () => {
+  it("preserves full command options through lightweight registration modules", async () => {
+    const listing = await commandListing();
+    const options = (name: string) =>
+      listing.commands
+        .find((command) => command.name === name)
+        ?.options.map((option) => option.flags);
+    expect(options("dev")).toEqual(["--port <port>", "--host <host>", "--no-check"]);
+    expect(options("build")).toEqual(["--target <target>", "--no-check"]);
+    expect(options("check")).toEqual(["--json", "--runtime"]);
+    const captured = captureIO();
+    expect(await run(["dev", "--port", "70000"], captured.io)).toBe(EXIT_USAGE);
+    expect(captured.err()).toContain("the port must be an integer from 0 to 65535");
+  });
   it("builds the rex program with version, the module commands and output routed to io", async () => {
     const dir = tempDir();
     writeFileSync(join(dir, "greet.ts"), GREET_MODULE);

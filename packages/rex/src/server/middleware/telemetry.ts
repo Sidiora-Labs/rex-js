@@ -180,7 +180,9 @@ export function createTelemetry(config: TelemetryConfig = {}): RexTelemetry {
       failure = error;
       throw error;
     } finally {
-      if (outcome === null) handle.outcome(failed ? OUTCOME_ERROR : OUTCOME_OK);
+      if (outcome === null || (failed && outcome === OUTCOME_OK)) {
+        handle.outcome(failed ? OUTCOME_ERROR : OUTCOME_OK);
+      }
       const final = outcome ?? OUTCOME_OK;
       if (native !== null) {
         if (failed) {

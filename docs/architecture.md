@@ -67,6 +67,8 @@ The build (`pnpm -C packages/rex build`) runs `tsc -p tsconfig.build.json`, copi
 
 ## Server
 
+Application middleware and routes compose through native Hono wrappers; build integrations compose through Vite. See [extension contracts](extensions.md) for ordering, instance isolation, adapter responsibilities and unsupported lifecycle guarantees.
+
 `createRexServer(options)` in `packages/rex/src/server/index.ts` returns a Hono app.
 
 ```ts

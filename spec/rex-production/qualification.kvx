@@ -1,0 +1,154 @@
+[meta]
+feature = "rex-production"
+status = "in_progress"
+scope = "Focused task evidence is not full-domain or release certification."
+
+[qualification.static_navigation_csp]
+status = "open_browser_contract"
+observation = "Native destination status, content and sidecars pass, but JavaScript-disabled Chromium reports 22 modulepreload request failures with reason csp even after nonce repair. Static host sends no CSP header; home has no CSP meta policy. Initial CSP-mismatch diagnosis was not established."
+resolution = "Renderer nonce correctness qualified separately. Browser JavaScript-disabled preload behavior needs explicit contract analysis; request watcher and assertions remain unchanged."
+evidence = "72cd5068fc64 | task 1.16 desktop no-JavaScript repair gate | running_with_failures | /tmp/rex-production-1.16-verify-repair.log"
+
+[qualification.provenance_contract]
+status = "resolved_metadata"
+observation = "Package publishConfig.provenance is false while cli/pack.test.ts requires true; release workflow separately requests provenance."
+resolution = "Provenance is required: package metadata now true; existing assertion and workflow retained. Actual published attestation is not claimed."
+evidence = "38c5f063dc33 | pnpm -C packages/rex exec vitest run src/cli/pack.test.ts | 0 (4 tests; cg graph exit 1) | /tmp/rex-production-1.19-verify.log"
+
+[qualification.shared_typecheck_1]
+status = "resolved"
+observation = "Tasks 1.1 and 1.2 typecheck saw TS2740 in task 1.13 Node test fixture states."
+resolution = "Owning task added actual required state components; later task 1.3 package typecheck exited 0. No type widening."
+evidence = "fa2ad0989ca4d463dff45b007ab155ca98015804 | pnpm -C packages/rex typecheck | 2 | /tmp/rex-production-1.1-typecheck.log"
+
+[qualification.snapshot_attribution]
+status = "open"
+observation = "Shared Codify snapshots absorb concurrent task edits; task 1.2 tests passed but done graph attribution rejected its two files."
+resolution = "Preserve passed test evidence and in_progress state; do not force completion or rerun a passed gate merely to repair metadata."
+evidence = "fa2ad0989ca4d463dff45b007ab155ca98015804 | cg spec done 1.2 -f rex-production | 1 (tests 0) | /tmp/rex-production-1.2-verify.log"
+
+[qualification.rpc_methods]
+status = "qualified_focused"
+observation = "6 tests passed; task 1.1 done; shared typecheck defect repaired by task 1.13."
+evidence = "24986afd059b | pnpm -C packages/rex exec vitest run src/server/routes/rpc.test.ts | 0 | /tmp/rex-production-1.1-verify.log"
+
+[qualification.cache_authorization]
+status = "tests_passed_attribution_blocked"
+observation = "10 tests passed; Codify wrapper exit 1 solely graph attribution; task remains in progress."
+evidence = "fa2ad0989ca4d463dff45b007ab155ca98015804 | pnpm -C packages/rex exec vitest run src/server/routes/render.test.ts | 0 | /tmp/rex-production-1.2-verify.log"
+
+[qualification.redirect_normalization]
+status = "tests_passed_attribution_blocked"
+observation = "64 tests and package typecheck passed; Codify wrapper exit 1 graph attribution."
+evidence = "24986afd059b | pnpm -C packages/rex exec vitest run src/core/action.test.ts src/server/routes/form.test.ts | 0 | /tmp/rex-production-1.3-verify.log"
+
+[qualification.duplicate_admission]
+status = "qualified_focused"
+observation = "14 tests and package typecheck passed; task 1.4 done; no durable idempotency claim."
+evidence = "6149d9058278 | pnpm -C packages/rex exec vitest run src/client/act.test.tsx | 0 | /tmp/rex-production-1.4-verify.log"
+
+[qualification.ssr_store_isolation]
+status = "tests_passed_attribution_blocked"
+observation = "43 tests and package typecheck passed; Codify wrapper exit 1 graph attribution."
+evidence = "6149d9058278 | pnpm -C packages/rex exec vitest run src/client/store.test.tsx src/client/store-registry.test.tsx src/server/ssr.test.tsx | 0 | /tmp/rex-production-1.6-verify.log"
+
+[qualification.modal_focus]
+status = "qualified_focused"
+observation = "29 tests and package typecheck passed; task 1.7 done; full accessibility matrix remains."
+evidence = "777ca0e9aaf7 | pnpm -C packages/rex exec vitest run src/client/overlay-surface.test.tsx src/client/overlay.test.tsx | 0 | /tmp/rex-production-1.7-verify.log"
+
+[qualification.telemetry_errors]
+status = "tests_passed_attribution_blocked"
+observation = "28 tests and package typecheck passed; Codify wrapper exit 1 graph attribution."
+evidence = "6149d9058278 | pnpm -C packages/rex exec vitest run src/server/middleware/telemetry.test.ts src/server/telemetry.test.ts | 0 | /tmp/rex-production-1.8-verify.log"
+
+[qualification.navigation]
+status = "qualified_focused"
+observation = "Native Chromium passed 5 scenarios; 29 existing tests and package typecheck passed. Expected native AbortError cancellation handled. Task done."
+evidence = "b693ad2c2393 | node tools/navigation-races.mjs && pnpm -C packages/rex exec vitest run src/client/navigation.test.tsx src/client/nav.test.tsx | 0 | /tmp/rex-production-1.5-verify.log"
+
+[qualification.confirmation_capacity]
+status = "qualified_focused"
+observation = "23 tests and package typecheck passed; task done. Limits are local to each router, not distributed quotas."
+evidence = "38c5f063dc33 | pnpm -C packages/rex exec vitest run src/server/router.test.ts src/server/confirmation-capacity.test.ts | 0 | /tmp/rex-production-1.9-verify.log"
+
+[qualification.consent_snapshot]
+status = "tests_passed_attribution_blocked"
+observation = "18 tests and package typecheck passed; cg wrapper exit 1 solely graph attribution, task remains in progress."
+evidence = "38c5f063dc33 | pnpm -C packages/rex exec vitest run src/client/agent/confirm.test.tsx | 0 | /tmp/rex-production-1.10-verify.log"
+
+[qualification.extension_contract]
+status = "tests_passed_attribution_blocked"
+observation = "Real two-app policy and wrapper regression passed; package typecheck passed. cg wrapper exit 1 graph attribution."
+evidence = "38c5f063dc33 | pnpm -C packages/rex exec vitest run src/server/extension-contract.test.ts | 0 | /tmp/rex-production-1.12-verify.log"
+
+[qualification.html_aliases]
+status = "tests_passed_attribution_blocked"
+observation = "9 tests and package typecheck passed; cg wrapper exit 1 graph attribution. Explicit encoded index aliases exercise actual policy and nonces."
+evidence = "38c5f063dc33 | pnpm -C packages/rex exec vitest run src/server/adapters/node.test.ts | 0 | /tmp/rex-production-1.13-verify.log"
+
+[qualification.installed_cli]
+status = "tests_passed_attribution_blocked"
+observation = "Clean packed install proves optional peer absence, full help, version, generation and missing-dependency diagnostic; typecheck passed. Initial unsupported pnpm flag repaired; cg wrapper exit 1 for unchanged optional touch args.ts, now removed from ownership."
+evidence = "38c5f063dc33 | node tools/smoke-cli-bootstrap.mjs | 0 | /tmp/rex-production-1.14-verify.log"
+
+[qualification.publication]
+status = "tests_passed_attribution_blocked"
+observation = "14 tests passed after correcting the new fixture's undeclared welcome region; default compiler retained. Package typecheck passed; cg wrapper exit 1 graph attribution."
+evidence = "b693ad2c2393 | pnpm -C packages/rex exec vitest run src/cli/commands/build.test.ts | 0 | /tmp/rex-production-1.11-verify-repair2.log"
+
+[qualification.ci_gates]
+status = "tests_passed_attribution_blocked"
+observation = "4 structural tests, package typecheck and enforcing test ratios passed (Rex 1.68, demo 1.11). cg wrapper exit 1 graph attribution."
+evidence = "b693ad2c2393 | node --test tools/qualification-gates.test.mjs && node tools/test-ratio.mjs --check | 0 | /tmp/rex-production-1.15-verify.log"
+
+[qualification.transfer_closures]
+status = "tests_passed_attribution_blocked"
+observation = "9 tests and package typecheck passed, including real Vite shared/deferred output; existing budget semantics preserved. cg wrapper exit 1 graph attribution."
+evidence = "b693ad2c2393 | pnpm -C packages/rex exec vitest run src/vite/split.test.ts src/vite/split-closure.test.ts | 0 | /tmp/rex-production-1.17-verify.log"
+
+[qualification.database_transactions]
+status = "tests_passed_attribution_blocked"
+observation = "32 tests and package typecheck passed with native libsql transactions and concurrent WAL connections. cg wrapper exit 1 graph attribution."
+evidence = "b693ad2c2393 | pnpm -C packages/rex exec vitest run src/store/drizzle.test.ts | 0 | /tmp/rex-production-1.18-verify.log"
+
+[qualification.native_links]
+status = "tests_passed_attribution_blocked"
+observation = "40 tests and package typecheck passed; ordinary Rex navigation retained, modified clicks remain native. cg wrapper exit 1 graph attribution; HappyDOM native navigation emits connection diagnostics."
+evidence = "b693ad2c2393 | pnpm -C packages/rex exec vitest run src/client/nav-links.test.tsx src/client/nav.test.tsx | 0 | /tmp/rex-production-1.20-verify.log"
+
+[qualification.preload_nonces]
+status = "qualified_focused"
+observation = "51 renderer and prerender tests passed, package typecheck passed and task 1.21 done without forced completion; real rebuilt-site browser proof remains separate."
+evidence = "72cd5068fc64 | pnpm -C packages/rex exec vitest run src/server/ssr.test.ts src/server/ssr.test.tsx src/vite/prerender.test.ts | 0 | /tmp/rex-production-1.21-verify.log"
+
+[qualification.cli_target_default]
+status = "open_contract_conflict"
+observation = "Combined suite reports CLI JSON listing failure; cli.test.ts expects target default node while original and extracted registration omit a parser default to preserve deploy.host precedence."
+resolution = "Preserve assertion and host-aware behavior; do not add a parser default that silently overrides configured deployment targets."
+evidence = "Source comparison and incomplete combined suite; /tmp/rex-production-wave-tests.log"
+
+[qualification.wave_typecheck]
+status = "passed"
+observation = "Workspace typecheck passed; this does not substitute for browser, packaged artifact or release qualification."
+evidence = "72cd5068fc64 | pnpm -r --workspace-concurrency=1 typecheck | 0 | /tmp/rex-production-wave-typecheck.log"
+
+[qualification.static_navigation_first_pass]
+status = "failed_repair_pending"
+observation = "164 no-JavaScript browser cases failed on the initial artifact; representative evidence shows CSP-blocked module preloads after native navigation. Renderer task 1.21 passed separately; rebuilt artifact retry remains pending."
+evidence = "72cd5068fc64 | pnpm -C site exec playwright test e2e/site.spec.ts --project=desktop --grep 'content and navigation without JavaScript' | 1 | /tmp/rex-production-1.16-verify.log"
+
+[qualification.wave_tests]
+status = "failed_incomplete"
+observation = "15-minute bounded run timed out without final totals: observed four failed assertions in cli.test.ts, ssr.test.ts and freshness.test.ts. Run overlapped task 1.21 edits and is not final-revision evidence; SSR focused repair gate passed separately. No failed assertion was relaxed."
+evidence = "72cd5068fc64 (mixed working revisions) | timeout 900s pnpm -C packages/rex exec vitest run --maxWorkers=2 | 124 | /tmp/rex-production-wave-tests.log"
+
+[qualification.site_rebuild]
+status = "built_browser_retry_pending"
+observation = "Static rebuild emitted 168 sitemap URLs. Parsed home HTML contains 22 modulepreloads and 22 nonempty nonce attributes; browser operability remains a separate gate."
+evidence = "72cd5068fc64 | pnpm -C site build:static | 0 | /tmp/rex-production-site-build-csp.log"
+
+[qualification.package_build]
+status = "built"
+observation = "Compiled package refreshed after combined-suite workers exited; package build and frozen offline dependency reconciliation passed."
+evidence = "72cd5068fc64 | pnpm -C packages/rex build | 0 | /tmp/rex-production-package-build-final.log"

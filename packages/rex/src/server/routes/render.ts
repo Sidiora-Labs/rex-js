@@ -1,6 +1,7 @@
 import type { Hono } from "hono";
 import { i18nFor } from "../../client/i18n/context.ts";
 import { RexError } from "../../core/errors.ts";
+import { evaluate } from "../../core/policy.ts";
 import { STATIC_HEADER, staticCacheFor, type StaticHit } from "../adapters/static-cache.ts";
 import type { RexServerSetup } from "../app.ts";
 import {
@@ -101,6 +102,22 @@ export function installRenderRoute(app: Hono, setup: RexServerSetup): void {
       throw error;
     }
     if (cached) {
+      const entry = cache.entry(c.req.path);
+      const declared = setup.options.registry.pages.find((page) => page.id === entry?.page);
+      if (declared === undefined || !evaluate(declared.policy, context.actor).allowed) {
+        const kind = declared === undefined ? "not-found" : "denied";
+        const headers = new Headers({
+          "content-type": HTML_CONTENT_TYPE,
+          "cache-control": "no-store",
+          [RENDER_KIND_HEADER]: kind,
+          [DENSITY_HEADER]: context.density,
+        });
+        if (declared !== undefined) headers.set(RENDER_PAGE_HEADER, declared.id);
+        return new Response(kind === "denied" ? "Forbidden" : "Not Found", {
+          status: RENDER_STATUS[kind],
+          headers,
+        });
+      }
       const runner = loaderRunnerFor(c.req.raw);
       const regenerator =
         renderer === undefined || runner === undefined

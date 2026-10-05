@@ -210,6 +210,53 @@ describe("installFormRoute", () => {
     expect((await ledger.list()).map((record) => record.outcome)).toEqual(["ok", "ok"]);
   });
 
+  it.each(["//evil.test/phish", "/\\evil.test/phish", "///evil.test/phish"])(
+    "keeps form outcomes on this origin for Referer path %s",
+    async (path) => {
+      const ledger = memoryLedger();
+      const app = createRexServer(setupFor(ledger).options);
+      const csrf = createCsrfToken();
+      const cookie = `${CSRF_COOKIE}=${csrf}`;
+      const referer = `${ORIGIN}${path}`;
+      for (const name of ["ledger", ""]) {
+        const response = await post(app, "rename", fields({ name }, csrf), { cookie, referer });
+        expect(response.status).toBe(303);
+        expect(response.headers.get("location")).toBe("/");
+        expect(new URL(response.headers.get("location") as string, ORIGIN).origin).toBe(ORIGIN);
+        expect(outcomeOf(response).ok).toBe(name !== "");
+      }
+      const foreign = await post(app, "rename", fields({ name: "ledger" }, csrf), {
+        cookie,
+        referer,
+        origin: "https://evil.test",
+      });
+      expect(foreign.status).toBe(403);
+      expect(foreign.headers.get("location")).toBeNull();
+      const expired = await post(app, "rename", fields({ name: "ledger" }, createCsrfToken()), {
+        cookie,
+        referer,
+      });
+      expect(expired.status).toBe(403);
+      expect(expired.headers.get("location")).toBeNull();
+      expect(await expired.text()).toContain('<a href="/" data-rex-form-back="">Go back</a>');
+      expect((await ledger.list()).filter((entry) => entry.outcome === "ok")).toHaveLength(1);
+    },
+  );
+
+  it("retains local Referer paths and query strings on real form responses", async () => {
+    const ledger = memoryLedger();
+    const app = createRexServer(setupFor(ledger).options);
+    const csrf = createCsrfToken();
+    const path = "/reports/%2Fteam?tab=recent&next=https://example.com/path";
+    const response = await post(app, "rename", fields({ name: "ledger" }, csrf), {
+      cookie: `${CSRF_COOKIE}=${csrf}`,
+      referer: `${ORIGIN}${path}`,
+    });
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(path);
+    expect(outcomeOf(response).ok).toBe(true);
+  });
+
   it("renders each refusal as an HTML error page that links back to the same-origin Referer", async () => {
     const ledger = memoryLedger();
     const csrf = createCsrfToken();

@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { RexCommand as Command } from "../args.ts";
+export { register } from "../registrations/manifest.ts";
 import {
   AGENTS_FILE,
   MANIFEST_DIR,
@@ -30,24 +30,19 @@ export async function writeAppManifest(root: string): Promise<Manifest> {
   return manifest;
 }
 
-export function register(program: Command, io: RexCliIO): void {
-  program
-    .command("manifest")
-    .description(`write ${MANIFEST_FILE} and ${AGENTS_FILE} from the app declarations`)
-    .action(async () => {
-      await readAppConfig(io.cwd, io, "manifest");
-      let manifest: Manifest;
-      try {
-        manifest = await writeAppManifest(io.cwd);
-      } catch (error) {
-        if (error instanceof ManifestScanError) {
-          throw new RexCliExit(EXIT_FAILURE, `rex manifest: ${error.message}`);
-        }
-        throw error;
-      }
-      io.out(
-        `wrote ${MANIFEST_FILE} (${manifest.pages.length} pages, ${manifest.actions.length} actions)\n`,
-      );
-      io.out(`wrote ${AGENTS_FILE}\n`);
-    });
+export async function executeManifest(io: RexCliIO): Promise<void> {
+  await readAppConfig(io.cwd, io, "manifest");
+  let manifest: Manifest;
+  try {
+    manifest = await writeAppManifest(io.cwd);
+  } catch (error) {
+    if (error instanceof ManifestScanError) {
+      throw new RexCliExit(EXIT_FAILURE, `rex manifest: ${error.message}`);
+    }
+    throw error;
+  }
+  io.out(
+    `wrote ${MANIFEST_FILE} (${manifest.pages.length} pages, ${manifest.actions.length} actions)\n`,
+  );
+  io.out(`wrote ${AGENTS_FILE}\n`);
 }

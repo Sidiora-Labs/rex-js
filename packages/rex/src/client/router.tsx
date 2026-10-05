@@ -3,7 +3,9 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -325,8 +327,11 @@ export function runRouteChange(
   host: ViewTransitionHost | undefined = documentHost(),
 ): void {
   if (transition === "view" && typeof host?.startViewTransition === "function") {
-    host.startViewTransition(() => {
+    const pending = host.startViewTransition(() => {
       flushSync(update);
+    });
+    void pending.ready.catch((error: unknown) => {
+      if (!(error instanceof DOMException && error.name === "AbortError")) throw error;
     });
     return;
   }
@@ -344,15 +349,25 @@ RouteChangeContext.displayName = "RexRouteChange";
 
 export function useRouteChange(): RouteChange {
   const routes = useContext(RouteChangeContext);
-  const [, navigate] = useLocation();
+  const [path, navigate] = useLocation();
+  const search = useSearch();
   const { base } = useRouter();
+  const generation = useRef(0);
+  useLayoutEffect(() => {
+    return () => {
+      generation.current++;
+    };
+  }, [path, search]);
   const own = useCallback<RouteChange>(
     (target, href, { replace }) => {
+      const current = ++generation.current;
       if (isStaticHost()) {
         navigateDocument(`${base}${href}`, { replace });
         return;
       }
-      runRouteChange(target.transition, () => navigate(href, { replace }));
+      runRouteChange(target.transition, () => {
+        if (generation.current === current) navigate(href, { replace });
+      });
     },
     [base, navigate],
   );

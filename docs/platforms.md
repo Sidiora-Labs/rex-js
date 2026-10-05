@@ -1,5 +1,7 @@
 # Platforms and build targets
 
+The [extension and adapter contract](extensions.md#adapter-responsibilities-and-limits) describes request forwarding, resource ownership and host qualification limits for custom integrations.
+
 `rex build --target <target>` builds one app for a runtime. The target picks the server adapter and the layout of `dist/`; the client bundle in `dist/client/` is the same Vite build for every target. `--target` defaults to `node`; any other value exits 2 with the list of targets.
 
 | Target   | Command                     | Writes                                                                                                                             | Start or deploy                                                                      |

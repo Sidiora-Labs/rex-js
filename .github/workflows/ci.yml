@@ -30,6 +30,10 @@ jobs:
         run: pnpm -r typecheck
       - name: Test
         run: pnpm -C packages/rex test
+      - name: Qualification gate wiring
+        run: node --test tools/qualification-gates.test.mjs
+      - name: Test-to-code ratio
+        run: node tools/test-ratio.mjs --check
 
   lint:
     name: Lint and format check

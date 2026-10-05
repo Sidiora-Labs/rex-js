@@ -32,6 +32,8 @@ import {
 export { CONFIRM_PROCEDURE, confirmInputSchema, confirmOutputSchema };
 export type { ConfirmInput, ConfirmOutput };
 export const DEFAULT_CONFIRM_TTL_MS = 60_000;
+export const MAX_PENDING_CONFIRMATIONS = 1024;
+export const MAX_PENDING_CONFIRMATIONS_PER_ACTOR = 32;
 export const PRECONDITION_REQUIRED = "PRECONDITION_REQUIRED";
 export const PRECONDITION_REQUIRED_STATUS = 428;
 
@@ -142,27 +144,52 @@ function preconditionRequired(declared: AnyAction, inputDigest: string, problem:
 
 function createConfirmations(ttlMs: number) {
   const pending = new Map<string, PendingConfirmation>();
+  const counts = new Map<string, number>();
+  let admitted = 0;
+
+  const release = (actorId: string): void => {
+    admitted -= 1;
+    const remaining = (counts.get(actorId) ?? 0) - 1;
+    if (remaining === 0) counts.delete(actorId);
+    else counts.set(actorId, remaining);
+  };
 
   const sweep = (now: number): void => {
     for (const [token, entry] of pending) {
-      if (entry.expiresAt <= now) pending.delete(token);
+      if (entry.expiresAt <= now) {
+        pending.delete(token);
+        release(entry.actorId);
+      }
     }
   };
 
   return {
     async issue(declared: AnyAction, input: unknown, subject: Actor): Promise<ConfirmOutput> {
-      const now = Date.now();
-      sweep(now);
-      const inputDigest = await digest(input);
-      const token = randomToken();
-      const expiresAt = now + ttlMs;
-      pending.set(token, { actionId: declared.id, inputDigest, actorId: subject.id, expiresAt });
-      return {
-        token,
-        action: declared.id,
-        inputDigest,
-        expiresAt: new Date(expiresAt).toISOString(),
-      };
+      sweep(Date.now());
+      const count = counts.get(subject.id) ?? 0;
+      if (admitted >= MAX_PENDING_CONFIRMATIONS || count >= MAX_PENDING_CONFIRMATIONS_PER_ACTOR) {
+        throw new ORPCError("TOO_MANY_REQUESTS", {
+          message: "Pending confirmation capacity reached; consume a grant or wait for expiry",
+        });
+      }
+      admitted += 1;
+      counts.set(subject.id, count + 1);
+      try {
+        const inputDigest = await digest(input);
+        const token = randomToken();
+        const expiresAt = Date.now() + ttlMs;
+        const output = {
+          token,
+          action: declared.id,
+          inputDigest,
+          expiresAt: new Date(expiresAt).toISOString(),
+        };
+        pending.set(token, { actionId: declared.id, inputDigest, actorId: subject.id, expiresAt });
+        return output;
+      } catch (error) {
+        release(subject.id);
+        throw error;
+      }
     },
     async consume(declared: AnyAction, input: unknown, context: RexContext): Promise<void> {
       const inputDigest = await digest(input);
@@ -179,6 +206,7 @@ function createConfirmations(ttlMs: number) {
       if (entry === undefined) {
         preconditionRequired(declared, inputDigest, "the confirm token is unknown or already used");
       }
+      release(entry.actorId);
       if (entry.expiresAt <= Date.now()) {
         preconditionRequired(declared, inputDigest, "the confirm token has expired");
       }

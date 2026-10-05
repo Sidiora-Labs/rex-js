@@ -22,6 +22,24 @@ export function useNavLinks(
         current: target === active,
         address: target.id,
         onClick: (event: MouseEvent<HTMLAnchorElement>) => {
+          const anchor = event.currentTarget;
+          const browsingTarget = anchor.getAttribute("target");
+          if (
+            event.defaultPrevented ||
+            event.button !== 0 ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey ||
+            event.altKey ||
+            !anchor.hasAttribute("href") ||
+            anchor.hasAttribute("download") ||
+            (browsingTarget !== null &&
+              browsingTarget !== "" &&
+              browsingTarget.toLowerCase() !== "_self") ||
+            anchor.origin !== anchor.ownerDocument.location.origin
+          ) {
+            return;
+          }
           event.preventDefault();
           nav.to(target);
         },

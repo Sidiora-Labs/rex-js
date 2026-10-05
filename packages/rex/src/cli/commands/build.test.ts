@@ -1,4 +1,14 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,7 +23,7 @@ import { RENDER_MODULE_ID } from "../../vite/ssr.ts";
 import { APP_MODULE_ID } from "../../vite/virtual.ts";
 import { InvalidArgumentError, RexArgsError, RexCommand } from "../args.ts";
 import { restoringNodeEnv } from "../config.ts";
-import { EXIT_FAILURE, RexCliExit, type RexCliIO } from "../index.ts";
+import { EXIT_FAILURE, EXIT_OK, RexCliExit, run, type RexCliIO } from "../index.ts";
 import {
   BUILD_NODE_ENV,
   BUILD_TARGETS,
@@ -369,6 +379,107 @@ describe("output and host file lines", () => {
 });
 
 describe("buildApp and rex build", () => {
+  it("preserves complete prior output on compilation, prerender and budget failures and publishes final paths", async () => {
+    const parent = tempDir();
+    expect(await run(["new", "publication", "--ui", "none"], captureIO(parent).io)).toBe(EXIT_OK);
+    const root = join(parent, "publication");
+    const packageRoot = resolve(here, "../../..");
+    const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
+      dependencies: Record<string, string>;
+      devDependencies: Record<string, string>;
+    };
+    for (const name of [
+      ...Object.keys(manifest.dependencies),
+      ...Object.keys(manifest.devDependencies),
+    ]) {
+      const destination = join(root, "node_modules", name);
+      mkdirSync(dirname(destination), { recursive: true });
+      symlinkSync(
+        realpathSync(
+          name === "@sidioralabs/rex" ? packageRoot : join(packageRoot, "node_modules", name),
+        ),
+        destination,
+        "dir",
+      );
+    }
+    const pageFile = join(root, "app/pages/home/page.ts");
+    writeFileSync(
+      pageFile,
+      'import { page } from "@sidioralabs/rex";\nexport default page("home", { route: "/", render: "static", regions: ["welcome"] });\n',
+    );
+    const configFile = join(root, "rex.config.ts");
+    const config = readFileSync(configFile, "utf8");
+    const viewFile = join(root, "app/pages/home/view.tsx");
+    const view = "export default function View() { return <h1>Original publication</h1>; }";
+    writeFileSync(viewFile, view);
+    const snapshot = (dir: string): Record<string, string> =>
+      Object.fromEntries(
+        readdirSync(dir, { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile())
+          .map((entry) => {
+            const file = join(entry.parentPath, entry.name);
+            return [file.slice(dir.length + 1), readFileSync(file).toString("base64")];
+          }),
+      );
+    const options = { target: "static", logLevel: "silent" } as const;
+    const first = await buildApp(root, options);
+    const before = snapshot(first.outDir);
+    expect(Object.keys(before).length).toBeGreaterThan(0);
+    const preserved = () => {
+      expect(snapshot(first.outDir)).toEqual(before);
+      expect(readdirSync(root).filter((name) => name.startsWith(".rex-build-"))).toEqual([]);
+    };
+    writeFileSync(viewFile, "export default function Broken( {");
+    await expect(buildApp(root, options)).rejects.toThrow();
+    preserved();
+    writeFileSync(
+      viewFile,
+      'export default function View() { throw new Error("publication prerender failure"); }',
+    );
+    await expect(buildApp(root, options)).rejects.toThrow("cannot be prerendered");
+    preserved();
+    writeFileSync(viewFile, view);
+    writeFileSync(configFile, config.replace("  app,", "  app,\n  budgets: { page: 0.01 },"));
+    await expect(buildApp(root, options)).rejects.toThrow("over budget");
+    preserved();
+    const captured = captureIO(root);
+    const command = new RexCommand("rex");
+    register(command, captured.io);
+    await expect(command.parseAsync(["build", "--target", "static", "--no-check"])).rejects.toThrow(
+      "over budget",
+    );
+    expect(captured.out()).toContain("OVER");
+    expect(captured.out()).toContain(
+      "static JS closure (own chunk + static imports; measurements, not budgets)",
+    );
+    expect(captured.out().indexOf("OVER")).toBeLessThan(
+      captured.out().indexOf("static JS closure"),
+    );
+    preserved();
+    writeFileSync(configFile, config);
+    writeFileSync(
+      viewFile,
+      "export default function View() { return <h1>Published replacement</h1>; }",
+    );
+    const second = await buildApp(root, options);
+    expect(second.outDir).toBe(join(root, DIST_DIR));
+    expect(readFileSync(join(second.clientDir, "index.html"), "utf8")).toContain(
+      "Published replacement",
+    );
+    for (const file of [
+      second.clientDir,
+      second.prerenderFile,
+      second.staticManifestFile,
+      ...second.hostFiles,
+      ...second.outputs.flatMap((output) => output.files.map((file) => file.file)),
+    ]) {
+      expect(file).not.toBeNull();
+      expect(file?.startsWith(`${second.outDir}/`)).toBe(true);
+      expect(existsSync(file as string)).toBe(true);
+    }
+    expect(readdirSync(root).filter((name) => name.startsWith(".rex-build-"))).toEqual([]);
+  }, 240_000);
+
   it("refuses a root without rex.config.ts before writing anything", async () => {
     const root = tempDir();
     await expect(buildApp(root, { logLevel: "silent" })).rejects.toThrow(RexCliExit);

@@ -29,6 +29,8 @@ import {
   type OutcomeStore,
 } from "./outcome.ts";
 import { RexRoutes } from "./router.tsx";
+import { memoryLedger } from "../server/audit.ts";
+import { buildActionRouter } from "../server/router.ts";
 
 const wallet = policy("wallet", {
   permissions: ["view", "send"],
@@ -250,12 +252,183 @@ function handle(harness: Harness, id: string): ActHandle<AnyAction> {
   return found;
 }
 
+function deferred() {
+  let release!: () => void;
+  const promise = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return { promise, release };
+}
+
+function mountAdmission(declared: AnyAction) {
+  const localPage = page("admission", { route: "/", actions: [declared] });
+  const localRegistry = createRegistry().register(declared, localPage).freeze();
+  const ledger = memoryLedger();
+  const handler = new RPCHandler(buildActionRouter(localRegistry, { ledger }));
+  const requests: string[] = [];
+  const App = createRexApp({
+    registry: localRegistry,
+    manifest: buildManifest(localRegistry),
+    actor: owner,
+    baseUrl: "http://rex.test",
+    fetch: async (input, init) => {
+      const request = input instanceof Request ? input : new Request(input, init);
+      requests.push(new URL(request.url).pathname);
+      const { matched, response } = await handler.handle(request, {
+        prefix: REX_RPC_PATH,
+        context: {
+          actor: owner,
+          density: "default",
+          confirm: request.headers.get(CONFIRM_HEADER) ?? undefined,
+        },
+      });
+      if (!matched) throw new Error("unmatched action request");
+      return response;
+    },
+  });
+  let current!: ActHandle<AnyAction>;
+  function AdmissionProbe() {
+    current = useAct(declared);
+    return <button {...current.controlProps}>Run</button>;
+  }
+  const location = memoryLocation({ path: "/" });
+  render(
+    <App>
+      <Router hook={location.hook}>
+        <RexRoutes render={() => <AdmissionProbe />} />
+      </Router>
+    </App>,
+  );
+  return { handle: () => current, requests, ledger };
+}
+
 afterEach(() => {
   cleanup();
   confirmTokens.clear();
 });
 
 describe("useAct", () => {
+  it("admits one invocation through validation, confirmation and execution, then permits another", async () => {
+    const validation = deferred();
+    const confirmation = deferred();
+    const execution = deferred();
+    let validations = 0;
+    let executions = 0;
+    const input: StandardSchemaV1<{ name: string }> = {
+      "~standard": {
+        version: 1,
+        vendor: "admission",
+        validate: async (value) => {
+          validations += 1;
+          if (validations === 1) await validation.promise;
+          if (validations === 2) await confirmation.promise;
+          return { value: value as { name: string } };
+        },
+      },
+    };
+    const declared = action("admit", {
+      input,
+      output: z.object({ name: z.string() }),
+      policy: always(),
+      effect: "irreversible",
+      jsonSchema: {
+        input: { type: "object", properties: { name: { type: "string" } }, required: ["name"] },
+      },
+      handler: async (value) => {
+        executions += 1;
+        await execution.promise;
+        return value;
+      },
+    });
+    const harness = mountAdmission(declared);
+    let first!: ReturnType<ActHandle<AnyAction>["run"]>;
+    await act(async () => {
+      first = harness.handle().run({ name: "first" });
+      expect(await harness.handle().run({ name: "duplicate" })).toMatchObject({
+        ok: false,
+        code: "CONFLICT",
+      });
+    });
+    expect(harness.handle().pending).toBe(true);
+    expect(screen.getByRole("button", { name: "Run" }).getAttribute("aria-busy")).toBe("true");
+    expect(harness.requests).toEqual([]);
+    await act(async () => {
+      validation.release();
+    });
+    await waitFor(() => expect(validations).toBe(2));
+    expect(harness.handle().pending).toBe(true);
+    await act(async () => {
+      expect(await harness.handle().run({ name: "during-confirmation" })).toMatchObject({
+        ok: false,
+        code: "CONFLICT",
+      });
+      confirmation.release();
+    });
+    await waitFor(() => expect(executions).toBe(1));
+    expect(harness.handle().pending).toBe(true);
+    await act(async () => {
+      expect(await harness.handle().run({ name: "during-execution" })).toMatchObject({
+        ok: false,
+        code: "CONFLICT",
+      });
+      execution.release();
+      expect(await first).toEqual({ ok: true, output: { name: "first" } });
+    });
+    expect(harness.handle().pending).toBe(false);
+    await act(async () => {
+      expect(await harness.handle().run({ name: "next" })).toEqual({
+        ok: true,
+        output: { name: "next" },
+      });
+    });
+    expect(executions).toBe(2);
+    expect(harness.requests).toHaveLength(4);
+  });
+
+  it.each(["invalid", "throws", "denied", "handler"] as const)(
+    "releases admission after %s failure",
+    async (failure) => {
+      let executions = 0;
+      const input: StandardSchemaV1<{ name: string }> = {
+        "~standard": {
+          version: 1,
+          vendor: "admission",
+          validate: (value) => {
+            if (failure === "throws") throw new Error("validation unavailable");
+            if (failure === "invalid")
+              return { issues: [{ message: "invalid name", path: ["name"] }] };
+            return { value: value as { name: string } };
+          },
+        },
+      };
+      const declared = action("failure", {
+        input,
+        output: z.object({ name: z.string() }),
+        policy: failure === "denied" ? never() : always(),
+        effect: "reversible",
+        jsonSchema: { input: { type: "object", properties: { name: { type: "string" } } } },
+        handler: () => {
+          executions += 1;
+          throw new ORPCError("FORBIDDEN", { message: "closed" });
+        },
+      });
+      const harness = mountAdmission(declared);
+      const code = {
+        invalid: "BAD_REQUEST",
+        throws: "ERROR",
+        denied: "FORBIDDEN",
+        handler: "FORBIDDEN",
+      }[failure];
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await act(async () => {
+          expect(await harness.handle().run({ name: "value" })).toMatchObject({ ok: false, code });
+        });
+        expect(harness.handle().pending).toBe(false);
+      }
+      expect(executions).toBe(failure === "handler" ? 2 : 0);
+    },
+  );
+
   it("runs an action through the oRPC client, records the outcome and invalidates queries", async () => {
     const harness = mount();
     await waitFor(() => expect(screen.getByTestId("balance").textContent).toBe("1"));

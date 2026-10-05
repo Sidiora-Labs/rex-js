@@ -223,6 +223,13 @@ describe("0.2 action options", () => {
     expect(partial.form).toEqual({ redirect: null, confirmTitle: null });
   });
 
+  it.each(["/done?next=https://example.com/path", "/reports/%2Fteam?tab=recent#total"])(
+    "preserves a local redirect %s",
+    (redirect) => {
+      expect(action("local", { ...base, form: { redirect } }).form?.redirect).toBe(redirect);
+    },
+  );
+
   it("uses a declared JSON Schema override instead of deriving one", () => {
     const input = { type: "object", properties: { at: { type: "string", format: "date-time" } } };
     const declared = action("schedule", {
@@ -252,6 +259,11 @@ describe("0.2 action options", () => {
     [{ form: "yes" }, "REX207", "form"],
     [{ form: { redirect: "sent" } }, "REX207", "form.redirect"],
     [{ form: { redirect: "//evil.example.com" } }, "REX207", "form.redirect"],
+    [{ form: { redirect: "/\\evil.example.com" } }, "REX207", "form.redirect"],
+    [{ form: { redirect: "/\t/evil.example.com" } }, "REX207", "form.redirect"],
+    [{ form: { redirect: "/\n/evil.example.com" } }, "REX207", "form.redirect"],
+    [{ form: { redirect: "/\r/evil.example.com" } }, "REX207", "form.redirect"],
+    [{ form: { redirect: "/done\u0000" } }, "REX207", "form.redirect"],
     [{ form: { confirmTitle: " " } }, "REX207", "form.confirmTitle"],
     [{ form: { method: "get" } }, "REX207", "form.method"],
     [{ jsonSchema: [] }, "REX208", "jsonSchema"],
