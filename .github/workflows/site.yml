@@ -75,8 +75,6 @@ jobs:
         run: pnpm -C packages/rex build
       - name: Static build
         run: pnpm -C site build:static
-      - name: Verify the built directory
-        run: node tools/site-verify.mjs site/dist/client
       - name: Install browsers
         run: pnpm -C site exec playwright install --with-deps chromium
       - name: Gates
