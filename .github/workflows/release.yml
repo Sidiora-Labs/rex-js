@@ -20,7 +20,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Tag matches the package version
         id: version
         run: |
@@ -49,7 +49,7 @@ jobs:
           fi
           cat "$RUNNER_TEMP/notes/release.md"
       - name: Upload the release notes
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: release-notes
           path: ${{ runner.temp }}/notes/release.md
@@ -61,9 +61,9 @@ jobs:
     timeout-minutes: 30
     needs: prepare
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
           cache: pnpm
@@ -84,9 +84,9 @@ jobs:
     timeout-minutes: 15
     needs: prepare
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
           cache: pnpm
@@ -117,9 +117,9 @@ jobs:
     timeout-minutes: 30
     needs: prepare
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
           cache: pnpm
@@ -129,7 +129,7 @@ jobs:
         run: pnpm -C packages/rex exec vitest run --coverage
       - name: Upload the coverage report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: packages/rex/coverage
@@ -140,9 +140,9 @@ jobs:
     timeout-minutes: 45
     needs: prepare
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
           cache: pnpm
@@ -163,9 +163,9 @@ jobs:
     timeout-minutes: 15
     needs: prepare
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
           cache: pnpm
@@ -182,9 +182,9 @@ jobs:
     timeout-minutes: 15
     needs: prepare
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
           cache: pnpm
@@ -201,9 +201,9 @@ jobs:
     timeout-minutes: 30
     needs: prepare
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
           cache: pnpm
@@ -226,7 +226,7 @@ jobs:
           fi
           sh tools/smoke-package.sh "$1"
       - name: Upload the tarball that passed
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: package
           path: ${{ runner.temp }}/package/*.tgz
@@ -244,14 +244,14 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
       - name: Use an npm with trusted publishing (11.5.1 or later)
         run: npm install -g npm@latest && npm --version
       - name: Download the tarball the smoke test passed
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: package
           path: ${{ runner.temp }}/package
@@ -279,12 +279,12 @@ jobs:
       contents: write
     steps:
       - name: Download the release notes
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: release-notes
           path: ${{ runner.temp }}/notes
       - name: Download the published tarball
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: package
           path: ${{ runner.temp }}/package
