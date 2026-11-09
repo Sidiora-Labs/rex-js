@@ -83,7 +83,7 @@
     - Fix each remaining failure in the site browser suite in the site or the framework: the accessibility score, the pages without JavaScript and any other. Do not relax a threshold, raise a timeout to hide a defect, or remove a test or a project.
     - Run the site test script once on a free port and record the result, the test count and the duration.
     - _Requirements: 2.5_
-  - [ ] 0.14 Serve the DesignX data-table test from the local registry fixture
+  - [x] 0.14 Serve the DesignX data-table test from the local registry fixture
     - Find every network request the data-table test makes to the live DesignX registry host.
     - Point the test at the local registry fixture server that task 0.6 added under cli/fixtures, using the same real resolver code path.
     - Keep every existing assertion; add one assertion that the test resolves its items without contacting any host other than the local fixture.

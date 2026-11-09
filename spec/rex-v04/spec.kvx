@@ -474,10 +474,10 @@ time_limit_minutes = 180
 
 [task.0.14]
 title = "Serve the DesignX data-table test from the local registry fixture"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.6"]
-touches = ["packages/rex/src/designx/data-table.test.ts"]
+touches = ["packages/rex/src/designx/data-table.test.ts", "packages/rex/src/cli/fixtures/designx-registry/server.ts"]
 verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/designx/data-table.test.ts"
 do_1 = "Find every network request the data-table test makes to the live DesignX registry host."
 do_2 = "Point the test at the local registry fixture server that task 0.6 added under cli/fixtures, using the same real resolver code path."
@@ -2560,7 +2560,7 @@ oracle = "pnpm -C packages/rex typecheck, pnpm -C packages/rex build and pnpm -C
 
 [case.RX4-086]
 title = "Serve the DesignX data-table test from the local registry fixture"
-status = "UNRUN"
+status = "PASS"
 tier = "component"
 reqs = ["2.2"]
 tasks = ["0.14"]

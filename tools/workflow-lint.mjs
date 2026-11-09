@@ -183,7 +183,7 @@ function lintJob(file, workflow, id, job) {
   for (const [index, step] of stepsOf(job).entries()) {
     const where = at(`.steps[${index}]`);
     if (step.uses !== undefined) findings.push(...lintUses(file, `${where}.uses`, step.uses));
-    if (typeof step.uses === "string") findings.push(...lintSetup(file, where, step, job));
+    if (typeof step.uses === "string") findings.push(...lintSetup(file, where, step));
     for (const [key, value] of Object.entries(isObject(step.with) ? step.with : {})) {
       if (key === "check-latest" && String(value) === "true") {
         findings.push(
@@ -260,7 +260,7 @@ function lintUses(file, where, uses) {
   return [];
 }
 
-function lintSetup(file, where, step, job) {
+function lintSetup(file, where, step) {
   const key = SETUP_ACTIONS[actionName(step.uses)];
   if (key === undefined) return [];
   const settings = isObject(step.with) ? step.with : {};

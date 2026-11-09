@@ -22,6 +22,10 @@ import {
   providedDesignxNames,
   resolveDesignxItems,
 } from "../cli/designx.ts";
+import {
+  serveDesignxRegistry,
+  type DesignxRegistryFixture,
+} from "../cli/fixtures/designx-registry/server.ts";
 import { DESIGNX_MAP } from "./index.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -32,9 +36,11 @@ const APP_PACKAGES = ["react", "react-dom"] as const;
 const INSTALL_PREFIX = ".rex-designx-table-";
 
 const temporary: string[] = [];
+const registries: DesignxRegistryFixture[] = [];
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  await Promise.all(registries.splice(0).map((registry) => registry.close()));
 });
 
 afterAll(() => {
@@ -82,7 +88,10 @@ describe("the installed DesignX data-table", () => {
     async () => {
       expect(DESIGNX_MAP.list.desktop).toBe(DESIGNX_DATA_TABLE);
       const names = [DESIGNX_DATA_TABLE];
-      const items = await resolveDesignxItems(names);
+      const registry = await serveDesignxRegistry();
+      registries.push(registry);
+      const items = await resolveDesignxItems(names, { registry: registry.registry });
+      expect([...registry.requested].sort()).toEqual(items.map((item) => item.name).sort());
       const files = designxFiles(items, providedDesignxNames(names, items));
       const root = mkdtempSync(join(packageRoot, INSTALL_PREFIX));
       temporary.push(root);
