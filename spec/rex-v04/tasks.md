@@ -5,7 +5,7 @@
 
 ## Tasks
 
-  - [ ] 0.1 Derive the version constant from the package manifest
+  - [x] 0.1 Derive the version constant from the package manifest
     - Add a build step that writes src/version.ts from packages/rex/package.json and make index.ts re-export REX_VERSION from it, so the constant cannot drift from the manifest.
     - Make rex --version and the dependency range that rex new writes read the generated constant; remove the literal version from cli/commands/new.ts.
     - Remove hard-coded release numbers from cli/pack.test.ts, README.md, docs/cli.md and SECURITY.md, or route them through the freshness gate so a stale copy fails tools/freshness.mjs.

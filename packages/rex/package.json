@@ -150,9 +150,9 @@
     "!dist/**/fixtures"
   ],
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && node -e \"const fs=require('node:fs');for(const f of ['client/tokens.css','client/agent/density.css','vite/rex-app.d.ts'])fs.cpSync('src/'+f,'dist/'+f)\"",
+    "typecheck": "node scripts/write-version.mjs && tsc -p tsconfig.json --noEmit",
+    "test": "node scripts/write-version.mjs && vitest run",
+    "build": "node scripts/write-version.mjs && node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && node -e \"const fs=require('node:fs');for(const f of ['client/tokens.css','client/agent/density.css','vite/rex-app.d.ts'])fs.cpSync('src/'+f,'dist/'+f)\"",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {

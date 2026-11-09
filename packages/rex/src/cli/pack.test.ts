@@ -106,8 +106,8 @@ describe("the packed @sidioralabs/rex tarball", { timeout: PACK_TEST_TIMEOUT_MS 
     }
   });
 
-  it("releases version 0.2.0, matching REX_VERSION in the core entry", () => {
-    expect(manifest.version).toBe("0.2.0");
+  it("releases a semantic version that REX_VERSION in the core entry reports", () => {
+    expect(manifest.version).toMatch(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
     expect(REX_VERSION).toBe(manifest.version);
   });
 

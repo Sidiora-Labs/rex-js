@@ -5,7 +5,7 @@ import type { RexCommand as Command } from "../args.ts";
 import { RexError } from "../../core/errors.ts";
 import { validateName } from "../../core/ids.ts";
 import { titleFromId } from "../../core/page.ts";
-import { REX_VERSION } from "../../index.ts";
+import { REX_VERSION } from "../../version.ts";
 import type { RexCliIO } from "../index.ts";
 import {
   CLIENT_IMPORT,

@@ -19,7 +19,7 @@ Rex is built around four rules:
 - **One checker.** `rex check` runs the typecheck and the convention rules and exits 1 on any error finding. `rex dev` and `rex build` run it first unless you pass `--no-check`.
 - **One DOM that humans and agents operate.** There is no separate agent view. Every action control carries a `data-rex` address, every page embeds a machine-readable sidecar, and every action is reachable by click, keyboard shortcut, URL and command palette.
 
-Version: 0.2.0 (`REX_VERSION` in `packages/rex/src/index.ts`).
+Version: the `version` of `packages/rex/package.json`. The build writes it into `packages/rex/src/version.ts` as `REX_VERSION`, which `rex --version` prints and `rex new` writes into the dependencies of a new app.
 
 ## Stack
 
@@ -71,7 +71,7 @@ Then, with `rex` on your path:
 ```sh
 rex new my-app                  # write a complete app into ./my-app; by default (--ui designx) it fetches the DesignX set from https://dxuireact.com/r and runs the package manager install itself (--no-install skips the install; --ui none writes a plain Button and runs no install)
 cd my-app
-pnpm install                    # only after --ui none or --no-install; the generated package.json depends on @sidioralabs/rex ^0.2.0
+pnpm install                    # only after --ui none or --no-install; the generated package.json depends on @sidioralabs/rex ^REX_VERSION
 rex make page orders --regions list,detail --overlays FilterSheet
 rex dev                         # Vite client and the app's Hono server on one port (default 5173)
 rex check                       # typecheck and convention rules; exit 1 on any error
@@ -201,7 +201,7 @@ Run it with `pnpm -C packages/rex build` and then `pnpm -C examples/demo test`, 
 
 ## Standards
 
-Rex 0.2 is held to the framework standards list in `spec/rex-v02/spec.kvx` (the `[standard.*]` sections). Each row is one standard, its status and the tasks that own it: `met` when every owning task is done, `partial` while an owning task is still open, with what remains named and the open entry of `spec/rex-v02/qualification.kvx` that records it. Statuses are as of the 0.2.0 release commit.
+Rex is held to the framework standards list in `spec/rex-v02/spec.kvx` (the `[standard.*]` sections). Each row is one standard, its status and the tasks that own it: `met` when every owning task is done, `partial` while an owning task is still open, with what remains named and the open entry of `spec/rex-v02/qualification.kvx` that records it. Statuses are as of the release commit that closed `spec/rex-v02`.
 
 | Standard          | Requirement                                                                                                                                                                | Status                                                                                                                                                                                                                                                       | Tasks                   |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
