@@ -77,6 +77,24 @@
     - Correct the supported-versions table in SECURITY.md and mark links to hosts that are not yet live as pending in the link checker with a dated allow-list entry.
     - Run docs:check and freshness once and record the result.
     - _Requirements: 2.7_
+  - [ ] 0.13 Build the static site before its browser suite and make the site browser suite pass
+    - Make the site test script build the static output before Playwright starts its server, so the suite cannot run against a missing or stale build.
+    - Find why the statically built site's own module and preload requests are refused by its content security policy, and fix the product path that emits the policy or the tags so the site's own assets load under it; add a unit test for that path.
+    - Fix each remaining failure in the site browser suite in the site or the framework: the accessibility score, the pages without JavaScript and any other. Do not relax a threshold, raise a timeout to hide a defect, or remove a test or a project.
+    - Run the site test script once on a free port and record the result, the test count and the duration.
+    - _Requirements: 2.5_
+  - [ ] 0.14 Serve the DesignX data-table test from the local registry fixture
+    - Find every network request the data-table test makes to the live DesignX registry host.
+    - Point the test at the local registry fixture server that task 0.6 added under cli/fixtures, using the same real resolver code path.
+    - Keep every existing assertion; add one assertion that the test resolves its items without contacting any host other than the local fixture.
+    - Run the verify command once with the network unavailable to the live host and record the result.
+    - _Requirements: 2.2_
+  - [ ] 0.15 Run the lint and format checks in the lint gate
+    - Add pnpm lint and pnpm format:check to tools/gate-lint.sh in the same failure-collecting style the gate already uses.
+    - Extend tools/qualification-gates.test.mjs to assert that both checks are wired into the lint gate.
+    - Fix any lint or format failure on the wave head by correcting the reported file, without adding an ignore entry or disabling a rule; report a file outside touches instead of editing it.
+    - Run the verify command once and record the result.
+    - _Requirements: 2.3_
   - [ ] 1.1 Require a user gesture for URL-carried actions and default confirm focus to Cancel
     - Change URL invocation so a URL can only prefill an action surface and wait for an activation by the user; nothing is sent on page load.
     - Add an action-level opt-in for URL prefill that the registry accepts only for actions declared safe, and reject the option on any other action at declaration time.
@@ -515,7 +533,7 @@
 ```json
 {
   "waves": [
-    { "id": 0,  "tasks": ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12"] },
+    { "id": 0,  "tasks": ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13", "0.14", "0.15"] },
     { "id": 1,  "tasks": ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14", "1.15"] },
     { "id": 2,  "tasks": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9"] },
     { "id": 3,  "tasks": ["3.1", "3.2", "3.3", "3.4", "3.5"] },
