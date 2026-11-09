@@ -378,7 +378,7 @@ time_limit_minutes = 45
 
 [task.0.9]
 title = "State and test the TypeScript and ESLint support window"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.8"]
 touches = ["packages/rex/package.json", "package.json", "pnpm-lock.yaml", "docs/versioning.md", "tools/support-window.mjs", "tools/support-window.test.mjs", "packages/rex/src/check/rules/typecheck.ts", "packages/rex/src/eslint/index.ts"]
@@ -1886,7 +1886,7 @@ oracle = "pnpm audit --prod reports no high or critical advisory and the package
 
 [case.RX4-009]
 title = "State and test the TypeScript and ESLint support window"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["1.8"]
 tasks = ["0.9"]
