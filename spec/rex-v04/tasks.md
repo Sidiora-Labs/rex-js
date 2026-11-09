@@ -47,7 +47,7 @@
     - Cut the runtime of cli/commands.test.ts by reusing the single built dist and one scaffolded fixture per file.
     - Run the full package suite three times in a row and record the three results.
     - _Requirements: 2.4_
-  - [ ] 0.8 Raise vulnerable dependencies and their peer floors
+  - [x] 0.8 Raise vulnerable dependencies and their peer floors
     - Raise vite and zod above the ranges named by pnpm audit --prod and raise the matching peer floors in the package manifest.
     - Resolve the remaining production advisories by upgrade; use an override only with a comment naming the advisory.
     - Enable grouped security updates in .github/dependabot.yml.
