@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator } from "@playwright/test";
@@ -73,10 +73,9 @@ for (const stop of stops) {
       await expect(page.locator('[data-rex-nav-form="sidebar"]')).toBeVisible();
     }
     const accessibility = await new AxeBuilder({ page }).analyze();
-    await info.attach("axe", {
-      body: JSON.stringify(accessibility),
-      contentType: "application/json",
-    });
+    const axeReport = info.outputPath("axe.json");
+    writeFileSync(axeReport, JSON.stringify(accessibility));
+    await info.attach("axe", { path: axeReport, contentType: "application/json" });
     expect(accessibility.violations).toEqual([]);
     expect(watch.stop()).toEqual([]);
     if (!stop.path.includes("/", 1) || stop.path === "/docs/tutorial") {

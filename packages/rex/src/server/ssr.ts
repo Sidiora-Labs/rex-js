@@ -318,9 +318,6 @@ function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): s
   const stylesheets = parts.links.stylesheets.map(
     (href) => `<link rel="stylesheet" href="${escapeHtml(href)}">`,
   );
-  const preloads = parts.links.preloads.map(
-    (href) => `<link rel="modulepreload" href="${escapeHtml(href)}" nonce="${nonce}">`,
-  );
   const root = parts.hydrate
     ? `<div id="${escapeHtml(options.rootElement)}" ${SSR_ATTRIBUTE}="">`
     : `<div id="${escapeHtml(options.rootElement)}">`;
@@ -339,7 +336,6 @@ function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): s
       ? ""
       : `<style data-rex-fonts="">${fontFaceCss(options.fonts)}</style>`,
     ...stylesheets,
-    ...preloads,
     nonceInlineScripts(requestHead, parts.nonce),
     `<script type="${REX_DATA_MIME_TYPE}" id="${REX_DATA_ELEMENT_ID}" nonce="${nonce}">${serializeRexData(parts.data)}</script>`,
     "</head>",
@@ -348,11 +344,31 @@ function documentHead(options: ResolvedRendererOptions, parts: DocumentParts): s
   ].join("");
 }
 
-function documentTail(options: ResolvedRendererOptions, nonce: string): string {
-  const scripts = options.assets.scripts.map(
-    (src) =>
-      `<script type="module" src="${escapeHtml(src)}" nonce="${escapeHtml(nonce)}"></script>`,
-  );
+function scriptJson(value: unknown): string {
+  return JSON.stringify(value).replaceAll("<", "\\u003c");
+}
+
+export function entryLoaderSource(scripts: readonly string[], preloads: readonly string[]): string {
+  return [
+    "requestAnimationFrame(()=>setTimeout(()=>{",
+    `for(const href of ${scriptJson(preloads)}){`,
+    'const link=document.createElement("link");link.rel="modulepreload";link.href=href;document.head.append(link)}',
+    `for(const src of ${scriptJson(scripts)})import(src)`,
+    "}))",
+  ].join("");
+}
+
+function documentTail(
+  options: ResolvedRendererOptions,
+  nonce: string,
+  preloads: readonly string[],
+): string {
+  const scripts =
+    options.assets.scripts.length === 0
+      ? []
+      : [
+          `<script type="module" nonce="${escapeHtml(nonce)}">${entryLoaderSource(options.assets.scripts, preloads)}</script>`,
+        ];
   return ["</div>", ...scripts, "</body>", "</html>"].join("");
 }
 
@@ -633,8 +649,9 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
     screen: ScreenState,
   ): Promise<RexRenderResult> {
     const queryClient = new QueryClient();
-    const head = documentHead(resolved, parts(match, context, queryClient, false, locale, screen));
-    const tail = documentTail(resolved, context.nonce);
+    const failed = parts(match, context, queryClient, false, locale, screen);
+    const head = documentHead(resolved, failed);
+    const tail = documentTail(resolved, context.nonce, failed.links.preloads);
     let body: ReadableStream<Uint8Array> | null = null;
     if (match !== null) {
       try {
@@ -778,16 +795,14 @@ export function createRexRenderer(options: RexRendererOptions): RexPageRenderer 
       await stream.cancel();
       return failure(request, url, match, context, locale, csrf, screen);
     }
+    const documentParts = parts(match, context, queryClient, true, locale, screen, media.images());
     return {
       kind,
       page: match === null ? null : match.page.id,
       body: documentStream(
-        documentHead(
-          resolved,
-          parts(match, context, queryClient, true, locale, screen, media.images()),
-        ),
+        documentHead(resolved, documentParts),
         stream,
-        documentTail(resolved, context.nonce),
+        documentTail(resolved, context.nonce, documentParts.links.preloads),
       ),
     };
   }

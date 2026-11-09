@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { chromium, expect, test } from "@playwright/test";
 import lighthouse, { desktopConfig } from "lighthouse";
@@ -39,10 +40,9 @@ for (const stop of pages) {
         info.project.name === "phone" ? undefined : desktopConfig,
       );
       if (result === undefined) throw new Error("Lighthouse returned no result");
-      await info.attach("lighthouse", {
-        body: JSON.stringify(result.lhr),
-        contentType: "application/json",
-      });
+      const report = info.outputPath("lighthouse.json");
+      writeFileSync(report, JSON.stringify(result.lhr));
+      await info.attach("lighthouse", { path: report, contentType: "application/json" });
       expect(result.lhr.runtimeError).toBeUndefined();
       for (const [name, threshold] of Object.entries(thresholds)) {
         const score = result.lhr.categories[name]?.score;
