@@ -493,7 +493,7 @@ time_limit_minutes = 45
 
 [task.0.15]
 title = "Run the lint and format checks in the lint gate"
-status = "in_progress"
+status = "done"
 wave = 0
 requires = ["0.4", "0.10"]
 touches = ["tools/gate-lint.sh", "tools/qualification-gates.test.mjs"]
@@ -2568,7 +2568,7 @@ oracle = "pnpm -C packages/rex typecheck and the data-table vitest run exit 0 on
 
 [case.RX4-087]
 title = "Run the lint and format checks in the lint gate"
-status = "UNRUN"
+status = "PASS"
 tier = "component"
 reqs = ["2.3"]
 tasks = ["0.15"]
