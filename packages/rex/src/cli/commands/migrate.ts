@@ -2,11 +2,11 @@ import { existsSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { RexError } from "../../core/errors.ts";
-import { ARGS_ERROR, ARGS_USAGE_EXIT, type RexCommand as Command } from "../args.ts";
+import { ARGS_ERROR } from "../args.ts";
 import { CODEMOD_FILE, formatFlag, type Codemod, type CodemodFlag } from "../codemods/codemod.ts";
 import type { RexCliIO } from "../index.ts";
-
-export const DEFAULT_FROM = "0.1";
+import { DEFAULT_FROM } from "../registrations/migrate.ts";
+export { DEFAULT_FROM, register } from "../registrations/migrate.ts";
 
 export const CODEMODS_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -151,24 +151,13 @@ export function formatMigrateReport(report: MigrateReport): string {
   return `${lines.join("\n")}\n`;
 }
 
-export function register(program: Command, io: RexCliIO): void {
-  const command: Command = program
-    .command("migrate")
-    .description("list and apply the codemods that move an app from an earlier Rex version")
-    .option("--from <version>", "the Rex version the app was written for", DEFAULT_FROM)
-    .option("--list", "list the codemods without applying them")
-    .action(async (options: { from: string; list?: boolean }) => {
-      try {
-        if (options.list === true) {
-          io.out(formatCodemodList(selectCodemods(await loadCodemods(), options.from)));
-          return;
-        }
-        io.out(formatMigrateReport(await runMigrate(io.cwd, options.from)));
-      } catch (error) {
-        if (error instanceof MigrateError) {
-          command.error(error.detail, { code: error.cliCode, exitCode: ARGS_USAGE_EXIT });
-        }
-        throw error;
-      }
-    });
+export async function executeMigrate(
+  options: { from: string; list?: boolean },
+  io: RexCliIO,
+): Promise<void> {
+  if (options.list === true) {
+    io.out(formatCodemodList(selectCodemods(await loadCodemods(), options.from)));
+    return;
+  }
+  io.out(formatMigrateReport(await runMigrate(io.cwd, options.from)));
 }
