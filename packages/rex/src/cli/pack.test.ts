@@ -10,7 +10,8 @@ const packageRoot = join(here, "..", "..");
 const repositoryRoot = join(packageRoot, "..", "..");
 const PACK_TEST_TIMEOUT_MS = 300_000;
 
-type ExportTarget = string | { readonly types?: string; readonly import?: string };
+type ExportTarget =
+  string | { readonly "rex-source"?: string; readonly types?: string; readonly default?: string };
 
 interface PackageManifest {
   readonly version: string;
@@ -18,14 +19,11 @@ interface PackageManifest {
   readonly sideEffects: readonly string[];
   readonly files: readonly string[];
   readonly bin: Readonly<Record<string, string>>;
-  readonly exports: Readonly<Record<string, string>>;
+  readonly exports: Readonly<Record<string, ExportTarget>>;
   readonly dependencies: Readonly<Record<string, string>>;
   readonly peerDependencies: Readonly<Record<string, string>>;
   readonly peerDependenciesMeta: Readonly<Record<string, { readonly optional?: boolean }>>;
-  readonly publishConfig: {
-    readonly provenance: boolean;
-    readonly exports: Readonly<Record<string, ExportTarget>>;
-  };
+  readonly publishConfig: { readonly provenance: boolean };
 }
 
 interface PackResult {
@@ -68,23 +66,21 @@ describe("the packed @sidioralabs/rex tarball", { timeout: PACK_TEST_TIMEOUT_MS 
     files = new Set((packed?.files ?? []).map((file) => file.path));
   }, PACK_TEST_TIMEOUT_MS);
 
-  it("publishes every export with its types condition first", () => {
-    const entries = Object.entries(manifest.publishConfig.exports);
+  it("resolves every export to dist with types before default and source only under rex-source", () => {
+    expect(manifest.publishConfig).not.toHaveProperty("exports");
     for (const subpath of REQUIRED_SUBPATHS) {
-      expect(Object.keys(manifest.publishConfig.exports)).toContain(subpath);
       expect(Object.keys(manifest.exports)).toContain(subpath);
     }
-    expect(Object.keys(manifest.exports).sort()).toEqual(
-      Object.keys(manifest.publishConfig.exports).sort(),
-    );
-    for (const [subpath, target] of entries) {
+    for (const [subpath, target] of Object.entries(manifest.exports)) {
       if (typeof target === "string") {
         expect(files.has(relativePath(target)), subpath).toBe(true);
         continue;
       }
-      expect(Object.keys(target)[0], subpath).toBe("types");
+      expect(Object.keys(target), subpath).toEqual(["rex-source", "types", "default"]);
+      expect(target["rex-source"], subpath).toMatch(/^\.\/src\/.+\.ts$/);
+      expect(existsSync(join(packageRoot, target["rex-source"] ?? "")), subpath).toBe(true);
       expect(files.has(relativePath(target.types ?? "")), `${subpath} types`).toBe(true);
-      expect(files.has(relativePath(target.import ?? "")), `${subpath} import`).toBe(true);
+      expect(files.has(relativePath(target.default ?? "")), `${subpath} default`).toBe(true);
     }
     for (const bin of Object.values(manifest.bin)) {
       expect(files.has(relativePath(bin))).toBe(true);
@@ -132,19 +128,19 @@ describe("the packed @sidioralabs/rex tarball", { timeout: PACK_TEST_TIMEOUT_MS 
       "react",
       "react-dom",
       "@tanstack/react-query",
-      "vite",
       "zod",
-      "typescript",
+      "wouter",
+      "cmdk",
+      "@hono/node-server",
     ]) {
       expect(manifest.peerDependencies[peer], peer).toBeDefined();
       expect(manifest.peerDependenciesMeta[peer]?.optional ?? false, peer).toBe(false);
     }
     for (const peer of [
+      "vite",
+      "typescript",
       "drizzle-orm",
       "@libsql/client",
-      "@hono/node-server",
-      "cmdk",
-      "wouter",
       "@opentelemetry/api",
       "@vitejs/plugin-react",
       "babel-plugin-react-compiler",

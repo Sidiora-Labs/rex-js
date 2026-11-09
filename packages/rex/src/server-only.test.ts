@@ -41,8 +41,12 @@ describe("rex/server-only", () => {
       "server-only",
     );
     const packageJson = JSON.parse(readFileSync(join(here, "../package.json"), "utf8")) as {
-      readonly exports: Readonly<Record<string, string>>;
+      readonly exports: Readonly<Record<string, unknown>>;
     };
-    expect(packageJson.exports["./server-only"]).toBe("./src/server-only.ts");
+    expect(packageJson.exports["./server-only"]).toEqual({
+      "rex-source": "./src/server-only.ts",
+      types: "./dist/server-only.d.ts",
+      default: "./dist/server-only.js",
+    });
   });
 });

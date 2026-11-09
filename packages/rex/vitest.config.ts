@@ -1,6 +1,10 @@
+import { defaultClientConditions, defaultServerConditions } from "vite";
 import { configDefaults, defineConfig } from "vitest/config";
 
 const exclude = [...configDefaults.exclude, "src/**/fixtures/**"];
+const SOURCE_CONDITION = "rex-source";
+const resolve = { conditions: [SOURCE_CONDITION, ...defaultClientConditions] };
+const ssr = { resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] } };
 
 export default defineConfig({
   test: {
@@ -26,6 +30,8 @@ export default defineConfig({
     },
     projects: [
       {
+        resolve,
+        ssr,
         test: {
           name: "node",
           environment: "node",
@@ -34,6 +40,8 @@ export default defineConfig({
         },
       },
       {
+        resolve,
+        ssr,
         test: {
           name: "dom",
           environment: "happy-dom",

@@ -21,7 +21,8 @@ export const TYPEDOC_CONFIG = join(ROOT, "typedoc.json");
 export function packageEntries() {
   const manifest = JSON.parse(readFileSync(join(PACKAGE_DIR, "package.json"), "utf8"));
   const entries = [];
-  for (const [subpath, target] of Object.entries(manifest.exports ?? {})) {
+  for (const [subpath, entry] of Object.entries(manifest.exports ?? {})) {
+    const target = typeof entry === "string" ? entry : entry?.["rex-source"];
     if (typeof target !== "string" || !/\.tsx?$/.test(target)) continue;
     entries.push({
       specifier: subpath === "." ? manifest.name : `${manifest.name}/${subpath.slice(2)}`,

@@ -378,9 +378,9 @@ describe("vite/shell-components", () => {
 
   it("loads the package's vite entry from plain Node", { timeout: TEST_TIMEOUT_MS }, async () => {
     const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
-      readonly exports: Readonly<Record<string, string>>;
+      readonly exports: Readonly<Record<string, Readonly<Record<string, string>>>>;
     };
-    const entry = join(packageRoot, manifest.exports["./vite"] as string);
+    const entry = join(packageRoot, manifest.exports["./vite"]?.["rex-source"] as string);
     expect(existsSync(entry)).toBe(true);
     const run = await runNode(
       [

@@ -2,7 +2,8 @@
 # Package smoke test: install a packed @sidioralabs/rex tarball into a scratch
 # package, write a fresh app with its rex bin, install the tarball into that app,
 # run rex check and rex build, start the built Node server on a free port and
-# fetch the home page, the manifest and one RPC call from it.
+# fetch the home page, the manifest and one RPC call from it. Before the app, it runs
+# tools/package-exports.test.mjs on the tarball, which imports every export.
 # Usage: tools/smoke-package.sh [tarball]; without a tarball, packages/rex is packed.
 set -eu
 cd "$(dirname "$0")/.."
@@ -49,6 +50,9 @@ else
   tarball="$1"
 fi
 [ -f "$tarball" ] || fail "tarball not found: $tarball"
+
+step "importing every export of $tarball with its peers"
+REX_PACKAGE_TARBALL="$tarball" node --test tools/package-exports.test.mjs
 
 step "reading the peers the rex bin loads from $tarball"
 mkdir -p "$work/extract"
