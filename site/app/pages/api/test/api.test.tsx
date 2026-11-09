@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { anonymousActor } from "@sidioralabs/rex";
-import { createTestApp, renderPage, renderRegion, setupRexTesting } from "@sidioralabs/rex/testing";
+import { createTestApp, renderPage, setupRexTesting } from "@sidioralabs/rex/testing";
 import { fireEvent, waitFor, within } from "@testing-library/react";
 import app, { manifest } from "rex:app";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
@@ -106,19 +106,7 @@ describe("api page", () => {
   it(
     "searches the API part of the index and opens the chosen entry through its page",
     async () => {
-      const view = await renderRegion(
-        siteApp(),
-        "api",
-        "search",
-        {},
-        { pageTimeout: READY.timeout },
-      );
-      const search = await waitFor(() => {
-        expect(view.sidecar().state).toBe("ready");
-        const region = view.container.querySelector('[data-rex-region="api/search"]');
-        expect(region).not.toBeNull();
-        return region as HTMLElement;
-      }, READY);
+      const { view, element: search } = await renderReady("search");
       const section = await searchSection(API_SECTION);
       const results = () =>
         [...search.querySelectorAll("[data-site-api-search-result]")].map((item) =>
@@ -142,12 +130,13 @@ describe("api page", () => {
   );
 
   it(
-    "publishes its sidecar with no actions and its loaders in the manifest",
+    "publishes its sidecar with only the theme toggle and its loaders in the manifest",
     async () => {
       const { view } = await renderReady("search");
       const sidecar = view.sidecar();
       expect(sidecar.page).toBe("api");
-      expect(sidecar.actions).toEqual([]);
+      expect(sidecar.actions.map((entry) => entry.id)).toEqual(["toggle-theme"]);
+      expect(sidecar.actions.every((entry) => entry.allowed)).toBe(true);
       expect(sidecar.overlays).toEqual([]);
       expect(manifest.pages.find((entry) => entry.id === "api")?.loaders).toEqual([
         { name: "entries", action: "list-api", input: "params", invalidatedBy: [] },
