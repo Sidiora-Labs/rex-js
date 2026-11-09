@@ -33,7 +33,7 @@ Converts the November 2026 audit of commit 5fe1aa2 into nine waves of work. Wave
 5. Every workspace package SHALL have a typecheck script, the root test script SHALL run every package and report all failures, and the coverage and ratio gates SHALL fail when tests fail.
 6. CI workflows SHALL pin third-party actions by commit SHA, pin tool versions, share jobs through workflow calls, and declare a Node and operating-system matrix with Bun, Deno and workerd smoke jobs and Firefox and WebKit browser projects.
 7. Generated documentation and freshness checks SHALL pass on the wave revision.
-8. Server render and client hydration SHALL publish the same page state in the sidecar script and in the window object, and a loaded page SHALL report the ready state.
+8. After hydration the sidecar script and the window object SHALL publish the same page state, a loaded page SHALL then report the ready state, and a page that has not finished hydrating SHALL report the loading state.
 
 ## Requirement 3: Action invocation safety
 

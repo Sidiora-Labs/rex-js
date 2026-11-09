@@ -24,8 +24,9 @@ d_9 = "Publication is human-only. Deprecating registry versions, publishing, tru
 d_10 = "The spec folder and the house commit format stay, by direction of the repository owner. Audit items 2.49 and 2.50 are adopted only as far as opening a contribution path that does not need the fleet tooling."
 d_11 = "A large item with an honest smaller alternative states both. Task 2.4 streams or removes the claim; tasks 5.4 and 3.2 qualify against local runtimes and record live-host evidence as future."
 d_12 = "The final wave is documentation, examples and release preparation, so documentation describes what landed and not what was planned."
-d_13 = "The server-rendered sidecar of a page whose loaders resolved reports the page data state, and hydration alone never changes it. A declared browser-only affordance that has not registered is listed as not allowed with its reason and holds the state at loading until it registers. This supersedes the pre-hydration loading rule introduced with the hydration flag in the 0.3.0 changelog commit. Decided by rex-main on 2026-11-09 while qualifying task 0.5; flagged for human review."
+d_13 = "The server-rendered sidecar of a page whose loaders resolved reports the page data state, and hydration alone never changes it. A declared browser-only affordance that has not registered is listed as not allowed with its reason and holds the state at loading until it registers. This supersedes the pre-hydration loading rule introduced with the hydration flag in the 0.3.0 changelog commit. Decided by rex-main on 2026-11-09 while qualifying task 0.5; flagged for human review. Its first clause is superseded by D15."
 d_14 = "A Rex document paints its server HTML before it starts hydration. The document carries no head module preloads; one inline nonced module script waits for the first frame, then adds the module preloads and imports the entry. Static pages carry no such script. Cost: on a cold visit hydration starts up to one round trip later. Benefit: the first paint never waits for hydration scripts or their execution. One pattern for every document, served or prerendered. Decided by rex-main on 2026-11-09 while qualifying task 0.13, reversing the earlier rejection of the d0a0cb6 loading change; flagged for human review."
+d_15 = "The sidecar reports `ready` only when the page can be operated. A page that hydrates reports `loading` in its server HTML and reports its page data state once it has hydrated; a static page, which never hydrates, reports its page data state in server HTML. After hydration the sidecar script and `window.__rex` are equal. A declared browser-only affordance that has not registered still holds the state at `loading`. This supersedes the first clause of D13 and restores the rule of the 0.3.0 changelog commit. Decided by rex-main on 2026-11-09 while closing wave 0."
 
 [prerequisite.green_main]
 title = "Green main before feature waves"
@@ -58,7 +59,7 @@ ac_4 = "Tests identified as load-sensitive SHALL pass under full-suite parallel 
 ac_5 = "Every workspace package SHALL have a typecheck script, the root test script SHALL run every package and report all failures, and the coverage and ratio gates SHALL fail when tests fail."
 ac_6 = "CI workflows SHALL pin third-party actions by commit SHA, pin tool versions, share jobs through workflow calls, and declare a Node and operating-system matrix with Bun, Deno and workerd smoke jobs and Firefox and WebKit browser projects."
 ac_7 = "Generated documentation and freshness checks SHALL pass on the wave revision."
-ac_8 = "Server render and client hydration SHALL publish the same page state in the sidecar script and in the window object, and a loaded page SHALL report the ready state."
+ac_8 = "After hydration the sidecar script and the window object SHALL publish the same page state, a loaded page SHALL then report the ready state, and a page that has not finished hydrating SHALL report the loading state."
 
 [req.3]
 title = "Action invocation safety"
@@ -510,6 +511,27 @@ provides = []
 consumes = []
 audit = []
 time_limit_minutes = 45
+
+[task.0.16]
+title = "Hold the sidecar at loading until a hydrating page has hydrated"
+status = "pending"
+wave = 0
+requires = ["0.5", "0.13"]
+touches = ["packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/sidecar.test.tsx", "packages/rex/src/client/loaders.test.tsx", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/cli/static-target.test.ts", "examples/demo/app/pages/portfolio/test/hydration.test.tsx", "site/e2e/site.spec.ts", "docs/agent-contract.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex build && pnpm -C packages/rex exec vitest run src/client/agent/sidecar.test.tsx src/client/loaders.test.tsx src/server/ssr.test.tsx src/cli/static-target.test.ts && pnpm -C examples/demo exec vitest run app/pages/portfolio/test/hydration.test.tsx && pnpm -C examples/demo exec playwright test e2e/screen-fit.spec.ts"
+do_1 = "Restore the hydration rule in useSidecarPayload exactly as in the 0.3.0 changelog commit (f5a1001): browserReady is true for a page whose render is static, otherwise true only after hydration; keep the unregistered-affordance rule."
+do_2 = "Restore the test that a ready interactive sidecar is not emitted in server HTML before hydration so it asserts loading in server HTML, and keep the task 0.5 assertions that the hydrated sidecar script equals window.__rex, now with state ready after hydration."
+do_3 = "In the other failing unit tests, including the task 0.5 regression test in loaders.test.tsx and the demo portfolio hydration test, keep every assertion and change only the expected server-HTML state of a hydrating page to loading, with the hydrated state asserted as ready and every other sidecar field equal between server and hydrated; delete or skip no test and drop no field from a comparison."
+do_4 = "Make static-target.test.ts read the client entry from the inline loader that D14 emits with the same strictness: the entry must be present and be the built entry."
+do_5 = "In the site no-JavaScript test, assert state loading for a destination that is not static and drop the ready branch for an empty pending list; change nothing else."
+do_6 = "State the rule in the sidecar section of docs/agent-contract.md in at most three sentences; leave step 3 of the procedure as it is."
+reqs = ["2.8"]
+owner = "quality"
+cases = ["RX4-088", "RX4-900"]
+provides = []
+consumes = []
+audit = []
+time_limit_minutes = 90
 
 [task.1.1]
 title = "Require a user gesture for URL-carried actions and default confirm focus to Cancel"
@@ -2575,12 +2597,20 @@ reqs = ["2.3"]
 tasks = ["0.15"]
 oracle = "node --test tools/qualification-gates.test.mjs, pnpm lint and pnpm format:check exit 0 on the task branch."
 
+[case.RX4-088]
+title = "Hold the sidecar at loading until a hydrating page has hydrated"
+status = "UNRUN"
+tier = "integration"
+reqs = ["2.8"]
+tasks = ["0.16"]
+oracle = "pnpm -C packages/rex typecheck and build, the four rex vitest files, the demo portfolio hydration test and the demo screen-fit browser test exit 0 on the task branch."
+
 [case.RX4-900]
 title = "Wave 0 gate: Green main and release integrity"
 status = "FAIL"
 tier = "release"
 reqs = ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"]
-tasks = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13", "0.14", "0.15"]
+tasks = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13", "0.14", "0.15", "0.16"]
 oracle = "On the wave/rex-v04/0 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
 
 [case.RX4-901]

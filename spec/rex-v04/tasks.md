@@ -95,6 +95,14 @@
     - Fix any lint or format failure on the wave head by correcting the reported file, without adding an ignore entry or disabling a rule; report a file outside touches instead of editing it.
     - Run the verify command once and record the result.
     - _Requirements: 2.3_
+  - [ ] 0.16 Hold the sidecar at loading until a hydrating page has hydrated
+    - Restore the hydration rule in useSidecarPayload exactly as in the 0.3.0 changelog commit (f5a1001): browserReady is true for a page whose render is static, otherwise true only after hydration; keep the unregistered-affordance rule.
+    - Restore the test that a ready interactive sidecar is not emitted in server HTML before hydration so it asserts loading in server HTML, and keep the task 0.5 assertions that the hydrated sidecar script equals window.__rex, now with state ready after hydration.
+    - In the other failing unit tests, including the task 0.5 regression test in loaders.test.tsx and the demo portfolio hydration test, keep every assertion and change only the expected server-HTML state of a hydrating page to loading, with the hydrated state asserted as ready and every other sidecar field equal between server and hydrated; delete or skip no test and drop no field from a comparison.
+    - Make static-target.test.ts read the client entry from the inline loader that D14 emits with the same strictness: the entry must be present and be the built entry.
+    - In the site no-JavaScript test, assert state loading for a destination that is not static and drop the ready branch for an empty pending list; change nothing else.
+    - State the rule in the sidecar section of docs/agent-contract.md in at most three sentences; leave step 3 of the procedure as it is.
+    - _Requirements: 2.8_
   - [ ] 1.1 Require a user gesture for URL-carried actions and default confirm focus to Cancel
     - Change URL invocation so a URL can only prefill an action surface and wait for an activation by the user; nothing is sent on page load.
     - Add an action-level opt-in for URL prefill that the registry accepts only for actions declared safe, and reject the option on any other action at declaration time.
@@ -533,7 +541,7 @@
 ```json
 {
   "waves": [
-    { "id": 0,  "tasks": ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13", "0.14", "0.15"] },
+    { "id": 0,  "tasks": ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13", "0.14", "0.15", "0.16"] },
     { "id": 1,  "tasks": ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14", "1.15"] },
     { "id": 2,  "tasks": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9"] },
     { "id": 3,  "tasks": ["3.1", "3.2", "3.3", "3.4", "3.5"] },

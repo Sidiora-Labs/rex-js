@@ -268,3 +268,11 @@ symbol = "overlay trigger before hydration"
 observed = "Demo screen-fit fails on send (phone, tablet) and portfolio (desktop): the overlay never opens after its trigger is clicked. The test waits for the server sidecar state ready (true at first paint under D13), then clicks; under D14 the entry is imported after the first frame, after the load event that page.goto waits for, so the click lands on unhydrated markup. Evidence: 391ac3c | REX_SITE_PORT=4293 sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log"
 assumption = "An agent that acts on sidecar ready can lose its first activation under D14; needs rex-main's decision (sidecar holds loading until hydrated, or the agent waits for the mirror, or D14 changes)."
 severity = "high"
+
+[qualification.034]
+task = "0.5"
+file = "packages/rex/src/client/agent/sidecar.tsx, docs/agent-contract.md"
+symbol = "useSidecarPayload browserReady"
+observed = "D13's first clause removed the 0.3.0 rule that a hydrating page reports loading in server HTML until it has hydrated, to satisfy unit tests left stale by that commit; an agent following the documented contract (wait until ready) could then act on markup without handlers, and under D14 three demo screen-fit tests failed (entry 033)."
+assumption = "rex-main reverses it with D15 on 2026-11-09; task 0.16 restores the rule and updates the stale expectations without dropping assertions."
+severity = "assumption"
