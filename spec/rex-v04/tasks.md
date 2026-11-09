@@ -95,7 +95,7 @@
     - Fix any lint or format failure on the wave head by correcting the reported file, without adding an ignore entry or disabling a rule; report a file outside touches instead of editing it.
     - Run the verify command once and record the result.
     - _Requirements: 2.3_
-  - [ ] 0.16 Hold the sidecar at loading until a hydrating page has hydrated
+  - [x] 0.16 Hold the sidecar at loading until a hydrating page has hydrated
     - Restore the hydration rule in useSidecarPayload exactly as in the 0.3.0 changelog commit (f5a1001): browserReady is true for a page whose render is static, otherwise true only after hydration; keep the unregistered-affordance rule.
     - Restore the test that a ready interactive sidecar is not emitted in server HTML before hydration so it asserts loading in server HTML, and keep the task 0.5 assertions that the hydrated sidecar script equals window.__rex, now with state ready after hydration.
     - In the other failing unit tests, including the task 0.5 regression test in loaders.test.tsx and the demo portfolio hydration test, keep every assertion and change only the expected server-HTML state of a hydrating page to loading, with the hydrated state asserted as ready and every other sidecar field equal between server and hydrated; delete or skip no test and drop no field from a comparison.

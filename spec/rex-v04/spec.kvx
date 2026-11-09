@@ -514,7 +514,7 @@ time_limit_minutes = 45
 
 [task.0.16]
 title = "Hold the sidecar at loading until a hydrating page has hydrated"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.5", "0.13"]
 touches = ["packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/sidecar.test.tsx", "packages/rex/src/client/loaders.test.tsx", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/cli/static-target.test.ts", "examples/demo/app/pages/portfolio/test/hydration.test.tsx", "site/e2e/site.spec.ts", "docs/agent-contract.md"]
@@ -2599,7 +2599,7 @@ oracle = "node --test tools/qualification-gates.test.mjs, pnpm lint and pnpm for
 
 [case.RX4-088]
 title = "Hold the sidecar at loading until a hydrating page has hydrated"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["2.8"]
 tasks = ["0.16"]

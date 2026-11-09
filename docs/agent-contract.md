@@ -64,6 +64,8 @@ Each rendered page contains exactly one element:
 
 The MIME type and id are `SIDECAR_MIME_TYPE` and `SIDECAR_ELEMENT_ID`. `RexSidecar` renders it once per page and throws if a second one mounts. The JSON is escaped so `<`, `>`, `&`, U+2028 and U+2029 cannot break out of the script. The same object is assigned to `window.__rex`. The payload is rebuilt whenever the data state, the actor's permissions, an overlay's open state, a registered affordance or the outcome changes.
 
+A page that hydrates reports `state: "loading"` in its server HTML and reports its page data state once it has hydrated, so `ready` means its controls already have their handlers. A static page, which never hydrates, reports its page data state in its server HTML. A declared browser-only control that has not registered yet is listed as not allowed with the reason `Requires an active browser control` and holds the state at `loading`.
+
 The payload shape is defined by `sidecarSchema` in `packages/rex/src/manifest/sidecar.schema.ts`. Every object is strict (no extra keys):
 
 ```ts
