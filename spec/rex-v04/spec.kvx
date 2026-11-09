@@ -359,7 +359,7 @@ time_limit_minutes = 90
 
 [task.0.8]
 title = "Raise vulnerable dependencies and their peer floors"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.2"]
 touches = ["packages/rex/package.json", "package.json", "examples/demo/package.json", "site/package.json", "pnpm-lock.yaml", ".github/dependabot.yml"]
@@ -1878,7 +1878,7 @@ oracle = "Three consecutive full runs of the package suite pass with no retry."
 
 [case.RX4-008]
 title = "Raise vulnerable dependencies and their peer floors"
-status = "UNRUN"
+status = "PASS"
 tier = "component"
 reqs = ["1.7"]
 tasks = ["0.8"]
