@@ -1,6 +1,6 @@
 {
   "feature": "rex-v04",
-  "source_digest": "43c806223730a8be",
+  "source_digest": "9771595d9f1ce882",
   "result": "PASS",
   "counts": {
     "requirements": 18,
@@ -9,7 +9,7 @@
     "cases": 96,
     "interfaces": 37,
     "waves": 9,
-    "cases_unrun": 81
+    "cases_unrun": 80
   },
   "scope": "authoring structure only; no product code, test or verify_cmd was executed"
 }
