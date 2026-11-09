@@ -55,7 +55,6 @@ describe("the packed @sidioralabs/rex tarball", { timeout: PACK_TEST_TIMEOUT_MS 
   let files: Set<string>;
 
   beforeAll(() => {
-    execFileSync("pnpm", ["run", "build"], { cwd: packageRoot, stdio: "pipe" });
     const output = execFileSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
       cwd: packageRoot,
       encoding: "utf8",

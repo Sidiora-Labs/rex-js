@@ -264,10 +264,10 @@ time_limit_minutes = 90
 
 [task.0.3]
 title = "Isolate tests from the source tree and build dist once per run"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.2"]
-touches = ["packages/rex/vitest.config.ts", "packages/rex/vitest.global-setup.ts", "packages/rex/src/testing/internal/fixture.ts", "packages/rex/src/testing/internal/fixture.test.ts", "packages/rex/src/cli/**/*.test.ts", "packages/rex/src/vite/**/*.test.ts", "packages/rex/src/check/**/*.test.ts", "packages/rex/src/manifest/**/*.test.ts", ".gitignore", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/cli/static-target.test.ts"]
+touches = ["packages/rex/vitest.config.ts", "packages/rex/vitest.global-setup.ts", "packages/rex/src/testing/internal/fixture.ts", "packages/rex/src/testing/internal/fixture.test.ts", "packages/rex/src/cli/*.test.ts", "packages/rex/src/cli/**/*.test.ts", "packages/rex/src/vite/*.test.ts", "packages/rex/src/check/**/*.test.ts", ".gitignore", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/cli/static-target.test.ts", "packages/rex/src/server/ssr.test.tsx"]
 verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/testing/internal/fixture.test.ts src/vite/prerender.test.ts src/cli/static-target.test.ts"
 do_1 = "Add src/testing/internal/fixture.ts with a helper that copies a named fixture to a fresh temporary directory and removes it after the test; it is internal and not exported from the package."
 do_2 = "Move every test that writes loader caches, symlinks or prerender output under src onto the helper, including the fixture node_modules links and src/vite/.prerender-fixture."
@@ -1838,7 +1838,7 @@ oracle = "A packed tarball installed into an empty project imports every exports
 
 [case.RX4-003]
 title = "Isolate tests from the source tree and build dist once per run"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["2.1"]
 tasks = ["0.3"]

@@ -17,7 +17,7 @@
     - State one Node floor in the package engines, the root manifest, README.md and docs/development.md; enable sourceMap and declarationMap in tsconfig.build.json; remove the trailing pnpm install from the build script.
     - Add tools/package-exports.test.mjs that packs the package, installs the tarball into a temporary project with the real peers and imports every exports key; extend tools/smoke-package.sh to call it.
     - _Requirements: 1.1, 1.3, 1.4_
-  - [ ] 0.3 Isolate tests from the source tree and build dist once per run
+  - [x] 0.3 Isolate tests from the source tree and build dist once per run
     - Add src/testing/internal/fixture.ts with a helper that copies a named fixture to a fresh temporary directory and removes it after the test; it is internal and not exported from the package.
     - Move every test that writes loader caches, symlinks or prerender output under src onto the helper, including the fixture node_modules links and src/vite/.prerender-fixture.
     - Build dist once in a Vitest globalSetup and stop individual tests from rebuilding it; place CLI integration tests that spawn the binary in a serial Vitest project.
