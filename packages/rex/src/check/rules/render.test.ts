@@ -164,9 +164,9 @@ const STATIC_SCRIPTS = { build: "rex build", "build:static": "rex build --target
 describe("render/static-post", () => {
   it("recognises a script that runs rex build with the static target", () => {
     expect(STATIC_BUILD_SCRIPT.test("rex build --target static")).toBe(true);
-    expect(STATIC_BUILD_SCRIPT.test("rex build --no-check --target=static && node sitemap.mjs")).toBe(
-      true,
-    );
+    expect(
+      STATIC_BUILD_SCRIPT.test("rex build --no-check --target=static && node sitemap.mjs"),
+    ).toBe(true);
     expect(STATIC_BUILD_SCRIPT.test("rex build")).toBe(false);
     expect(STATIC_BUILD_SCRIPT.test("rex build --target node")).toBe(false);
     expect(STATIC_BUILD_SCRIPT.test("rex build && echo --target static")).toBe(false);
@@ -268,6 +268,8 @@ describe("render/static-post", () => {
       [STATIC_POST_CODE, 8, 21],
       [STATIC_POST_CODE, 8, 28],
     ]);
-    expect(result.findings[0]?.message).toContain('(script "deploy" runs rex build --target static)');
+    expect(result.findings[0]?.message).toContain(
+      '(script "deploy" runs rex build --target static)',
+    );
   });
 });

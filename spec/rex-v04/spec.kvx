@@ -283,7 +283,7 @@ time_limit_minutes = 90
 
 [task.0.4]
 title = "Update CLI output assertions and make lint and format cover the workspace"
-status = "pending"
+status = "in_progress"
 wave = 0
 requires = []
 touches = ["packages/rex/src/cli/commands.test.ts", "packages/rex/src/cli/index.test.ts", "packages/rex/src/cli/cli.test.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/check/rules/*.ts", "eslint.config.js", "site/eslint.config.js", "site/package.json", "package.json", ".prettierignore"]

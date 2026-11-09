@@ -104,7 +104,9 @@ export interface StaticDeployment {
 function propertyName(element: ts.ObjectLiteralElementLike): string | null {
   const name = element.name;
   if (name === undefined) return null;
-  return ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)
+  return ts.isIdentifier(name) ||
+    ts.isStringLiteral(name) ||
+    ts.isNoSubstitutionTemplateLiteral(name)
     ? name.text
     : null;
 }

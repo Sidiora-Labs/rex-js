@@ -46,7 +46,6 @@ import { stableStringify } from "../../manifest/build.ts";
 import type { Manifest } from "../../manifest/types.ts";
 import {
   chunkTable,
-  formatChunkTable,
   staticImportClosures,
   type ChunkRow,
   type OutputAssetLike,

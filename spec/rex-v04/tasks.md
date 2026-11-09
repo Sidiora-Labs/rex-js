@@ -23,7 +23,7 @@
     - Build dist once in a Vitest globalSetup and stop individual tests from rebuilding it; place CLI integration tests that spawn the binary in a serial Vitest project.
     - Assert in fixture.test.ts that a full fixture round trip leaves git status clean, and run the three named suites twice in a row to show no EEXIST failure on the second run.
     - _Requirements: 2.1_
-  - [ ] 0.4 Update CLI output assertions and make lint and format cover the workspace
+  - [-] 0.4 Update CLI output assertions and make lint and format cover the workspace
     - Rewrite the stale assertions in cli/commands.test.ts, cli/index.test.ts and cli/cli.test.ts against the build reporter output introduced by the CLI output rework, asserting the contract and not incidental spacing.
     - Remove or use the unused formatChunkTable in cli/commands/build.ts and format the two unformatted files under check/rules.
     - Extend eslint.config.js to cover site and tools, and repair the site lint script so it no longer fails on a .tsx extension error.
