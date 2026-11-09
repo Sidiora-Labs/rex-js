@@ -37,13 +37,20 @@ import {
   type RexAppBundle,
   type RexAppConfig,
 } from "./virtual.ts";
+import { copyFixture } from "../testing/internal/fixture.ts";
 
 const VITE_TEST_TIMEOUT_MS = 20_000;
 const DEMO_BUILD_TIMEOUT_MS = 240_000;
 const DEVTOOLS_BUILD_TIMEOUT_MS = 120_000;
 const here = dirname(fileURLToPath(import.meta.url));
 const demoRoot = join(here, "..", "..", "..", "..", "examples", "demo");
-const fixtureRoot = join(here, "fixtures", "app");
+const fixtureCopy = copyFixture("vite/fixtures/app");
+const fixtureRoot = fixtureCopy.dir;
+
+afterAll(() => {
+  fixtureCopy.remove();
+});
+
 const coreEntry = join(here, "..", "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
 const fixture = (path: string) => normalizePath(join(fixtureRoot, path));

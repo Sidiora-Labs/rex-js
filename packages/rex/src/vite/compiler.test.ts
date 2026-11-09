@@ -1,12 +1,19 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, normalizePath } from "vite";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { COMPILER_RUNTIME, REACT_COMPILER_TARGET, shouldCompile } from "./compiler.ts";
 import { rex } from "./plugin.ts";
+import { copyFixture } from "../testing/internal/fixture.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixtureRoot = join(here, "fixtures", "app");
+const fixtureCopy = copyFixture("vite/fixtures/app");
+const fixtureRoot = fixtureCopy.dir;
+
+afterAll(() => {
+  fixtureCopy.remove();
+});
+
 const coreEntry = join(here, "..", "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
 const BUILD_TIMEOUT_MS = 120_000;

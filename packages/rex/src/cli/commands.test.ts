@@ -11,9 +11,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import ts from "typescript";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Finding } from "../check/index.ts";
 import { resetDeprecations } from "../core/deprecated.ts";
@@ -729,35 +728,9 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
   });
 });
 
-const CLI_EMIT_TIMEOUT_MS = 180_000;
 const DIST_BUILD_TIMEOUT_MS = 180_000;
 const PRERENDER_APP_NAME = "prerender-app";
-
-function emitDistCli(): string {
-  const cache = join(packageRoot, "node_modules", ".cache");
-  mkdirSync(cache, { recursive: true });
-  const outDir = mkdtempSync(join(cache, "rex-dist-cli-"));
-  temporary.push(outDir);
-  const config = ts.getParsedCommandLineOfConfigFile(
-    join(packageRoot, "tsconfig.build.json"),
-    {},
-    {
-      ...ts.sys,
-      onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
-        throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
-      },
-    },
-  );
-  if (config === undefined) throw new Error("tsconfig.build.json could not be read");
-  const program = ts.createProgram({
-    rootNames: config.fileNames,
-    options: { ...config.options, outDir, declaration: false },
-  });
-  expect(program.emit().emitSkipped).toBe(false);
-  const entry = join(outDir, basename(here), "index.js");
-  expect(existsSync(entry)).toBe(true);
-  return entry;
-}
+const distCli = join(packageRoot, "dist", "cli", "index.js");
 
 function declareRender(root: string, pageId: string, render: "ssg" | "static"): void {
   const file = join(root, "app", "pages", pageId, "page.ts");
@@ -772,10 +745,8 @@ describe(
   { timeout: DIST_BUILD_TIMEOUT_MS },
   () => {
     let root: string;
-    let distCli: string;
 
     beforeAll(async () => {
-      distCli = emitDistCli();
       const cwd = mkdtempSync(join(tmpdir(), "rex-prerender-app-"));
       temporary.push(cwd);
       expect(await run(["new", PRERENDER_APP_NAME, "--ui", "none"], captureIO(cwd).io)).toBe(
@@ -791,7 +762,7 @@ describe(
       declareRender(root, "about", "static");
       declareRender(root, "guide", "ssg");
       expect((await cli(root, "manifest")).code).toBe(EXIT_OK);
-    }, CLI_EMIT_TIMEOUT_MS + COMMANDS_TEST_TIMEOUT_MS);
+    }, COMMANDS_TEST_TIMEOUT_MS);
 
     it("prerenders both pages in the app's page runtime and the generated server serves them", async () => {
       const built = await runNode([distCli, "build"], root, DIST_BUILD_TIMEOUT_MS);
