@@ -182,7 +182,13 @@ function isRegionError(text: string): boolean {
   return REGION_ERROR_CODE.test(text);
 }
 
-export function watchPage(page: Page): PageWatch {
+export interface PageWatchOptions {
+  readonly javaScriptEnabled?: boolean;
+}
+
+const SCRIPT_RESOURCE = "script";
+
+export function watchPage(page: Page, options: PageWatchOptions = {}): PageWatch {
   const problems: string[] = [];
   const onConsole = (message: ConsoleMessage) => {
     const text = message.text();
@@ -190,10 +196,12 @@ export function watchPage(page: Page): PageWatch {
     else if (isRegionError(text)) problems.push(`region error: ${text}`);
   };
   const onPageError = (error: Error) => problems.push(`page error: ${error.message}`);
-  const onFailed = (request: Request) =>
+  const onFailed = (request: Request) => {
+    if (options.javaScriptEnabled === false && request.resourceType() === SCRIPT_RESOURCE) return;
     problems.push(
       `failed request: ${request.method()} ${request.url()} ${request.failure()?.errorText ?? ""}`.trim(),
     );
+  };
   const onResponse = (response: Response) => {
     if (response.status() >= 400) {
       problems.push(

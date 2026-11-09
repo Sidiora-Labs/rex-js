@@ -12,7 +12,7 @@ export interface HeroProps {
 export default function Hero({ version }: HeroProps) {
   return (
     <Page.Stack space={5}>
-      <Mark className="h-16 w-auto sm:h-20" priority />
+      <Mark className="h-16 w-auto sm:h-20" />
       <Badge variant="tonal">
         Version <span data-site-fact="version">{version}</span>
       </Badge>

@@ -111,7 +111,7 @@ for (const stop of stops) {
       });
       try {
         const page = await context.newPage();
-        const watch = watchPage(page);
+        const watch = watchPage(page, { javaScriptEnabled: false });
         const response = await page.goto(new URL(stop.path, String(info.project.use.baseURL)).href);
         expect(response?.status()).toBe(200);
         await waitForSidecar(page, stop.page.id, { mirror: false });
@@ -134,14 +134,14 @@ for (const stop of stops) {
           const listed = stops.find((entry) => entry.path.replace(/\/$/, "") === path);
           if (listed === undefined)
             throw new Error(`Unlisted navigation destination: ${target.href}`);
-          if (path === current || listed.page.render !== "static") continue;
+          if (path === current) continue;
           link = candidate;
           destination = target;
           expected = listed;
           break;
         }
         if (link === null || destination === null || expected === null) {
-          throw new Error(`No visible navigation link from ${stop.path} to another static page`);
+          throw new Error(`No visible navigation link from ${stop.path} to another listed page`);
         }
         const [navigated] = await Promise.all([
           page.waitForNavigation({ waitUntil: "load" }),
@@ -156,7 +156,7 @@ for (const stop of stops) {
         await expect(page.locator("[data-rex-error-code]")).toHaveCount(0);
         await expect(page.locator("main")).toBeVisible();
         expect((await page.locator("main").innerText()).trim().length).toBeGreaterThan(0);
-        await checkZeroJs(page);
+        if (expected.page.render === "static") await checkZeroJs(page);
         expect(watch.stop()).toEqual([]);
       } finally {
         await context.close();
