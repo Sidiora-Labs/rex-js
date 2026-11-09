@@ -59,7 +59,7 @@
     - Write the supported window and the plan for the native TypeScript compiler into docs/versioning.md, stating which checker features depend on the compiler API.
     - Add tools/support-window.test.mjs covering the result parser and range computation.
     - _Requirements: 1.8_
-  - [ ] 0.10 Give every package a typecheck and make the root gates honest
+  - [x] 0.10 Give every package a typecheck and make the root gates honest
     - Add a typecheck script to examples/demo and site and fix the type errors it reveals without widening types.
     - Replace the root test script with tools/run-workspace-tests.mjs, which runs every package, continues after a failure and exits non-zero with a per-package summary.
     - Include src/testing in coverage, make coverage thresholds apply even when a test fails, and make tools/test-ratio.mjs fail when the suite it counts has failing tests.

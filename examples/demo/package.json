@@ -9,9 +9,10 @@
     "build:static": "rex build --target static",
     "check": "rex check",
     "manifest": "rex manifest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/server.js",
-    "test": "node ../../tools/freshness.mjs --check --skip pointers && rex check && playwright test e2e/operability.spec.ts e2e/nojs.spec.ts e2e/axe.spec.ts e2e/vitals.spec.ts e2e/lighthouse.ts e2e/screenshots.spec.ts e2e/screen-fit.spec.ts",
-    "test:unit": "vitest run",
+    "test": "node ../../tools/freshness.mjs --check --skip pointers && rex check && pnpm run test:unit && playwright test e2e/operability.spec.ts e2e/nojs.spec.ts e2e/axe.spec.ts e2e/vitals.spec.ts e2e/lighthouse.ts e2e/screenshots.spec.ts e2e/screen-fit.spec.ts",
+    "test:unit": "vitest run --reporter=default --reporter=json --outputFile.json=node_modules/.cache/rex/test-results.json",
     "test:vitals": "playwright test e2e/vitals.spec.ts e2e/lighthouse.ts",
     "lint": "pnpm -w exec eslint examples/demo",
     "format": "prettier --write ."

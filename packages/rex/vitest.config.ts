@@ -10,16 +10,18 @@ const ssr = { resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditio
 export default defineConfig({
   test: {
     globalSetup: ["./vitest.global-setup.ts"],
+    reporters: ["default", "json"],
+    outputFile: { json: "node_modules/.cache/rex/test-results.json" },
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
       reportsDirectory: "coverage",
+      reportOnFailure: true,
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "src/**/*.test.{ts,tsx}",
         "src/**/*.conformance.ts",
         "src/**/fixtures/**",
-        "src/testing/**",
         "src/**/*.d.ts",
         "src/**/*.generated.*",
       ],
