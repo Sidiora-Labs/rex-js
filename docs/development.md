@@ -4,7 +4,7 @@ This page is for people and agents working on Rex itself. For building apps with
 
 ## Workspace layout
 
-The repository is a pnpm workspace (`pnpm-workspace.yaml`: `packages/*` and `examples/*`). Node 22.19 or later is required (`engines` in `package.json`); pnpm is pinned to `10.27.0`.
+The repository is a pnpm workspace (`pnpm-workspace.yaml`: `packages/*` and `examples/*`). Node 22.19+, 24.11+ or 26+ is required (`^22.19.0 || ^24.11.0 || >=26.0.0`, the `engines` range in `package.json` and `packages/rex/package.json`); pnpm is pinned to `10.27.0`.
 
 ```
 packages/rex/            the @sidioralabs/rex package
@@ -39,25 +39,25 @@ tools/                   release gates, the docs link and API checks, the error 
 
 ## Scripts
 
-| Where           | Script                                                 | Runs                                                                                                                                        |
-| --------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| root            | `pnpm build`                                           | `pnpm -r --filter @sidioralabs/rex build`                                                                                                   |
-| root            | `pnpm typecheck`                                       | `pnpm -r typecheck`                                                                                                                         |
-| root            | `pnpm test`                                            | `pnpm -r test`                                                                                                                              |
-| root            | `pnpm check`                                           | the demo's `check` script                                                                                                                   |
-| root            | `pnpm dev`                                             | the demo's `dev` script                                                                                                                     |
-| `packages/rex`  | `typecheck`                                            | `tsc -p tsconfig.json --noEmit`                                                                                                             |
-| `packages/rex`  | `test`                                                 | `vitest run`                                                                                                                                |
-| `packages/rex`  | `build`                                                | clean `dist/`, `tsc -p tsconfig.build.json`, copy the CSS files and `rex-app.d.ts`, reinstall the workspace offline to relink the `rex` bin |
-| `examples/demo` | `dev`, `build`, `check`, `manifest`                    | `rex dev`, `rex build`, `rex check`, `rex manifest`                                                                                         |
-| `examples/demo` | `start`                                                | `node dist/server.js`                                                                                                                       |
-| `examples/demo` | `test`                                                 | `rex check && playwright test` over operability, nojs, axe, vitals, lighthouse and screenshots                                              |
-| `examples/demo` | `test:unit`                                            | `vitest run` (the page tests on rex/testing)                                                                                                |
-| `examples/demo` | `test:vitals`                                          | `playwright test e2e/vitals.spec.ts e2e/lighthouse.ts`                                                                                      |
-| `examples/demo` | `lint`, `format`                                       | `eslint .`, `prettier --write .`                                                                                                            |
-| root            | `pnpm docs:errors`, `pnpm docs:api`, `pnpm docs:check` | regenerate docs/errors.md and docs/api, check links and API freshness                                                                       |
+| Where           | Script                                                 | Runs                                                                                                                     |
+| --------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| root            | `pnpm build`                                           | `pnpm -r --filter @sidioralabs/rex build`                                                                                |
+| root            | `pnpm typecheck`                                       | `pnpm -r typecheck`                                                                                                      |
+| root            | `pnpm test`                                            | `pnpm -r test`                                                                                                           |
+| root            | `pnpm check`                                           | the demo's `check` script                                                                                                |
+| root            | `pnpm dev`                                             | the demo's `dev` script                                                                                                  |
+| `packages/rex`  | `typecheck`                                            | `tsc -p tsconfig.json --noEmit`                                                                                          |
+| `packages/rex`  | `test`                                                 | `vitest run`                                                                                                             |
+| `packages/rex`  | `build`                                                | clean `dist/`, `tsc -p tsconfig.build.json` with source maps and declaration maps, copy the CSS files and `rex-app.d.ts` |
+| `examples/demo` | `dev`, `build`, `check`, `manifest`                    | `rex dev`, `rex build`, `rex check`, `rex manifest`                                                                      |
+| `examples/demo` | `start`                                                | `node dist/server.js`                                                                                                    |
+| `examples/demo` | `test`                                                 | `rex check && playwright test` over operability, nojs, axe, vitals, lighthouse and screenshots                           |
+| `examples/demo` | `test:unit`                                            | `vitest run` (the page tests on rex/testing)                                                                             |
+| `examples/demo` | `test:vitals`                                          | `playwright test e2e/vitals.spec.ts e2e/lighthouse.ts`                                                                   |
+| `examples/demo` | `lint`, `format`                                       | `eslint .`, `prettier --write .`                                                                                         |
+| root            | `pnpm docs:errors`, `pnpm docs:api`, `pnpm docs:check` | regenerate docs/errors.md and docs/api, check links and API freshness                                                    |
 
-The demo calls the built bin (`packages/rex/dist/cli/index.js`), so run `pnpm -C packages/rex build` before any demo script.
+The demo calls the built bin (`packages/rex/dist/cli/index.js`), so run `pnpm -C packages/rex build` and then `pnpm install --offline` (which links the bin) before any demo script. The `exports` map of `packages/rex/package.json` resolves every entry to `dist`; workspace packages reach `src` only through the `rex-source` export condition, which `tsconfig.base.json` and `site/tsconfig.json` (`customConditions`), the Vitest configs (`resolve.conditions`) and `rex dev` inside this repository select.
 
 ## Tests
 
