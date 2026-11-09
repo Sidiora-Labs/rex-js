@@ -58,11 +58,12 @@ pnpm rex dev
 
 ## Quick start
 
-Rex requires Node 22.19 or later (the React Compiler, on by default through the optional peers `@babel/core` 8 and `babel-plugin-react-compiler`, needs Node ^22.18.0 || >=24.11.0) and pnpm (the workspace pins `pnpm@10.27.0` and, through its own tooling, Node ^22.19.0 || ^24.11.0 || >=26.0.0). The `rex` bin is `dist/cli/index.js` of the package, so inside this repository build it first:
+Rex requires Node 22.19+, 24.11+ or 26+ (`^22.19.0 || ^24.11.0 || >=26.0.0`, the `engines` range of the package and the workspace) and pnpm (the workspace pins `pnpm@10.27.0`). The `rex` bin is `dist/cli/index.js` of the package, so inside this repository build it first:
 
 ```sh
 pnpm install                    # install the workspace
 pnpm -C packages/rex build      # emit packages/rex/dist, including the rex bin
+pnpm install --offline          # link the built rex bin into the workspace packages
 ```
 
 Then, with `rex` on your path:

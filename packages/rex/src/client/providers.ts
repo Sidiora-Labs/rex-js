@@ -15,7 +15,9 @@ export interface RexProvider {
 export const REX_PROVIDERS: readonly RexProvider[] = [
   { id: "i18n", Component: I18nProvider },
   { id: "confirm", Component: ConfirmProvider },
-  ...(import.meta.env.DEV && import.meta.env.REX_DEVTOOLS !== false
+  ...(typeof import.meta.env !== "undefined" &&
+  import.meta.env.DEV &&
+  import.meta.env.REX_DEVTOOLS !== false
     ? [{ id: "devtools", Component: DevtoolsProvider }]
     : []),
 ];

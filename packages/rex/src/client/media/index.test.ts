@@ -52,8 +52,12 @@ describe("client/media entry", () => {
   it("is the module behind the @sidioralabs/rex/client/media export", () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const manifest = JSON.parse(readFileSync(join(here, "../../../package.json"), "utf8")) as {
-      readonly exports: Readonly<Record<string, string>>;
+      readonly exports: Readonly<Record<string, unknown>>;
     };
-    expect(manifest.exports["./client/media"]).toBe("./src/client/media/index.ts");
+    expect(manifest.exports["./client/media"]).toEqual({
+      "rex-source": "./src/client/media/index.ts",
+      types: "./dist/client/media/index.d.ts",
+      default: "./dist/client/media/index.js",
+    });
   });
 });

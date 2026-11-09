@@ -245,10 +245,10 @@ time_limit_minutes = 45
 
 [task.0.2]
 title = "Point package exports at built output and correct peer, engine and map metadata"
-status = "pending"
+status = "done"
 wave = 0
 requires = []
-touches = ["packages/rex/package.json", "packages/rex/tsconfig.build.json", "packages/rex/tsconfig.json", "tsconfig.base.json", "examples/demo/tsconfig.json", "examples/demo/vitest.config.ts", "site/tsconfig.json", "site/vitest.config.ts", "packages/rex/vitest.config.ts", "tools/smoke-package.sh", "tools/package-exports.test.mjs", "README.md", "docs/development.md"]
+touches = ["packages/rex/package.json", "packages/rex/tsconfig.build.json", "packages/rex/tsconfig.json", "tsconfig.base.json", "examples/demo/tsconfig.json", "examples/demo/vitest.config.ts", "site/tsconfig.json", "site/vitest.config.ts", "packages/rex/vitest.config.ts", "tools/smoke-package.sh", "tools/package-exports.test.mjs", "README.md", "docs/development.md", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/pack.test.ts", "packages/rex/src/index.test.ts", "packages/rex/src/config.test.ts", "packages/rex/src/server-only.test.ts", "packages/rex/src/prettier.test.ts", "packages/rex/src/schema/index.test.ts", "packages/rex/src/manifest/index.test.ts", "packages/rex/src/client/interop/index.test.ts", "packages/rex/src/client/media/index.test.ts", "packages/rex/src/vite/shell-components.test.ts", "tools/freshness.mjs", "tools/docs-api.mjs", "packages/rex/src/client/providers.ts", "packages/rex/src/client/shell/slots.ts"]
 verify_cmd = "pnpm -C packages/rex build && node --test tools/package-exports.test.mjs"
 do_1 = "Make the in-repo exports map resolve types and default to dist, and add a rex-source custom condition that workspace packages, Vitest and the dev server select to reach src; delete the publishConfig.exports override."
 do_2 = "Mark wouter, cmdk, @vitejs/plugin-react and @hono/node-server as required peers of the entries that import them statically, or move the import behind the entry that owns it; keep typescript and vite optional for server-only consumers."
@@ -1830,7 +1830,7 @@ oracle = "REX_VERSION, rex --version and the scaffolded range all equal the mani
 
 [case.RX4-002]
 title = "Point package exports at built output and correct peer, engine and map metadata"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["1.1", "1.3", "1.4"]
 tasks = ["0.2"]

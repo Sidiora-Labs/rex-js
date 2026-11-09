@@ -11,7 +11,7 @@
     - Remove hard-coded release numbers from cli/pack.test.ts, README.md, docs/cli.md and SECURITY.md, or route them through the freshness gate so a stale copy fails tools/freshness.mjs.
     - Add version.test.ts asserting the constant equals the manifest version and that a scaffolded manifest range admits the current version.
     - _Requirements: 1.2_
-  - [ ] 0.2 Point package exports at built output and correct peer, engine and map metadata
+  - [x] 0.2 Point package exports at built output and correct peer, engine and map metadata
     - Make the in-repo exports map resolve types and default to dist, and add a rex-source custom condition that workspace packages, Vitest and the dev server select to reach src; delete the publishConfig.exports override.
     - Mark wouter, cmdk, @vitejs/plugin-react and @hono/node-server as required peers of the entries that import them statically, or move the import behind the entry that owns it; keep typescript and vite optional for server-only consumers.
     - State one Node floor in the package engines, the root manifest, README.md and docs/development.md; enable sourceMap and declarationMap in tsconfig.build.json; remove the trailing pnpm install from the build script.

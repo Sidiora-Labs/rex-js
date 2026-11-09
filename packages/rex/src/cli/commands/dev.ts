@@ -1,5 +1,15 @@
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { createServer, type LogLevel, type ServerOptions, type ViteDevServer } from "vite";
+import { fileURLToPath } from "node:url";
+import {
+  createServer,
+  defaultClientConditions,
+  defaultServerConditions,
+  type InlineConfig,
+  type LogLevel,
+  type ServerOptions,
+  type ViteDevServer,
+} from "vite";
 import { isFetchHandler } from "../../core/config.ts";
 import type { DeprecationWarn } from "../../core/deprecated.ts";
 import { explainRexError } from "../../core/errors.docs.ts";
@@ -12,6 +22,17 @@ import { ensureCheckPasses } from "./check.ts";
 
 import { DEFAULT_DEV_PORT } from "../registrations/dev.ts";
 export { DEFAULT_DEV_PORT, parsePort, register } from "../registrations/dev.ts";
+
+const SOURCE_CONDITION = "rex-source";
+const PACKAGE_SOURCE = fileURLToPath(new URL("../../../src/index.ts", import.meta.url));
+
+function sourceConditions(): Pick<InlineConfig, "resolve" | "ssr"> {
+  if (!existsSync(PACKAGE_SOURCE)) return {};
+  return {
+    resolve: { conditions: [SOURCE_CONDITION, ...defaultClientConditions] },
+    ssr: { resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] } },
+  };
+}
 
 export interface DevOptions {
   readonly port?: number;
@@ -68,6 +89,7 @@ export async function startDev(root: string, options: DevOptions = {}): Promise<
     logLevel: options.logLevel ?? "info",
     plugins: rex({ ...pluginOptions, server: (vite) => loadAppServer(vite, options.warn) }),
     server,
+    ...sourceConditions(),
   });
   try {
     await vite.listen();

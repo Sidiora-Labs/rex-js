@@ -58,9 +58,13 @@ describe("rex/manifest entry", () => {
   it("is the module behind @sidioralabs/rex/manifest and keeps the scanner out of it", () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const packageJson = JSON.parse(readFileSync(join(here, "../../package.json"), "utf8")) as {
-      readonly exports: Readonly<Record<string, string>>;
+      readonly exports: Readonly<Record<string, unknown>>;
     };
-    expect(packageJson.exports["./manifest"]).toBe("./src/manifest/index.ts");
+    expect(packageJson.exports["./manifest"]).toEqual({
+      "rex-source": "./src/manifest/index.ts",
+      types: "./dist/manifest/index.d.ts",
+      default: "./dist/manifest/index.js",
+    });
     for (const name of ["scanManifest", "writeManifest", "loadRegistry", "renderAgentsMd"]) {
       expect(entry, name).not.toHaveProperty(name);
     }

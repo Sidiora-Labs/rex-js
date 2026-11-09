@@ -52,10 +52,10 @@ const STANDARD_EXPORTS = ["isStandardSchema", "validateStandard", "validateStand
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-function packageJson(): { readonly version: string; readonly exports: Record<string, string> } {
+function packageJson(): { readonly version: string; readonly exports: Record<string, unknown> } {
   return JSON.parse(readFileSync(join(here, "../package.json"), "utf8")) as {
     readonly version: string;
-    readonly exports: Record<string, string>;
+    readonly exports: Record<string, unknown>;
   };
 }
 
@@ -116,6 +116,10 @@ describe("rex root entry", () => {
   });
 
   it("is the module behind the package root export", () => {
-    expect(packageJson().exports["."]).toBe("./src/index.ts");
+    expect(packageJson().exports["."]).toEqual({
+      "rex-source": "./src/index.ts",
+      types: "./dist/index.d.ts",
+      default: "./dist/index.js",
+    });
   });
 });
