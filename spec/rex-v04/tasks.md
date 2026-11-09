@@ -89,7 +89,7 @@
     - Keep every existing assertion; add one assertion that the test resolves its items without contacting any host other than the local fixture.
     - Run the verify command once with the network unavailable to the live host and record the result.
     - _Requirements: 2.2_
-  - [ ] 0.15 Run the lint and format checks in the lint gate
+  - [-] 0.15 Run the lint and format checks in the lint gate
     - Add pnpm lint and pnpm format:check to tools/gate-lint.sh in the same failure-collecting style the gate already uses.
     - Extend tools/qualification-gates.test.mjs to assert that both checks are wired into the lint gate.
     - Fix any lint or format failure on the wave head by correcting the reported file, without adding an ignore entry or disabling a rule; report a file outside touches instead of editing it.
