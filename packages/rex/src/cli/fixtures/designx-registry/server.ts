@@ -13,6 +13,7 @@ export interface DesignxRegistryFixture {
 }
 
 const ITEM_PATH = /^\/r\/([a-z][a-z0-9-]*)\.json$/;
+const CORS = { "access-control-allow-origin": "*" } as const;
 
 function answerFor(
   name: string,
@@ -28,6 +29,10 @@ export async function serveDesignxRegistry(
   const requested: string[] = [];
   const server = createServer((request, response) => {
     const name = ITEM_PATH.exec(request.url ?? "")?.[1];
+    if (request.method === "OPTIONS" && name !== undefined) {
+      response.writeHead(204, CORS).end();
+      return;
+    }
     if (request.method !== "GET" || name === undefined) {
       response.writeHead(404).end();
       return;
@@ -35,10 +40,12 @@ export async function serveDesignxRegistry(
     requested.push(name);
     const answer = answerFor(name, answers);
     if (typeof answer === "number") {
-      response.writeHead(answer).end();
+      response.writeHead(answer, CORS).end();
       return;
     }
-    response.writeHead(200, { "content-type": "application/json; charset=utf-8" }).end(answer);
+    response
+      .writeHead(200, { ...CORS, "content-type": "application/json; charset=utf-8" })
+      .end(answer);
   });
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
