@@ -77,7 +77,7 @@
     - Correct the supported-versions table in SECURITY.md and mark links to hosts that are not yet live as pending in the link checker with a dated allow-list entry.
     - Run docs:check and freshness once and record the result.
     - _Requirements: 2.7_
-  - [-] 0.13 Build the static site before its browser suite and make the site browser suite pass
+  - [x] 0.13 Build the static site before its browser suite and make the site browser suite pass
     - Make the site test script build the static output before Playwright starts its server, so the suite cannot run against a missing or stale build.
     - Find why the statically built site's own module and preload requests are refused by its content security policy, and fix the product path that emits the policy or the tags so the site's own assets load under it; add a unit test for that path.
     - Fix each remaining failure in the site browser suite in the site or the framework: the accessibility score, the pages without JavaScript and any other. Do not relax a threshold, raise a timeout to hide a defect, or remove a test or a project.

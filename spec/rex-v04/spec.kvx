@@ -455,10 +455,10 @@ time_limit_minutes = 45
 
 [task.0.13]
 title = "Build the static site before its browser suite and make the site browser suite pass"
-status = "in_progress"
+status = "done"
 wave = 0
 requires = ["0.10", "0.11"]
-touches = ["site/package.json", "site/e2e/**", "site/app/**", "site/index.html", "site/playwright.config.ts", "tools/serve-static.mjs", "tools/serve-static.test.mjs", "packages/rex/src/client/shell/header.tsx", "packages/rex/src/client/shell/header.test.tsx", "packages/rex/src/client/page.tsx", "packages/rex/src/client/screen-hold.tsx", "packages/rex/src/client/screen.ts", "packages/rex/src/client/screen.test.tsx", "packages/rex/src/vite/ssr-css.ts", "packages/rex/src/vite/ssr-css.test.ts"]
+touches = ["site/package.json", "site/e2e/**", "site/app/**", "site/index.html", "site/playwright.config.ts", "tools/serve-static.mjs", "tools/serve-static.test.mjs", "packages/rex/src/client/shell/header.tsx", "packages/rex/src/client/shell/header.test.tsx", "packages/rex/src/client/page.tsx", "packages/rex/src/client/screen-hold.tsx", "packages/rex/src/client/screen.ts", "packages/rex/src/client/screen.test.tsx", "packages/rex/src/vite/ssr-css.ts", "packages/rex/src/vite/ssr-css.test.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/static-cache.test.ts", "packages/rex/src/vite/prerender.ts", "packages/rex/src/vite/prerender.test.ts"]
 verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex build && pnpm -C site test"
 do_1 = "Make the site test script build the static output before Playwright starts its server, so the suite cannot run against a missing or stale build."
 do_2 = "Find why the statically built site's own module and preload requests are refused by its content security policy, and fix the product path that emits the policy or the tags so the site's own assets load under it; add a unit test for that path."
@@ -2552,7 +2552,7 @@ oracle = "The packed 0.4.0 tarball passes the smoke test and the exports test, t
 
 [case.RX4-085]
 title = "Build the static site before its browser suite and make the site browser suite pass"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["2.5"]
 tasks = ["0.13"]

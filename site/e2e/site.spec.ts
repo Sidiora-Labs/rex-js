@@ -10,6 +10,7 @@ import {
   checkParity,
   checkTextRenderer,
   checkZeroJs,
+  readSidecar,
   siteStops,
   waitForSidecar,
   watchPage,
@@ -18,6 +19,7 @@ import {
 
 const stops = siteStops();
 const MAX_SCREENSHOT_PIXELS = 32_767;
+const BROWSER_CONTROL_REASON = "Requires an active browser control";
 
 test("every internal built link and asset resolves", () => {
   execFileSync(process.execPath, ["../tools/site-verify.mjs", "dist/client"], {
@@ -151,7 +153,16 @@ for (const stop of stops) {
         expect(new URL(page.url()).pathname.replace(/\/$/, "")).toBe(
           destination.pathname.replace(/\/$/, ""),
         );
-        await waitForSidecar(page, expected.page.id, { mirror: false });
+        if (expected.page.render === "static") {
+          await waitForSidecar(page, expected.page.id, { mirror: false });
+        } else {
+          const arrived = await readSidecar(page, { mirror: false });
+          expect(arrived.page).toBe(expected.page.id);
+          const pending = arrived.actions.filter(
+            (entry) => entry.allowed === false && entry.reason === BROWSER_CONTROL_REASON,
+          );
+          expect(arrived.state).toBe(pending.length > 0 ? "loading" : "ready");
+        }
         await expect(page.locator(`[data-rex-page="${expected.page.id}"]`)).toBeVisible();
         await expect(page.locator("[data-rex-error-code]")).toHaveCount(0);
         await expect(page.locator("main")).toBeVisible();
