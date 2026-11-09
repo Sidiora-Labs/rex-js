@@ -35,7 +35,7 @@
     - Keep the test expectations; do not relax an assertion to loading. Add one regression test that compares the sidecar script with window.__rex after hydration.
     - Record in the qualification log any demo or site test that still fails for a different reason.
     - _Requirements: 2.8_
-  - [ ] 0.6 Pin the DesignX registry and make the default scaffold work offline
+  - [x] 0.6 Pin the DesignX registry and make the default scaffold work offline
     - Add a lock file of registry items with content hashes and vendor the items the default scaffold needs, so rex new verifies each fetched item against its hash and falls back to the vendored copy when the registry is unreachable.
     - Serve registry fixtures from a local server in designx.test.ts and new.test.ts so neither test opens a connection to a third-party host.
     - Write exact dependency versions instead of latest in scaffolds, in examples/demo and in site, and format generated files without requiring the optional prettier peer.

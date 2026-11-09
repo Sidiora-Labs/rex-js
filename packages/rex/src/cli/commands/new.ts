@@ -26,14 +26,17 @@ import { runGenerators } from "../generators.ts";
 import { rexPrettierConfig } from "../../prettier.ts";
 import { InvalidArgumentError } from "../args.ts";
 import {
+  DESIGNX_CONFIG_FILE,
   DesignxError,
   fetchDesignx,
+  formatDesignxPaths,
   installPackages,
   type DesignxInstall,
   type DesignxOptions,
 } from "../designx.ts";
 import {
   DEFAULT_UI,
+  designxTemplatePaths,
   formatDesignxTemplates,
   isUiKit,
   type DesignxHome,
@@ -365,7 +368,15 @@ export async function newApp(
     root,
     designx === null ? plan : await formatDesignxTemplates(plan, NEW_APP_HOME),
   ).map((path) => `${appName}/${path}`);
-  if (designx !== null && options.install !== false) installPackages(root);
+  if (designx !== null && options.install !== false) {
+    installPackages(root);
+    await formatDesignxPaths(root, [
+      ...designx.files
+        .filter((entry) => entry.path !== DESIGNX_CONFIG_FILE)
+        .map((entry) => entry.path),
+      ...designxTemplatePaths(NEW_APP_HOME),
+    ]);
+  }
   return written;
 }
 

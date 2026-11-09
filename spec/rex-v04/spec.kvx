@@ -321,7 +321,7 @@ time_limit_minutes = 90
 
 [task.0.6]
 title = "Pin the DesignX registry and make the default scaffold work offline"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.1", "0.3"]
 touches = ["packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "packages/rex/src/cli/designx.lock.json", "packages/rex/src/cli/new.test.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/fixtures/designx-registry/**", "tools/smoke-package.sh", "examples/demo/package.json", "site/package.json", "pnpm-lock.yaml"]
@@ -1862,7 +1862,7 @@ oracle = "A page with server-resolved loaders reports ready in the server sideca
 
 [case.RX4-006]
 title = "Pin the DesignX registry and make the default scaffold work offline"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["1.5", "2.2"]
 tasks = ["0.6"]
