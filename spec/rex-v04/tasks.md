@@ -71,7 +71,7 @@
     - Add a tag-ancestry check to the release workflow and tools/verify-published.mjs, a post-publish job that installs the published version from the registry and imports every entry.
     - Add tools/workflow-lint.mjs that fails on an unpinned action, a floating tool version or a missing matrix entry, with tests; update docs/releasing.md to describe the workflow as written.
     - _Requirements: 1.6, 2.6_
-  - [ ] 0.12 Regenerate documentation and pass the freshness gates on the wave revision
+  - [x] 0.12 Regenerate documentation and pass the freshness gates on the wave revision
     - Regenerate docs/api and docs/errors.md from the wave revision.
     - Fix every failure reported by pnpm freshness and pnpm docs:check, including version, API and pointer checks.
     - Correct the supported-versions table in SECURITY.md and mark links to hosts that are not yet live as pending in the link checker with a dated allow-list entry.

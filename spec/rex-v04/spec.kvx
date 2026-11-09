@@ -436,7 +436,7 @@ time_limit_minutes = 90
 
 [task.0.12]
 title = "Regenerate documentation and pass the freshness gates on the wave revision"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.1", "0.4", "0.5", "0.6", "0.8", "0.9", "0.10", "0.11"]
 touches = ["docs/api/**", "docs/errors.md", "tools/freshness.mjs", "tools/check-links.mjs", "SECURITY.md", "packages/rex/README.md", "README.md"]
@@ -1911,7 +1911,7 @@ oracle = "The workflow lint passes on the repository workflows and fails on fixt
 
 [case.RX4-012]
 title = "Regenerate documentation and pass the freshness gates on the wave revision"
-status = "UNRUN"
+status = "PASS"
 tier = "component"
 reqs = ["2.7"]
 tasks = ["0.12"]

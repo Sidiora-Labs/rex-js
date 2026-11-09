@@ -5955,6 +5955,14 @@ readonly actor: Actor;
 readonly optional affordances?: readonly Affordance[];
 ```
 
+<a id="browserready"></a>
+
+##### browserReady?
+
+```ts
+readonly optional browserReady?: boolean;
+```
+
 <a id="failures-1"></a>
 
 ##### failures?
@@ -6081,7 +6089,7 @@ readonly optional space?: 1 | 2 | 4 | 6 | 3 | 8 | 5 | 7;
 ##### mode
 
 ```ts
-readonly mode: "hydrate" | "render";
+readonly mode: "render" | "hydrate";
 ```
 
 <a id="root-3"></a>
@@ -9489,6 +9497,30 @@ function formActionPath(actionId): string;
 
 ***
 
+<a id="formactionurl"></a>
+
+### formActionUrl()
+
+```ts
+function formActionUrl(actionId, apiOrigin): string;
+```
+
+#### Parameters
+
+##### actionId
+
+`string`
+
+##### apiOrigin
+
+`string` \| `null`
+
+#### Returns
+
+`string`
+
+***
+
 <a id="formfields"></a>
 
 ### formFields()
@@ -12715,6 +12747,20 @@ start: ProcedureClient<Record<never, never>, ProtocolSchema<FlowStartInput>, Pro
 ```ts
 status: ProcedureClient<Record<never, never>, ProtocolSchema<FlowInstanceInput>, ProtocolSchema<FlowState>, Record<never, never>>;
 ```
+
+***
+
+<a id="useformapiorigin"></a>
+
+### useFormApiOrigin()
+
+```ts
+function useFormApiOrigin(): string | null;
+```
+
+#### Returns
+
+`string` \| `null`
 
 ***
 
