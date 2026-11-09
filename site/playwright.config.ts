@@ -41,6 +41,22 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    {
+      name: "firefox",
+      testMatch: ["**/site.spec.ts"],
+      use: {
+        ...devices["Desktop Firefox"],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: "webkit",
+      testMatch: ["**/site.spec.ts"],
+      use: {
+        ...devices["Desktop Safari"],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
   ],
   webServer: {
     command: `node ../tools/serve-static.mjs dist/client --port ${SITE_PORT}`,

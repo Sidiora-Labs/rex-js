@@ -416,10 +416,10 @@ time_limit_minutes = 90
 
 [task.0.11]
 title = "Harden the CI and release workflows and declare the platform matrix"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.10"]
-touches = [".github/workflows/**", ".github/dependabot.yml", "tools/workflow-lint.mjs", "tools/workflow-lint.test.mjs", "tools/verify-published.mjs", "examples/demo/playwright.config.ts", "site/playwright.config.ts", "docs/releasing.md"]
+touches = [".github/workflows/**", ".github/dependabot.yml", "tools/workflow-lint.mjs", "tools/workflow-lint.test.mjs", "tools/verify-published.mjs", "examples/demo/playwright.config.ts", "site/playwright.config.ts", "docs/releasing.md", "tools/qualification-gates.test.mjs"]
 verify_cmd = "node --test tools/workflow-lint.test.mjs && node tools/workflow-lint.mjs .github/workflows"
 do_1 = "Pin every third-party action by commit SHA, pin publint and attw versions, remove the global npm upgrade from the job that holds id-token write, and move shared jobs into reusable workflows."
 do_2 = "Declare a matrix of Node 22.19, 24 and 26 on Linux, macOS and Windows, add smoke jobs that run the real Bun, Deno and workerd runtimes, add Firefox and WebKit Playwright projects, and add a CodeQL workflow."
@@ -1902,7 +1902,7 @@ oracle = "pnpm typecheck covers three packages, the root test reports every fail
 
 [case.RX4-011]
 title = "Harden the CI and release workflows and declare the platform matrix"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["1.6", "2.6"]
 tasks = ["0.11"]
