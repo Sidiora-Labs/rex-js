@@ -3,7 +3,7 @@
 
 [meta]
 feature = "rex-v04"
-entries = 20
+entries = 22
 
 [qualification.001]
 task = "0.2"
@@ -164,3 +164,19 @@ symbol = "SITE_PORT, REX_SITE_PORT"
 observed = "Port 4173 on this host is held by an unrelated long-running process (another project's static server), so the site Playwright webServer could not start. Evidence: f5a7fdc | sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log (kept as wave-0-gate-test.run2-f5a7fdc.log). The port now comes from REX_SITE_PORT, default 4173, parsed strictly; tools/serve-static.mjs keeps its own DEFAULT_PORT 4173 but receives --port from the config."
 assumption = "Gates on this host export REX_SITE_PORT with a free port."
 severity = "note"
+
+[qualification.021]
+task = "0.10"
+file = "site/package.json, site/e2e/site.spec.ts, site/e2e/lighthouse.ts"
+symbol = "site test script, run-workspace-tests"
+observed = "0.10 made gate-test run every package's test script; site's test runs playwright test without building dist/client, so the webServer cannot start. With pnpm run build:static added (not committed), 158 of 158 executed site e2e tests failed before a 25-minute timeout (2220 total): CSP-blocked asset requests, Lighthouse accessibility 96 under 100, no-JS waits. The committed main report (0ad3ac4) already shows 164 unexpected, 0 expected. Evidence: 7336856 | sh tools/gate-test.sh (REX_SITE_PORT=4191) | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log; 7336856+script | pnpm -C site test | 124 | /root/rex-private/logs/rex-v04/0-fix-site-e2e.log"
+assumption = "Pre-existing site e2e failure; task 1.9 (security headers, owns site/e2e/**) owns the CSP failures; the site test script build step belongs with whichever task the integrator assigns. Gate-test stays red for wave 0."
+severity = "high"
+
+[qualification.022]
+task = "0.10"
+file = "examples/demo/e2e/report/**, site/e2e/report/results.json"
+symbol = "committed e2e reports"
+observed = "Each gate-test run rewrites the committed demo and site e2e reports and adds per-project report folders (firefox, webkit, phone, tablet), leaving the worktree dirty; the manager restored them after each run."
+assumption = "Task 8.10 (owns the e2e report paths) moves generated reports out of the tracked tree."
+severity = "low"

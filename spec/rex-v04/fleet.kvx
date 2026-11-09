@@ -15,7 +15,7 @@ workers = ["w-rex-v04-0.1", "w-rex-v04-0.2", "w-rex-v04-0.3", "w-rex-v04-0.4", "
 owners = ["cli", "client", "docs", "quality", "release"]
 after = []
 gate_case = "RX4-900"
-status = "pending"
+status = "open"
 
 [wave.1]
 title = "Security and correctness"
