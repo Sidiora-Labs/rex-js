@@ -416,7 +416,7 @@ describe("node adapter with prerendered pages", { timeout: 30_000 }, () => {
     expect(html).toContain("Story launch");
     expect(html).toContain('data-rex-ssr=""');
     expect(html).toContain('type="application/rex+data"');
-    expect(html).toContain(`for(const src of ${JSON.stringify([ENTRY_SCRIPT])})import(src)`);
+    expect(html).toContain(`src="${ENTRY_SCRIPT}"`);
     expect(html).not.toContain(PRERENDER_NONCE);
     const nonces = new Set([...html.matchAll(/nonce="([^"]+)"/g)].map((match) => match[1]));
     expect(nonces.size).toBe(1);

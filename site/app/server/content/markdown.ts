@@ -197,11 +197,38 @@ export async function highlightCode(code: string, lang: string | undefined): Pro
   if (language !== PLAIN_LANGUAGE && !shiki.getLoadedLanguages().includes(language)) {
     await shiki.loadLanguage(language as keyof typeof bundledLanguages);
   }
+  const plain = defaultTokenStyle(
+    shiki.getTheme(CODE_THEMES.light).fg,
+    shiki.getTheme(CODE_THEMES.dark).fg,
+  );
   return shiki.codeToHtml(code, {
     lang: language,
     themes: { light: CODE_THEMES.light, dark: CODE_THEMES.dark },
     defaultColor: false,
+    mergeSameStyleTokens: true,
+    transformers: [
+      {
+        line(node) {
+          node.children = node.children.flatMap((child) =>
+            child.type === "element" &&
+            typeof child.properties.style === "string" &&
+            child.properties.style.toLowerCase() === plain
+              ? child.children
+              : [child],
+          );
+        },
+        code(node) {
+          node.children = node.children.flatMap((child) =>
+            child.type === "element" && child.tagName === "span" ? child.children : [child],
+          );
+        },
+      },
+    ],
   });
+}
+
+function defaultTokenStyle(light: string, dark: string): string {
+  return `--shiki-light:${light};--shiki-dark:${dark}`.toLowerCase();
 }
 
 export async function renderMarkdown(source: string, file: string): Promise<RenderedMarkdown> {

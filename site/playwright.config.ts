@@ -11,18 +11,45 @@ function sitePort(value: string | undefined): number {
   return port;
 }
 
+export type SitePhase = "all" | "functional" | "timing";
+
+const SITE_PHASES: readonly SitePhase[] = ["all", "functional", "timing"];
+const TIMING_TESTS = /[\\/](?:lighthouse\.ts|vitals\.spec\.ts)$/;
+const FUNCTIONAL_TESTS = /^(?!.*[\\/](?:lighthouse\.ts|vitals\.spec\.ts)$)/;
+
+function sitePhase(value: string | undefined): SitePhase {
+  if (value === undefined) return "all";
+  const phase = SITE_PHASES.find((candidate) => candidate === value);
+  if (phase === undefined) {
+    throw new Error(`REX_SITE_PHASE must be one of ${SITE_PHASES.join(", ")}, received "${value}"`);
+  }
+  return phase;
+}
+
 export const SITE_PORT = sitePort(process.env.REX_SITE_PORT);
 export const SITE_URL = `http://127.0.0.1:${SITE_PORT}`;
+export const SITE_PHASE = sitePhase(process.env.REX_SITE_PHASE);
 
 export default defineConfig({
   testDir: "./e2e",
   testMatch: ["**/*.spec.ts", "**/lighthouse.ts"],
+  testIgnore:
+    SITE_PHASE === "functional" ? TIMING_TESTS : SITE_PHASE === "timing" ? FUNCTIONAL_TESTS : [],
   fullyParallel: true,
-  workers: "25%",
+  workers: SITE_PHASE === "timing" ? 1 : "25%",
   retries: 0,
   timeout: 240_000,
   forbidOnly: true,
-  reporter: [["list"], ["json", { outputFile: "e2e/report/results.json" }]],
+  reporter: [
+    ["list"],
+    [
+      "json",
+      {
+        outputFile:
+          SITE_PHASE === "timing" ? "e2e/report/results-timing.json" : "e2e/report/results.json",
+      },
+    ],
+  ],
   use: {
     baseURL: SITE_URL,
     actionTimeout: 15_000,

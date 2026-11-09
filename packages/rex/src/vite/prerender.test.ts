@@ -392,9 +392,7 @@ describe("rex build prerendering", { timeout: BUILD_TIMEOUT_MS }, () => {
       expect(html).toContain("Read the guide");
       expect(html).toContain('data-rex-ssr=""');
       expect(html).toContain('type="application/rex+data"');
-      expect(html).toContain(
-        `for(const src of ${JSON.stringify([assets.scripts[0] as string])})import(src)`,
-      );
+      expect(html).toContain(`src="${assets.scripts[0] as string}"`);
       expect(html).toContain(`nonce="${PRERENDER_NONCE}"`);
     }
   });

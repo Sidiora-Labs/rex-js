@@ -12,6 +12,7 @@ import {
   kindsSummary,
   listApi,
   readApiDoc,
+  sectionSymbols,
   type ApiArticle,
 } from "./api.ts";
 import { repositoryRoot } from "./markdown.ts";
@@ -131,6 +132,58 @@ describe("api reader", () => {
     ]);
     expect(testing.summary).toBe(kindsSummary("./testing", testing.kinds));
     expect(testing.summary).toMatch(/^The \.\/testing entry exports \d+ symbols: 1 class, /);
+  });
+
+  it("wraps each kind and each symbol of a page in its own section", () => {
+    expect(
+      sectionSymbols(
+        [
+          '<h2 id="title">Title</h2>',
+          "<p>Intro</p>",
+          '<h3 id="functions">Functions</h3>',
+          '<h4 id="one">one</h4>',
+          "<pre><code>one()</code></pre>",
+          '<h5 id="returns">Returns</h5>',
+          "<hr>",
+          '<h4 id="two">two</h4>',
+          "<p>Two</p>",
+          '<h3 id="variables">Variables</h3>',
+          '<h4 id="three">three</h4>',
+          "",
+        ].join("\n"),
+      ),
+    ).toBe(
+      [
+        '<h2 id="title">Title</h2>',
+        "<p>Intro</p>",
+        "<section>",
+        '<h3 id="functions">Functions</h3>',
+        "<section>",
+        '<h4 id="one">one</h4>',
+        "<pre><code>one()</code></pre>",
+        '<h5 id="returns">Returns</h5>',
+        "<hr>",
+        "</section>",
+        "<section>",
+        '<h4 id="two">two</h4>',
+        "<p>Two</p>",
+        "</section>",
+        "</section>",
+        "<section>",
+        '<h3 id="variables">Variables</h3>',
+        "<section>",
+        '<h4 id="three">three</h4>',
+        "</section>",
+        "</section>",
+        "",
+      ].join("\n"),
+    );
+    for (const article of articles.values()) {
+      const kinds = article.headings.filter((heading) => heading.depth === 2).length;
+      const symbols = article.headings.filter((heading) => heading.depth === 3).length;
+      expect(article.html.match(/<section>/g)?.length ?? 0, article.slug).toBe(kinds + symbols);
+      expect(article.html.match(/<\/section>/g)?.length ?? 0, article.slug).toBe(kinds + symbols);
+    }
   });
 
   it("drops the breadcrumb above the title and gives unanchored headings ids no anchor uses", () => {

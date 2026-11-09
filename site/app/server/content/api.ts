@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import {
   API_DIR,
+  HEADING_SHIFT,
   README_FILE,
   apiRoute,
   apiSlug,
@@ -182,6 +183,30 @@ export function anchorHeadings(
   };
 }
 
+export function sectionSymbols(html: string): string {
+  const kindLevel = KIND_DEPTH + HEADING_SHIFT;
+  const symbolLevel = SYMBOL_DEPTH + HEADING_SHIFT;
+  const open: number[] = [];
+  const close = (level: number): string => {
+    let closing = "";
+    while (open.length > 0 && (open.at(-1) as number) >= level) {
+      open.pop();
+      closing += "</section>\n";
+    }
+    return closing;
+  };
+  const sectioned = html.replace(
+    new RegExp(`^<h([${kindLevel}${symbolLevel}]) id="`, "gm"),
+    (match, level: string) => {
+      const depth = Number(level);
+      const closing = close(depth);
+      open.push(depth);
+      return `${closing}<section>\n${match}`;
+    },
+  );
+  return `${sectioned}${close(0)}`;
+}
+
 export function apiKinds(headings: readonly MarkdownHeading[]): readonly ApiKind[] {
   const kinds: { title: string; id: string; symbols: ApiSymbol[] }[] = [];
   for (const heading of headings) {
@@ -228,7 +253,7 @@ async function renderApi(file: string): Promise<ApiArticle> {
     summary: kindsSummary(entry, kinds),
     headings: anchored.headings,
     kinds,
-    html: anchored.html,
+    html: sectionSymbols(anchored.html),
   };
 }
 

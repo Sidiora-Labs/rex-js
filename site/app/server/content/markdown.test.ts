@@ -146,6 +146,31 @@ describe("renderMarkdown", () => {
     expect(rendered.html).not.toContain("<text>");
   });
 
+  it("highlights code with one span per coloured run and none for lines or default-coloured text", async () => {
+    const rendered = await renderMarkdown(
+      [
+        "# Code",
+        "",
+        "```ts",
+        "export const answer: number = 42;",
+        "const other = answer;",
+        "```",
+      ].join("\n"),
+      "docs/code.md",
+    );
+    const code = /<code>([\s\S]*)<\/code>/.exec(rendered.html)?.[1] ?? "";
+    expect(code).not.toBe("");
+    expect(code).not.toContain('class="line"');
+    expect(code.toLowerCase()).not.toContain('style="--shiki-light:#0e1116;--shiki-dark:#f0f3f6"');
+    const styles = [
+      ...code.matchAll(/<span style="([^"]+)">[^<]*<\/span>(?=<span style="([^"]+)">)/g),
+    ];
+    expect(styles.filter((match) => match[1] === match[2])).toEqual([]);
+    expect(code.replace(/<[^>]+>/g, "")).toBe(
+      "export const answer: number = 42;\nconst other = answer;",
+    );
+  });
+
   it("links a bare URL only when it parses as a URL", async () => {
     const rendered = await renderMarkdown(
       [

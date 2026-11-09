@@ -362,11 +362,10 @@ describe("streaming server-side rendering", () => {
       expect(at).toBeGreaterThan(-1);
       expect(at).toBeLessThan(bodyAt);
     }
-    expect(html).not.toContain('<link rel="modulepreload"');
-    const loaderAt = html.lastIndexOf('<script type="module" nonce="');
-    expect(loaderAt).toBeGreaterThan(pageAt);
     for (const href of [...homeAssets.preloads, ...pageChunks]) {
-      expect(html.indexOf(JSON.stringify(href), loaderAt)).toBeGreaterThan(loaderAt);
+      const at = html.indexOf(`<link rel="modulepreload" href="${href}" nonce="`);
+      expect(at).toBeGreaterThan(-1);
+      expect(at).toBeLessThan(bodyAt);
     }
     expect(html).toContain("<title>Notes</title>");
     expect(html).toContain(`<div id="root" ${SSR_ATTRIBUTE}="">`);
@@ -381,15 +380,15 @@ describe("streaming server-side rendering", () => {
     const sidecarAt = html.indexOf(`type="${SIDECAR_MIME_TYPE}"`);
     expect(sidecarAt).toBeGreaterThan(bodyAt);
     const entryScript = assets.scripts[0] as string;
-    expect(
-      html.indexOf(`for(const src of ${JSON.stringify([entryScript])})import(src)`),
-    ).toBeGreaterThan(loaderAt);
+    expect(html.indexOf(`src="${entryScript}"`)).toBeGreaterThan(pageAt);
 
     const nonce = /<script type="application\/rex\+data" id="rex-data" nonce="([^"]+)"/.exec(
       html,
     )?.[1];
     expect(nonce).toMatch(/^[0-9a-f]{32}$/);
-    expect(html.slice(loaderAt)).toMatch(new RegExp(`^<script type="module" nonce="${nonce}">`));
+    for (const href of homeAssets.preloads) {
+      expect(html).toContain(`<link rel="modulepreload" href="${href}" nonce="${nonce}">`);
+    }
     for (const attributes of executableInlineScripts(html)) {
       expect(attributes).toContain(`nonce="${nonce}"`);
     }
@@ -537,7 +536,7 @@ describe("streaming server-side rendering", () => {
     expect(widget?.getAttribute(SCRIPT_ATTRIBUTE)).toBe("beforeHydration");
     expect(widget?.getAttribute("nonce")).toBe(nonce);
     expect(body.indexOf(`src="${WIDGET_SRC}"`)).toBeLessThan(
-      body.indexOf(`for(const src of ${JSON.stringify([assets.scripts[0] as string])})import(src)`),
+      body.indexOf(`src="${assets.scripts[0] as string}"`),
     );
 
     const other = await (await server.fetch(request("/"))).text();

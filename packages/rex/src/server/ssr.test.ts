@@ -25,7 +25,6 @@ import {
   RexClientRenderSignal,
   createRexRenderer,
   documentStream,
-  entryLoaderSource,
   escapeHtml,
   fontFaceCss,
   fontPreloadLinks,
@@ -382,25 +381,18 @@ describe("createRexRenderer", () => {
       '<style data-rex-fonts="">@font-face{font-family:"Inter";src:url("/fonts/inter.woff2") format("woff2");font-style:normal;font-display:swap}</style>',
     );
     expect(html).toContain('<link rel="stylesheet" href="/entry.css">');
-    expect(html).not.toContain('<link rel="modulepreload"');
+    expect(html).toContain(`<link rel="modulepreload" href="/entry.js" nonce="${context.nonce}">`);
     expect(html).toContain(`<script nonce="${context.nonce}">window.__rex=1</script>`);
     expect(html).toContain(
       `<script type="${REX_DATA_MIME_TYPE}" id="${REX_DATA_ELEMENT_ID}" nonce="${context.nonce}">`,
     );
     expect(html).toContain(`<div id="app" ${SSR_ATTRIBUTE}="">`);
-    const closing = `</div><script type="module" nonce="${context.nonce}">requestAnimationFrame(()=>setTimeout(()=>{for(const href of ["/entry.js"]){const link=document.createElement("link");link.rel="modulepreload";link.href=href;document.head.append(link)}for(const src of ["/entry.js"])import(src)}))</script></body></html>`;
+    const closing = `</div><script type="module" src="/entry.js" nonce="${context.nonce}"></script></body></html>`;
     expect(html.slice(-closing.length)).toBe(closing);
     expect(html).not.toContain("Home sweet home");
   });
 
-  it("keeps a closing script tag in an asset URL from ending the entry loader", () => {
-    const source = entryLoaderSource(["/a</script>.js"], ["/b</script>.js"]);
-    expect(source).not.toContain("</script>");
-    expect(source).toContain('["/a\\u003c/script>.js"]');
-    expect(source).toContain('["/b\\u003c/script>.js"]');
-  });
-
-  it("loads the entry and page modules after the first paint under each request's escaped nonce and strips them for static output", async () => {
+  it("uses each request's escaped nonce for entry and page module preloads and strips them for static output", async () => {
     const registry = createRegistry().register(home).freeze();
     const HomeView = view(() => createElement("p", null, "Home sweet home"));
     const renderer = createRexRenderer({
@@ -421,9 +413,13 @@ describe("createRexRenderer", () => {
     for (const nonce of ['first"<&', "second-request"]) {
       const rendered = await renderer.render(request, { ...context, nonce });
       const html = await new Response(rendered.body).text();
-      expect(html).not.toContain('<link rel="modulepreload"');
+      for (const href of ["/entry.js", "/home.js"]) {
+        expect(html).toContain(
+          `<link rel="modulepreload" href="${href}" nonce="${escapeHtml(nonce)}">`,
+        );
+      }
       expect(html).toContain(
-        `<script type="module" nonce="${escapeHtml(nonce)}">requestAnimationFrame(()=>setTimeout(()=>{for(const href of ["/entry.js","/home.js"]){const link=document.createElement("link");link.rel="modulepreload";link.href=href;document.head.append(link)}for(const src of ["/entry.js"])import(src)}))</script>`,
+        `<script type="module" src="/entry.js" nonce="${escapeHtml(nonce)}"></script>`,
       );
       const stripped = stripHydration(html);
       expect(stripped).not.toContain('rel="modulepreload"');
