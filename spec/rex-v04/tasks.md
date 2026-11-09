@@ -41,7 +41,7 @@
     - Write exact dependency versions instead of latest in scaffolds, in examples/demo and in site, and format generated files without requiring the optional prettier peer.
     - Extend tools/smoke-package.sh to run the default rex new path with networking to the registry host disabled.
     - _Requirements: 1.5, 2.2_
-  - [ ] 0.7 Remove load sensitivity from the flaky suites
+  - [-] 0.7 Remove load sensitivity from the flaky suites
     - Find why client/agent/flow.test.tsx fails only under full-suite load and fix the ordering or timer dependency in the test or in the product code it exposes.
     - Identify the two tests that reach the five second timeout and remove the cause; a raised timeout is acceptable only with a measured reason written next to it.
     - Cut the runtime of cli/commands.test.ts by reusing the single built dist and one scaffolded fixture per file.

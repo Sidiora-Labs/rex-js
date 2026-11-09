@@ -44,12 +44,15 @@ function sourceTreeStatus(): string {
   );
 }
 
-function filesUnder(dir: string): string[] {
-  return readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(dir, join(entry.parentPath, entry.name)))
-    .filter((file) => !file.split(/[\\/]/).includes("node_modules"))
-    .sort();
+function filesUnder(dir: string, prefix = ""): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(join(dir, prefix), { withFileTypes: true })) {
+    if (entry.name === "node_modules") continue;
+    const path = join(prefix, entry.name);
+    if (entry.isDirectory()) found.push(...filesUnder(dir, path));
+    else if (entry.isFile()) found.push(path);
+  }
+  return found.sort();
 }
 
 describe("copyFixture and withFixture", () => {

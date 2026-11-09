@@ -5,11 +5,15 @@ const exclude = [...configDefaults.exclude, "src/**/fixtures/**"];
 const serialCli = ["src/cli/cli.test.ts", "src/cli/commands.test.ts"];
 const SOURCE_CONDITION = "rex-source";
 const resolve = { conditions: [SOURCE_CONDITION, ...defaultClientConditions] };
-const ssr = { resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] } };
+const NATIVE_SERVER_CONDITIONS = defaultServerConditions.filter(
+  (condition) => condition !== "module",
+);
+const ssr = { resolve: { conditions: [SOURCE_CONDITION, ...NATIVE_SERVER_CONDITIONS] } };
 
 export default defineConfig({
   test: {
     globalSetup: ["./vitest.global-setup.ts"],
+    maxWorkers: "50%",
     reporters: ["default", "json"],
     outputFile: { json: "node_modules/.cache/rex/test-results.json" },
     coverage: {

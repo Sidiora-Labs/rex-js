@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/client";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import * as core from "../../index.ts";
@@ -205,7 +205,17 @@ async function pause() {
   await status("idle");
   await click(screen.getByRole("button", { name: "Start payout" }));
   await status("paused at Review payout");
+  await screen.findByRole("button", { name: "Approve" });
+  await screen.findByRole("button", { name: "Reject" });
 }
+
+beforeAll(async () => {
+  await Promise.all([
+    import("./flow-gate.ts"),
+    import("./confirm-dialog.tsx"),
+    import("./palette-menu.tsx"),
+  ]);
+});
 
 beforeEach(() => {
   journal = memoryJournal();
