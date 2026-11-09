@@ -95,3 +95,43 @@ Every codemod is idempotent: a second `rex migrate` changes no file and reports 
 | `0.1-schema-entry` | Moves named imports to the 0.2 entries: `z` to `zod/mini`; field helpers, `MONEY_PATTERN` and the schema types to `@sidioralabs/rex/schema`; config names and types to `@sidioralabs/rex/config`; manifest, JSON Schema and sidecar names to `@sidioralabs/rex/manifest`; interop, media and i18n names from `@sidioralabs/rex/client` to `@sidioralabs/rex/client/interop`, `.../media` and `.../i18n`. Type-only imports keep `import type`; it never flags.                                                                                                                      |
 
 `REX610` is not a checker error: the migrated app passes `rex check`. Replace each placeholder with the real value and run `rex check` again.
+
+## TypeScript and ESLint support window
+
+`typescript` and `eslint` are optional peers of `@sidioralabs/rex`. Each peer range names exactly the majors with a recorded passing run in the table below:
+
+- `typescript`: `^5.9.3 || ^6.0.3`
+- `eslint`: `^9.39.5 || ^10.14.0`
+
+`node tools/support-window.mjs` tests every listed version in its own temporary copy of the workspace (the root manifest and lockfile, `packages/rex` and `site`), with the version pinned through a pnpm override. Each copy runs `pnpm install --no-frozen-lockfile`, the package typecheck `pnpm -C packages/rex typecheck` and the checker tests `pnpm -C packages/rex exec vitest run src/check src/eslint`, and the tool prints one line per version: `support-window <package> <version> pass`, or `fail: <command> (exit <code>)` naming the first command that failed. `--record` writes a full run into the table. `node tools/support-window.mjs --check` fails when the table lacks a listed version or a peer range differs from the passing majors.
+
+| Package      | Major | Tested version | Result | Failing command                           |
+| ------------ | ----- | -------------- | ------ | ----------------------------------------- |
+| `typescript` | 5     | 5.9.3          | pass   |                                           |
+| `typescript` | 6     | 6.0.3          | pass   |                                           |
+| `typescript` | 7     | 7.0.2          | fail   | `pnpm -C packages/rex typecheck (exit 1)` |
+| `eslint`     | 9     | 9.39.5         | pass   |                                           |
+| `eslint`     | 10    | 10.14.0        | pass   |                                           |
+
+A major enters a peer range only after a passing run is recorded here, and a failing major stays out of the range until it passes. ESLint 10 passes with `eslint-plugin-jsx-a11y` 6.10.2, whose own peer range ends at ESLint 9, so a package manager with strict peers reports that mismatch. The preset parser `@typescript-eslint/parser` 8 accepts TypeScript below 6.1.
+
+### The native TypeScript compiler
+
+TypeScript 7 is the native compiler. Its `typescript` package provides `tsc` and an API under `typescript/unstable/*`, but its main entry no longer exports the JavaScript compiler API that Rex imports from `typescript`, so the package typecheck fails and TypeScript 7 is outside the window.
+
+These features depend on the compiler API:
+
+| Feature                                                                                                             | Compiler API                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rex check` rule `typecheck`                                                                                        | `ts.readConfigFile`, `ts.parseJsonConfigFileContent`, `ts.createProgram`, `ts.createIncrementalProgram` and `ts.getPreEmitDiagnostics`: the full type checker. |
+| `rex check` rules `a11y`, `boundaries`, `i18n`, `layout`, `media`, `render`, `security`, `tokens`, `traps` and `ui` | `ts.createSourceFile` through the shared source loader in `check/rule.ts`, the node guards and `ts.SyntaxKind`.                                                |
+| The `@sidioralabs/rex/eslint` rules `boundaries`, `naming`, `traps`, `tokens`, `a11y`, `media`, `ui` and `layout`   | The checker rules of the same ids, run through ESLint.                                                                                                         |
+| `rex migrate` codemods                                                                                              | `ts.createSourceFile` and the node guards in `cli/codemods/`.                                                                                                  |
+| `rex promote`                                                                                                       | `ts.createSourceFile` and the node guards in `cli/commands/promote.ts`.                                                                                        |
+
+The plan for the native compiler:
+
+1. TypeScript 6 stays in the window as the last line that ships the JavaScript compiler API.
+2. Syntax reading moves behind the shared source loader in `check/rule.ts`, which the codemods and `rex promote` adopt in place of their own `ts.createSourceFile` calls, so the parser changes in one place.
+3. The `typecheck` rule moves to the TypeScript 7 API once `typescript/unstable/sync` is declared stable; until then it keeps the TypeScript 6 program API.
+4. TypeScript 7 enters the window when `node tools/support-window.mjs` records a passing run for it and `@typescript-eslint/parser` accepts it.

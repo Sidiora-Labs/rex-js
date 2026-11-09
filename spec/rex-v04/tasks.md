@@ -53,7 +53,7 @@
     - Enable grouped security updates in .github/dependabot.yml.
     - Run pnpm audit --prod and the package typecheck once and record the advisory count.
     - _Requirements: 1.7_
-  - [ ] 0.9 State and test the TypeScript and ESLint support window
+  - [x] 0.9 State and test the TypeScript and ESLint support window
     - Add tools/support-window.mjs that installs each listed TypeScript and ESLint major into a temporary copy and runs the package typecheck and the checker tests, printing one result line per version.
     - Widen the typescript and eslint peer ranges to every major whose run passes; for a major that fails, keep it out of the range and record the failing command in the qualification log.
     - Write the supported window and the plan for the native TypeScript compiler into docs/versioning.md, stating which checker features depend on the compiler API.
