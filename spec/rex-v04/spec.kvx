@@ -24,6 +24,7 @@ d_9 = "Publication is human-only. Deprecating registry versions, publishing, tru
 d_10 = "The spec folder and the house commit format stay, by direction of the repository owner. Audit items 2.49 and 2.50 are adopted only as far as opening a contribution path that does not need the fleet tooling."
 d_11 = "A large item with an honest smaller alternative states both. Task 2.4 streams or removes the claim; tasks 5.4 and 3.2 qualify against local runtimes and record live-host evidence as future."
 d_12 = "The final wave is documentation, examples and release preparation, so documentation describes what landed and not what was planned."
+d_13 = "The server-rendered sidecar of a page whose loaders resolved reports the page data state, and hydration alone never changes it. A declared browser-only affordance that has not registered is listed as not allowed with its reason and holds the state at loading until it registers. This supersedes the pre-hydration loading rule introduced with the hydration flag in the 0.3.0 changelog commit. Decided by rex-main on 2026-11-09 while qualifying task 0.5; flagged for human review."
 
 [prerequisite.green_main]
 title = "Green main before feature waves"

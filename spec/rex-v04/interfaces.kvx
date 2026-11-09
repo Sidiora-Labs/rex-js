@@ -28,7 +28,7 @@ contract = "Registry consumers resolve dist. Workspace packages, Vitest and the 
 kind = "test-helper"
 path = "packages/rex/src/testing/internal/fixture.ts"
 signature = "withFixture(name: string, run: (dir: string) => Promise<void>): Promise<void>"
-status = "proposed"
+status = "stable"
 provider = "0.3"
 consumers = ["0.6", "0.7"]
 contract = "Copies a fixture to a fresh temporary directory and removes it afterwards. Internal: not exported from the package. Tests never write under src."
@@ -37,7 +37,7 @@ contract = "Copies a fixture to a fresh temporary directory and removes it after
 kind = "data-file"
 path = "packages/rex/src/cli/designx.lock.json"
 signature = "{ items: Record<string, { url: string, sha256: string, vendored: string }> }"
-status = "proposed"
+status = "stable"
 provider = "0.6"
 consumers = ["6.8"]
 contract = "Every registry item the scaffold can fetch has a content hash and a vendored copy. A hash mismatch is an error, an unreachable registry falls back to the vendored copy."

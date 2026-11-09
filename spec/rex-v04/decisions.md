@@ -18,6 +18,7 @@ Status: design, not implementation evidence. Requirements and task statuses are 
 | D10 | The spec folder and the house commit format stay | Directed by the repository owner. The audit's hygiene items are adopted only as an open contribution path. |
 | D11 | The server decides | Authorization, confirmation, the human gate, flow advance and audit are enforced on the server. |
 | D12 | The last wave documents what landed | Guides and the changelog are written against merged behaviour. |
+| D13 | The server-rendered sidecar of a page whose loaders resolved reports the page data state, and hydration alone never changes it | A declared browser-only affordance that has not registered is listed as not allowed with its reason and holds the state at loading until it registers. This supersedes the pre-hydration loading rule introduced with the hydration flag in the 0.3.0 changelog commit. Decided by rex-main on 2026-11-09 while qualifying task 0.5; flagged for human review. |
 
 ## Proposed choices
 

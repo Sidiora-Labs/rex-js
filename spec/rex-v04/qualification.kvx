@@ -3,7 +3,7 @@
 
 [meta]
 feature = "rex-v04"
-entries = 6
+entries = 14
 
 [qualification.001]
 task = "0.2"
@@ -41,9 +41,9 @@ severity = "low"
 task = "0.5"
 file = "packages/rex/src/client/agent/sidecar.test.tsx"
 symbol = "does not emit a ready interactive sidecar in server HTML before hydration"
-observed = "Test added in f5a1001 together with the hydration flag in useSidecarPayload asserts the server sidecar of /about says loading before hydration; req 2.8 and task 0.5 do_2 require a loaded page to render ready on the server and stay ready through hydration. No product code satisfies both. Evidence: b0884b9 | hyperfide spec done 0.5 | 1 (45/46) | /root/rex-private/logs/rex-v04/0.5.log"
-assumption = "Integrator decides whether req 2.8 supersedes the pre-hydration loading rule; if so the test's server assertion becomes ready plus sidecar equality. Both left intact; 0.5 stays in_progress."
-severity = "contradiction"
+observed = "Test added in f5a1001 with the blanket hydration flag asserts the /about server sidecar says loading before hydration; req 2.8 and do_2 require a loaded page to render ready on the server and stay ready through hydration. Evidence: b0884b9 | hyperfide spec done 0.5 | 1 | /root/rex-private/logs/rex-v04/0.5.log"
+assumption = "Resolved by D13 (rex-main, 2026-11-09): req 2.8 supersedes the pre-hydration rule; the test's server assertion becomes ready with server, hydrated and window.__rex equality; the unregistered browser-only affordance rule stays."
+severity = "assumption"
 
 [qualification.006]
 task = "0.5"
@@ -51,4 +51,68 @@ file = "site/app/pages/api/test/api.test.tsx, site/app/pages/errors/test/errors.
 symbol = "toggle-theme affordance in page.ts"
 observed = "Three site tests render one region alone; the page declares a toggle-theme affordance whose handler only the Shell registers, so state stays loading and the no-actions assertions see toggle-theme. Not the hydration defect. Evidence: b0884b9 | hyperfide spec done 0.5 | 1 | /root/rex-private/logs/rex-v04/0.5.log"
 assumption = "No wave 0 task owns these site pages; the wave gate reports them red until a task is assigned."
+severity = "medium"
+
+[qualification.007]
+task = "0.6"
+file = "packages/rex/src/designx/data-table.test.ts"
+symbol = "resolveDesignxItems"
+observed = "Still fetches the live DesignX registry host, contrary to req 2.2; outside 0.6 touches. Evidence: 14e13b7 | hyperfide spec done 0.6 | 0 | /root/rex-private/logs/rex-v04/0.6.log"
+assumption = "Needs a new task that points it at the cli/fixtures/designx-registry server; unowned in rex-v04."
+severity = "high"
+
+[qualification.008]
+task = "0.6"
+file = "packages/rex/src/cli/designx.lock.json"
+symbol = "use-media-query, use-touch-capable"
+observed = "The live registry answers 404 for both items; their vendored bodies were rebuilt from site/app/components/ui with only the @/hooks alias restored, so they are not byte copies of a registry response. The lock's vendored field holds the body inline, not a path as the interface ledger wrote."
+assumption = "Interface designx.registry-lock is stable with vendored as inline content; consumer 6.8 codes against that."
+severity = "medium"
+
+[qualification.009]
+task = "0.7"
+file = "packages/rex/src/server/ssr.test.tsx, packages/rex/src/client/loaders.test.tsx, packages/rex/src/freshness.test.ts"
+symbol = "full package suite, three runs"
+observed = "Each of three runs failed the same 15 tests owned elsewhere: 0.5 sidecar state (6), test Vite servers and the runtime copy resolving dist (8, fixed on the wave branch by fix/rex-v04/0-dist-resolution dbd640f), stale docs/api and spec pointers in freshness.test.ts (0.12 and wave-close render). Evidence: 282c1fb | hyperfide spec done 0.7 | 1 | /root/rex-private/logs/rex-v04/0.7.log"
+assumption = "0.7 reruns its gate after 0.5, 0.12 and the wave-close render land."
+severity = "medium"
+
+[qualification.010]
+task = "0.9"
+file = "tools/support-window.mjs"
+symbol = "typescript@7.0.2"
+observed = "pnpm -C packages/rex typecheck exits 1: the TypeScript 7 main entry exports only lib/version.cjs, without createSourceFile, createProgram or SyntaxKind. 5.9.3 and 6.0.3 pass; ESLint 9.39.5 and 10.14.0 pass. Evidence: c66fa84 | node tools/support-window.mjs | 1 for 7.0.2 | /root/rex-private/logs/rex-v04/0.9-matrix.log"
+assumption = "TypeScript 7 stays out of the peer range until a passing run is recorded (Q04)."
+severity = "medium"
+
+[qualification.011]
+task = "0.10"
+file = "tools/test-ratio.mjs"
+symbol = "suiteFailures, test-ratio.test.ts"
+observed = "The ratio check now requires recorded results per package; the demo's Playwright specs count toward the ratio without a results check. The new test-ratio cases and the full workspace run were not executed in the task gate. Evidence: 4a4d65e | hyperfide spec done 0.10 | 0 | /root/rex-private/logs/rex-v04/0.10.log"
+assumption = "Results coverage of e2e specs is open and unowned; the wave gate runs the new cases."
+severity = "low"
+
+[qualification.012]
+task = "0.11"
+file = "examples/demo/playwright.config.ts, site/playwright.config.ts"
+symbol = "firefox and webkit projects"
+observed = "The new projects need Firefox and WebKit locally. Both were downloaded on this host on 2026-11-09, but WebKit's system libraries are missing (playwright install-deps needs apt as root), so browser runs in gate-test.sh cannot start WebKit here. Evidence: dd37c47 | hyperfide spec done 0.11 | 0 | /root/rex-private/logs/rex-v04/0.11.log; /root/rex-private/logs/rex-v04/wave-0-playwright-install.log"
+assumption = "Installing host packages is an environment step for a human; until then a WebKit failure in the gate is BLOCKED, not a product failure."
+severity = "medium"
+
+[qualification.013]
+task = "0.11"
+file = "tools/gate-lint.sh, .github/workflows/checks.yml"
+symbol = "cg spec render --check"
+observed = "gate-lint.sh calls cg, which hosted runners do not have, so checks.yml runs the lint gate's steps individually instead of calling the script. Evidence: dd37c47 | hyperfide spec done 0.11 | 0 | /root/rex-private/logs/rex-v04/0.11.log"
+assumption = "The two lists stay in step through tools/qualification-gates.test.mjs; a later task may make the script runner-portable."
+severity = "low"
+
+[qualification.014]
+task = "0.8"
+file = "pnpm-lock.yaml"
+symbol = "development advisories"
+observed = "pnpm audit --prod reports 0 after the raise (7 before). The full pnpm audit still reports 11 development advisories (4 high): happy-dom 20.14.5 needs a major bump to 21; typedoc pulls markdown-it and minimatch; lighthouse pulls fast-uri and zod 3. Evidence: 4c3c3c0 | hyperfide spec done 0.8 | 0 | /root/rex-private/logs/rex-v04/0.8.log"
+assumption = "Outside req 1.7 (production); a follow-up task is for the integrator to decide."
 severity = "medium"
