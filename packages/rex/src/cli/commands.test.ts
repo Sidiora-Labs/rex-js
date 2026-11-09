@@ -208,18 +208,18 @@ function entryScript(clientDir: string): string {
   return readFileSync(join(clientDir, (match as RegExpExecArray)[1] as string), "utf8");
 }
 
+let root: string;
+
+beforeAll(async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "rex-commands-"));
+  temporary.push(cwd);
+  const created = captureIO(cwd);
+  expect(await run(["new", APP_NAME, "--ui", "none"], created.io)).toBe(EXIT_OK);
+  root = join(cwd, APP_NAME);
+  installDependencies(root);
+}, COMMANDS_TEST_TIMEOUT_MS);
+
 describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_MS }, () => {
-  let root: string;
-
-  beforeAll(async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "rex-commands-"));
-    temporary.push(cwd);
-    const created = captureIO(cwd);
-    expect(await run(["new", APP_NAME, "--ui", "none"], created.io)).toBe(EXIT_OK);
-    root = join(cwd, APP_NAME);
-    installDependencies(root);
-  }, COMMANDS_TEST_TIMEOUT_MS);
-
   it("rex check exits 0 on a generated app in the human and JSON formats", async () => {
     const human = await cli(root, "check");
     expect(human).toEqual({ code: EXIT_OK, out: "No findings.\n", err: "" });
@@ -565,11 +565,17 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
       node: {
         start: "startPrerenderedNodeServer",
         hint: `start it with node ${DIST_DIR}/${SERVER_FILE}`,
+        runtime: null,
       },
-      bun: { start: "startBunServer", hint: `start it with bun ${DIST_DIR}/${SERVER_FILE}` },
+      bun: {
+        start: "startBunServer",
+        hint: `start it with bun ${DIST_DIR}/${SERVER_FILE}`,
+        runtime: "Bun",
+      },
       deno: {
         start: "startDenoServer",
         hint: `start it with deno run --allow-net --allow-read --allow-env ${DIST_DIR}/${SERVER_FILE}`,
+        runtime: "Deno",
       },
     } as const;
     for (const [target, expected] of Object.entries(entries)) {
@@ -594,18 +600,12 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
         if (other.start !== expected.start) expect(server, target).not.toContain(other.start);
       }
       if (target === "node") expect(server, target).not.toContain("createEdgeHandler");
-    }
-
-    for (const [target, runtime] of [
-      ["bun", "Bun"],
-      ["deno", "Deno"],
-    ] as const) {
-      await buildApp(root, { logLevel: "silent", target });
-      const run = await runNode([join(root, DIST_DIR, SERVER_FILE)], root);
+      if (expected.runtime === null) continue;
+      const run = await runNode([join(outDir, SERVER_FILE)], root);
       expect(run.code, target).not.toBe(0);
       expect(run.stdout, target).not.toContain(SERVING_PREFIX);
       expect(run.stderr, target).toContain(
-        `REX450 start${runtime}Server: the ${runtime} runtime global is absent`,
+        `REX450 start${expected.runtime}Server: the ${expected.runtime} runtime global is absent`,
       );
     }
   });
@@ -729,7 +729,6 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
 });
 
 const DIST_BUILD_TIMEOUT_MS = 180_000;
-const PRERENDER_APP_NAME = "prerender-app";
 const distCli = join(packageRoot, "dist", "cli", "index.js");
 
 function declareRender(root: string, pageId: string, render: "ssg" | "static"): void {
@@ -744,16 +743,7 @@ describe(
   "rex build from the emitted dist CLI with an ssg and a static page",
   { timeout: DIST_BUILD_TIMEOUT_MS },
   () => {
-    let root: string;
-
     beforeAll(async () => {
-      const cwd = mkdtempSync(join(tmpdir(), "rex-prerender-app-"));
-      temporary.push(cwd);
-      expect(await run(["new", PRERENDER_APP_NAME, "--ui", "none"], captureIO(cwd).io)).toBe(
-        EXIT_OK,
-      );
-      root = join(cwd, PRERENDER_APP_NAME);
-      installDependencies(root);
       for (const id of ["about", "guide"]) {
         const made = await cli(root, "make", "page", id);
         expect(made.err, `rex make page ${id}`).toBe("");
