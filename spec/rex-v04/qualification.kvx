@@ -3,7 +3,7 @@
 
 [meta]
 feature = "rex-v04"
-entries = 15
+entries = 19
 
 [qualification.001]
 task = "0.2"
@@ -123,4 +123,36 @@ file = "/usr/local/bin/hyperfide (2.0.0-dev), /usr/local/bin/cg (2.2.0)"
 symbol = "spec render, spec start, spec done"
 observed = "The two binaries render the spec pointers (CLAUDE.md, AGENTS.md, .cursor/rules/spec-workflow.mdc, .github/copilot-instructions.md) differently; main was stale under cg spec render --check, which gate-lint.sh and pnpm freshness use. hyperfide spec start/done rewrite the pointers in the older format, so workers restored them before committing. Pointers on the wave head are rendered with cg 2.2.0. Evidence: 5edf4e3 | hyperfide spec done 0.12 | 0 | /root/rex-private/logs/rex-v04/0.12.log"
 assumption = "cg 2.2.0 is the reference renderer (the version the fleet mechanics were verified with); the hyperfide binary on PATH should be aligned to it by a human."
+severity = "medium"
+
+[qualification.016]
+task = "0.5"
+file = "packages/rex/src/testing (renderRegion)"
+symbol = "renderRegion of a page declaring a shell-owned affordance"
+observed = "An isolated renderRegion of a page that declares a shell-owned affordance (site api: toggle-theme, registered by ThemeToggle in site/app/components/Shell.tsx) reports loading, because the control is absent; loading is the truthful state. Evidence: 0504741 | sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log"
+assumption = "Task 6.6 (provider of interface testing.harness) decides whether the harness surfaces this explicitly."
+severity = "note"
+
+[qualification.017]
+task = "0.5"
+file = "site/app/pages/api/test/api.test.tsx, site/app/pages/errors/test/errors.test.tsx"
+symbol = "publishes its sidecar with no actions"
+observed = "Two assertions expected actions [] while f5a1001 added the toggle-theme affordance to the api and errors declarations and updated only docs.test.tsx. Corrected per rex-main's decision of 2026-11-09 to the docs.test.tsx assertions (ids [toggle-theme], all allowed); the search test renders the page through renderReady. Evidence: bcc73ee | pnpm -C site exec vitest run api.test.tsx errors.test.tsx | 0 | /root/rex-private/logs/rex-v04/0.5-site-tests.log"
+assumption = "Product declarations and the missing-affordance rule are correct; the tests were stale (decision by rex-main, under D13's bounds)."
+severity = "assumption"
+
+[qualification.018]
+task = "0.2"
+file = "packages/rex/src/cli/registrations/migrate.ts, packages/rex/src/cli/registrations/promote.ts"
+symbol = "createProgram command loading"
+observed = "With typescript and vite optional peers since 0.2, rex --help failed in a consumer with only required peers because promote and migrate import typescript at module top level. Fixed on the wave branch through the existing registrations convention. Evidence: 83b84dd | node tools/smoke-cli-bootstrap.mjs and cli suites | 0 | /root/rex-private/logs/rex-v04/0-fix-cli.log"
+assumption = "Wave gate repair, cycle 1; no spec task owns it."
+severity = "medium"
+
+[qualification.019]
+task = "0.11"
+file = "examples/demo/app/components/BalanceCard.tsx"
+symbol = "24h change meter"
+observed = "The new WebKit project failed axe aria-meter-name on the demo portfolio page: Base UI links MeterLabel only after load, so server HTML had role=meter without a name. Fixed with useId and aria-labelledby in the server HTML. Evidence: 815d3dc | pnpm -C examples/demo exec playwright test e2e/axe.spec.ts | 0 | /root/rex-private/logs/rex-v04/0-fix-meter.log"
+assumption = "Wave gate repair, cycle 1; the shared ui/meter.tsx is unchanged."
 severity = "medium"
