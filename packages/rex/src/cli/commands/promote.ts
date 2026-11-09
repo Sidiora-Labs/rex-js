@@ -7,13 +7,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
-import type { RexCommand as Command } from "../args.ts";
 import ts from "typescript";
 import { createSourceLoader, isRelativeSpecifier } from "../../check/rule.ts";
 import { errorDetail } from "../../core/errors.ts";
 import type { RexCliIO } from "../index.ts";
 import { appPaths } from "../templates.ts";
 import { INVALID_ARGUMENT, MAKE_REFUSED, MakeError, reportedMakeError } from "./make.ts";
+export { register } from "../registrations/promote.ts";
 
 export const COMPONENTS_DIR = "app/components";
 
@@ -183,19 +183,13 @@ export function promotePart(root: string, spec: string): PromoteResult {
   };
 }
 
-export function register(program: Command, io: RexCliIO): void {
-  program
-    .command("promote")
-    .description("move a page part to app/components and rewrite the imports that use it")
-    .argument("<part>", "part path: <page>/regions/<region>/parts/<Part>")
-    .action((spec: string) => {
-      let result: PromoteResult;
-      try {
-        result = promotePart(io.cwd, spec);
-      } catch (error) {
-        throw reportedMakeError("rex promote", error);
-      }
-      io.out(`moved ${result.from} -> ${result.to}\n`);
-      for (const file of result.rewritten) io.out(`rewrote ${file}\n`);
-    });
+export function executePromote(spec: string, io: RexCliIO): void {
+  let result: PromoteResult;
+  try {
+    result = promotePart(io.cwd, spec);
+  } catch (error) {
+    throw reportedMakeError("rex promote", error);
+  }
+  io.out(`moved ${result.from} -> ${result.to}\n`);
+  for (const file of result.rewritten) io.out(`rewrote ${file}\n`);
 }
