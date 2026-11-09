@@ -19,7 +19,6 @@ import {
 
 const stops = siteStops();
 const MAX_SCREENSHOT_PIXELS = 32_767;
-const BROWSER_CONTROL_REASON = "Requires an active browser control";
 
 test("every internal built link and asset resolves", () => {
   execFileSync(process.execPath, ["../tools/site-verify.mjs", "dist/client"], {
@@ -158,10 +157,7 @@ for (const stop of stops) {
         } else {
           const arrived = await readSidecar(page, { mirror: false });
           expect(arrived.page).toBe(expected.page.id);
-          const pending = arrived.actions.filter(
-            (entry) => entry.allowed === false && entry.reason === BROWSER_CONTROL_REASON,
-          );
-          expect(arrived.state).toBe(pending.length > 0 ? "loading" : "ready");
+          expect(arrived.state).toBe("loading");
         }
         await expect(page.locator(`[data-rex-page="${expected.page.id}"]`)).toBeVisible();
         await expect(page.locator("[data-rex-error-code]")).toHaveCount(0);

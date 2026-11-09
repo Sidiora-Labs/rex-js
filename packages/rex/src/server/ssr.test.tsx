@@ -400,13 +400,14 @@ describe("streaming server-side rendering", () => {
     expect(data?.actor.id).toBe("owner");
     expect(data?.queries).toEqual({ mutations: [], queries: [] });
     expect(container.querySelector('[data-rex-page="home"]')).not.toBeNull();
-    expect(readSidecar(container)).toMatchObject({ page: "home", state: "ready" });
+    expect(readSidecar(container)).toMatchObject({ page: "home", state: "loading" });
   });
 
   it("hydrates the server-rendered page without a mismatch and invokes an action on click", async () => {
     const html = await (await server.fetch(request("/"))).text();
     const container = mountDocument(html, "/");
-    const serverSidecar = readSidecar(container);
+    const serverSidecar = readSidecar(container) as Record<string, unknown>;
+    expect(serverSidecar).toMatchObject({ page: "home", state: "loading" });
     const serverButton = container.querySelector('[data-rex-region="home/main"] button');
     expect(serverButton).not.toBeNull();
     const errors = vi.spyOn(console, "error");
@@ -418,7 +419,7 @@ describe("streaming server-side rendering", () => {
     const button = container.querySelector('[data-rex-region="home/main"] button');
     expect(button).toBe(serverButton);
     await waitFor(() => expect(button?.getAttribute("data-rex-allowed")).toBe("true"));
-    expect(window.__rex).toEqual(serverSidecar);
+    expect(window.__rex).toEqual({ ...serverSidecar, state: "ready" });
 
     await act(async () => {
       (button as HTMLButtonElement).click();
@@ -785,12 +786,13 @@ describe("a posted form outcome in the server-rendered document", () => {
     const container = mountDocument(html, "/");
     const serverOutcome = container.querySelector('[data-rex-outcome="add-note"]');
     expect(serverOutcome).not.toBeNull();
-    const serverSidecar = readSidecar(container);
+    const serverSidecar = readSidecar(container) as Record<string, unknown>;
+    expect(serverSidecar).toMatchObject({ page: "home", state: "loading" });
     const errors = vi.spyOn(console, "error");
     const mismatches: HydrationMismatch[] = [];
 
     await hydrate(container, mismatches);
-    await waitFor(() => expect(window.__rex).toEqual(serverSidecar));
+    await waitFor(() => expect(window.__rex).toEqual({ ...serverSidecar, state: "ready" }));
 
     const outcome = container.querySelector('[data-rex-outcome="add-note"]');
     expect(outcome).toBe(serverOutcome);
@@ -827,7 +829,8 @@ describe("the stores a server render exposes", () => {
       shared.reset();
     }
     const container = mountDocument(html, "/watch");
-    const server = readSidecar(container);
+    const server = readSidecar(container) as Record<string, unknown>;
+    expect(server).toMatchObject({ page: "watch", state: "loading" });
     const mismatches: HydrationMismatch[] = [];
     await act(async () => {
       started = startRexEntry(container, storeBundle, {
@@ -837,8 +840,8 @@ describe("the stores a server render exposes", () => {
       });
     });
     expect(started?.mode).toBe("hydrate");
-    await waitFor(() => expect(window.__rex).toEqual(server));
-    expect(readSidecar(container)).toEqual(server);
+    await waitFor(() => expect(window.__rex).toEqual({ ...server, state: "ready" }));
+    expect(readSidecar(container)).toEqual({ ...server, state: "ready" });
     expect(mismatches).toEqual([]);
   });
 
@@ -867,7 +870,8 @@ describe("the stores a server render exposes", () => {
   it("hydrates the store page to the server sidecar and the next page to its own sidecar script", async () => {
     const watch = await hydrateStorePage("/watch");
     expect(watch.server.stores).toEqual({ watched: WATCHED_INITIAL });
-    expect(window.__rex).toEqual(watch.server);
+    expect(watch.server.state).toBe("loading");
+    expect(window.__rex).toEqual({ ...watch.server, state: "ready" });
     expect(JSON.stringify(window.__rex)).toBe(JSON.stringify(readSidecar(watch.container)));
     const root = started?.root;
     await act(async () => {

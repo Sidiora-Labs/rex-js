@@ -55,7 +55,7 @@ describe("portfolio server render", () => {
     expect(container.querySelector("[data-demo-total]")?.textContent).toBe("$76,580.00");
     const serverSidecar = readSidecar(container);
     expect(serverSidecar.page).toBe("portfolio");
-    expect(serverSidecar.state).toBe("ready");
+    expect(serverSidecar.state).toBe("loading");
     const serverScript = container.querySelector("script#rex-page");
 
     const errors = vi.spyOn(console, "error");
@@ -75,7 +75,7 @@ describe("portfolio server render", () => {
 
     expect(container.querySelector("script#rex-page")).toBe(serverScript);
     expect(readSidecar(container)).toEqual(window.__rex);
-    expect(window.__rex).toEqual(serverSidecar);
+    expect(window.__rex).toEqual({ ...serverSidecar, state: "ready" });
     expect(container.querySelector("[data-demo-total]")?.textContent).toBe("$76,580.00");
     expect(mismatches).toEqual([]);
     expect(hydrationErrors(errors.mock.calls)).toEqual([]);

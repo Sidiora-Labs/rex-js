@@ -638,7 +638,7 @@ describe("page loaders", () => {
     expect(container.querySelector('[data-testid="first-list"]')?.textContent).toBe(
       "First noteSecond note",
     );
-    expect(readSidecar(container)).toMatchObject({ page: "notes", state: "ready" });
+    expect(readSidecar(container)).toMatchObject({ page: "notes", state: "loading" });
 
     const errors = vi.spyOn(console, "error");
     const mismatches: HydrationMismatch[] = [];
@@ -654,24 +654,25 @@ describe("page loaders", () => {
     expect(query).toBeDefined();
     expect(isServerSeeded(query as NonNullable<typeof query>)).toBe(true);
     await settle();
+    expect(readSidecar(container)).toMatchObject({ page: "notes", state: "ready" });
     expect(rpcCalls).toEqual([]);
     expect(calls.listNotes).toBe(1);
     expect(mismatches).toEqual([]);
     expect(hydrationErrors(errors.mock.calls)).toEqual([]);
   });
 
-  it("publishes the server sidecar of a page with server-resolved loaders unchanged in the sidecar script and window.__rex after hydration", async () => {
+  it("publishes the server sidecar of a page with server-resolved loaders in the sidecar script and window.__rex after hydration with only its state moved to ready", async () => {
     resetData();
     const html = await (await server.fetch(request("/notes"))).text();
     const container = mountDocument(html, "/notes");
-    const serverSidecar = readSidecar(container);
-    expect(serverSidecar).toMatchObject({ page: "notes", state: "ready" });
+    const serverSidecar = readSidecar(container) as Record<string, unknown>;
+    expect(serverSidecar).toMatchObject({ page: "notes", state: "loading" });
 
     const mismatches: HydrationMismatch[] = [];
     await hydrateDocument(container, quietClient(), mismatches);
     await settle();
-    expect(window.__rex).toEqual(serverSidecar);
-    expect(readSidecar(container)).toEqual(serverSidecar);
+    expect(window.__rex).toEqual({ ...serverSidecar, state: "ready" });
+    expect(readSidecar(container)).toEqual({ ...serverSidecar, state: "ready" });
     expect(JSON.stringify(window.__rex)).toBe(JSON.stringify(readSidecar(container)));
     expect(mismatches).toEqual([]);
   });
