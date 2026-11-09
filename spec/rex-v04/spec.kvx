@@ -2607,7 +2607,7 @@ oracle = "pnpm -C packages/rex typecheck and build, the four rex vitest files, t
 
 [case.RX4-900]
 title = "Wave 0 gate: Green main and release integrity"
-status = "FAIL"
+status = "PASS"
 tier = "release"
 reqs = ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"]
 tasks = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13", "0.14", "0.15", "0.16"]
