@@ -1,6 +1,6 @@
 # Verification
 
-Status: 97 cases defined: 15 PASS, 1 FAIL and 81 UNRUN. Only wave 0 commands in this chapter have been executed for this feature.
+Status: 97 cases defined: 16 PASS, 1 FAIL and 80 UNRUN. Only wave 0 commands in this chapter have been executed for this feature.
 
 ## What counts as evidence
 
