@@ -24,6 +24,7 @@ d_9 = "Publication is human-only. Deprecating registry versions, publishing, tru
 d_10 = "The spec folder and the house commit format stay, by direction of the repository owner. Audit items 2.49 and 2.50 are adopted only as far as opening a contribution path that does not need the fleet tooling."
 d_11 = "A large item with an honest smaller alternative states both. Task 2.4 streams or removes the claim; tasks 5.4 and 3.2 qualify against local runtimes and record live-host evidence as future."
 d_12 = "The final wave is documentation, examples and release preparation, so documentation describes what landed and not what was planned."
+d_13 = "The server-rendered sidecar of a page whose loaders resolved reports the page data state, and hydration alone never changes it. A declared browser-only affordance that has not registered is listed as not allowed with its reason and holds the state at loading until it registers. This supersedes the pre-hydration loading rule introduced with the hydration flag in the 0.3.0 changelog commit. Decided by rex-main on 2026-11-09 while qualifying task 0.5; flagged for human review."
 
 [prerequisite.green_main]
 title = "Green main before feature waves"
@@ -226,10 +227,10 @@ heading = "Nine waves from a green main to a 0.4.0 release candidate"
 
 [task.0.1]
 title = "Derive the version constant from the package manifest"
-status = "pending"
+status = "done"
 wave = 0
 requires = []
-touches = ["packages/rex/src/index.ts", "packages/rex/src/version.ts", "packages/rex/src/version.test.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/pack.test.ts", "packages/rex/scripts/write-version.mjs", "README.md", "docs/cli.md", "SECURITY.md", "tools/freshness.mjs"]
+touches = ["packages/rex/src/index.ts", "packages/rex/src/version.ts", "packages/rex/src/version.test.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/pack.test.ts", "packages/rex/scripts/write-version.mjs", "README.md", "docs/cli.md", "SECURITY.md", "tools/freshness.mjs", "packages/rex/package.json"]
 verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/version.test.ts src/cli/pack.test.ts"
 do_1 = "Add a build step that writes src/version.ts from packages/rex/package.json and make index.ts re-export REX_VERSION from it, so the constant cannot drift from the manifest."
 do_2 = "Make rex --version and the dependency range that rex new writes read the generated constant; remove the literal version from cli/commands/new.ts."
@@ -245,10 +246,10 @@ time_limit_minutes = 45
 
 [task.0.2]
 title = "Point package exports at built output and correct peer, engine and map metadata"
-status = "pending"
+status = "done"
 wave = 0
 requires = []
-touches = ["packages/rex/package.json", "packages/rex/tsconfig.build.json", "packages/rex/tsconfig.json", "tsconfig.base.json", "examples/demo/tsconfig.json", "examples/demo/vitest.config.ts", "site/tsconfig.json", "site/vitest.config.ts", "packages/rex/vitest.config.ts", "tools/smoke-package.sh", "tools/package-exports.test.mjs", "README.md", "docs/development.md"]
+touches = ["packages/rex/package.json", "packages/rex/tsconfig.build.json", "packages/rex/tsconfig.json", "tsconfig.base.json", "examples/demo/tsconfig.json", "examples/demo/vitest.config.ts", "site/tsconfig.json", "site/vitest.config.ts", "packages/rex/vitest.config.ts", "tools/smoke-package.sh", "tools/package-exports.test.mjs", "README.md", "docs/development.md", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/pack.test.ts", "packages/rex/src/index.test.ts", "packages/rex/src/config.test.ts", "packages/rex/src/server-only.test.ts", "packages/rex/src/prettier.test.ts", "packages/rex/src/schema/index.test.ts", "packages/rex/src/manifest/index.test.ts", "packages/rex/src/client/interop/index.test.ts", "packages/rex/src/client/media/index.test.ts", "packages/rex/src/vite/shell-components.test.ts", "tools/freshness.mjs", "tools/docs-api.mjs", "packages/rex/src/client/providers.ts", "packages/rex/src/client/shell/slots.ts"]
 verify_cmd = "pnpm -C packages/rex build && node --test tools/package-exports.test.mjs"
 do_1 = "Make the in-repo exports map resolve types and default to dist, and add a rex-source custom condition that workspace packages, Vitest and the dev server select to reach src; delete the publishConfig.exports override."
 do_2 = "Mark wouter, cmdk, @vitejs/plugin-react and @hono/node-server as required peers of the entries that import them statically, or move the import behind the entry that owns it; keep typescript and vite optional for server-only consumers."
@@ -264,10 +265,10 @@ time_limit_minutes = 90
 
 [task.0.3]
 title = "Isolate tests from the source tree and build dist once per run"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.2"]
-touches = ["packages/rex/vitest.config.ts", "packages/rex/vitest.global-setup.ts", "packages/rex/src/testing/internal/fixture.ts", "packages/rex/src/testing/internal/fixture.test.ts", "packages/rex/src/cli/**/*.test.ts", "packages/rex/src/vite/**/*.test.ts", "packages/rex/src/check/**/*.test.ts", "packages/rex/src/manifest/**/*.test.ts", ".gitignore", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/cli/static-target.test.ts"]
+touches = ["packages/rex/vitest.config.ts", "packages/rex/vitest.global-setup.ts", "packages/rex/src/testing/internal/fixture.ts", "packages/rex/src/testing/internal/fixture.test.ts", "packages/rex/src/cli/*.test.ts", "packages/rex/src/cli/**/*.test.ts", "packages/rex/src/vite/*.test.ts", "packages/rex/src/check/**/*.test.ts", ".gitignore", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/cli/static-target.test.ts", "packages/rex/src/server/ssr.test.tsx"]
 verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/testing/internal/fixture.test.ts src/vite/prerender.test.ts src/cli/static-target.test.ts"
 do_1 = "Add src/testing/internal/fixture.ts with a helper that copies a named fixture to a fresh temporary directory and removes it after the test; it is internal and not exported from the package."
 do_2 = "Move every test that writes loader caches, symlinks or prerender output under src onto the helper, including the fixture node_modules links and src/vite/.prerender-fixture."
@@ -283,7 +284,7 @@ time_limit_minutes = 90
 
 [task.0.4]
 title = "Update CLI output assertions and make lint and format cover the workspace"
-status = "pending"
+status = "done"
 wave = 0
 requires = []
 touches = ["packages/rex/src/cli/commands.test.ts", "packages/rex/src/cli/index.test.ts", "packages/rex/src/cli/cli.test.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/check/rules/*.ts", "eslint.config.js", "site/eslint.config.js", "site/package.json", "package.json", ".prettierignore"]
@@ -321,7 +322,7 @@ time_limit_minutes = 90
 
 [task.0.6]
 title = "Pin the DesignX registry and make the default scaffold work offline"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.1", "0.3"]
 touches = ["packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "packages/rex/src/cli/designx.lock.json", "packages/rex/src/cli/new.test.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/fixtures/designx-registry/**", "tools/smoke-package.sh", "examples/demo/package.json", "site/package.json", "pnpm-lock.yaml"]
@@ -359,7 +360,7 @@ time_limit_minutes = 90
 
 [task.0.8]
 title = "Raise vulnerable dependencies and their peer floors"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.2"]
 touches = ["packages/rex/package.json", "package.json", "examples/demo/package.json", "site/package.json", "pnpm-lock.yaml", ".github/dependabot.yml"]
@@ -378,7 +379,7 @@ time_limit_minutes = 45
 
 [task.0.9]
 title = "State and test the TypeScript and ESLint support window"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.8"]
 touches = ["packages/rex/package.json", "package.json", "pnpm-lock.yaml", "docs/versioning.md", "tools/support-window.mjs", "tools/support-window.test.mjs", "packages/rex/src/check/rules/typecheck.ts", "packages/rex/src/eslint/index.ts"]
@@ -397,10 +398,10 @@ time_limit_minutes = 90
 
 [task.0.10]
 title = "Give every package a typecheck and make the root gates honest"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.3", "0.4"]
-touches = ["package.json", "examples/demo/package.json", "site/package.json", "packages/rex/vitest.config.ts", "tools/test-ratio.mjs", "tools/run-workspace-tests.mjs", "tools/qualification-gates.test.mjs", "tools/gate-test.sh", "tools/gate-lint.sh", "packages/rex/src/testing/**"]
+touches = ["package.json", "examples/demo/package.json", "site/package.json", "packages/rex/vitest.config.ts", "tools/test-ratio.mjs", "tools/run-workspace-tests.mjs", "tools/qualification-gates.test.mjs", "tools/gate-test.sh", "tools/gate-lint.sh", "packages/rex/src/testing/**", "packages/rex/src/test-ratio.test.ts"]
 verify_cmd = "pnpm typecheck && node --test tools/qualification-gates.test.mjs"
 do_1 = "Add a typecheck script to examples/demo and site and fix the type errors it reveals without widening types."
 do_2 = "Replace the root test script with tools/run-workspace-tests.mjs, which runs every package, continues after a failure and exits non-zero with a per-package summary."
@@ -416,10 +417,10 @@ time_limit_minutes = 90
 
 [task.0.11]
 title = "Harden the CI and release workflows and declare the platform matrix"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.10"]
-touches = [".github/workflows/**", ".github/dependabot.yml", "tools/workflow-lint.mjs", "tools/workflow-lint.test.mjs", "tools/verify-published.mjs", "examples/demo/playwright.config.ts", "site/playwright.config.ts", "docs/releasing.md"]
+touches = [".github/workflows/**", ".github/dependabot.yml", "tools/workflow-lint.mjs", "tools/workflow-lint.test.mjs", "tools/verify-published.mjs", "examples/demo/playwright.config.ts", "site/playwright.config.ts", "docs/releasing.md", "tools/qualification-gates.test.mjs"]
 verify_cmd = "node --test tools/workflow-lint.test.mjs && node tools/workflow-lint.mjs .github/workflows"
 do_1 = "Pin every third-party action by commit SHA, pin publint and attw versions, remove the global npm upgrade from the job that holds id-token write, and move shared jobs into reusable workflows."
 do_2 = "Declare a matrix of Node 22.19, 24 and 26 on Linux, macOS and Windows, add smoke jobs that run the real Bun, Deno and workerd runtimes, add Firefox and WebKit Playwright projects, and add a CodeQL workflow."
@@ -1822,7 +1823,7 @@ time_limit_minutes = 90
 
 [case.RX4-001]
 title = "Derive the version constant from the package manifest"
-status = "UNRUN"
+status = "PASS"
 tier = "component"
 reqs = ["1.2"]
 tasks = ["0.1"]
@@ -1830,7 +1831,7 @@ oracle = "REX_VERSION, rex --version and the scaffolded range all equal the mani
 
 [case.RX4-002]
 title = "Point package exports at built output and correct peer, engine and map metadata"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["1.1", "1.3", "1.4"]
 tasks = ["0.2"]
@@ -1838,7 +1839,7 @@ oracle = "A packed tarball installed into an empty project imports every exports
 
 [case.RX4-003]
 title = "Isolate tests from the source tree and build dist once per run"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["2.1"]
 tasks = ["0.3"]
@@ -1846,7 +1847,7 @@ oracle = "Two consecutive runs of the named suites pass and leave no untracked o
 
 [case.RX4-004]
 title = "Update CLI output assertions and make lint and format cover the workspace"
-status = "UNRUN"
+status = "PASS"
 tier = "component"
 reqs = ["2.3"]
 tasks = ["0.4"]
@@ -1862,7 +1863,7 @@ oracle = "A page with server-resolved loaders reports ready in the server sideca
 
 [case.RX4-006]
 title = "Pin the DesignX registry and make the default scaffold work offline"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["1.5", "2.2"]
 tasks = ["0.6"]
@@ -1878,7 +1879,7 @@ oracle = "Three consecutive full runs of the package suite pass with no retry."
 
 [case.RX4-008]
 title = "Raise vulnerable dependencies and their peer floors"
-status = "UNRUN"
+status = "PASS"
 tier = "component"
 reqs = ["1.7"]
 tasks = ["0.8"]
@@ -1886,7 +1887,7 @@ oracle = "pnpm audit --prod reports no high or critical advisory and the package
 
 [case.RX4-009]
 title = "State and test the TypeScript and ESLint support window"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["1.8"]
 tasks = ["0.9"]
@@ -1894,7 +1895,7 @@ oracle = "The peer ranges equal the set of majors with a recorded passing run, a
 
 [case.RX4-010]
 title = "Give every package a typecheck and make the root gates honest"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["2.5"]
 tasks = ["0.10"]
@@ -1902,7 +1903,7 @@ oracle = "pnpm typecheck covers three packages, the root test reports every fail
 
 [case.RX4-011]
 title = "Harden the CI and release workflows and declare the platform matrix"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["1.6", "2.6"]
 tasks = ["0.11"]

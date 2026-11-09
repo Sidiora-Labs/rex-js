@@ -99,8 +99,12 @@ describe("rex/schema entry", () => {
   it("is the module behind @sidioralabs/rex/schema", () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const packageJson = JSON.parse(readFileSync(join(here, "../../package.json"), "utf8")) as {
-      readonly exports: Readonly<Record<string, string>>;
+      readonly exports: Readonly<Record<string, unknown>>;
     };
-    expect(packageJson.exports["./schema"]).toBe("./src/schema/index.ts");
+    expect(packageJson.exports["./schema"]).toEqual({
+      "rex-source": "./src/schema/index.ts",
+      types: "./dist/schema/index.d.ts",
+      default: "./dist/schema/index.js",
+    });
   });
 });

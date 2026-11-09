@@ -28,7 +28,9 @@ export const SHELL_SLOTS: readonly ShellSlot[] = [
   { id: "body", Component: withShellComponents(BodySlot) },
   { id: "recovery", Component: withShellComponents(RecoverySlot) },
   { id: "announcer", Component: withShellComponents(AnnouncerSlot) },
-  ...(import.meta.env.DEV && import.meta.env.REX_DEVTOOLS !== false
+  ...(typeof import.meta.env !== "undefined" &&
+  import.meta.env.DEV &&
+  import.meta.env.REX_DEVTOOLS !== false
     ? [{ id: "devtools", Component: withShellComponents(DevtoolsSlot) }]
     : []),
 ];

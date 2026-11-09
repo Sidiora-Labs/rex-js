@@ -15,6 +15,7 @@ export const PACKAGES = [
     testSuffixes: [".conformance.ts"],
     exclude: [],
     group: 2,
+    results: "node_modules/.cache/rex/test-results.json",
   },
   {
     name: "examples/demo",
@@ -24,6 +25,7 @@ export const PACKAGES = [
     testSuffixes: [],
     exclude: ["app/components/ui"],
     group: 3,
+    results: "node_modules/.cache/rex/test-results.json",
   },
 ];
 const FLAGS = ["--check", "--json"];
@@ -151,6 +153,44 @@ export function measurePackage(pkg, root = ROOT) {
   };
 }
 
+function readResults(path) {
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    return error;
+  }
+}
+
+export function suiteFailures(pkg, root = ROOT) {
+  const dir = join(root, pkg.dir);
+  const resultsPath = join(dir, pkg.results);
+  const shown = posix(join(pkg.dir, pkg.results));
+  if (!existsSync(resultsPath)) {
+    return [`${pkg.name} has no test results at ${shown}; run its tests before the ratio check`];
+  }
+  const results = readResults(resultsPath);
+  if (results instanceof Error || !Array.isArray(results?.testResults)) {
+    return [`${pkg.name} has unreadable test results at ${shown}`];
+  }
+  const statuses = new Map(
+    results.testResults.map((file) => [posix(relative(dir, resolve(file.name))), file.status]),
+  );
+  const failures = [];
+  if (results.success !== true || results.numFailedTests !== 0) {
+    failures.push(`${pkg.name} has failing tests: ${results.numFailedTests} failed in ${shown}`);
+  }
+  for (const [file, status] of statuses) {
+    if (status !== "passed") failures.push(`${pkg.name} test file ${file} ${status}`);
+  }
+  for (const file of codeFiles(dir, pkg.scan)) {
+    if (!TEST_FILE.test(file)) continue;
+    if (classify(pkg, file, readFileSync(join(dir, file), "utf8")) !== "test") continue;
+    if (!statuses.has(file))
+      failures.push(`${pkg.name} test file ${file} has no result in ${shown}`);
+  }
+  return failures;
+}
+
 export function measure(root = ROOT, packages = PACKAGES) {
   const reports = packages.map((pkg) => measurePackage(pkg, root));
   return { minimum: MINIMUM_RATIO, packages: reports, ok: reports.every((report) => report.ok) };
@@ -204,20 +244,19 @@ export function main(argv = process.argv.slice(2), io = {}) {
   if (!argv.includes("--check")) return 0;
   const minimum = MINIMUM_RATIO.toFixed(2);
   const below = report.packages.filter((pkg) => !pkg.ok);
-  if (below.length === 0) {
-    if (!json) {
-      stdout.write(
-        `test-ratio: every package has at least ${minimum} lines of test code per line of source\n`,
-      );
-    }
-    return 0;
+  const failures = packages.flatMap((pkg) => suiteFailures(pkg, root));
+  if (below.length === 0 && !json) {
+    stdout.write(
+      `test-ratio: every package has at least ${minimum} lines of test code per line of source\n`,
+    );
   }
   for (const pkg of below) {
     stderr.write(
       `test-ratio: ${pkg.name} has ${formatRatio(pkg.ratio)} lines of test code per line of source, below ${minimum}\n`,
     );
   }
-  return 1;
+  for (const failure of failures) stderr.write(`test-ratio: ${failure}\n`);
+  return below.length === 0 && failures.length === 0 ? 0 : 1;
 }
 
 function isMain() {

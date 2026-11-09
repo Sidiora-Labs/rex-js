@@ -179,7 +179,9 @@ describe("processIO", () => {
   it("binds the CLI to the process working directory and its streams", () => {
     const io = processIO();
     expect(io.cwd).toBe(process.cwd());
-    expect(Object.keys(io).sort()).toEqual(["cwd", "err", "out"]);
+    expect(Object.keys(io).sort()).toEqual(["color", "columns", "cwd", "err", "out"]);
+    expect(typeof io.color).toBe("boolean");
+    expect(io.columns).toBe(process.stdout.columns || 80);
     expect(typeof io.out).toBe("function");
     expect(typeof io.err).toBe("function");
   });

@@ -59,8 +59,12 @@ describe("client/interop entry", () => {
   it("is the module behind the @sidioralabs/rex/client/interop export", () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const manifest = JSON.parse(readFileSync(join(here, "../../../package.json"), "utf8")) as {
-      readonly exports: Readonly<Record<string, string>>;
+      readonly exports: Readonly<Record<string, unknown>>;
     };
-    expect(manifest.exports["./client/interop"]).toBe("./src/client/interop/index.ts");
+    expect(manifest.exports["./client/interop"]).toEqual({
+      "rex-source": "./src/client/interop/index.ts",
+      types: "./dist/client/interop/index.d.ts",
+      default: "./dist/client/interop/index.js",
+    });
   });
 });

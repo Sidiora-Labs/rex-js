@@ -2,7 +2,10 @@
 # Package smoke test: install a packed @sidioralabs/rex tarball into a scratch
 # package, write a fresh app with its rex bin, install the tarball into that app,
 # run rex check and rex build, start the built Node server on a free port and
-# fetch the home page, the manifest and one RPC call from it.
+# fetch the home page, the manifest and one RPC call from it. Before the app, it runs
+# tools/package-exports.test.mjs on the tarball, which imports every export. It also
+# runs the default rex new path with networking to the DesignX registry host disabled
+# and without prettier, installs that app against the tarball and runs rex check on it.
 # Usage: tools/smoke-package.sh [tarball]; without a tarball, packages/rex is packed.
 set -eu
 cd "$(dirname "$0")/.."
@@ -10,6 +13,7 @@ root="$(pwd)"
 
 package="@sidioralabs/rex"
 app_name="my-app"
+designx_app_name="my-designx-app"
 start_attempts=60
 
 fail() {
@@ -49,6 +53,9 @@ else
   tarball="$1"
 fi
 [ -f "$tarball" ] || fail "tarball not found: $tarball"
+
+step "importing every export of $tarball with its peers"
+REX_PACKAGE_TARBALL="$tarball" node --test tools/package-exports.test.mjs
 
 step "reading the peers the rex bin loads from $tarball"
 mkdir -p "$work/extract"
@@ -95,23 +102,97 @@ printf '{ "name": "rex-smoke-scratch", "private": true, "type": "module" }\n' > 
 step "installing $tarball and the bin peers into $scratch"
 (cd "$scratch" && pnpm add "$tarball" $bin_peers)
 
+point_at_tarball() {
+  node -e '
+    const fs = require("node:fs");
+    const [file, name, tarball] = process.argv.slice(1);
+    const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (manifest.dependencies?.[name] === undefined) {
+      console.error(`${file} does not depend on ${name}`);
+      process.exit(1);
+    }
+    manifest.dependencies[name] = `file:${tarball}`;
+    fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+  ' "$1/package.json" "$package" "$tarball"
+}
+
+step "reading the DesignX registry host from the lock file in $tarball"
+lock_file="$work/extract/package/dist/cli/designx.lock.json"
+[ -f "$lock_file" ] || fail "$tarball does not ship dist/cli/designx.lock.json"
+registry_host="$(node -e '
+  const lock = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+  const hosts = new Set(Object.values(lock.items).map((pin) => new URL(pin.url).hostname));
+  if (hosts.size !== 1) {
+    console.error(`expected one registry host in the lock file, found ${[...hosts].join(", ")}`);
+    process.exit(1);
+  }
+  console.log([...hosts][0]);
+' "$lock_file")"
+echo "$registry_host"
+
+if (cd "$scratch" && node -e '
+  const { createRequire } = require("node:module");
+  createRequire(require.resolve(process.argv[1] + "/package.json")).resolve("prettier");
+' "$package" 2>/dev/null); then
+  fail "prettier is resolvable from $scratch; the default rex new path must not need it"
+fi
+
+offline="$work/offline-registry.mjs"
+cat >"$offline" <<'OFFLINE'
+const blocked = process.env.REX_SMOKE_BLOCKED_HOST;
+const request = globalThis.fetch;
+let hits = 0;
+globalThis.fetch = async (input, init) => {
+  const url = new URL(input instanceof Request ? input.url : String(input));
+  if (url.hostname === blocked) {
+    hits += 1;
+    throw new TypeError(`fetch failed: networking to ${blocked} is disabled`);
+  }
+  return request(input, init);
+};
+process.on("exit", () => {
+  if (hits > 0) process.stderr.write(`smoke-package: blocked ${hits} requests to ${blocked}\n`);
+});
+OFFLINE
+
+step "rex new $designx_app_name --no-install with networking to $registry_host disabled"
+(cd "$scratch" && REX_SMOKE_BLOCKED_HOST="$registry_host" NODE_OPTIONS="--import=$offline" \
+  pnpm exec rex new "$designx_app_name" --no-install) 2>"$work/designx-new.log" ||
+  { cat "$work/designx-new.log" >&2; fail "rex new $designx_app_name failed with $registry_host unreachable"; }
+cat "$work/designx-new.log" >&2
+grep -q "blocked [1-9][0-9]* requests to $registry_host" "$work/designx-new.log" ||
+  fail "rex new $designx_app_name did not try $registry_host"
+designx_app="$scratch/$designx_app_name"
+for file in dx.json app/theme.css app/components/ui/button.tsx app/components/Shell.tsx; do
+  [ -f "$designx_app/$file" ] || fail "rex new did not write $designx_app_name/$file"
+done
+node -e '
+  const manifest = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+  const loose = Object.entries({ ...manifest.dependencies, ...manifest.devDependencies })
+    .filter(([, version]) => !/^\^?\d+\.\d+(\.\d+)?$/.test(version));
+  if (loose.length > 0) {
+    console.error(`unpinned dependencies: ${loose.map(([name, version]) => `${name}@${version}`).join(", ")}`);
+    process.exit(1);
+  }
+' "$designx_app/package.json"
+
+step "pointing $designx_app_name at $tarball"
+point_at_tarball "$designx_app"
+(cd "$designx_app" && pnpm install)
+
+step "formatting $designx_app_name with its own prettier"
+(cd "$designx_app" && pnpm run format)
+
+step "rex check $designx_app_name"
+(cd "$designx_app" && pnpm exec rex check)
+
 step "rex new $app_name --ui none --no-install"
 (cd "$scratch" && pnpm exec rex new "$app_name" --ui none --no-install)
 app="$scratch/$app_name"
 [ -f "$app/package.json" ] || fail "rex new did not write $app_name/package.json"
 
 step "pointing $app_name at $tarball"
-node -e '
-  const fs = require("node:fs");
-  const [file, name, tarball] = process.argv.slice(1);
-  const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
-  if (manifest.dependencies?.[name] === undefined) {
-    console.error(`${file} does not depend on ${name}`);
-    process.exit(1);
-  }
-  manifest.dependencies[name] = `file:${tarball}`;
-  fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
-' "$app/package.json" "$package" "$tarball"
+point_at_tarball "$app"
 (cd "$app" && pnpm install)
 
 step "rex check"

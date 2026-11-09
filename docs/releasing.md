@@ -1,15 +1,14 @@
-# Releasing Rex The site at [rex.sidioralabs.com](https://rex.sidioralabs.com) has its own path, described at the end of this page.
+# Releasing Rex
+
+The site at [rex.sidioralabs.com](https://rex.sidioralabs.com) has its own path, described at the end of this page.
 
 This page is for the release manager listed in [MAINTAINERS.md](../MAINTAINERS.md): how a version of `@sidioralabs/rex` goes from `main` to npm and to a GitHub release, what the release workflow checks on the way, the one-time npm and GitHub setup it depends on, how to verify a published version and how to roll one back. What a patch, a minor and a breaking change are is defined in [versioning.md](versioning.md); who may release, and from where, is defined in the [release authority](../GOVERNANCE.md#release-authority) section of GOVERNANCE.md.
 
-The path is: bump the version, generate the changelog, land `main`, push the `v<version>` tag. The tag is the only trigger of `.github/workflows/release.yml`, which runs the CI gates again, packs the package, smoke tests the tarball in a fresh app, publishes it to npm through OpenID Connect with a provenance attestation, and creates the GitHub release with the changelog section of the version as its body. Nobody publishes from a local machine, and the workflow holds no npm token.
+The path is: bump the version, generate the changelog, land `main`, push the `v<version>` tag. The tag is the only trigger of `.github/workflows/release.yml`, which refuses a tag whose commit is not on `main`, runs the same checks as CI through the reusable workflow `.github/workflows/checks.yml`, packs the package, smoke tests the tarball in a fresh app, publishes it to npm through OpenID Connect with a provenance attestation, installs the published version back from the registry and imports every entry, and creates the GitHub release with the changelog section of the version as its body. Nobody publishes from a local machine, and the workflow holds no npm token.
 
 ## 1. Bump the version
 
-The version is the `version` field of `packages/rex/package.json`. Two other places must move with it:
-
-- `REX_VERSION` in `packages/rex/src/index.ts`, which `rex new` writes into every new app as `"@sidioralabs/rex": "^<REX_VERSION>"`. `node tools/freshness.mjs --check` fails when it differs from `package.json`.
-- The supported versions table of [SECURITY.md](../SECURITY.md) when the minor version changes.
+The version is the `version` field of `packages/rex/package.json`, and it is the only place to edit. `REX_VERSION`, which `rex --version` prints and `rex new` writes into every new app, lives in `packages/rex/src/version.ts`, which `packages/rex/scripts/write-version.mjs` generates from `package.json` whenever the package's `build`, `typecheck` or `test` script runs; `node tools/freshness.mjs --check` fails when the two differ. The supported versions table of [SECURITY.md](../SECURITY.md) moves with it when the minor version changes.
 
 Search the README and `docs/` for the previous version string before committing (`grep -rn "0\.1\.0" README.md docs`); the quick start quotes the range `rex new` writes. Commit the bump on its own, in the house commit format (`cg commit -m "..."`).
 
@@ -27,11 +26,11 @@ The release workflow accepts a section headed `## [0.2.0] - <date>`, `## [v0.2.0
 
 ## 3. Land main
 
-Open the release pull request with the two commits. Per GOVERNANCE.md another maintainer approves it; with a single maintainer, the release manager self-approves after the gates pass. Merge it into `main` and push. The CI workflow (`.github/workflows/ci.yml`) on the merge commit must be green: the release workflow runs the same jobs, so a red CI is a red release.
+Open the release pull request with the two commits. Per GOVERNANCE.md another maintainer approves it; with a single maintainer, the release manager self-approves after the gates pass. Merge it into `main` and push. The CI workflow (`.github/workflows/ci.yml`) on the merge commit must be green: CI and the release workflow both call the same reusable workflow, `.github/workflows/checks.yml`, so a red CI is a red release.
 
 ## 4. Tag
 
-On the `main` commit that carries the bump and the changelog:
+On the `main` commit that carries the bump and the changelog (the workflow refuses a tag whose commit is not an ancestor of `main`):
 
 ```sh
 git switch main && git pull --ff-only
@@ -43,22 +42,50 @@ The tag is `v` followed by the `version` of `packages/rex/package.json`, exactly
 
 ## 5. What the workflow does
 
-`.github/workflows/release.yml` runs on every pushed `v*` tag, one run per tag (`concurrency: release-<ref>`, never cancelled), with `permissions: contents: read` for every job that does not need more. Every action is pinned by major version, every job has a timeout and every pnpm job uses the pnpm cache of `actions/setup-node`.
+`.github/workflows/release.yml` runs on every pushed `v*` tag, one run per tag (`concurrency: release-<ref>`, never cancelled), with `permissions: contents: read` for every job that does not need more. Every job has a timeout and runs on a named runner image (`ubuntu-24.04`, `macos-15`, `windows-2025`), never a `-latest` label.
 
-| Job            | Runs                                                                                                                                                                                                                              | Needs                |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| `prepare`      | Checks that the tag equals `v` + the package version; extracts the `CHANGELOG.md` section of that version into the `release-notes` artifact and fails when there is none.                                                         |                      |
-| `verify`       | `pnpm -r typecheck`, `pnpm -C packages/rex test` (which includes the size budgets).                                                                                                                                               | `prepare`            |
-| `lint`         | The demo's `eslint`, the root or per-package eslint config, the prettier check of `packages/rex/src` and `examples/demo` with the rex preset.                                                                                     | `prepare`            |
-| `coverage`     | `vitest run --coverage` with the thresholds of `packages/rex/vitest.config.ts`; the report is uploaded.                                                                                                                           | `prepare`            |
-| `demo`         | Builds rex, runs the demo unit tests, installs Chromium, then `pnpm -C examples/demo test`: `rex check` and the operability, no-JS, axe, vitals, Lighthouse and screenshot walks.                                                 | `prepare`            |
-| `docs`         | `pnpm docs:check` (links and API pages) and `node tools/freshness.mjs --check --skip pointers`.                                                                                                                                   | `prepare`            |
-| `supply-chain` | `pnpm audit --prod` and `node tools/license-review.mjs`.                                                                                                                                                                          | `prepare`            |
-| `package`      | Builds rex, `pnpm pack`, runs `tools/smoke-package.sh` on the tarball, uploads the tarball that passed as the `package` artifact.                                                                                                 | `prepare`            |
-| `publish`      | In the `npm` environment with `id-token: write`: installs an npm with trusted publishing, downloads the `package` artifact and runs `npm publish <tarball> --provenance --access public --tag latest` (`next` for a pre-release). | every job above      |
-| `release`      | With `contents: write`: `gh release create v<version> <tarball> --verify-tag --notes-file release.md`, titled `@sidioralabs/rex <version>`, using the `release-notes` artifact.                                                   | `prepare`, `publish` |
+| Job                | Runs                                                                                                                                                                                                                                                                                            | Needs                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `prepare`          | Checks out the full history and fails unless `git merge-base --is-ancestor` finds the tag's commit on `origin/main`; checks that the tag equals `v` + the package version; extracts the `CHANGELOG.md` section of that version into the `release-notes` artifact and fails when there is none.  |                                          |
+| `checks`           | Calls `.github/workflows/checks.yml`, the jobs CI runs, listed below; it uploads the smoke-tested tarball as the `package` artifact.                                                                                                                                                            | `prepare`                                |
+| `publish`          | In the `npm` environment with `id-token: write`, on Node 24.22.2: fails unless the npm bundled with that Node is 11.5.1 or later (it installs nothing), downloads the `package` artifact and runs `npm publish <tarball> --provenance --access public --tag latest` (`next` for a pre-release). | `prepare`, `checks`                      |
+| `verify-published` | `node tools/verify-published.mjs --version <version>`: installs the published version from the registry, as described in step 7.                                                                                                                                                                | `prepare`, `publish`                     |
+| `release`          | With `contents: write`: `gh release create v<version> <tarball> --verify-tag --notes-file release.md`, titled `@sidioralabs/rex <version>`, using the `release-notes` artifact.                                                                                                                 | `prepare`, `publish`, `verify-published` |
 
 The tarball that is published and attached to the release is the one the smoke test passed, carried between jobs as an artifact; nothing is rebuilt after the gates.
+
+### The shared checks
+
+`.github/workflows/checks.yml` is triggered only by `workflow_call`. `ci.yml` calls it on every push to `main` and every pull request, and its `Gate` job fails when the call did not succeed, including when it was skipped or cancelled. `release.yml` calls it as `checks`. Every job except the platform matrix runs on Node 24.22.2 on `ubuntu-24.04`, and every pnpm job uses the pnpm version of `packageManager` in the root `package.json` and the pnpm cache of `actions/setup-node`.
+
+| Job             | Runs                                                                                                                                                                                                                                                                                            |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `platform`      | The matrix: Node 22.19.0, 24.22.2 and 26.13.0, each on `ubuntu-24.04`, `macos-15` and `windows-2025`, nine legs that do not cancel each other. Each builds rex, runs `pnpm -r typecheck` and `pnpm -C packages/rex test`.                                                                       |
+| `verify`        | `pnpm -r typecheck`, `pnpm -C packages/rex test` (which includes the size budgets), builds rex, the demo unit tests (recorded for the ratio), `node --test tools/qualification-gates.test.mjs`, the workflow lint and its tests, and `node tools/test-ratio.mjs --check`.                       |
+| `lint`          | The demo's `eslint`, the root or per-package eslint config, the prettier check of `packages/rex/src` and `examples/demo` with the rex preset.                                                                                                                                                   |
+| `coverage`      | `vitest run --coverage` with the thresholds of `packages/rex/vitest.config.ts`; the report is uploaded.                                                                                                                                                                                         |
+| `demo`          | Builds rex, runs `rex check --runtime` on the demo and the site and the demo unit tests, installs Chromium, Firefox and WebKit, then `pnpm -C examples/demo test`: `rex check` and the operability, no-JS, axe, vitals, Lighthouse and screenshot walks, and `node tools/navigation-races.mjs`. |
+| `docs`          | `pnpm docs:check` (links and API pages) and `node tools/freshness.mjs --check --skip pointers`.                                                                                                                                                                                                 |
+| `supply-chain`  | `pnpm audit --prod` and `node tools/license-review.mjs`.                                                                                                                                                                                                                                        |
+| `package`       | Builds rex, `pnpm pack`, `publint@0.3.25` and `@arethetypeswrong/cli@0.18.5` on the tarball, `tools/smoke-package.sh` on it, `node tools/smoke-cli-bootstrap.mjs`, and uploads the tarball that passed as the `package` artifact.                                                               |
+| `smoke-bun`     | Installs Bun 1.4.4 and serves an app from the built package through `startBunServer`; `/rex/health` must answer `{"status":"ok"}` and `/rex/manifest` 200.                                                                                                                                      |
+| `smoke-deno`    | The same through `startDenoServer` on Deno 2.9.8.                                                                                                                                                                                                                                               |
+| `smoke-workerd` | Serves a worker built on `createEdgeHandler` in `wrangler@4.158.0 dev`, which runs it on workerd, and expects the same two answers.                                                                                                                                                             |
+
+The demo's and the site's Playwright configurations run the operability, no-JS and axe walks (the demo) and the site gates (the site) in the `firefox` and `webkit` projects as well as in Chromium; the vitals, Lighthouse and screenshot walks stay Chromium-only. `.github/workflows/codeql.yml` runs CodeQL's `security-extended` queries over the JavaScript and TypeScript on every push to `main`, every pull request and weekly.
+
+### Pinning and the workflow lint
+
+Every third-party action is pinned by its full commit SHA, with the release tag in a trailing comment (`actions/checkout@<sha> # v5.1.0`); Dependabot moves the SHA and the comment together. Every tool a job installs names an exact version: Node, Bun and Deno through their setup actions, and `publint`, `@arethetypeswrong/cli` and `wrangler` in their `pnpm dlx` calls. No job installs anything globally, and the job that holds `id-token: write` downloads no tool at all.
+
+`node tools/workflow-lint.mjs .github/workflows` enforces this, and the `verify` job runs it with its tests (`node --test tools/workflow-lint.test.mjs`). It fails, naming the file and the job, on:
+
+- `unpinned-action`: a `uses:` that is not a local path, a full 40-character commit SHA or a `docker://` image with a `sha256` digest;
+- `floating-version`: a `version` or `*-version` input that is not an exact `x.y.z` (after resolving `matrix.*`), `node-version-file`, `check-latest: true`, a setup action without its version input, a `-latest` runner, and a `npx`, `pnpm dlx`, `yarn dlx`, `bunx` or global install of a package without an exact version;
+- `id-token-install`: a global install or a downloaded tool in a job that holds `id-token: write`;
+- `missing-matrix-entry`: a Node line (22.19, 24, 26) and operating system (Linux, macOS, Windows) pair that no job runs with `runs-on` and `node-version` taken from `matrix.os` and `matrix.node`, a missing Bun, Deno or workerd smoke job, or a missing Chromium, Firefox or WebKit browser install;
+- `missing-codeql`: no CodeQL analysis;
+- `tag-not-on-main`: a tag-triggered workflow without a `git merge-base --is-ancestor` check against `main`, or a job holding `id-token: write` that does not need that check.
 
 ### The package smoke test
 
@@ -82,7 +109,7 @@ In the repository settings, Environments, create an environment named `npm`. The
 
 ### Trusted publishing on npm
 
-npm trusted publishing lets a GitHub Actions job publish by presenting its OpenID Connect token instead of an npm token: no secret is stored in the repository, and the registry records which repository, workflow and commit produced the version. It needs npm CLI 11.5.1 or later and Node 22.14.0 or later (the `publish` job installs `npm@latest` on the Node that `package.json` pins), GitHub-hosted runners, and, for the provenance attestation, a public repository and a public package.
+npm trusted publishing lets a GitHub Actions job publish by presenting its OpenID Connect token instead of an npm token: no secret is stored in the repository, and the registry records which repository, workflow and commit produced the version. It needs npm CLI 11.5.1 or later (the `publish` job pins Node 24.22.2, whose bundled npm is 11.19.1, and fails rather than upgrades npm when the bundled one is older), GitHub-hosted runners, and, for the provenance attestation, a public repository and a public package.
 
 The configuration lives on the package's settings page on npmjs.com: Packages, `@sidioralabs/rex`, Settings, Trusted publishing. Add a GitHub Actions publisher with these values:
 
@@ -108,14 +135,16 @@ Every later version goes through the workflow unchanged.
 
 ## 7. Verify a published version
 
-The published version must carry a provenance attestation that names this repository, the tag's commit and `.github/workflows/release.yml`:
+The `verify-published` job runs `node tools/verify-published.mjs --version <version>` after every publish. In a fresh directory it installs `@sidioralabs/rex@<version>` from the registry, retrying while the registry propagates the version (`--attempts`, default 10, `--delay`, default 30 seconds), then installs every peer the published manifest declares at its declared range. It fails unless the installed version is the one asked for, the published `exports` map has exactly the entries of `packages/rex/package.json`, every entry imports in Node (`./package.json` as JSON), and `rex --version` prints the version. Run it locally the same way; `--registry <url>` points it at another registry and `--keep` keeps the directory.
+
+The published version must also carry a provenance attestation that names this repository, the tag's commit and `.github/workflows/release.yml`:
 
 - The package page on npmjs.com shows a Provenance section ("Built and signed on GitHub Actions") linking the source commit and the workflow run; both must point at `Sidiora-Labs/rex-js`.
 - `npm view @sidioralabs/rex@0.2.0 dist.attestations` prints the attestations URL on the registry and the provenance predicate type; a version published without provenance has no `attestations` field.
 - In an app that installed the version, `npm audit signatures` reports the package among those with verified attestations.
 - The tarball on the registry is the one attached to the GitHub release: `npm view @sidioralabs/rex@0.2.0 dist.integrity` matches the `sha512` of the release asset (`openssl dgst -sha512 -binary sidioralabs-rex-0.2.0.tgz | openssl base64 -A`).
 
-Then install it the way a user does: `tools/smoke-package.sh` on the release asset, or `pnpm add @sidioralabs/rex@0.2.0` in a fresh `rex new` app followed by `rex check`, `rex build` and `node dist/server.js`.
+Then install it the way a user starts an app: `tools/smoke-package.sh` on the release asset, or `pnpm add @sidioralabs/rex@0.2.0` in a fresh `rex new` app followed by `rex check`, `rex build` and `node dist/server.js`.
 
 ## 8. Roll back
 
@@ -130,7 +159,9 @@ A version on npm is immutable, so a bad release is superseded, hidden or, within
 ### When the workflow fails
 
 - **In `prepare`** (tag and version differ, or no changelog section): nothing ran. Land the fix on `main`, delete the tag locally and on the remote (`git tag -d v0.2.0 && git push --delete origin v0.2.0`), and tag the new commit.
-- **In a gate, `package` or `publish`**: nothing was published (`npm publish` is atomic). Fix on `main`, move the tag as above, and push it again; every job runs again.
+- **In `prepare` because the tag is not on `main`**: nothing ran. Delete the tag, land the commit on `main` through a pull request, and tag the `main` commit.
+- **In `checks` or `publish`**: nothing was published (`npm publish` is atomic). Fix on `main`, move the tag as above, and push it again; every job runs again.
+- **In `verify-published`** (the version is on npm but does not install or import): no GitHub release is created. Re-run the job once in case the registry was slow; if it fails again, roll the version back as above and release the fix.
 - **In `release`** (the version is on npm, the GitHub release is missing): re-run the failed jobs of the same run from the Actions page; the `package` and `release-notes` artifacts are still attached to it. If the run is gone, create the release by hand as in the first-version steps above.
 
 ## Deploying the site
@@ -139,13 +170,13 @@ The site is the Rex app under [site/](../site/README.md), built with `rex build 
 
 ### The workflow
 
-The workflow runs on every push and pull request that touches `site/`, `docs/`, `packages/rex/`, `CHANGELOG.md`, `tools/serve-static.mjs`, `tools/site-verify.mjs`, `pnpm-lock.yaml` or the workflow itself. Its default permissions are `contents: read`; every action is pinned by major version, every job has a timeout and every pnpm job uses the pnpm cache of `actions/setup-node`. A pull request run is cancelled by a newer push to the same pull request; a run on `main` is never cancelled.
+The workflow runs on every push and pull request that touches `site/`, `docs/`, `packages/rex/`, `CHANGELOG.md`, `tools/serve-static.mjs`, `tools/site-verify.mjs`, `pnpm-lock.yaml` or the workflow itself. Its default permissions are `contents: read`; every action is pinned by commit SHA, every job runs on Node 24.22.2 on `ubuntu-24.04` with a timeout, and every pnpm job uses the pnpm cache of `actions/setup-node`. A pull request run is cancelled by a newer push to the same pull request; a run on `main` is never cancelled.
 
-| Job      | Runs                                                                                                                                                                                                                                                                                                                                                                           | Needs    |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| `verify` | Builds rex, runs the `tools/serve-static.mjs` tests, `pnpm -C site check`, `pnpm -C site test:unit` and `pnpm -C site build`.                                                                                                                                                                                                                                                  |          |
-| `e2e`    | Builds rex, runs `pnpm -C site build:static`, checks the built directory with `node tools/site-verify.mjs site/dist/client`, installs Chromium and runs `pnpm -C site test:e2e` against `site/dist/client` served by `tools/serve-static.mjs`; uploads the reports as the `site-e2e-report` artifact. On a push to `main` it uploads `site/dist/client` as the Pages artifact. | `verify` |
-| `deploy` | On a push to `main` only, in the `github-pages` environment with `pages: write` and `id-token: write`: `actions/configure-pages` and `actions/deploy-pages`. Deployments run one at a time in the `pages` concurrency group and are never cancelled.                                                                                                                           | `e2e`    |
+| Job      | Runs                                                                                                                                                                                                                                                                                                                | Needs    |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `verify` | Builds rex, runs the `tools/serve-static.mjs` tests, `pnpm -C site check`, `pnpm -C site test:unit` and `pnpm -C site build`.                                                                                                                                                                                       |          |
+| `e2e`    | Builds rex, runs `pnpm -C site build:static`, installs Chromium, Firefox and WebKit and runs `pnpm -C site test:e2e` against `site/dist/client` served by `tools/serve-static.mjs`; uploads the reports as the `site-e2e-report` artifact. On a push to `main` it uploads `site/dist/client` as the Pages artifact. | `verify` |
+| `deploy` | On a push to `main` only, in the `github-pages` environment with `pages: write` and `id-token: write`: `actions/configure-pages` and `actions/deploy-pages`. Deployments run one at a time in the `pages` concurrency group and are never cancelled.                                                                | `e2e`    |
 
 The directory that is deployed is the one the gates passed; nothing is rebuilt after them.
 

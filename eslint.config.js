@@ -1,11 +1,14 @@
 import { createRequire } from "node:module";
 import tseslint from "typescript-eslint";
 
-const APP_TREE = "examples/demo/app";
+const APP_TREES = ["examples/demo/app", "site/app"];
 const TYPESCRIPT_TREES = [
   "packages/rex/src/**/*.{ts,tsx}",
   "examples/demo/*.ts",
   "examples/demo/e2e/**/*.ts",
+  "site/*.ts",
+  "site/e2e/**/*.ts",
+  "site/scripts/**/*.{mjs,js}",
   "tools/**/*.{mjs,js}",
 ];
 
@@ -28,7 +31,10 @@ const rex = await jiti.import("./packages/rex/src/eslint/index.ts");
 
 function app(entry) {
   if (entry.files === undefined) return entry;
-  return { ...entry, files: entry.files.map((pattern) => `${APP_TREE}/${pattern}`) };
+  return {
+    ...entry,
+    files: APP_TREES.flatMap((tree) => entry.files.map((pattern) => `${tree}/${pattern}`)),
+  };
 }
 
 function typescript(entry) {

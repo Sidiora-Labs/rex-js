@@ -5,14 +5,7 @@
     "types": ["node"],
     "rootDir": "src",
     "outDir": "dist",
-    "declaration": true,
-    "paths": {
-      "@sidioralabs/rex/schema": ["./src/schema/index.ts"],
-      "@sidioralabs/rex/manifest": ["./src/manifest/index.ts"],
-      "@sidioralabs/rex/client/interop": ["./src/client/interop/index.ts"],
-      "@sidioralabs/rex/client/media": ["./src/client/media/index.ts"],
-      "@sidioralabs/rex/client/i18n": ["./src/client/i18n/index.ts"]
-    }
+    "declaration": true
   },
   "include": ["src"],
   "exclude": ["src/**/fixtures/**/app"]

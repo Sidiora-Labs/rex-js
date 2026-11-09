@@ -14,13 +14,23 @@ concurrency:
 
 jobs:
   prepare:
-    name: Tag, version and changelog section
-    runs-on: ubuntu-latest
+    name: Tag, ancestry, version and changelog section
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+      - name: Tag commit is an ancestor of main
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          tagged="$(git rev-parse "${GITHUB_REF}^{commit}")"
+          if ! git merge-base --is-ancestor "$tagged" origin/main; then
+            echo "tag ${GITHUB_REF_NAME} points at ${tagged}, which is not an ancestor of main" >&2
+            exit 1
+          fi
       - name: Tag matches the package version
         id: version
         run: |
@@ -49,194 +59,22 @@ jobs:
           fi
           cat "$RUNNER_TEMP/notes/release.md"
       - name: Upload the release notes
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: release-notes
           path: ${{ runner.temp }}/notes/release.md
           if-no-files-found: error
 
-  verify:
-    name: Typecheck and test
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+  checks:
+    name: Checks
     needs: prepare
-    steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: package.json
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Typecheck
-        run: pnpm -r typecheck
-      - name: Test
-        run: pnpm -C packages/rex test
-      - name: Qualification gate wiring
-        run: node --test tools/qualification-gates.test.mjs
-      - name: Test-to-code ratio
-        run: node tools/test-ratio.mjs --check
-
-  lint:
-    name: Lint and format check
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: package.json
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Lint the demo
-        run: pnpm -C examples/demo lint
-      - name: Lint with the root config, or every other package config until one exists
-        run: |
-          if [ -f eslint.config.js ]; then
-            pnpm exec eslint .
-          else
-            for config in packages/*/eslint.config.js examples/*/eslint.config.js; do
-              [ -f "$config" ] || continue
-              dir="$(dirname "$config")"
-              [ "$dir" = examples/demo ] && continue
-              pnpm -C "$dir" exec eslint .
-            done
-          fi
-      - name: Format check of packages/rex/src with the rex preset
-        run: pnpm -C packages/rex exec prettier --config src/prettier.ts --check src
-      - name: Format check of examples/demo with the rex preset
-        run: pnpm -C examples/demo exec prettier --config ../../packages/rex/src/prettier.ts --check .
-
-  coverage:
-    name: Coverage thresholds
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: package.json
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Test with coverage
-        run: pnpm -C packages/rex exec vitest run --coverage
-      - name: Upload the coverage report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: coverage
-          path: packages/rex/coverage
-
-  demo:
-    name: Check, walk and vitals
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: package.json
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Build rex
-        run: pnpm -C packages/rex build
-      - name: Unit
-        run: pnpm -C examples/demo test:unit
-      - name: Install browsers
-        run: pnpm -C examples/demo exec playwright install --with-deps chromium
-      - name: Check and walk (operability, no-JS, axe, vitals, lighthouse, screenshots)
-        run: pnpm -C examples/demo test
-
-  docs:
-    name: Docs and freshness
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: package.json
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Links and API pages
-        run: pnpm docs:check
-      - name: Freshness (generated pointer files are checked where cg is installed)
-        run: node tools/freshness.mjs --check --skip pointers
-
-  supply-chain:
-    name: Audit and license review
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: package.json
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Audit
-        run: pnpm audit --prod
-      - name: License review
-        run: node tools/license-review.mjs
-
-  package:
-    name: Pack and smoke test
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: package.json
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Build rex
-        run: pnpm -C packages/rex build
-      - name: Pack
-        run: pnpm -C packages/rex pack --pack-destination "$RUNNER_TEMP/package"
-      - name: publint on the tarball
-        run: pnpm dlx publint "$RUNNER_TEMP"/package/*.tgz
-      - name: Are the types wrong on the tarball
-        run: pnpm dlx @arethetypeswrong/cli --profile esm-only "$RUNNER_TEMP"/package/*.tgz
-      - name: Smoke test the tarball in a fresh app
-        run: |
-          set -- "$RUNNER_TEMP"/package/*.tgz
-          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
-            echo "expected exactly one tarball in $RUNNER_TEMP/package" >&2
-            exit 1
-          fi
-          sh tools/smoke-package.sh "$1"
-      - name: Upload the tarball that passed
-        uses: actions/upload-artifact@v5
-        with:
-          name: package
-          path: ${{ runner.temp }}/package/*.tgz
-          if-no-files-found: error
+    uses: ./.github/workflows/checks.yml
 
   publish:
     name: Publish @sidioralabs/rex to npm with provenance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [prepare, verify, lint, coverage, demo, docs, supply-chain, package]
+    needs: [prepare, checks]
     environment:
       name: npm
       url: https://www.npmjs.com/package/@sidioralabs/rex/v/${{ needs.prepare.outputs.version }}
@@ -244,14 +82,23 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version-file: package.json
-      - name: Use an npm with trusted publishing (11.5.1 or later)
-        run: npm install -g npm@latest && npm --version
+          node-version: 24.22.2
+      - name: The bundled npm supports trusted publishing (11.5.1 or later)
+        run: |
+          npm --version
+          node -e '
+            const [major, minor, patch] = process.argv[1].split(".").map(Number);
+            const supported = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
+            if (!supported) {
+              console.error(`npm ${process.argv[1]} cannot publish through OIDC; pin a Node whose npm is 11.5.1 or later`);
+              process.exit(1);
+            }
+          ' "$(npm --version)"
       - name: Download the tarball the smoke test passed
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: package
           path: ${{ runner.temp }}/package
@@ -270,21 +117,36 @@ jobs:
           esac
           npm publish "$1" --provenance --access public --tag "$dist_tag"
 
+  verify-published:
+    name: Install the published version from the registry and import every entry
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: [prepare, publish]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+      - name: Verify the published version
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: node tools/verify-published.mjs --version "$VERSION"
+
   release:
     name: GitHub release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
-    needs: [prepare, publish]
+    needs: [prepare, publish, verify-published]
     permissions:
       contents: write
     steps:
       - name: Download the release notes
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: release-notes
           path: ${{ runner.temp }}/notes
       - name: Download the published tarball
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: package
           path: ${{ runner.temp }}/package

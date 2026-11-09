@@ -1,0 +1,365 @@
+name: Checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  platform:
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22.19.0", "24.22.2", "26.13.0"]
+        os: [ubuntu-24.04, macos-15, windows-2025]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - name: Typecheck
+        run: pnpm -r typecheck
+      - name: Test
+        run: pnpm -C packages/rex test
+
+  verify:
+    name: Typecheck and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm -r typecheck
+      - name: Test
+        run: pnpm -C packages/rex test
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - name: Demo unit tests, recorded for the ratio
+        run: pnpm -C examples/demo test:unit
+      - name: Qualification gate wiring
+        run: node --test tools/qualification-gates.test.mjs
+      - name: Workflow lint tests
+        run: node --test tools/workflow-lint.test.mjs
+      - name: Workflow lint
+        run: node tools/workflow-lint.mjs .github/workflows
+      - name: Test-to-code ratio
+        run: node tools/test-ratio.mjs --check
+
+  lint:
+    name: Lint and format check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint the demo
+        run: pnpm -C examples/demo lint
+      - name: Lint with the root config, or every other package config until one exists
+        run: |
+          if [ -f eslint.config.js ]; then
+            pnpm exec eslint .
+          else
+            for config in packages/*/eslint.config.js examples/*/eslint.config.js; do
+              [ -f "$config" ] || continue
+              dir="$(dirname "$config")"
+              [ "$dir" = examples/demo ] && continue
+              pnpm -C "$dir" exec eslint .
+            done
+          fi
+      - name: Format check of packages/rex/src with the rex preset
+        run: pnpm -C packages/rex exec prettier --config src/prettier.ts --check src
+      - name: Format check of examples/demo with the rex preset
+        run: pnpm -C examples/demo exec prettier --config ../../packages/rex/src/prettier.ts --check .
+
+  coverage:
+    name: Coverage thresholds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Test with coverage
+        run: pnpm -C packages/rex exec vitest run --coverage
+      - name: Upload the coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: coverage
+          path: packages/rex/coverage
+
+  demo:
+    name: Check, walk and vitals in Chromium, Firefox and WebKit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - name: Runtime check of the demo
+        run: pnpm -C examples/demo exec rex check --runtime
+      - name: Runtime check of the site
+        run: pnpm -C site exec rex check --runtime
+      - name: Unit
+        run: pnpm -C examples/demo test:unit
+      - name: Install browsers
+        run: pnpm -C examples/demo exec playwright install --with-deps chromium firefox webkit
+      - name: Check and walk (operability, no-JS, axe, vitals, lighthouse, screenshots)
+        run: pnpm -C examples/demo test
+      - name: Navigation races
+        run: node tools/navigation-races.mjs
+
+  docs:
+    name: Docs and freshness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Links and API pages
+        run: pnpm docs:check
+      - name: Freshness (generated pointer files are checked where cg is installed)
+        run: node tools/freshness.mjs --check --skip pointers
+
+  supply-chain:
+    name: Audit and license review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Audit
+        run: pnpm audit --prod
+      - name: License review
+        run: node tools/license-review.mjs
+
+  package:
+    name: Pack and smoke test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - name: Pack
+        run: pnpm -C packages/rex pack --pack-destination "$RUNNER_TEMP/package"
+      - name: publint on the tarball
+        run: pnpm dlx publint@0.3.25 "$RUNNER_TEMP"/package/*.tgz
+      - name: Are the types wrong on the tarball
+        run: pnpm dlx @arethetypeswrong/cli@0.18.5 --profile esm-only "$RUNNER_TEMP"/package/*.tgz
+      - name: Smoke test the tarball in a fresh app
+        run: |
+          set -- "$RUNNER_TEMP"/package/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "expected exactly one tarball in $RUNNER_TEMP/package" >&2
+            exit 1
+          fi
+          sh tools/smoke-package.sh "$1"
+      - name: Bootstrap the packed CLI
+        run: node tools/smoke-cli-bootstrap.mjs
+      - name: Upload the tarball that passed
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: package
+          path: ${{ runner.temp }}/package/*.tgz
+          if-no-files-found: error
+
+  smoke-bun:
+    name: Serve a Rex app on Bun
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - name: Serve health and manifest through startBunServer
+        working-directory: packages/rex
+        run: |
+          cat > runtime-smoke.mjs <<'EOF'
+          import { actor } from "./dist/index.js";
+          import { createRexServer, memoryLedger } from "./dist/server/index.js";
+          import { startBunServer } from "./dist/server/adapters/bun.js";
+
+          const app = createRexServer({
+            registry: { entities: [], actions: [], pages: [], policies: [] },
+            ledger: memoryLedger(),
+            actor: () => actor({ id: "smoke" }),
+            app: "runtime-smoke",
+          });
+          const server = await startBunServer(app, { port: 0, hostname: "127.0.0.1" });
+          try {
+            const health = await fetch(`${server.url}/rex/health`);
+            const body = await health.json();
+            if (health.status !== 200 || body.status !== "ok") {
+              throw new Error(`/rex/health answered ${health.status} ${JSON.stringify(body)}`);
+            }
+            const manifest = await fetch(`${server.url}/rex/manifest`);
+            if (manifest.status !== 200) throw new Error(`/rex/manifest answered ${manifest.status}`);
+            console.log(`Bun ${Bun.version} served ${server.url}/rex/health and /rex/manifest`);
+          } finally {
+            await server.close();
+          }
+          EOF
+          bun runtime-smoke.mjs
+
+  smoke-deno:
+    name: Serve a Rex app on Deno
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.8
+      - name: Serve health and manifest through startDenoServer
+        working-directory: packages/rex
+        run: |
+          cat > runtime-smoke.mjs <<'EOF'
+          import { actor } from "./dist/index.js";
+          import { createRexServer, memoryLedger } from "./dist/server/index.js";
+          import { startDenoServer } from "./dist/server/adapters/deno.js";
+
+          const app = createRexServer({
+            registry: { entities: [], actions: [], pages: [], policies: [] },
+            ledger: memoryLedger(),
+            actor: () => actor({ id: "smoke" }),
+            app: "runtime-smoke",
+          });
+          const server = await startDenoServer(app, { port: 0, hostname: "127.0.0.1" });
+          try {
+            const health = await fetch(`${server.url}/rex/health`);
+            const body = await health.json();
+            if (health.status !== 200 || body.status !== "ok") {
+              throw new Error(`/rex/health answered ${health.status} ${JSON.stringify(body)}`);
+            }
+            const manifest = await fetch(`${server.url}/rex/manifest`);
+            await manifest.body?.cancel();
+            if (manifest.status !== 200) throw new Error(`/rex/manifest answered ${manifest.status}`);
+            console.log(`Deno ${Deno.version.deno} served ${server.url}/rex/health and /rex/manifest`);
+          } finally {
+            await server.close();
+          }
+          EOF
+          deno run --allow-net --allow-read --allow-env runtime-smoke.mjs
+
+  smoke-workerd:
+    name: Serve a Rex worker on workerd
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.22.2
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build rex
+        run: pnpm -C packages/rex build
+      - name: Serve health and manifest from createEdgeHandler in wrangler dev
+        working-directory: packages/rex
+        env:
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          cat > runtime-smoke-worker.mjs <<'EOF'
+          import { actor } from "./dist/index.js";
+          import { createRexServer, memoryLedger } from "./dist/server/index.js";
+          import { createEdgeHandler } from "./dist/server/adapters/edge.js";
+
+          export default createEdgeHandler(
+            createRexServer({
+              registry: { entities: [], actions: [], pages: [], policies: [] },
+              ledger: memoryLedger(),
+              actor: () => actor({ id: "smoke" }),
+              app: "runtime-smoke",
+            }),
+          );
+          EOF
+          pnpm dlx wrangler@4.158.0 dev runtime-smoke-worker.mjs --ip 127.0.0.1 --port 8787 \
+            --compatibility-date 2026-10-01 > "$RUNNER_TEMP/wrangler.log" 2>&1 &
+          wrangler_pid=$!
+          trap 'kill "$wrangler_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8787/rex/health -o "$RUNNER_TEMP/health.json"; then
+              break
+            fi
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/wrangler.log"
+          grep -q '"status":"ok"' "$RUNNER_TEMP/health.json"
+          curl -fsS http://127.0.0.1:8787/rex/manifest -o /dev/null
+          echo "workerd served /rex/health and /rex/manifest"

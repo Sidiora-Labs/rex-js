@@ -14,6 +14,9 @@ const SCREEN_SPECS = [
   "**/vitals.spec.ts",
   "**/screen-fit.spec.ts",
 ];
+const ENGINE_SPECS = ["**/operability.spec.ts", "**/nojs.spec.ts", "**/axe.spec.ts"];
+const FIREFOX = { ...devices["Desktop Firefox"], viewport: DESKTOP.viewport };
+const WEBKIT = { ...devices["Desktop Safari"], viewport: DESKTOP.viewport };
 
 export default defineConfig({
   testDir: "./e2e",
@@ -35,5 +38,7 @@ export default defineConfig({
     { name: "phone", use: PHONE, testMatch: SCREEN_SPECS },
     { name: "tablet", use: TABLET, testMatch: SCREEN_SPECS },
     { name: "desktop", use: DESKTOP },
+    { name: "firefox", use: FIREFOX, testMatch: ENGINE_SPECS },
+    { name: "webkit", use: WEBKIT, testMatch: ENGINE_SPECS },
   ],
 });

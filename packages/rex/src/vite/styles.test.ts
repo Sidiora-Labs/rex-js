@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build, type Plugin } from "vite";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { isRexError } from "../core/errors.ts";
 import { REX_HOOKS } from "./hooks.ts";
 import { createHookContext, rex } from "./plugin.ts";
@@ -15,9 +15,16 @@ import {
   TAILWIND_PLUGIN,
   tailwindEnabled,
 } from "./styles.ts";
+import { copyFixture } from "../testing/internal/fixture.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixtureRoot = join(here, "..", "check", "fixtures", "styling", "pass");
+const fixtureCopy = copyFixture("check/fixtures/styling/pass");
+const fixtureRoot = fixtureCopy.dir;
+
+afterAll(() => {
+  fixtureCopy.remove();
+});
+
 const coreEntry = join(here, "..", "index.ts");
 const BUILD_TIMEOUT_MS = 120_000;
 const TAILWIND_PLUGINS = [

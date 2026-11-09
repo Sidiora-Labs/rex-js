@@ -75,8 +75,12 @@ describe("rex/config entry", () => {
   it("is the module behind @sidioralabs/rex/config", () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const packageJson = JSON.parse(readFileSync(join(here, "../package.json"), "utf8")) as {
-      readonly exports: Readonly<Record<string, string>>;
+      readonly exports: Readonly<Record<string, unknown>>;
     };
-    expect(packageJson.exports["./config"]).toBe("./src/config.ts");
+    expect(packageJson.exports["./config"]).toEqual({
+      "rex-source": "./src/config.ts",
+      types: "./dist/config.d.ts",
+      default: "./dist/config.js",
+    });
   });
 });

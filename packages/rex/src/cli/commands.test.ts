@@ -11,9 +11,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import ts from "typescript";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Finding } from "../check/index.ts";
 import { resetDeprecations } from "../core/deprecated.ts";
@@ -260,7 +259,10 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
     const built = await cli(root, "build");
     expect(built.err).toBe("");
     expect(built.code).toBe(EXIT_OK);
-    expect(built.out).toContain(`wrote ${DIST_DIR}/client/ and ${DIST_DIR}/${SERVER_FILE}`);
+    expect(built.out).toMatch(/Build complete in \d+\.\d{2}s \(node\)/);
+    expect(built.out).toMatch(/^\s+Output\s+dist\/client\/ and dist\/server\.js$/m);
+    expect(built.out).toContain(`Next: start it with node ${DIST_DIR}/${SERVER_FILE}`);
+    expect(built.out).not.toContain("Build failed");
 
     const serverFile = join(root, DIST_DIR, SERVER_FILE);
     const indexFile = join(root, DIST_DIR, "client", "index.html");
@@ -401,7 +403,9 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
       rmSync(join(root, DIST_DIR), { recursive: true, force: true });
       const build = await cli(root, "build");
       expect(build.code).toBe(EXIT_FAILURE);
-      expect(build.out).toBe("");
+      expect(build.out).toContain("Build failed during checking application");
+      expect(build.out).not.toContain("[ok]");
+      expect(build.out).not.toContain("Build complete");
       expect(build.err).toContain("parity/region-undeclared");
       expect(build.err).toContain("rex build: rex check reported");
       expect(existsSync(join(root, DIST_DIR))).toBe(false);
@@ -479,8 +483,10 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
   it("rex build prints the chunk table and fails a page chunk over the rex.config page budget", async () => {
     const built = await cli(root, "build", "--no-check");
     expect(built.code).toBe(EXIT_OK);
-    expect(built.out.split("\n")[0]).toMatch(/^chunk\s+raw\s+gzip\s+budget$/);
-    expect(built.out).toMatch(/^page-home\s+[\d.]+ KB\s+[\d.]+ KB\s+50 KB$/m);
+    expect(built.out).toMatch(/^\s+Client bundles$/m);
+    expect(built.out).toMatch(/^\s+Chunk\s+Raw\s+Gzip\s+Total gzip\s+Budget$/m);
+    expect(built.out).toMatch(/^\s+page-home\s+[\d.]+ KB\s+[\d.]+ KB\s+(?:[\d.]+ KB|-)\s+50 KB$/m);
+    expect(built.out).toContain("Build complete");
 
     const configFile = join(root, "rex.config.ts");
     const generated = readFileSync(configFile, "utf8");
@@ -488,7 +494,11 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
       writeFileSync(configFile, generated.replace("  app,", "  app,\n  budgets: { page: 0.01 },"));
       const over = await cli(root, "build", "--no-check");
       expect(over.code).toBe(EXIT_FAILURE);
-      expect(over.out).toMatch(/^page-home\s+[\d.]+ KB\s+[\d.]+ KB\s+0\.01 KB OVER$/m);
+      expect(over.out).toMatch(
+        /^\s+page-home\s+[\d.]+ KB\s+[\d.]+ KB\s+(?:[\d.]+ KB|-)\s+0\.01 KB OVER$/m,
+      );
+      expect(over.out).toContain("Build failed during building client bundles");
+      expect(over.out).not.toContain("Build complete");
       expect(over.err).toContain("rex build: page-home (");
       expect(over.err).toContain("budget 0.01 KB) over budget");
     } finally {
@@ -718,35 +728,9 @@ describe("rex check, manifest, build and dev", { timeout: COMMANDS_TEST_TIMEOUT_
   });
 });
 
-const CLI_EMIT_TIMEOUT_MS = 180_000;
 const DIST_BUILD_TIMEOUT_MS = 180_000;
 const PRERENDER_APP_NAME = "prerender-app";
-
-function emitDistCli(): string {
-  const cache = join(packageRoot, "node_modules", ".cache");
-  mkdirSync(cache, { recursive: true });
-  const outDir = mkdtempSync(join(cache, "rex-dist-cli-"));
-  temporary.push(outDir);
-  const config = ts.getParsedCommandLineOfConfigFile(
-    join(packageRoot, "tsconfig.build.json"),
-    {},
-    {
-      ...ts.sys,
-      onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
-        throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
-      },
-    },
-  );
-  if (config === undefined) throw new Error("tsconfig.build.json could not be read");
-  const program = ts.createProgram({
-    rootNames: config.fileNames,
-    options: { ...config.options, outDir, declaration: false },
-  });
-  expect(program.emit().emitSkipped).toBe(false);
-  const entry = join(outDir, basename(here), "index.js");
-  expect(existsSync(entry)).toBe(true);
-  return entry;
-}
+const distCli = join(packageRoot, "dist", "cli", "index.js");
 
 function declareRender(root: string, pageId: string, render: "ssg" | "static"): void {
   const file = join(root, "app", "pages", pageId, "page.ts");
@@ -761,10 +745,8 @@ describe(
   { timeout: DIST_BUILD_TIMEOUT_MS },
   () => {
     let root: string;
-    let distCli: string;
 
     beforeAll(async () => {
-      distCli = emitDistCli();
       const cwd = mkdtempSync(join(tmpdir(), "rex-prerender-app-"));
       temporary.push(cwd);
       expect(await run(["new", PRERENDER_APP_NAME, "--ui", "none"], captureIO(cwd).io)).toBe(
@@ -780,17 +762,16 @@ describe(
       declareRender(root, "about", "static");
       declareRender(root, "guide", "ssg");
       expect((await cli(root, "manifest")).code).toBe(EXIT_OK);
-    }, CLI_EMIT_TIMEOUT_MS + COMMANDS_TEST_TIMEOUT_MS);
+    }, COMMANDS_TEST_TIMEOUT_MS);
 
     it("prerenders both pages in the app's page runtime and the generated server serves them", async () => {
       const built = await runNode([distCli, "build"], root, DIST_BUILD_TIMEOUT_MS);
       expect(built.stderr).not.toMatch(/REX306|REX405/);
       expect(built.code, `${built.stdout}${built.stderr}`).toBe(EXIT_OK);
-      expect(built.stdout).toContain(
-        `rex build: prerendered /about -> ${DIST_DIR}/${CLIENT_DIR}/about/index.html (about, static)`,
-      );
-      expect(built.stdout).toContain(
-        `rex build: prerendered /guide -> ${DIST_DIR}/${CLIENT_DIR}/guide/index.html (guide, ssg)`,
+      expect(built.stdout).toContain("[ok] Prerendering pages");
+      expect(built.stdout).toMatch(/Build complete in \d+\.\d{2}s \(node\)/);
+      expect(built.stdout).toMatch(
+        new RegExp(`^\\s+Prerendered\\s+2 pages \\(${DIST_DIR}/${PRERENDER_LIST_FILE}\\)$`, "m"),
       );
 
       const outDir = join(root, DIST_DIR);

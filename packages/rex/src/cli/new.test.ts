@@ -14,7 +14,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createElement, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { defaultRules, runCheck } from "../check/index.ts";
 import { boundariesRule } from "../check/rules/boundaries.ts";
 import { REX_VERSION } from "../index.ts";
@@ -23,15 +23,21 @@ import { SHELL_COMPONENT_NAMES } from "../client/shell/components.ts";
 import { DESIGNX_MAP } from "../designx/index.ts";
 import { DESIGNX_SHELL } from "./gen/designx.ts";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, run, type RexCliIO } from "./index.ts";
-import { APP_PEERS, appModuleTypesPath } from "./commands/new.ts";
+import { APP_PEERS, appModuleTypesPath, newApp } from "./commands/new.ts";
 import {
   DESIGNX_BASE,
   DESIGNX_CONFIG_FILE,
+  DESIGNX_LOCK,
   DESIGNX_STYLESHEET_HREF,
   DESIGNX_THEME_FILE,
   DESIGNX_UI_DIR,
   TAILWIND_PACKAGES,
 } from "./designx.ts";
+import {
+  serveDesignxRegistry,
+  unreachableDesignxRegistry,
+  type DesignxRegistryFixture,
+} from "./fixtures/designx-registry/server.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
@@ -61,10 +67,21 @@ const APP_FILES = [
 ];
 
 const temporary: string[] = [];
+const registries: DesignxRegistryFixture[] = [];
 
 afterAll(() => {
   for (const dir of temporary) rmSync(dir, { recursive: true, force: true });
 });
+
+afterEach(async () => {
+  await Promise.all(registries.splice(0).map((registry) => registry.close()));
+});
+
+async function serve(): Promise<DesignxRegistryFixture> {
+  const registry = await serveDesignxRegistry();
+  registries.push(registry);
+  return registry;
+}
 
 function tempDir(): string {
   const dir = mkdtempSync(join(tmpdir(), "rex-new-"));
@@ -232,9 +249,9 @@ describe("rex new", { timeout: NEW_TEST_TIMEOUT_MS }, () => {
 
   it("installs the DesignX standard set by default and generates the shell, states and first region on it", async () => {
     const cwd = tempDir();
-    const captured = captureIO(cwd);
-    expect(await run(["new", "dx-app", "--no-install"], captured.io)).toBe(EXIT_OK);
-    expect(captured.err()).toBe("");
+    const registry = await serve();
+    const written = await newApp(cwd, "dx-app", { install: false, registry: registry.registry });
+    expect([...registry.requested].sort()).toEqual(Object.keys(DESIGNX_LOCK.items).sort());
     const root = join(cwd, "dx-app");
     const files = listFiles(root);
     for (const name of DESIGNX_BASE) expect(files).toContain(`${DESIGNX_UI_DIR}/${name}.tsx`);
@@ -243,8 +260,8 @@ describe("rex new", { timeout: NEW_TEST_TIMEOUT_MS }, () => {
     expect(files).toContain(DESIGNX_SHELL);
     expect(files).toContain(`${DESIGNX_UI_DIR}/use-screen.ts`);
     expect(files).not.toContain(`${DESIGNX_UI_DIR}/use-mobile.ts`);
-    expect(captured.out()).toContain(`wrote dx-app/${DESIGNX_UI_DIR}/button.tsx\n`);
-    expect(captured.out()).toContain(`wrote dx-app/${DESIGNX_SHELL}\n`);
+    expect(written).toContain(`dx-app/${DESIGNX_UI_DIR}/button.tsx`);
+    expect(written).toContain(`dx-app/${DESIGNX_SHELL}`);
     expect(readFileSync(join(root, "rex.config.ts"), "utf8")).toContain(
       `ui: { kit: "designx", components: "${DESIGNX_SHELL}" },`,
     );
@@ -325,6 +342,35 @@ describe("rex new", { timeout: NEW_TEST_TIMEOUT_MS }, () => {
     );
     expect(failed).toContain("The notes service is down");
     expect(failed).toContain("Try again");
+  });
+
+  it("writes the same DesignX app from the vendored copies when the registry is unreachable", async () => {
+    const served = tempDir();
+    const registry = await serve();
+    const online = await newApp(served, "dx-app", { install: false, registry: registry.registry });
+    const offline = tempDir();
+    const written = await newApp(offline, "dx-app", {
+      install: false,
+      registry: await unreachableDesignxRegistry(),
+    });
+    expect(written).toEqual(online);
+    const files = listFiles(join(offline, "dx-app"));
+    expect(files).toEqual(listFiles(join(served, "dx-app")));
+    for (const file of files.filter((path) => path !== DESIGNX_CONFIG_FILE)) {
+      expect(readFileSync(join(offline, "dx-app", file), "utf8"), file).toBe(
+        readFileSync(join(served, "dx-app", file), "utf8"),
+      );
+    }
+    const items = (root: string) =>
+      readJson<{ items: readonly string[] }>(join(root, "dx-app", DESIGNX_CONFIG_FILE)).items;
+    expect(items(offline)).toEqual(items(served));
+    const manifest = readJson<GeneratedPackage>(join(offline, "dx-app", "package.json"));
+    for (const [name, version] of Object.entries({
+      ...manifest.dependencies,
+      ...manifest.devDependencies,
+    })) {
+      expect(version, name).toMatch(/^\^?\d+\.\d+(\.\d+)?$/);
+    }
   });
 });
 

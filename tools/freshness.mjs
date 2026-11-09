@@ -49,7 +49,8 @@ function shown(file) {
 
 export function exportEntries(manifest) {
   const entries = [];
-  for (const [key, target] of Object.entries(manifest.exports ?? {})) {
+  for (const [key, entry] of Object.entries(manifest.exports ?? {})) {
+    const target = typeof entry === "string" ? entry : entry?.["rex-source"];
     if (typeof target !== "string" || !/\.tsx?$/.test(target)) continue;
     entries.push({
       key,

@@ -1,5 +1,5 @@
 import { act, cleanup, waitFor } from "@testing-library/react";
-import { cpSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
@@ -50,10 +50,11 @@ import {
   screenFromRequest,
   type RexDocumentAssets,
 } from "./ssr.ts";
+import { copyFixture } from "../testing/internal/fixture.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixtureSource = join(here, "..", "vite", "fixtures", "app");
-const fixtureRoot = join(here, ".ssr-fixture");
+const fixture = copyFixture("vite/fixtures/app");
+const fixtureRoot = fixture.dir;
 const coreEntry = join(here, "..", "index.ts");
 const BUILD_TIMEOUT_MS = 120_000;
 
@@ -207,8 +208,6 @@ const FONTS = [
 ] as const;
 
 async function buildFixtureAssets(): Promise<RexDocumentAssets> {
-  rmSync(fixtureRoot, { recursive: true, force: true });
-  cpSync(fixtureSource, fixtureRoot, { recursive: true });
   writeFileSync(join(fixtureRoot, "app/pages/home/home.css"), ".notes-home { color: purple; }\n");
   const viewFile = join(fixtureRoot, "app/pages/home/view.tsx");
   writeFileSync(viewFile, `import "./home.css";\n${readFileSync(viewFile, "utf8")}`);
@@ -238,7 +237,7 @@ beforeAll(async () => {
 }, BUILD_TIMEOUT_MS);
 
 afterAll(() => {
-  rmSync(fixtureRoot, { recursive: true, force: true });
+  fixture.remove();
 });
 
 let started: StartedRex | null = null;
