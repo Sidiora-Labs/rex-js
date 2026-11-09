@@ -495,11 +495,6 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
   const stores = useExposedStores();
   const text = useText();
   const screen = useContext(ScreenContext);
-  const hydrated = useSyncExternalStore(subscribeHydration, browserHydrated, serverHydrated);
-  const browserReady =
-    (resolution.page.render ??
-      manifest.pages.find((entry) => entry.id === resolution.page.id)?.render) === "static" ||
-    hydrated;
   return useMemo(
     () =>
       buildSidecarPayload({
@@ -515,7 +510,6 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
         stores,
         text,
         screen,
-        browserReady,
       }),
     [
       manifest,
@@ -529,19 +523,8 @@ export function useSidecarPayload(resolution: PageResolution): SidecarPayload {
       stores,
       text,
       screen,
-      browserReady,
     ],
   );
-}
-
-function subscribeHydration(): () => void {
-  return () => {};
-}
-function browserHydrated(): boolean {
-  return true;
-}
-function serverHydrated(): boolean {
-  return false;
 }
 
 export function serializeSidecar(payload: SidecarPayload): string {

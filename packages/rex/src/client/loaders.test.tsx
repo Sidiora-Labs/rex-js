@@ -660,6 +660,22 @@ describe("page loaders", () => {
     expect(hydrationErrors(errors.mock.calls)).toEqual([]);
   });
 
+  it("publishes the server sidecar of a page with server-resolved loaders unchanged in the sidecar script and window.__rex after hydration", async () => {
+    resetData();
+    const html = await (await server.fetch(request("/notes"))).text();
+    const container = mountDocument(html, "/notes");
+    const serverSidecar = readSidecar(container);
+    expect(serverSidecar).toMatchObject({ page: "notes", state: "ready" });
+
+    const mismatches: HydrationMismatch[] = [];
+    await hydrateDocument(container, quietClient(), mismatches);
+    await settle();
+    expect(window.__rex).toEqual(serverSidecar);
+    expect(readSidecar(container)).toEqual(serverSidecar);
+    expect(JSON.stringify(window.__rex)).toBe(JSON.stringify(readSidecar(container)));
+    expect(mismatches).toEqual([]);
+  });
+
   it("maps a failing loader to the recoverable-error state on the server, in the sidecar and after hydration", async () => {
     resetData();
     const response = await server.fetch(request("/broken"));

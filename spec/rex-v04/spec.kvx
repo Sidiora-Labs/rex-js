@@ -302,7 +302,7 @@ time_limit_minutes = 45
 
 [task.0.5]
 title = "Make server render and hydration agree on the sidecar page state"
-status = "pending"
+status = "in_progress"
 wave = 0
 requires = []
 touches = ["packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/client/loaders.ts", "packages/rex/src/client/loaders.test.tsx", "packages/rex/src/client/hydrate.ts", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/page.tsx", "packages/rex/src/client/states.ts", "examples/demo/app/**/test/*.test.tsx", "site/app/**/test/*.test.tsx", "packages/rex/src/client/agent/sidecar.test.tsx"]
