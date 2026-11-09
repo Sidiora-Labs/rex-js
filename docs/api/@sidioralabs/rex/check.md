@@ -56,12 +56,12 @@ readonly region: string | null;
 
 ```ts
 readonly role: 
+  | "states"
   | "page"
   | "action"
   | "entity"
   | "policy"
   | "flow"
-  | "states"
   | "region"
   | "hook"
   | "overlay"
@@ -69,6 +69,7 @@ readonly role:
   | "data"
   | "part"
   | "component"
+  | "server"
   | "test";
 ```
 
@@ -596,12 +597,12 @@ byRole(role): readonly AppFile[];
 
 ###### role
 
+  \| `"states"`
   \| `"page"`
   \| `"action"`
   \| `"entity"`
   \| `"policy"`
   \| `"flow"`
-  \| `"states"`
   \| `"region"`
   \| `"hook"`
   \| `"overlay"`
@@ -609,6 +610,7 @@ byRole(role): readonly AppFile[];
   \| `"data"`
   \| `"part"`
   \| `"component"`
+  \| `"server"`
   \| `"test"`
 
 ###### Returns
@@ -1427,7 +1429,7 @@ const defaultRules: readonly Rule[];
 ### FILE\_ROLES
 
 ```ts
-const FILE_ROLES: readonly ["page", "view", "states", "region", "part", "hook", "overlay", "action", "entity", "policy", "flow", "component", "data", "test"];
+const FILE_ROLES: readonly ["page", "view", "states", "region", "part", "hook", "overlay", "action", "entity", "policy", "flow", "component", "data", "server", "test"];
 ```
 
 ***

@@ -4,10 +4,24 @@ import { dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-export const DEFAULT_TARGETS = ["README.md", "docs"];
+export const DEFAULT_TARGETS = ["README.md", "SECURITY.md", "packages/rex/README.md", "docs"];
+export const PENDING_HOSTS = [
+  {
+    prefix: "https://rex.sidioralabs.com",
+    since: "2026-11-09",
+    reason: "the documentation site is not deployed yet",
+  },
+  {
+    prefix: "https://github.com/Sidiora-Labs/rex-js",
+    since: "2026-11-09",
+    reason: "the repository is private until the announcement",
+  },
+];
 
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
 const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+const EXTERNAL = /https?:\/\/[^\s<>()"'`\]]+/g;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function markdownFiles(path) {
   if (!existsSync(path)) return [];
@@ -119,6 +133,43 @@ export function extractLinks(source) {
   return links;
 }
 
+export function externalLinks(source) {
+  const links = [];
+  for (const { number, text } of proseLines(source)) {
+    for (const match of text.matchAll(EXTERNAL))
+      links.push({ line: number, target: match[0].replace(/[.,;:!?]+$/, "") });
+  }
+  return links;
+}
+
+export function pendingEntry(target, pending = PENDING_HOSTS) {
+  return (
+    pending.find(
+      (entry) =>
+        target === entry.prefix ||
+        target.startsWith(`${entry.prefix}/`) ||
+        target.startsWith(`${entry.prefix}#`) ||
+        target.startsWith(`${entry.prefix}?`),
+    ) ?? null
+  );
+}
+
+export function checkPendingHosts(pending = PENDING_HOSTS) {
+  const problems = [];
+  for (const entry of pending) {
+    const date = ISO_DATE.test(entry.since) ? new Date(`${entry.since}T00:00:00Z`) : null;
+    if (
+      date === null ||
+      Number.isNaN(date.getTime()) ||
+      date.toISOString().slice(0, 10) !== entry.since
+    )
+      problems.push(`pending host ${entry.prefix} has no valid since date (YYYY-MM-DD)`);
+    if (typeof entry.reason !== "string" || entry.reason.trim() === "")
+      problems.push(`pending host ${entry.prefix} has no reason`);
+  }
+  return problems;
+}
+
 export function checkLink(file, target) {
   if (target === "" || SCHEME.test(target) || target.startsWith("//")) return null;
   const hash = target.indexOf("#");
@@ -148,12 +199,18 @@ export function checkLink(file, target) {
   return null;
 }
 
-export function checkLinks(targets = DEFAULT_TARGETS) {
+export function checkLinks(targets = DEFAULT_TARGETS, pending = PENDING_HOSTS) {
   const files = targets.flatMap((target) => markdownFiles(resolve(ROOT, target)));
-  const problems = [];
+  const problems = checkPendingHosts(pending);
+  const used = new Map(pending.map((entry) => [entry, 0]));
   let count = 0;
   for (const file of files) {
-    for (const link of extractLinks(readFileSync(file, "utf8"))) {
+    const source = readFileSync(file, "utf8");
+    for (const link of externalLinks(source)) {
+      const entry = pendingEntry(link.target, pending);
+      if (entry !== null) used.set(entry, used.get(entry) + 1);
+    }
+    for (const link of extractLinks(source)) {
       if (SCHEME.test(link.target) || link.target.startsWith("//")) continue;
       count += 1;
       const problem = checkLink(file, link.target);
@@ -164,22 +221,36 @@ export function checkLinks(targets = DEFAULT_TARGETS) {
       }
     }
   }
-  return { files: files.length, links: count, problems };
+  const hosts = pending.map((entry) => ({ ...entry, links: used.get(entry) }));
+  return { files: files.length, links: count, pending: hosts, problems };
 }
 
 export function main(argv = process.argv.slice(2)) {
   const targets = argv.filter((arg) => !arg.startsWith("-"));
   const result = checkLinks(targets.length > 0 ? targets : DEFAULT_TARGETS);
+  if (targets.length === 0) {
+    for (const host of result.pending) {
+      if (host.links === 0)
+        result.problems.push(
+          `pending host ${host.prefix} is not linked from any checked file; remove its entry`,
+        );
+    }
+  }
   if (result.problems.length > 0) {
     process.stderr.write(`${result.problems.map((problem) => `${problem}\n`).join("")}`);
     process.stderr.write(
-      `${result.problems.length} broken local link${result.problems.length === 1 ? "" : "s"} in ${result.files} files\n`,
+      `${result.problems.length} link problem${result.problems.length === 1 ? "" : "s"} in ${result.files} files\n`,
     );
     return 1;
   }
   process.stdout.write(
     `checked ${result.links} local links in ${result.files} files: no broken links\n`,
   );
+  for (const host of result.pending) {
+    process.stdout.write(
+      `pending since ${host.since}: ${host.links} link${host.links === 1 ? "" : "s"} to ${host.prefix} (${host.reason})\n`,
+    );
+  }
   return 0;
 }
 

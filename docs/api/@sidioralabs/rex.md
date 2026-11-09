@@ -3148,6 +3148,14 @@ readonly optional page?: number;
 readonly optional size?: number;
 ```
 
+<a id="sort"></a>
+
+##### sort?
+
+```ts
+readonly optional sort?: ListSort<T>;
+```
+
 ***
 
 <a id="listresult"></a>
@@ -3192,6 +3200,36 @@ readonly size: number;
 
 ```ts
 readonly total: number;
+```
+
+***
+
+<a id="listsort"></a>
+
+### ListSort
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Properties
+
+<a id="direction"></a>
+
+##### direction?
+
+```ts
+readonly optional direction?: "asc" | "desc";
+```
+
+<a id="field-2"></a>
+
+##### field
+
+```ts
+readonly field: keyof T & string;
 ```
 
 ***
@@ -3769,6 +3807,14 @@ readonly permissions: readonly string[];
 
 #### Properties
 
+<a id="conditions"></a>
+
+##### conditions
+
+```ts
+readonly conditions: readonly StoreCondition[];
+```
+
 <a id="filter-1"></a>
 
 ##### filter
@@ -3799,6 +3845,38 @@ readonly page: number;
 
 ```ts
 readonly size: number;
+```
+
+<a id="sort-1"></a>
+
+##### sort
+
+```ts
+readonly sort: NormalizedSort | null;
+```
+
+***
+
+<a id="normalizedsort"></a>
+
+### NormalizedSort
+
+#### Properties
+
+<a id="direction-1"></a>
+
+##### direction
+
+```ts
+readonly direction: "asc" | "desc";
+```
+
+<a id="field-3"></a>
+
+##### field
+
+```ts
+readonly field: string;
 ```
 
 ***
@@ -3837,6 +3915,54 @@ readonly dismiss: OverlayDismiss;
 
 ```ts
 readonly id: N;
+```
+
+***
+
+<a id="pageaffordance"></a>
+
+### PageAffordance
+
+#### Properties
+
+<a id="effect-3"></a>
+
+##### effect
+
+```ts
+readonly effect: ActionEffect;
+```
+
+<a id="id-17"></a>
+
+##### id
+
+```ts
+readonly id: string;
+```
+
+<a id="input-13"></a>
+
+##### input
+
+```ts
+readonly input: JsonSchema;
+```
+
+<a id="label-8"></a>
+
+##### label
+
+```ts
+readonly label: string;
+```
+
+<a id="via"></a>
+
+##### via
+
+```ts
+readonly via: readonly ("click" | "palette")[];
 ```
 
 ***
@@ -3975,6 +4101,14 @@ readonly optional title?: string;
 
 ```ts
 readonly optional actions?: readonly A[];
+```
+
+<a id="affordances"></a>
+
+##### affordances?
+
+```ts
+readonly optional affordances?: readonly PageAffordance[];
 ```
 
 <a id="cache-1"></a>
@@ -4143,6 +4277,14 @@ readonly optional transition?: "none" | "view";
 readonly actions: readonly A[];
 ```
 
+<a id="affordances-1"></a>
+
+##### affordances
+
+```ts
+readonly affordances: readonly PageAffordance[];
+```
+
 <a id="cache-2"></a>
 
 ##### cache
@@ -4167,7 +4309,7 @@ readonly chrome: PageChrome;
 readonly draft: PageDraft;
 ```
 
-<a id="id-17"></a>
+<a id="id-18"></a>
 
 ##### id
 
@@ -4321,7 +4463,7 @@ readonly transition: "none" | "view";
 readonly action: AnyAction;
 ```
 
-<a id="input-13"></a>
+<a id="input-14"></a>
 
 ##### input
 
@@ -4377,7 +4519,7 @@ readonly optional invalidatedBy?: readonly string[];
 
 #### Methods
 
-<a id="input-14"></a>
+<a id="input-15"></a>
 
 ##### input()?
 
@@ -4525,7 +4667,7 @@ readonly resolve: (actor) => Iterable<P>;
 
 #### Properties
 
-<a id="id-18"></a>
+<a id="id-19"></a>
 
 ##### id
 
@@ -4612,6 +4754,60 @@ requires(clause): Predicate;
 ###### Returns
 
 [`Predicate`](#predicate)
+
+***
+
+<a id="rangefilter"></a>
+
+### RangeFilter
+
+#### Type Parameters
+
+##### V
+
+`V`
+
+#### Properties
+
+<a id="gt"></a>
+
+##### gt?
+
+```ts
+readonly optional gt?: V;
+```
+
+<a id="gte"></a>
+
+##### gte?
+
+```ts
+readonly optional gte?: V;
+```
+
+<a id="in"></a>
+
+##### in?
+
+```ts
+readonly optional in?: readonly V[];
+```
+
+<a id="lt"></a>
+
+##### lt?
+
+```ts
+readonly optional lt?: V;
+```
+
+<a id="lte"></a>
+
+##### lte?
+
+```ts
+readonly optional lte?: V;
+```
 
 ***
 
@@ -4789,7 +4985,7 @@ readonly optional unlocked?: boolean;
 readonly declaration: string;
 ```
 
-<a id="field-2"></a>
+<a id="field-4"></a>
 
 ##### field
 
@@ -4797,7 +4993,7 @@ readonly declaration: string;
 readonly field: string;
 ```
 
-<a id="id-19"></a>
+<a id="id-20"></a>
 
 ##### id
 
@@ -5359,6 +5555,16 @@ type EntitySchema<F> = ObjectSchema<F, EntityInput<F>, EntityRecord<F>>;
 
 ***
 
+<a id="fieldkinds-1"></a>
+
+### FieldKinds
+
+```ts
+type FieldKinds = Readonly<Record<string, FieldKind | undefined>>;
+```
+
+***
+
 <a id="flowdecision"></a>
 
 ### FlowDecision
@@ -5850,6 +6056,16 @@ type ProtocolSchema<T> = StandardSchemaV1<T, T>;
 
 ***
 
+<a id="rangeoperator"></a>
+
+### RangeOperator
+
+```ts
+type RangeOperator = typeof RANGE_OPERATORS[number];
+```
+
+***
+
 <a id="reasoncode"></a>
 
 ### ReasonCode
@@ -6057,6 +6273,16 @@ type ShortcutModifier = typeof SHORTCUT_MODIFIERS[number];
 
 ***
 
+<a id="sortdirection"></a>
+
+### SortDirection
+
+```ts
+type SortDirection = typeof SORT_DIRECTIONS[number];
+```
+
+***
+
 <a id="standardinferinput"></a>
 
 ### StandardInferInput
@@ -6151,12 +6377,37 @@ type StatesModule<S, P> = { readonly [K in Exclude<S, "ready"> as StateExportNam
 
 ***
 
+<a id="storecondition"></a>
+
+### StoreCondition
+
+```ts
+type StoreCondition = 
+  | {
+  field: string;
+  op: "eq";
+  value: unknown;
+}
+  | {
+  field: string;
+  op: Exclude<RangeOperator, "in">;
+  value: unknown;
+}
+  | {
+  field: string;
+  op: "in";
+  value: readonly unknown[];
+};
+```
+
+***
+
 <a id="storefilter"></a>
 
 ### StoreFilter
 
 ```ts
-type StoreFilter<T> = { readonly [P in keyof T]?: T[P] };
+type StoreFilter<T> = { readonly [P in keyof T]?: T[P] | RangeFilter<NonNullable<T[P]>> };
 ```
 
 #### Type Parameters
@@ -6565,6 +6816,26 @@ const PAGE_RENDER_MODES: readonly ["ssr", "csr", "ssg", "static"];
 
 ```ts
 const PAGE_TRANSITIONS: readonly ["view", "none"];
+```
+
+***
+
+<a id="range_field_kinds"></a>
+
+### RANGE\_FIELD\_KINDS
+
+```ts
+const RANGE_FIELD_KINDS: readonly FieldKind[];
+```
+
+***
+
+<a id="range_operators"></a>
+
+### RANGE\_OPERATORS
+
+```ts
+const RANGE_OPERATORS: readonly ["lt", "lte", "gt", "gte", "in"];
 ```
 
 ***
@@ -7686,7 +7957,7 @@ const REX_SCREENS: readonly ["phone", "tablet", "desktop", "wide"];
 ### REX\_VERSION
 
 ```ts
-const REX_VERSION: "0.2.0" = "0.2.0";
+const REX_VERSION: string = "0.3.0";
 ```
 
 ***
@@ -7727,6 +7998,26 @@ const SIDECAR_MIME_TYPE: "application/rex+json" = "application/rex+json";
 
 ```ts
 const SIDECAR_VERSION: 1 = 1;
+```
+
+***
+
+<a id="sort_directions"></a>
+
+### SORT\_DIRECTIONS
+
+```ts
+const SORT_DIRECTIONS: readonly ["asc", "desc"];
+```
+
+***
+
+<a id="sort_field_kinds"></a>
+
+### SORT\_FIELD\_KINDS
+
+```ts
+const SORT_FIELD_KINDS: readonly FieldKind[];
 ```
 
 ***
@@ -7960,6 +8251,38 @@ function can(permission): Predicate;
 #### Returns
 
 [`Predicate`](#predicate)
+
+***
+
+<a id="comparefieldvalues"></a>
+
+### compareFieldValues()
+
+```ts
+function compareFieldValues(
+   kind, 
+   a, 
+   b
+): number;
+```
+
+#### Parameters
+
+##### kind
+
+[`FieldKind`](rex/schema.md#fieldkind) \| `undefined`
+
+##### a
+
+`unknown`
+
+##### b
+
+`unknown`
+
+#### Returns
+
+`number`
 
 ***
 
@@ -8612,6 +8935,38 @@ function evaluate(predicate, actor): PolicyResult;
 
 ***
 
+<a id="filterconditions"></a>
+
+### filterConditions()
+
+```ts
+function filterConditions(
+   filter, 
+   kinds?, 
+   entity?
+): readonly StoreCondition[];
+```
+
+#### Parameters
+
+##### filter
+
+`Readonly`\<`Record`\<`string`, `unknown`\>\>
+
+##### kinds?
+
+`Readonly`\<`Record`\<`string`, [`FieldKind`](rex/schema.md#fieldkind) \| `undefined`\>\>
+
+##### entity?
+
+`string`
+
+#### Returns
+
+readonly [`StoreCondition`](#storecondition)[]
+
+***
+
 <a id="flow-6"></a>
 
 ### flow()
@@ -9044,12 +9399,48 @@ function locateRexError(error, location): RexError;
 
 ***
 
+<a id="matchescondition"></a>
+
+### matchesCondition()
+
+```ts
+function matchesCondition(
+   record, 
+   condition, 
+   kind
+): boolean;
+```
+
+#### Parameters
+
+##### record
+
+`unknown`
+
+##### condition
+
+[`StoreCondition`](#storecondition)
+
+##### kind
+
+[`FieldKind`](rex/schema.md#fieldkind) \| `undefined`
+
+#### Returns
+
+`boolean`
+
+***
+
 <a id="matchesfilter"></a>
 
 ### matchesFilter()
 
 ```ts
-function matchesFilter<T>(record, filter): boolean;
+function matchesFilter<T>(
+   record, 
+   filter, 
+   kinds?
+): boolean;
 ```
 
 #### Type Parameters
@@ -9067,6 +9458,10 @@ function matchesFilter<T>(record, filter): boolean;
 ##### filter
 
 [`StoreFilter`](#storefilter)\<`T`\>
+
+##### kinds?
+
+`Readonly`\<`Record`\<`string`, [`FieldKind`](rex/schema.md#fieldkind) \| `undefined`\>\>
 
 #### Returns
 
@@ -9137,7 +9532,11 @@ function never(): Predicate;
 ### normalizeListQuery()
 
 ```ts
-function normalizeListQuery<T>(query?): NormalizedListQuery<T>;
+function normalizeListQuery<T>(
+   query?, 
+   kinds?, 
+   entity?
+): NormalizedListQuery<T>;
 ```
 
 #### Type Parameters
@@ -9151,6 +9550,14 @@ function normalizeListQuery<T>(query?): NormalizedListQuery<T>;
 ##### query?
 
 [`ListQuery`](#listquery)\<`T`\> = `{}`
+
+##### kinds?
+
+`Readonly`\<`Record`\<`string`, [`FieldKind`](rex/schema.md#fieldkind) \| `undefined`\>\>
+
+##### entity?
+
+`string`
 
 #### Returns
 

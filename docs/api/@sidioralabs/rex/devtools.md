@@ -56,8 +56,8 @@ readonly outcomes: readonly OutcomeLogEntry[];
 
 ```ts
 readonly panel: 
-  | "page"
   | "manifest"
+  | "page"
   | "sidecar"
   | "outcomes"
   | "queries"
@@ -151,8 +151,8 @@ showPanel(panel): void;
 
 ###### panel
 
-  \| `"page"`
   \| `"manifest"`
+  \| `"page"`
   \| `"sidecar"`
   \| `"outcomes"`
   \| `"queries"`
