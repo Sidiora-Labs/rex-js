@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { normalizePath } from "vite";
 import { RexError } from "../core/errors.ts";
@@ -7,6 +7,13 @@ import { pageIdOfModule } from "./split.ts";
 import { DEFAULT_APP_DIR, PAGE_CHUNK_PREFIX } from "./virtual.ts";
 
 export const CLIENT_MANIFEST_FILE = ".vite/manifest.json";
+export const CLIENT_SHELL_FILE = "index.html";
+
+const HEAD_ELEMENT = /<head\b[^>]*>([\s\S]*?)<\/head>/i;
+const RENDERER_OWNED_TAG =
+  /<meta\s[^>]*\bcharset\s*=[^>]*>|<meta\s[^>]*\bname\s*=\s*"viewport"[^>]*>|<title\b[^>]*>[\s\S]*?<\/title>/gi;
+const ASSET_TAG = /<script\b[^>]*>\s*<\/script>|<link\b[^>]*>/gi;
+const ASSET_URL = /\s(?:src|href)\s*=\s*"([^"]*)"/i;
 
 export interface ViteManifestChunk {
   readonly file: string;
@@ -123,6 +130,33 @@ export function ssrAssetsFromManifest(
   });
 }
 
+function emittedAssets(assets: RexDocumentAssets): Set<string> {
+  const emitted = new Set([...assets.scripts, ...assets.stylesheets, ...assets.preloads]);
+  for (const page of Object.values(assets.pages)) {
+    for (const file of [...page.stylesheets, ...page.preloads]) emitted.add(file);
+  }
+  return emitted;
+}
+
+export function shellHeadHtml(shell: string, assets: RexDocumentAssets): string {
+  const inner = HEAD_ELEMENT.exec(shell)?.[1] ?? "";
+  const emitted = emittedAssets(assets);
+  return inner
+    .replace(RENDERER_OWNED_TAG, "")
+    .replace(ASSET_TAG, (tag) => {
+      const url = ASSET_URL.exec(tag)?.[1];
+      return url !== undefined && emitted.has(url) ? "" : tag;
+    })
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
 export function readSsrAssets(clientDir: string, options: SsrAssetsOptions): RexDocumentAssets {
-  return ssrAssetsFromManifest(readClientManifest(clientDir), options);
+  const assets = ssrAssetsFromManifest(readClientManifest(clientDir), options);
+  const shellFile = join(clientDir, CLIENT_SHELL_FILE);
+  if (!existsSync(shellFile)) return assets;
+  const head = shellHeadHtml(readFileSync(shellFile, "utf8"), assets);
+  return head === "" ? assets : Object.freeze({ ...assets, head });
 }

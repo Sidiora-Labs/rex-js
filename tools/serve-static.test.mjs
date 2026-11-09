@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
+import { gunzipSync } from "node:zlib";
 import {
   FALLBACK_TYPE,
+  acceptsGzip,
   contentType,
   parseArgs,
   resolveRequest,
@@ -126,10 +129,60 @@ describe("404.html", () => {
   });
 
   it("answers HEAD without a body", async () => {
-    const response = await get("/", { method: "HEAD" });
+    const response = await get("/", { method: "HEAD", headers: { "accept-encoding": "identity" } });
     assert.equal(response.status, 200);
     assert.equal(await response.text(), "");
     assert.equal(response.headers.get("content-length"), "34");
+  });
+});
+
+function raw(path, headers) {
+  return new Promise((resolve, reject) => {
+    const outgoing = request(new URL(path, running.url), { headers }, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => resolve({ response, body: Buffer.concat(chunks) }));
+    });
+    outgoing.on("error", reject);
+    outgoing.end();
+  });
+}
+
+describe("compression", () => {
+  it("gzips text a client accepts gzip for, like a production static host", async () => {
+    const { response, body } = await raw("/assets/app.js", { "accept-encoding": "gzip, br" });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.headers["content-encoding"], "gzip");
+    assert.equal(response.headers.vary, "accept-encoding");
+    assert.equal(response.headers["content-length"], String(body.length));
+    assert.equal(gunzipSync(body).toString(), "export {};\n");
+  });
+
+  it("serves text uncompressed to a client that does not accept gzip", async () => {
+    const { response, body } = await raw("/docs/", { "accept-encoding": "identity" });
+    assert.equal(response.headers["content-encoding"], undefined);
+    assert.equal(body.toString(), "<!doctype html><title>docs</title>");
+  });
+
+  it("never gzips binary files", async () => {
+    const { response, body } = await raw("/og.png", { "accept-encoding": "gzip" });
+    assert.equal(response.headers["content-encoding"], undefined);
+    assert.equal(body.toString(), "png");
+  });
+
+  it("gzips the 404 page with its status", async () => {
+    const { response, body } = await raw("/missing", { "accept-encoding": "gzip" });
+    assert.equal(response.statusCode, 404);
+    assert.match(gunzipSync(body).toString(), /<title>not found<\/title>/);
+  });
+
+  it("reads gzip from the accept-encoding header, honouring q=0", () => {
+    assert.equal(acceptsGzip("gzip, deflate, br"), true);
+    assert.equal(acceptsGzip("br;q=1.0, gzip;q=0.8"), true);
+    assert.equal(acceptsGzip("*"), true);
+    assert.equal(acceptsGzip("gzip;q=0"), false);
+    assert.equal(acceptsGzip("identity"), false);
+    assert.equal(acceptsGzip(undefined), false);
   });
 });
 

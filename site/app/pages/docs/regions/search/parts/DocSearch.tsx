@@ -53,6 +53,7 @@ export default function DocSearch({
       </Typography>
       <Command
         label={SEARCH_LABEL}
+        vimBindings={false}
         data-site-search=""
         className="rounded-xl border border-outline-variant"
       >

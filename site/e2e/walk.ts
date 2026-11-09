@@ -333,7 +333,7 @@ export async function readSidecar(
 export async function presentControls(page: Page, pageId: string): Promise<string[]> {
   return page.evaluate((prefix) => {
     const addresses = new Set<string>();
-    for (const element of document.querySelectorAll(`main [data-rex^="${prefix}"]`)) {
+    for (const element of document.querySelectorAll(`[data-rex^="${prefix}"]`)) {
       if (element.closest("[data-rex-overlay]") !== null) continue;
       const rect = element.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) continue;

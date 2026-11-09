@@ -31,6 +31,7 @@ export default function ApiSearch({ entries, onOpen }: ApiSearchProps) {
       </Typography>
       <Command
         label={SEARCH_LABEL}
+        vimBindings={false}
         data-site-api-search=""
         className="rounded-xl border border-outline-variant"
       >

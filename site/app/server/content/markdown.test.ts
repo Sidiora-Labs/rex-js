@@ -137,11 +137,42 @@ describe("renderMarkdown", () => {
     expect(rendered.html).toContain('<h3 id="install">Install</h3>');
     expect(rendered.html).toContain('<h4 id="install-1">Install</h4>');
     expect(rendered.html).toContain('<a href="/docs/cli">the CLI</a>');
-    expect(rendered.html).toContain('class="shiki shiki-themes github-light github-dark"');
+    expect(rendered.html).toContain(
+      'class="shiki shiki-themes github-light-high-contrast github-dark-high-contrast"',
+    );
     expect(rendered.html).toContain("--shiki-light:");
     expect(rendered.html).toContain("--shiki-dark:");
     expect(rendered.html).toContain("plain &#x3C;text>");
     expect(rendered.html).not.toContain("<text>");
+  });
+
+  it("links a bare URL only when it parses as a URL", async () => {
+    const rendered = await renderMarkdown(
+      [
+        "# Links",
+        "",
+        "| Hint |",
+        "| --- |",
+        '| origins: ["https://example.com"] |',
+        "",
+        "See https://rex.sidioralabs.com/docs for more.",
+      ].join("\n"),
+      "docs/links.md",
+    );
+    expect(rendered.html).not.toContain("example.com%22");
+    expect(rendered.html).toContain("origins: [&quot;https://example.com&quot;]");
+    expect(rendered.html).toContain(
+      '<a href="https://rex.sidioralabs.com/docs">https://rex.sidioralabs.com/docs</a>',
+    );
+  });
+
+  it("makes every table focusable so its horizontal scroll works from the keyboard", async () => {
+    const rendered = await renderMarkdown(
+      ["# Tables", "", "| Code | Hint |", "| --- | --- |", "| REX100 | Create it. |"].join("\n"),
+      "docs/tables.md",
+    );
+    expect(rendered.html).toContain('<table tabindex="0">');
+    expect(rendered.html).not.toContain("<table>");
   });
 
   it("rejects a document without a level-one heading", async () => {

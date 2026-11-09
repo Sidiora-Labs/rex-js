@@ -17,8 +17,8 @@ export const SITE_URL = `http://127.0.0.1:${SITE_PORT}`;
 export default defineConfig({
   testDir: "./e2e",
   testMatch: ["**/*.spec.ts", "**/lighthouse.ts"],
-  fullyParallel: false,
-  workers: 1,
+  fullyParallel: true,
+  workers: "25%",
   retries: 0,
   timeout: 240_000,
   forbidOnly: true,
