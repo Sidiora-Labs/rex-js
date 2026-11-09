@@ -383,9 +383,10 @@ describe("run and createProgram", () => {
       { long: "--overlays", value: "names", default: [] },
     ]);
     expect(command("build").options).toMatchObject([
-      { long: "--target", value: "target", default: "node" },
+      { long: "--target", value: "target", negate: false },
       { long: "--no-check", value: null, negate: true },
     ]);
+    expect(command("build").options[0]).not.toHaveProperty("default");
     expect(command("build").options[1]).not.toHaveProperty("default");
     expect(command("new").options.map((option) => option.long)).toEqual(["--ui", "--no-install"]);
     expect(command("check").options.map((option) => option.long)).toEqual(["--json", "--runtime"]);

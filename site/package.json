@@ -12,7 +12,7 @@
     "test": "rex check && vitest run && playwright test",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "lint": "eslint .",
+    "lint": "pnpm -w exec eslint site",
     "format": "prettier --write ."
   },
   "dependencies": {
