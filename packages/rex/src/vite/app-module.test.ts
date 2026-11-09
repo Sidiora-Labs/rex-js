@@ -1,12 +1,4 @@
-import {
-  cpSync,
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -41,10 +33,16 @@ import {
   RESOLVED_APP_MODULE_ID,
   RESOLVED_MANIFEST_MODULE_ID,
 } from "./virtual.ts";
+import { copyFixture } from "../testing/internal/fixture.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixtureRoot = join(here, "fixtures", "app");
-const packageModules = join(here, "..", "..", "node_modules");
+const fixtureCopy = copyFixture("vite/fixtures/app");
+const fixtureRoot = fixtureCopy.dir;
+
+afterAll(() => {
+  fixtureCopy.remove();
+});
+
 const coreEntry = join(here, "..", "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
 const brokenAlias = [
@@ -377,9 +375,9 @@ describe("a broken app layout", { timeout: SERVER_TIMEOUT_MS }, () => {
   let vite: ViteDevServer;
 
   beforeAll(async () => {
-    root = normalizePath(realpathSync(temp("rex-app-broken-")));
-    cpSync(fixtureRoot, root, { recursive: true });
-    symlinkSync(packageModules, join(root, "node_modules"), "dir");
+    const copy = copyFixture("vite/fixtures/app");
+    temporary.push(copy.dir);
+    root = normalizePath(copy.dir);
     mkdirSync(join(root, "app", "pages", "Home"));
     vite = await createServer({
       root,

@@ -8,15 +8,24 @@ import { isRexError } from "../core/errors.ts";
 import { rex } from "./plugin.ts";
 import {
   CLIENT_MANIFEST_FILE,
+  CLIENT_SHELL_FILE,
   RexClientManifestError,
   readClientManifest,
   readSsrAssets,
+  shellHeadHtml,
   ssrAssetsFromManifest,
   type ViteManifest,
 } from "./ssr-css.ts";
+import { copyFixture } from "../testing/internal/fixture.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixtureRoot = join(here, "fixtures", "app");
+const fixtureCopy = copyFixture("vite/fixtures/app");
+const fixtureRoot = fixtureCopy.dir;
+
+afterAll(() => {
+  fixtureCopy.remove();
+});
+
 const coreEntry = join(here, "..", "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
 const BUILD_TIMEOUT_MS = 120_000;
@@ -216,6 +225,55 @@ describe("readClientManifest", () => {
     expect(
       (caught(() => readClientManifest(clientDir("null"))) as RexClientManifestError).code,
     ).toBe("REX461");
+  });
+});
+
+const BUILT_SHELL = [
+  "<!doctype html>",
+  '<html lang="en">',
+  "  <head>",
+  '    <meta charset="UTF-8" />',
+  '    <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+  "    <title>Shell title</title>",
+  '    <meta name="description" content="What the app does." />',
+  '    <link rel="icon" type="image/png" href="/favicon.png" />',
+  '    <script type="module" crossorigin src="/cdn/assets/index-abc.js"></script>',
+  '    <link rel="modulepreload" crossorigin href="/cdn/assets/shared-1.js">',
+  '    <link rel="modulepreload" crossorigin href="/cdn/assets/react-2.js">',
+  '    <link rel="stylesheet" crossorigin href="/cdn/assets/index-abc.css">',
+  '    <link rel="stylesheet" crossorigin href="/cdn/assets/shared-1.css">',
+  "  </head>",
+  '  <body><div id="root"></div></body>',
+  "</html>",
+].join("\n");
+
+describe("the built shell head", () => {
+  it("keeps the app's head metadata and drops what the renderer emits itself", () => {
+    const assets = ssrAssetsFromManifest(MANIFEST, { root: ROOT, base: "/cdn/" });
+    expect(shellHeadHtml(BUILT_SHELL, assets)).toBe(
+      [
+        '<meta name="description" content="What the app does." />',
+        '<link rel="icon" type="image/png" href="/favicon.png" />',
+      ].join("\n"),
+    );
+  });
+
+  it("returns no head for a document without one", () => {
+    const assets = ssrAssetsFromManifest(MANIFEST, { root: ROOT });
+    expect(shellHeadHtml('<div id="root"></div>', assets)).toBe("");
+  });
+
+  it("carries the built shell's head into the document assets read from the client output", () => {
+    const dir = clientDir(JSON.stringify(MANIFEST));
+    writeFileSync(join(dir, CLIENT_SHELL_FILE), BUILT_SHELL);
+    const assets = readSsrAssets(dir, { root: ROOT, base: "/cdn/" });
+    expect(assets).toEqual({
+      ...ssrAssetsFromManifest(MANIFEST, { root: ROOT, base: "/cdn/" }),
+      head: [
+        '<meta name="description" content="What the app does." />',
+        '<link rel="icon" type="image/png" href="/favicon.png" />',
+      ].join("\n"),
+    });
   });
 });
 

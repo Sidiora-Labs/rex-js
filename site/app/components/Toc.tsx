@@ -26,7 +26,7 @@ export default function Toc({ headings, title = "On this page" }: TocProps) {
           <li key={heading.id} data-depth={heading.depth} className="data-[depth=3]:pl-4">
             <a
               href={`#${heading.id}`}
-              className="focus-ring flex min-h-8 items-center rounded-sm text-sm text-muted-foreground hover:text-foreground pointer-coarse:min-h-11"
+              className="focus-ring flex min-h-8 min-w-0 items-center rounded-sm text-sm [overflow-wrap:anywhere] text-muted-foreground hover:text-foreground pointer-coarse:min-h-11"
             >
               {heading.text}
             </a>

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 export const NOT_FOUND_PAGE = "404.html";
 export const INDEX_PAGE = "index.html";
@@ -38,6 +39,19 @@ export const CONTENT_TYPES = Object.freeze({
   ".wasm": "application/wasm",
   ".pdf": "application/pdf",
 });
+
+export const COMPRESSIBLE_TYPE =
+  /^(?:text\/|application\/(?:json|manifest\+json|xml|javascript)|image\/svg\+xml)/;
+
+export function acceptsGzip(header) {
+  if (typeof header !== "string") return false;
+  return header.split(",").some((entry) => {
+    const [coding, ...parameters] = entry.trim().toLowerCase().split(";");
+    if (coding?.trim() !== "gzip" && coding?.trim() !== "*") return false;
+    const quality = parameters.map((parameter) => parameter.trim()).find((p) => p.startsWith("q="));
+    return quality === undefined || Number(quality.slice(2)) > 0;
+  });
+}
 
 export function contentType(file) {
   return CONTENT_TYPES[extname(file).toLowerCase()] ?? FALLBACK_TYPE;
@@ -78,9 +92,20 @@ export function resolveRequest(root, pathname) {
 }
 
 function send(request, response, status, file) {
+  const type = contentType(file);
+  if (COMPRESSIBLE_TYPE.test(type)) {
+    const headers = { "content-type": type, "cache-control": "no-cache", vary: "accept-encoding" };
+    const raw = readFileSync(file);
+    const body = acceptsGzip(request.headers["accept-encoding"]) ? gzipSync(raw) : raw;
+    if (body !== raw) headers["content-encoding"] = "gzip";
+    headers["content-length"] = String(body.length);
+    response.writeHead(status, headers);
+    response.end(request.method === "HEAD" ? undefined : body);
+    return;
+  }
   const size = statSync(file).size;
   response.writeHead(status, {
-    "content-type": contentType(file),
+    "content-type": type,
     "content-length": String(size),
     "cache-control": "no-cache",
   });

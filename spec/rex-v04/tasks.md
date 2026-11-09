@@ -5,78 +5,104 @@
 
 ## Tasks
 
-  - [ ] 0.1 Derive the version constant from the package manifest
+  - [x] 0.1 Derive the version constant from the package manifest
     - Add a build step that writes src/version.ts from packages/rex/package.json and make index.ts re-export REX_VERSION from it, so the constant cannot drift from the manifest.
     - Make rex --version and the dependency range that rex new writes read the generated constant; remove the literal version from cli/commands/new.ts.
     - Remove hard-coded release numbers from cli/pack.test.ts, README.md, docs/cli.md and SECURITY.md, or route them through the freshness gate so a stale copy fails tools/freshness.mjs.
     - Add version.test.ts asserting the constant equals the manifest version and that a scaffolded manifest range admits the current version.
     - _Requirements: 1.2_
-  - [ ] 0.2 Point package exports at built output and correct peer, engine and map metadata
+  - [x] 0.2 Point package exports at built output and correct peer, engine and map metadata
     - Make the in-repo exports map resolve types and default to dist, and add a rex-source custom condition that workspace packages, Vitest and the dev server select to reach src; delete the publishConfig.exports override.
     - Mark wouter, cmdk, @vitejs/plugin-react and @hono/node-server as required peers of the entries that import them statically, or move the import behind the entry that owns it; keep typescript and vite optional for server-only consumers.
     - State one Node floor in the package engines, the root manifest, README.md and docs/development.md; enable sourceMap and declarationMap in tsconfig.build.json; remove the trailing pnpm install from the build script.
     - Add tools/package-exports.test.mjs that packs the package, installs the tarball into a temporary project with the real peers and imports every exports key; extend tools/smoke-package.sh to call it.
     - _Requirements: 1.1, 1.3, 1.4_
-  - [ ] 0.3 Isolate tests from the source tree and build dist once per run
+  - [x] 0.3 Isolate tests from the source tree and build dist once per run
     - Add src/testing/internal/fixture.ts with a helper that copies a named fixture to a fresh temporary directory and removes it after the test; it is internal and not exported from the package.
     - Move every test that writes loader caches, symlinks or prerender output under src onto the helper, including the fixture node_modules links and src/vite/.prerender-fixture.
     - Build dist once in a Vitest globalSetup and stop individual tests from rebuilding it; place CLI integration tests that spawn the binary in a serial Vitest project.
     - Assert in fixture.test.ts that a full fixture round trip leaves git status clean, and run the three named suites twice in a row to show no EEXIST failure on the second run.
     - _Requirements: 2.1_
-  - [ ] 0.4 Update CLI output assertions and make lint and format cover the workspace
+  - [x] 0.4 Update CLI output assertions and make lint and format cover the workspace
     - Rewrite the stale assertions in cli/commands.test.ts, cli/index.test.ts and cli/cli.test.ts against the build reporter output introduced by the CLI output rework, asserting the contract and not incidental spacing.
     - Remove or use the unused formatChunkTable in cli/commands/build.ts and format the two unformatted files under check/rules.
     - Extend eslint.config.js to cover site and tools, and repair the site lint script so it no longer fails on a .tsx extension error.
     - Run the three CLI suites, root lint and format:check once and record the result.
     - _Requirements: 2.3_
-  - [ ] 0.5 Make server render and hydration agree on the sidecar page state
+  - [x] 0.5 Make server render and hydration agree on the sidecar page state
     - Reproduce the ten failures that report state loading where ready is expected, and find where the server-rendered sidecar and the hydrated page state diverge for a page whose loaders resolved on the server.
     - Fix the product path so a page with resolved loader data renders ready on the server and stays ready through hydration, and so window.__rex equals the sidecar script content.
     - Keep the test expectations; do not relax an assertion to loading. Add one regression test that compares the sidecar script with window.__rex after hydration.
     - Record in the qualification log any demo or site test that still fails for a different reason.
     - _Requirements: 2.8_
-  - [ ] 0.6 Pin the DesignX registry and make the default scaffold work offline
+  - [x] 0.6 Pin the DesignX registry and make the default scaffold work offline
     - Add a lock file of registry items with content hashes and vendor the items the default scaffold needs, so rex new verifies each fetched item against its hash and falls back to the vendored copy when the registry is unreachable.
     - Serve registry fixtures from a local server in designx.test.ts and new.test.ts so neither test opens a connection to a third-party host.
     - Write exact dependency versions instead of latest in scaffolds, in examples/demo and in site, and format generated files without requiring the optional prettier peer.
     - Extend tools/smoke-package.sh to run the default rex new path with networking to the registry host disabled.
     - _Requirements: 1.5, 2.2_
-  - [ ] 0.7 Remove load sensitivity from the flaky suites
+  - [x] 0.7 Remove load sensitivity from the flaky suites
     - Find why client/agent/flow.test.tsx fails only under full-suite load and fix the ordering or timer dependency in the test or in the product code it exposes.
     - Identify the two tests that reach the five second timeout and remove the cause; a raised timeout is acceptable only with a measured reason written next to it.
     - Cut the runtime of cli/commands.test.ts by reusing the single built dist and one scaffolded fixture per file.
     - Run the full package suite three times in a row and record the three results.
     - _Requirements: 2.4_
-  - [ ] 0.8 Raise vulnerable dependencies and their peer floors
+  - [x] 0.8 Raise vulnerable dependencies and their peer floors
     - Raise vite and zod above the ranges named by pnpm audit --prod and raise the matching peer floors in the package manifest.
     - Resolve the remaining production advisories by upgrade; use an override only with a comment naming the advisory.
     - Enable grouped security updates in .github/dependabot.yml.
     - Run pnpm audit --prod and the package typecheck once and record the advisory count.
     - _Requirements: 1.7_
-  - [ ] 0.9 State and test the TypeScript and ESLint support window
+  - [x] 0.9 State and test the TypeScript and ESLint support window
     - Add tools/support-window.mjs that installs each listed TypeScript and ESLint major into a temporary copy and runs the package typecheck and the checker tests, printing one result line per version.
     - Widen the typescript and eslint peer ranges to every major whose run passes; for a major that fails, keep it out of the range and record the failing command in the qualification log.
     - Write the supported window and the plan for the native TypeScript compiler into docs/versioning.md, stating which checker features depend on the compiler API.
     - Add tools/support-window.test.mjs covering the result parser and range computation.
     - _Requirements: 1.8_
-  - [ ] 0.10 Give every package a typecheck and make the root gates honest
+  - [x] 0.10 Give every package a typecheck and make the root gates honest
     - Add a typecheck script to examples/demo and site and fix the type errors it reveals without widening types.
     - Replace the root test script with tools/run-workspace-tests.mjs, which runs every package, continues after a failure and exits non-zero with a per-package summary.
     - Include src/testing in coverage, make coverage thresholds apply even when a test fails, and make tools/test-ratio.mjs fail when the suite it counts has failing tests.
     - Wire tools/navigation-races.mjs, tools/smoke-cli-bootstrap.mjs and rex check --runtime into the gate scripts, and extend tools/qualification-gates.test.mjs to assert the wiring.
     - _Requirements: 2.5_
-  - [ ] 0.11 Harden the CI and release workflows and declare the platform matrix
+  - [x] 0.11 Harden the CI and release workflows and declare the platform matrix
     - Pin every third-party action by commit SHA, pin publint and attw versions, remove the global npm upgrade from the job that holds id-token write, and move shared jobs into reusable workflows.
     - Declare a matrix of Node 22.19, 24 and 26 on Linux, macOS and Windows, add smoke jobs that run the real Bun, Deno and workerd runtimes, add Firefox and WebKit Playwright projects, and add a CodeQL workflow.
     - Add a tag-ancestry check to the release workflow and tools/verify-published.mjs, a post-publish job that installs the published version from the registry and imports every entry.
     - Add tools/workflow-lint.mjs that fails on an unpinned action, a floating tool version or a missing matrix entry, with tests; update docs/releasing.md to describe the workflow as written.
     - _Requirements: 1.6, 2.6_
-  - [ ] 0.12 Regenerate documentation and pass the freshness gates on the wave revision
+  - [x] 0.12 Regenerate documentation and pass the freshness gates on the wave revision
     - Regenerate docs/api and docs/errors.md from the wave revision.
     - Fix every failure reported by pnpm freshness and pnpm docs:check, including version, API and pointer checks.
     - Correct the supported-versions table in SECURITY.md and mark links to hosts that are not yet live as pending in the link checker with a dated allow-list entry.
     - Run docs:check and freshness once and record the result.
     - _Requirements: 2.7_
+  - [x] 0.13 Build the static site before its browser suite and make the site browser suite pass
+    - Make the site test script build the static output before Playwright starts its server, so the suite cannot run against a missing or stale build.
+    - Find why the statically built site's own module and preload requests are refused by its content security policy, and fix the product path that emits the policy or the tags so the site's own assets load under it; add a unit test for that path.
+    - Fix each remaining failure in the site browser suite in the site or the framework: the accessibility score, the pages without JavaScript and any other. Do not relax a threshold, raise a timeout to hide a defect, or remove a test or a project.
+    - Run the site test script once on a free port and record the result, the test count and the duration.
+    - _Requirements: 2.5_
+  - [x] 0.14 Serve the DesignX data-table test from the local registry fixture
+    - Find every network request the data-table test makes to the live DesignX registry host.
+    - Point the test at the local registry fixture server that task 0.6 added under cli/fixtures, using the same real resolver code path.
+    - Keep every existing assertion; add one assertion that the test resolves its items without contacting any host other than the local fixture.
+    - Run the verify command once with the network unavailable to the live host and record the result.
+    - _Requirements: 2.2_
+  - [x] 0.15 Run the lint and format checks in the lint gate
+    - Add pnpm lint and pnpm format:check to tools/gate-lint.sh in the same failure-collecting style the gate already uses.
+    - Extend tools/qualification-gates.test.mjs to assert that both checks are wired into the lint gate.
+    - Fix any lint or format failure on the wave head by correcting the reported file, without adding an ignore entry or disabling a rule; report a file outside touches instead of editing it.
+    - Run the verify command once and record the result.
+    - _Requirements: 2.3_
+  - [x] 0.16 Hold the sidecar at loading until a hydrating page has hydrated
+    - Restore the hydration rule in useSidecarPayload exactly as in the 0.3.0 changelog commit (f5a1001): browserReady is true for a page whose render is static, otherwise true only after hydration; keep the unregistered-affordance rule.
+    - Restore the test that a ready interactive sidecar is not emitted in server HTML before hydration so it asserts loading in server HTML, and keep the task 0.5 assertions that the hydrated sidecar script equals window.__rex, now with state ready after hydration.
+    - In the other failing unit tests, including the task 0.5 regression test in loaders.test.tsx and the demo portfolio hydration test, keep every assertion and change only the expected server-HTML state of a hydrating page to loading, with the hydrated state asserted as ready and every other sidecar field equal between server and hydrated; delete or skip no test and drop no field from a comparison.
+    - Make static-target.test.ts read the client entry from the inline loader that D14 emits with the same strictness: the entry must be present and be the built entry.
+    - In the site no-JavaScript test, assert state loading for a destination that is not static and drop the ready branch for an empty pending list; change nothing else.
+    - State the rule in the sidecar section of docs/agent-contract.md in at most three sentences; leave step 3 of the procedure as it is.
+    - _Requirements: 2.8_
   - [ ] 1.1 Require a user gesture for URL-carried actions and default confirm focus to Cancel
     - Change URL invocation so a URL can only prefill an action surface and wait for an activation by the user; nothing is sent on page load.
     - Add an action-level opt-in for URL prefill that the registry accepts only for actions declared safe, and reject the option on any other action at declaration time.
@@ -515,7 +541,7 @@
 ```json
 {
   "waves": [
-    { "id": 0,  "tasks": ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12"] },
+    { "id": 0,  "tasks": ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13", "0.14", "0.15", "0.16"] },
     { "id": 1,  "tasks": ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14", "1.15"] },
     { "id": 2,  "tasks": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9"] },
     { "id": 3,  "tasks": ["3.1", "3.2", "3.3", "3.4", "3.5"] },

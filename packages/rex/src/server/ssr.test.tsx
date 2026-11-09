@@ -1,5 +1,5 @@
 import { act, cleanup, waitFor } from "@testing-library/react";
-import { cpSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
@@ -50,10 +50,11 @@ import {
   screenFromRequest,
   type RexDocumentAssets,
 } from "./ssr.ts";
+import { copyFixture } from "../testing/internal/fixture.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixtureSource = join(here, "..", "vite", "fixtures", "app");
-const fixtureRoot = join(here, ".ssr-fixture");
+const fixture = copyFixture("vite/fixtures/app");
+const fixtureRoot = fixture.dir;
 const coreEntry = join(here, "..", "index.ts");
 const BUILD_TIMEOUT_MS = 120_000;
 
@@ -207,8 +208,6 @@ const FONTS = [
 ] as const;
 
 async function buildFixtureAssets(): Promise<RexDocumentAssets> {
-  rmSync(fixtureRoot, { recursive: true, force: true });
-  cpSync(fixtureSource, fixtureRoot, { recursive: true });
   writeFileSync(join(fixtureRoot, "app/pages/home/home.css"), ".notes-home { color: purple; }\n");
   const viewFile = join(fixtureRoot, "app/pages/home/view.tsx");
   writeFileSync(viewFile, `import "./home.css";\n${readFileSync(viewFile, "utf8")}`);
@@ -238,7 +237,7 @@ beforeAll(async () => {
 }, BUILD_TIMEOUT_MS);
 
 afterAll(() => {
-  rmSync(fixtureRoot, { recursive: true, force: true });
+  fixture.remove();
 });
 
 let started: StartedRex | null = null;
@@ -363,10 +362,11 @@ describe("streaming server-side rendering", () => {
       expect(at).toBeGreaterThan(-1);
       expect(at).toBeLessThan(bodyAt);
     }
+    expect(html).not.toContain('<link rel="modulepreload"');
+    const loaderAt = html.lastIndexOf('<script type="module" nonce="');
+    expect(loaderAt).toBeGreaterThan(pageAt);
     for (const href of [...homeAssets.preloads, ...pageChunks]) {
-      const at = html.indexOf(`<link rel="modulepreload" href="${href}" nonce="`);
-      expect(at).toBeGreaterThan(-1);
-      expect(at).toBeLessThan(bodyAt);
+      expect(html.indexOf(JSON.stringify(href), loaderAt)).toBeGreaterThan(loaderAt);
     }
     expect(html).toContain("<title>Notes</title>");
     expect(html).toContain(`<div id="root" ${SSR_ATTRIBUTE}="">`);
@@ -381,15 +381,15 @@ describe("streaming server-side rendering", () => {
     const sidecarAt = html.indexOf(`type="${SIDECAR_MIME_TYPE}"`);
     expect(sidecarAt).toBeGreaterThan(bodyAt);
     const entryScript = assets.scripts[0] as string;
-    expect(html.indexOf(`src="${entryScript}"`)).toBeGreaterThan(pageAt);
+    expect(
+      html.indexOf(`for(const src of ${JSON.stringify([entryScript])})import(src)`),
+    ).toBeGreaterThan(loaderAt);
 
     const nonce = /<script type="application\/rex\+data" id="rex-data" nonce="([^"]+)"/.exec(
       html,
     )?.[1];
     expect(nonce).toMatch(/^[0-9a-f]{32}$/);
-    for (const href of homeAssets.preloads) {
-      expect(html).toContain(`<link rel="modulepreload" href="${href}" nonce="${nonce}">`);
-    }
+    expect(html.slice(loaderAt)).toMatch(new RegExp(`^<script type="module" nonce="${nonce}">`));
     for (const attributes of executableInlineScripts(html)) {
       expect(attributes).toContain(`nonce="${nonce}"`);
     }
@@ -400,13 +400,14 @@ describe("streaming server-side rendering", () => {
     expect(data?.actor.id).toBe("owner");
     expect(data?.queries).toEqual({ mutations: [], queries: [] });
     expect(container.querySelector('[data-rex-page="home"]')).not.toBeNull();
-    expect(readSidecar(container)).toMatchObject({ page: "home", state: "ready" });
+    expect(readSidecar(container)).toMatchObject({ page: "home", state: "loading" });
   });
 
   it("hydrates the server-rendered page without a mismatch and invokes an action on click", async () => {
     const html = await (await server.fetch(request("/"))).text();
     const container = mountDocument(html, "/");
-    const serverSidecar = readSidecar(container);
+    const serverSidecar = readSidecar(container) as Record<string, unknown>;
+    expect(serverSidecar).toMatchObject({ page: "home", state: "loading" });
     const serverButton = container.querySelector('[data-rex-region="home/main"] button');
     expect(serverButton).not.toBeNull();
     const errors = vi.spyOn(console, "error");
@@ -418,7 +419,7 @@ describe("streaming server-side rendering", () => {
     const button = container.querySelector('[data-rex-region="home/main"] button');
     expect(button).toBe(serverButton);
     await waitFor(() => expect(button?.getAttribute("data-rex-allowed")).toBe("true"));
-    expect(window.__rex).toEqual(serverSidecar);
+    expect(window.__rex).toEqual({ ...serverSidecar, state: "ready" });
 
     await act(async () => {
       (button as HTMLButtonElement).click();
@@ -537,7 +538,7 @@ describe("streaming server-side rendering", () => {
     expect(widget?.getAttribute(SCRIPT_ATTRIBUTE)).toBe("beforeHydration");
     expect(widget?.getAttribute("nonce")).toBe(nonce);
     expect(body.indexOf(`src="${WIDGET_SRC}"`)).toBeLessThan(
-      body.indexOf(`src="${assets.scripts[0] as string}"`),
+      body.indexOf(`for(const src of ${JSON.stringify([assets.scripts[0] as string])})import(src)`),
     );
 
     const other = await (await server.fetch(request("/"))).text();
@@ -785,12 +786,13 @@ describe("a posted form outcome in the server-rendered document", () => {
     const container = mountDocument(html, "/");
     const serverOutcome = container.querySelector('[data-rex-outcome="add-note"]');
     expect(serverOutcome).not.toBeNull();
-    const serverSidecar = readSidecar(container);
+    const serverSidecar = readSidecar(container) as Record<string, unknown>;
+    expect(serverSidecar).toMatchObject({ page: "home", state: "loading" });
     const errors = vi.spyOn(console, "error");
     const mismatches: HydrationMismatch[] = [];
 
     await hydrate(container, mismatches);
-    await waitFor(() => expect(window.__rex).toEqual(serverSidecar));
+    await waitFor(() => expect(window.__rex).toEqual({ ...serverSidecar, state: "ready" }));
 
     const outcome = container.querySelector('[data-rex-outcome="add-note"]');
     expect(outcome).toBe(serverOutcome);
@@ -827,7 +829,8 @@ describe("the stores a server render exposes", () => {
       shared.reset();
     }
     const container = mountDocument(html, "/watch");
-    const server = readSidecar(container);
+    const server = readSidecar(container) as Record<string, unknown>;
+    expect(server).toMatchObject({ page: "watch", state: "loading" });
     const mismatches: HydrationMismatch[] = [];
     await act(async () => {
       started = startRexEntry(container, storeBundle, {
@@ -837,8 +840,8 @@ describe("the stores a server render exposes", () => {
       });
     });
     expect(started?.mode).toBe("hydrate");
-    await waitFor(() => expect(window.__rex).toEqual(server));
-    expect(readSidecar(container)).toEqual(server);
+    await waitFor(() => expect(window.__rex).toEqual({ ...server, state: "ready" }));
+    expect(readSidecar(container)).toEqual({ ...server, state: "ready" });
     expect(mismatches).toEqual([]);
   });
 
@@ -867,7 +870,8 @@ describe("the stores a server render exposes", () => {
   it("hydrates the store page to the server sidecar and the next page to its own sidecar script", async () => {
     const watch = await hydrateStorePage("/watch");
     expect(watch.server.stores).toEqual({ watched: WATCHED_INITIAL });
-    expect(window.__rex).toEqual(watch.server);
+    expect(watch.server.state).toBe("loading");
+    expect(window.__rex).toEqual({ ...watch.server, state: "ready" });
     expect(JSON.stringify(window.__rex)).toBe(JSON.stringify(readSidecar(watch.container)));
     const root = started?.root;
     await act(async () => {

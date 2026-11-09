@@ -85,6 +85,15 @@ function moduleScript(html: string): string {
   return (match as RegExpExecArray)[1] as string;
 }
 
+function loaderScripts(html: string): readonly string[] {
+  const match =
+    /<script type="module" nonce="[^"]+">[^<]*\bfor\(const src of (\[[^\]]*\])\)import\(src\)[^<]*<\/script>/.exec(
+      html,
+    );
+  expect(match, "the document loads the client entry").not.toBeNull();
+  return JSON.parse((match as RegExpExecArray)[1] as string) as string[];
+}
+
 interface ServerModule {
   readonly createRexServer: typeof createRexServer;
   readonly memoryLedger: typeof memoryLedger;
@@ -227,7 +236,7 @@ describe("rex build --target static", { timeout: STATIC_TEST_TIMEOUT_MS }, () =>
     const entry = moduleScript(shell);
     expect(existsSync(join(clientDir, entry))).toBe(true);
     const news = readFileSync(join(clientDir, "news", "index.html"), "utf8");
-    expect(moduleScript(news)).toBe(entry);
+    expect(loaderScripts(news)).toEqual([`/${entry}`]);
     for (const written of built.shells) {
       expect(readFileSync(join(clientDir, written.file), "utf8"), written.file).toBe(shell);
     }

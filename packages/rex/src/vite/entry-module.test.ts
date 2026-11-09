@@ -1,7 +1,14 @@
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createServer, normalizePath, parseSync, type ViteDevServer } from "vite";
+import {
+  createServer,
+  defaultClientConditions,
+  defaultServerConditions,
+  normalizePath,
+  parseSync,
+  type ViteDevServer,
+} from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SSR_ATTRIBUTE } from "../client/ssr-attribute.ts";
 import {
@@ -25,6 +32,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = join(here, "fixtures", "app");
 const coreEntry = join(here, "..", "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
+const sourceResolve = { alias, conditions: ["rex-source", ...defaultClientConditions] };
+const sourceSsr = { resolve: { conditions: ["rex-source", ...defaultServerConditions] } };
 const CLIENT = "/opt/rex/dist/client/index.js";
 const API_ORIGIN = "https://api.example.test";
 const SERVER_TIMEOUT_MS = 60_000;
@@ -117,7 +126,8 @@ describe("entryModuleHook", () => {
         configFile: false,
         logLevel: "silent",
         appType: "custom",
-        resolve: { alias },
+        resolve: sourceResolve,
+        ssr: sourceSsr,
         server: { middlewareMode: true, hmr: false, watch: null },
         plugins: rex({ name: "fixture", apiOrigin: API_ORIGIN }),
       });

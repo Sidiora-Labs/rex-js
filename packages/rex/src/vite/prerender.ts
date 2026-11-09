@@ -31,7 +31,7 @@ import type { RexDocumentAssets, RexRendererOptions } from "../server/ssr.ts";
 
 export const PRERENDER_ORIGIN = "http://localhost";
 export const REX_DATA_SCRIPT = /<script type="application\/rex\+data"[^>]*>[\s\S]*?<\/script>/g;
-export const MODULE_SCRIPT = /<script type="module"[^>]*><\/script>/g;
+export const MODULE_SCRIPT = /<script type="module"[^>]*>[\s\S]*?<\/script>/g;
 export const MODULE_PRELOAD = /<link rel="modulepreload"[^>]*>/g;
 export const SSR_ROOT_ATTRIBUTE = / data-rex-ssr=""/g;
 export const PRERENDER_TEXT_FILE = "index.md";

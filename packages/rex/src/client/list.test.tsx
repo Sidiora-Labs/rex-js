@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { discoverApp, runRules } from "../check/engine.ts";
@@ -36,6 +36,10 @@ const tokens: readonly Token[] = ["eth", "pax", "usdc", "dust", "btc"].map((id) 
   id,
   symbol: id.toUpperCase(),
 }));
+
+beforeAll(async () => {
+  await import("./list-view.tsx");
+});
 
 const portfolio = page("portfolio", { route: "/", states: ["ready"] });
 const registry = createRegistry().register(portfolio).freeze();

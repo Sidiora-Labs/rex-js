@@ -1,6 +1,6 @@
 import { existsSync, statSync } from "node:fs";
 import path from "node:path";
-import { Marked, type Token, type Tokens } from "marked";
+import { Marked, Renderer, type Token, type Tokens } from "marked";
 import { bundledLanguages, bundledLanguagesAlias, getSingletonHighlighter } from "shiki";
 
 export const REPOSITORY_URL = "https://github.com/Sidiora-Labs/rex-js";
@@ -11,7 +11,10 @@ export const RECIPES_DIR = "docs/recipes";
 export const API_DIR = "docs/api";
 export const README_FILE = "README.md";
 export const CHANGELOG_FILE = "CHANGELOG.md";
-export const CODE_THEMES = Object.freeze({ light: "github-light", dark: "github-dark" });
+export const CODE_THEMES = Object.freeze({
+  light: "github-light-high-contrast",
+  dark: "github-dark-high-contrast",
+});
 export const PLAIN_LANGUAGE = "text";
 export const TITLE_DEPTH = 1;
 export const TOC_DEPTHS: readonly number[] = [2, 3];
@@ -194,11 +197,38 @@ export async function highlightCode(code: string, lang: string | undefined): Pro
   if (language !== PLAIN_LANGUAGE && !shiki.getLoadedLanguages().includes(language)) {
     await shiki.loadLanguage(language as keyof typeof bundledLanguages);
   }
+  const plain = defaultTokenStyle(
+    shiki.getTheme(CODE_THEMES.light).fg,
+    shiki.getTheme(CODE_THEMES.dark).fg,
+  );
   return shiki.codeToHtml(code, {
     lang: language,
     themes: { light: CODE_THEMES.light, dark: CODE_THEMES.dark },
     defaultColor: false,
+    mergeSameStyleTokens: true,
+    transformers: [
+      {
+        line(node) {
+          node.children = node.children.flatMap((child) =>
+            child.type === "element" &&
+            typeof child.properties.style === "string" &&
+            child.properties.style.toLowerCase() === plain
+              ? child.children
+              : [child],
+          );
+        },
+        code(node) {
+          node.children = node.children.flatMap((child) =>
+            child.type === "element" && child.tagName === "span" ? child.children : [child],
+          );
+        },
+      },
+    ],
   });
+}
+
+function defaultTokenStyle(light: string, dark: string): string {
+  return `--shiki-light:${light};--shiki-dark:${dark}`.toLowerCase();
 }
 
 export async function renderMarkdown(source: string, file: string): Promise<RenderedMarkdown> {
@@ -238,6 +268,15 @@ export async function renderMarkdown(source: string, file: string): Promise<Rend
       paragraph(token) {
         if (summary === null) summary = plainText(token.tokens);
         return false;
+      },
+      table(token) {
+        return Renderer.prototype.table
+          .call(this, token)
+          .replace(/^<table>/, '<table tabindex="0">');
+      },
+      link(token) {
+        if (token.raw !== token.text || URL.canParse(token.href)) return false;
+        return escapeHtml(token.text);
       },
     },
   });

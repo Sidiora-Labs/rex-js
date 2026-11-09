@@ -28,6 +28,78 @@ readonly optional min?: number;
 
 ***
 
+<a id="markdownheading"></a>
+
+### MarkdownHeading
+
+#### Properties
+
+<a id="depth"></a>
+
+##### depth
+
+```ts
+readonly depth: number;
+```
+
+<a id="id"></a>
+
+##### id
+
+```ts
+readonly id: string;
+```
+
+<a id="text"></a>
+
+##### text
+
+```ts
+readonly text: string;
+```
+
+***
+
+<a id="markdownvalue"></a>
+
+### MarkdownValue
+
+#### Properties
+
+<a id="headings"></a>
+
+##### headings
+
+```ts
+readonly headings: readonly MarkdownHeading[];
+```
+
+<a id="html"></a>
+
+##### html
+
+```ts
+readonly html: string;
+```
+
+<a id="source"></a>
+
+##### source
+
+```ts
+readonly source: string;
+```
+
+<a id="text-1"></a>
+
+##### text
+
+```ts
+readonly text: string;
+```
+
+***
+
 <a id="realoptions"></a>
 
 ### RealOptions
@@ -165,7 +237,8 @@ type FieldKind =
   | "enum"
   | "ref"
   | "timestamp"
-  | "json";
+  | "json"
+  | "markdown";
 ```
 
 ***
@@ -392,7 +465,7 @@ function fromStandard<S>(schema): AsZodSchema<S>;
 
 ***
 
-<a id="id"></a>
+<a id="id-1"></a>
 
 ### id()
 
@@ -437,6 +510,38 @@ function json(): RexField<ZodMiniJSONSchema>;
 #### Returns
 
 [`RexField`](#rexfield)\<`ZodMiniJSONSchema`\>
+
+***
+
+<a id="markdown"></a>
+
+### markdown()
+
+```ts
+function markdown(): RexField<ZodMiniObject<{
+  headings: ZodMiniArray<ZodMiniObject<{
+     depth: ZodMiniInt;
+     id: ZodMiniString<string>;
+     text: ZodMiniString<string>;
+  }, $strip>>;
+  html: ZodMiniString<string>;
+  source: ZodMiniString<string>;
+  text: ZodMiniString<string>;
+}, $strip>>;
+```
+
+#### Returns
+
+[`RexField`](#rexfield)\<`ZodMiniObject`\<\{
+  `headings`: `ZodMiniArray`\<`ZodMiniObject`\<\{
+     `depth`: `ZodMiniInt`;
+     `id`: `ZodMiniString`\<`string`\>;
+     `text`: `ZodMiniString`\<`string`\>;
+  \}, `$strip`\>\>;
+  `html`: `ZodMiniString`\<`string`\>;
+  `source`: `ZodMiniString`\<`string`\>;
+  `text`: `ZodMiniString`\<`string`\>;
+\}, `$strip`\>\>
 
 ***
 
@@ -537,7 +642,7 @@ function standardSource(schema):
 
 ***
 
-<a id="text"></a>
+<a id="text-2"></a>
 
 ### text()
 

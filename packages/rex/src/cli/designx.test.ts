@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { format } from "prettier";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { runCheck } from "../check/index.ts";
 import { rexPrettierConfig } from "../prettier.ts";
 import {
@@ -24,21 +24,35 @@ import {
   DESIGNX_BASE,
   DESIGNX_CONFIG_FILE,
   DESIGNX_DATA_TABLE,
+  DESIGNX_DEPENDENCY_VERSIONS,
+  DESIGNX_LOCK,
   DESIGNX_MENU_GROUP,
+  DESIGNX_REGISTRY,
   DESIGNX_STANDARD_SET,
   DESIGNX_STYLESHEET_HREF,
   DESIGNX_THEME_FILE,
   DESIGNX_UI_DIR,
+  DesignxError,
   TAILWIND_PACKAGES,
   designxFiles,
+  designxItemUrl,
+  designxSha256,
+  fetchDesignxItem,
   groupDataTableMenu,
   parseDependency,
   parseDesignxItem,
   providedDesignxNames,
   registryName,
+  resolveDesignxItems,
   rewriteImports,
   useScreenTemplate,
 } from "./designx.ts";
+import { newApp } from "./commands/new.ts";
+import {
+  serveDesignxRegistry,
+  unreachableDesignxRegistry,
+  type DesignxRegistryFixture,
+} from "./fixtures/designx-registry/server.ts";
 import { EXIT_OK, EXIT_USAGE, run, type RexCliIO } from "./index.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -47,10 +61,25 @@ const demoRoot = join(packageRoot, "..", "..", "examples", "demo");
 const DESIGNX_TEST_TIMEOUT_MS = 240_000;
 
 const temporary: string[] = [];
+const registries: DesignxRegistryFixture[] = [];
 
 afterAll(() => {
   for (const dir of temporary) rmSync(dir, { recursive: true, force: true });
 });
+
+afterEach(async () => {
+  await Promise.all(registries.splice(0).map((registry) => registry.close()));
+});
+
+async function serve(
+  answers?: Parameters<typeof serveDesignxRegistry>[0],
+): Promise<DesignxRegistryFixture> {
+  const registry = await serveDesignxRegistry(answers);
+  registries.push(registry);
+  return registry;
+}
+
+const EXACT_OR_CARET = /^\^?\d+\.\d+(\.\d+)?$/;
 
 function tempDir(): string {
   const dir = mkdtempSync(join(tmpdir(), "rex-designx-"));
@@ -110,7 +139,12 @@ describe("DesignX registry helpers", () => {
     expect(() => registryName("@other/thing")).toThrow(/not a DesignX item/);
     expect(parseDependency("@base-ui/react@^1.8.0")).toEqual(["@base-ui/react", "^1.8.0"]);
     expect(parseDependency("cmdk@^1.1.1")).toEqual(["cmdk", "^1.1.1"]);
-    expect(parseDependency("tw-animate-css")).toEqual(["tw-animate-css", "latest"]);
+    expect(parseDependency("tw-animate-css")).toEqual([
+      "tw-animate-css",
+      DESIGNX_DEPENDENCY_VERSIONS["tw-animate-css"],
+    ]);
+    expect(DESIGNX_DEPENDENCY_VERSIONS["tw-animate-css"]).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(() => parseDependency("left-pad")).toThrow(/without a version/);
   });
 
   it("rewrites registry aliases to relative imports and refuses unknown ones", () => {
@@ -129,6 +163,73 @@ describe("DesignX registry helpers", () => {
     expect(() =>
       rewriteImports('import x from "@/hooks/missing";', `${DESIGNX_UI_DIR}/a.tsx`, aliases),
     ).toThrow(/no fetched DesignX item provides/);
+  });
+});
+
+describe("DesignX registry lock", () => {
+  it("pins every item the standard set reaches with its content hash and a vendored copy", () => {
+    const reached = new Set<string>();
+    let pending = DESIGNX_STANDARD.map(String);
+    while (pending.length > 0) {
+      const next: string[] = [];
+      for (const name of pending) {
+        if (reached.has(name)) continue;
+        reached.add(name);
+        const pin = DESIGNX_LOCK.items[name];
+        expect(pin, name).toBeDefined();
+        if (pin === undefined) continue;
+        expect(pin.url).toBe(designxItemUrl(name, DESIGNX_REGISTRY));
+        expect(pin.sha256).toBe(designxSha256(pin.vendored));
+        const item = parseDesignxItem(JSON.parse(pin.vendored), name);
+        for (const dependency of item.registryDependencies) {
+          const dependencyName = registryName(dependency);
+          if (!Object.hasOwn(DESIGNX_PROVIDED, dependencyName)) next.push(dependencyName);
+        }
+        for (const spec of [...item.dependencies, ...item.devDependencies]) {
+          expect(parseDependency(spec)[1], spec).toMatch(EXACT_OR_CARET);
+        }
+      }
+      pending = next;
+    }
+    expect(Object.keys(DESIGNX_LOCK.items).sort()).toEqual([...reached].sort());
+  });
+
+  it("verifies a fetched item against its pinned hash", async () => {
+    const registry = await serve();
+    const item = await fetchDesignxItem("button", { registry: registry.registry });
+    expect(item.name).toBe("button");
+    expect(registry.requested).toEqual(["button"]);
+  });
+
+  it("refuses a fetched item whose content differs from the pin", async () => {
+    const pinned = DESIGNX_LOCK.items.button?.vendored ?? "";
+    const tampered = pinned.replace("Button", "Botton");
+    expect(tampered).not.toBe(pinned);
+    const registry = await serve({ button: tampered });
+    const fetched = fetchDesignxItem("button", { registry: registry.registry });
+    await expect(fetched).rejects.toBeInstanceOf(DesignxError);
+    await expect(fetchDesignxItem("button", { registry: registry.registry })).rejects.toThrow(
+      `has sha256 ${designxSha256(tampered)}, but designx.lock.json pins ${DESIGNX_LOCK.items.button?.sha256 ?? ""}`,
+    );
+  });
+
+  it("falls back to the vendored copy when the registry is unreachable or lacks the item", async () => {
+    const vendored = parseDesignxItem(JSON.parse(DESIGNX_LOCK.items.card?.vendored ?? ""), "card");
+    const missing = await serve({ card: 404 });
+    expect(await fetchDesignxItem("card", { registry: missing.registry })).toEqual(vendored);
+    expect(missing.requested).toEqual(["card"]);
+    const offline = await unreachableDesignxRegistry();
+    expect(await fetchDesignxItem("card", { registry: offline })).toEqual(vendored);
+    const items = await resolveDesignxItems(["command"], { registry: offline });
+    expect(items.map((item) => item.name)).toEqual(["command", "dialog", "utils"]);
+  });
+
+  it("refuses an item the lock does not pin", async () => {
+    const registry = await serve({ "theme-provider": "{}" });
+    await expect(
+      fetchDesignxItem("theme-provider", { registry: registry.registry }),
+    ).rejects.toThrow('DesignX item "theme-provider" is not pinned in designx.lock.json');
+    expect(registry.requested).toEqual([]);
   });
 });
 
@@ -277,9 +378,9 @@ describe("DesignX data-table column menu", () => {
 describe("rex new --ui", { timeout: DESIGNX_TEST_TIMEOUT_MS }, () => {
   it("installs the DesignX standard set from the registry into an app that passes rex check", async () => {
     const cwd = tempDir();
-    const captured = captureIO(cwd);
-    expect(await run(["new", "dx-app", "--no-install"], captured.io)).toBe(EXIT_OK);
-    expect(captured.err()).toBe("");
+    const registry = await serve();
+    const written = await newApp(cwd, "dx-app", { install: false, registry: registry.registry });
+    expect([...registry.requested].sort()).toEqual(Object.keys(DESIGNX_LOCK.items).sort());
     const root = join(cwd, "dx-app");
 
     expect(DESIGNX_STANDARD_SET).toEqual(DESIGNX_STANDARD);
@@ -287,7 +388,7 @@ describe("rex new --ui", { timeout: DESIGNX_TEST_TIMEOUT_MS }, () => {
     for (const name of DESIGNX_STANDARD_SET) {
       const file = installedFile(name);
       expect(existsSync(join(root, file)), name).toBe(true);
-      expect(captured.out()).toContain(`wrote dx-app/${file}\n`);
+      expect(written).toContain(`dx-app/${file}`);
     }
     const useScreen = `${DESIGNX_UI_DIR}/${DESIGNX_PROVIDED["use-mobile"].file}`;
     expect(existsSync(join(root, DESIGNX_UI_DIR, "use-mobile.ts"))).toBe(false);
@@ -341,6 +442,12 @@ describe("rex new --ui", { timeout: DESIGNX_TEST_TIMEOUT_MS }, () => {
       "@tanstack/react-table",
     ]) {
       expect(manifest.dependencies[name], name).toBeDefined();
+    }
+    for (const [name, version] of Object.entries({
+      ...manifest.dependencies,
+      ...manifest.devDependencies,
+    })) {
+      expect(version, name).toMatch(EXACT_OR_CARET);
     }
     expect(readFileSync(join(root, "index.html"), "utf8")).toContain(
       `<link rel="stylesheet" href="${DESIGNX_STYLESHEET_HREF}" />`,

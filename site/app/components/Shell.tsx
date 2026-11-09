@@ -85,8 +85,15 @@ function NavIcon({ id }: { readonly id: string }) {
   return <Icon aria-hidden="true" className="size-4 shrink-0" />;
 }
 
-export function Button({ type = "button", ...props }: ShellButtonProps) {
-  return <DesignxButton type={type} variant="outline" {...props} />;
+export function Button({ type = "button", className, ...props }: ShellButtonProps) {
+  return (
+    <DesignxButton
+      type={type}
+      variant="outline"
+      className={className === undefined ? NAV_TARGET : `${NAV_TARGET} ${className}`}
+      {...props}
+    />
+  );
 }
 
 export function Sheet({ title, titleId, form, children }: ShellSheetProps) {
@@ -232,8 +239,8 @@ function PaletteTrigger({ label, shortcut, address, onOpen }: ShellPaletteTrigge
       onClick={onOpen}
     >
       <SearchIcon aria-hidden="true" />
-      <span className="hidden sm:inline">{label}</span>
-      <Kbd className="hidden sm:inline-flex">{keys}</Kbd>
+      <span className="hidden lg:inline">{label}</span>
+      <Kbd className="hidden lg:inline-flex">{keys}</Kbd>
     </DesignxButton>
   );
 }
@@ -316,55 +323,55 @@ function BrandLink({ home }: { readonly home: ShellNavLink | undefined }) {
 export function Frame({ links, navForm, palette, children }: ShellFrameProps) {
   const NavSlot = useShellComponent("Nav");
   const home = links.find((link) => link.id === HOME_PAGE);
-  const sidebar = navForm === "sidebar";
-  const dock = navForm === "dock";
   return (
     <ThemeProvider>
       <div
         data-site-frame={navForm}
-        className="flex min-h-svh flex-col bg-background text-foreground md:flex-row"
+        className="flex min-h-svh flex-col bg-background text-foreground lg:flex-row"
       >
-        {sidebar ? (
-          <aside
-            aria-label="Site"
-            data-site-sidebar=""
-            className="flex flex-col gap-6 border-b border-sidebar-border bg-sidebar px-4 py-5 text-sidebar-foreground md:sticky md:top-0 md:h-svh md:w-64 md:shrink-0 md:border-r md:border-b-0"
-          >
-            <BrandLink home={home} />
-            <NavSlot links={links} form="sidebar" />
-            <div className="mt-auto flex items-center gap-2">
-              <GitHubLink />
-            </div>
-          </aside>
-        ) : null}
+        <aside
+          aria-label="Site"
+          data-site-sidebar=""
+          className="hidden border-sidebar-border bg-sidebar px-4 py-5 text-sidebar-foreground lg:sticky lg:top-0 lg:flex lg:h-svh lg:w-64 lg:shrink-0 lg:flex-col lg:gap-6 lg:border-r"
+        >
+          <BrandLink home={home} />
+          <NavSlot links={links} form="sidebar" />
+          <div className="mt-auto flex items-center gap-2">
+            <GitHubLink />
+          </div>
+        </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header
             data-site-appbar=""
             className="sticky top-0 z-20 flex min-h-14 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-xl md:px-6"
           >
-            {sidebar ? null : <BrandLink home={home} />}
-            {navForm === "bar" ? <NavSlot links={links} form="bar" /> : null}
+            <div className="flex lg:hidden">
+              <BrandLink home={home} />
+            </div>
+            <div className="hidden min-[600px]:max-lg:flex">
+              <NavSlot links={links} form="bar" />
+            </div>
             <div className="ml-auto flex items-center gap-2">
               {palette === null ? null : <PaletteTrigger {...palette} />}
-              {sidebar ? null : <GitHubLink />}
+              <div className="flex lg:hidden">
+                <GitHubLink />
+              </div>
               <ThemeToggle />
             </div>
           </header>
           <div
             data-site-content=""
-            className={`mx-auto flex w-full max-w-[72rem] min-w-0 flex-1 flex-col gap-6 px-4 pt-8 md:px-6 ${dock ? "pb-28" : "pb-16"}`}
+            className="mx-auto flex w-full max-w-[72rem] min-w-0 flex-1 flex-col gap-6 px-4 pt-8 pb-28 min-[600px]:pb-16 md:px-6"
           >
             {children}
           </div>
         </div>
-        {dock ? (
-          <div
-            data-site-dock=""
-            className="fixed inset-x-0 bottom-0 z-30 overflow-x-auto border-t border-border bg-background/95 px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl"
-          >
-            <NavSlot links={links} form="dock" />
-          </div>
-        ) : null}
+        <div
+          data-site-dock=""
+          className="fixed inset-x-0 bottom-0 z-30 overflow-x-auto border-t border-border bg-background/95 px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl min-[600px]:hidden"
+        >
+          <NavSlot links={links} form="dock" />
+        </div>
       </div>
     </ThemeProvider>
   );

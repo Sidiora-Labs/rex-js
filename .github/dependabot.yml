@@ -1,7 +1,9 @@
 # Dependency updates for the pnpm workspace and the GitHub Actions workflows.
 # Minor and patch npm updates arrive grouped in one weekly pull request; a major update is not in
-# the group, so Dependabot opens it on its own. Actions are pinned by major version in the
-# workflows and arrive grouped weekly.
+# the group, so Dependabot opens it on its own. Actions are pinned by full commit SHA with the
+# release tag in a trailing comment; Dependabot moves the SHA and the comment together, grouped
+# weekly. Security updates for each ecosystem arrive grouped in their own pull request as soon as
+# an advisory is published.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -30,5 +32,10 @@ updates:
       day: monday
     groups:
       github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      github-actions-security:
+        applies-to: security-updates
         patterns:
           - "*"

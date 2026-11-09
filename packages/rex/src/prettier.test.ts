@@ -65,8 +65,12 @@ describe("rex/prettier", () => {
     expect(PRETTIER_CONFIG_FILE).toBe(".prettierrc");
     expect(prettierConfigTemplate()).toBe('"@sidioralabs/rex/prettier"\n');
     const packageJson = JSON.parse(readFileSync(join(here, "../package.json"), "utf8")) as {
-      readonly exports: Readonly<Record<string, string>>;
+      readonly exports: Readonly<Record<string, unknown>>;
     };
-    expect(packageJson.exports["./prettier"]).toBe("./src/prettier.ts");
+    expect(packageJson.exports["./prettier"]).toEqual({
+      "rex-source": "./src/prettier.ts",
+      types: "./dist/prettier.d.ts",
+      default: "./dist/prettier.js",
+    });
   });
 });

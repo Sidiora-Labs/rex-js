@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -48,7 +48,6 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, "..", "..");
-const cliEntry = join(here, "index.ts");
 const coreEntry = join(here, "..", "index.ts");
 const schemaEntry = import.meta.resolve(SCHEMA_IMPORT);
 const fieldsEntry = join(here, "..", "schema", "index.ts");
@@ -75,39 +74,10 @@ beforeAll(async () => {
   await createProgram({ cwd: tmpdir(), out: () => undefined, err: () => undefined });
 }, COMMAND_LOAD_TIMEOUT_MS);
 
-const CLI_BUILD_TIMEOUT_MS = 180_000;
-
-function buildCli(): string {
-  const cache = join(packageRoot, "node_modules", ".cache");
-  mkdirSync(cache, { recursive: true });
-  const outDir = mkdtempSync(join(cache, "rex-cli-"));
-  temporary.push(outDir);
-  const config = ts.getParsedCommandLineOfConfigFile(
-    join(packageRoot, "tsconfig.build.json"),
-    {},
-    {
-      ...ts.sys,
-      onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
-        throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
-      },
-    },
-  );
-  if (config === undefined) throw new Error("tsconfig.build.json could not be read");
-  const program = ts.createProgram({
-    rootNames: config.fileNames,
-    options: { ...config.options, outDir, declaration: false },
-  });
-  const emitted = program.emit();
-  expect(emitted.emitSkipped).toBe(false);
-  const entry = join(outDir, basename(dirname(cliEntry)), "index.js");
-  expect(existsSync(entry)).toBe(true);
-  return entry;
-}
-
-let builtCli = "";
+const distCli = join(packageRoot, "dist", "cli", "index.js");
 
 function rex(...args: string[]) {
-  const result = spawnSync(process.execPath, [builtCli, ...args], {
+  const result = spawnSync(process.execPath, [distCli, ...args], {
     cwd: packageRoot,
     encoding: "utf8",
     env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" },
@@ -137,10 +107,6 @@ function captureIO(cwd = packageRoot) {
 const SPAWN_TEST_TIMEOUT_MS = 30_000;
 
 describe("rex CLI as a node process without tsx", { timeout: SPAWN_TEST_TIMEOUT_MS }, () => {
-  beforeAll(() => {
-    builtCli = buildCli();
-  }, CLI_BUILD_TIMEOUT_MS);
-
   it("prints the package version for --version, -v and version", () => {
     expect(REX_VERSION).toBe(packageVersion);
     for (const args of [["--version"], ["-v"], ["version"]]) {
@@ -383,9 +349,10 @@ describe("run and createProgram", () => {
       { long: "--overlays", value: "names", default: [] },
     ]);
     expect(command("build").options).toMatchObject([
-      { long: "--target", value: "target", default: "node" },
+      { long: "--target", value: "target", negate: false },
       { long: "--no-check", value: null, negate: true },
     ]);
+    expect(command("build").options[0]).not.toHaveProperty("default");
     expect(command("build").options[1]).not.toHaveProperty("default");
     expect(command("new").options.map((option) => option.long)).toEqual(["--ui", "--no-install"]);
     expect(command("check").options.map((option) => option.long)).toEqual(["--json", "--runtime"]);

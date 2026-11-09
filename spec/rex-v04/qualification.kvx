@@ -3,4 +3,284 @@
 
 [meta]
 feature = "rex-v04"
-entries = 0
+entries = 22
+
+[qualification.001]
+task = "0.2"
+file = "packages/rex/package.json"
+symbol = "peerDependenciesMeta @vitejs/plugin-react"
+observed = "Kept optional under do_2's owning-entry option: only the vite, check and eslint entries import it, and a required peer would make pnpm auto-install vite for server-only consumers. Evidence: 85adc79 | hyperfide spec done 0.2 | 0 | /root/rex-private/logs/rex-v04/0.2.log"
+assumption = "Optional peer plus the owning entries is the intended reading of 1.3; a later task revisits it if the packed-import test shows otherwise."
+severity = "low"
+
+[qualification.002]
+task = "0.2"
+file = "packages/rex/src/client/providers.ts, packages/rex/src/client/shell/slots.ts"
+symbol = "import.meta.env.DEV guard"
+observed = "Module-level import.meta.env.DEV threw on a plain-Node import of the client, server/node and testing entries; now guarded by typeof import.meta.env. vite/budgets.test.ts was not run, so devtools staying out of production bundles is unconfirmed at 85adc79."
+assumption = "The wave gate's full package suite (budgets) confirms devtools exclusion."
+severity = "medium"
+
+[qualification.003]
+task = "0.2"
+file = "docs/architecture.md"
+symbol = "line 7, publishConfig.exports"
+observed = "Still describes the deleted publishConfig.exports override; outside 0.2 touches."
+assumption = "A wave 8 documentation task corrects it."
+severity = "low"
+
+[qualification.004]
+task = "0.1"
+file = "docs/releasing.md"
+symbol = "line 11, REX_VERSION location"
+observed = "Says the constant lives in packages/rex/src/index.ts; it is now generated into src/version.ts by scripts/write-version.mjs and re-exported from index.ts. Outside 0.1 touches. Evidence: 3ce349c | 0.1 verify_cmd | 0 | /root/rex-private/logs/rex-v04/0.1.log"
+assumption = "Task 0.11 (owns docs/releasing.md) or a wave 8 documentation task corrects it."
+severity = "low"
+
+[qualification.005]
+task = "0.5"
+file = "packages/rex/src/client/agent/sidecar.test.tsx"
+symbol = "does not emit a ready interactive sidecar in server HTML before hydration"
+observed = "Test added in f5a1001 with the blanket hydration flag asserts the /about server sidecar says loading before hydration; req 2.8 and do_2 require a loaded page to render ready on the server and stay ready through hydration. Evidence: b0884b9 | hyperfide spec done 0.5 | 1 | /root/rex-private/logs/rex-v04/0.5.log"
+assumption = "Resolved by D13 (rex-main, 2026-11-09): req 2.8 supersedes the pre-hydration rule; the test's server assertion becomes ready with server, hydrated and window.__rex equality; the unregistered browser-only affordance rule stays."
+severity = "assumption"
+
+[qualification.006]
+task = "0.5"
+file = "site/app/pages/api/test/api.test.tsx, site/app/pages/errors/test/errors.test.tsx"
+symbol = "toggle-theme affordance in page.ts"
+observed = "Three site tests render one region alone; the page declares a toggle-theme affordance whose handler only the Shell registers, so state stays loading and the no-actions assertions see toggle-theme. Not the hydration defect. Evidence: b0884b9 | hyperfide spec done 0.5 | 1 | /root/rex-private/logs/rex-v04/0.5.log"
+assumption = "No wave 0 task owns these site pages; the wave gate reports them red until a task is assigned."
+severity = "medium"
+
+[qualification.007]
+task = "0.6"
+file = "packages/rex/src/designx/data-table.test.ts"
+symbol = "resolveDesignxItems"
+observed = "Still fetches the live DesignX registry host, contrary to req 2.2; outside 0.6 touches. Evidence: 14e13b7 | hyperfide spec done 0.6 | 0 | /root/rex-private/logs/rex-v04/0.6.log"
+assumption = "Resolved by task 0.14: the test resolves through the same resolver against the cli/fixtures/designx-registry server and asserts it contacted only that fixture. Evidence: 3826636 | cg spec done 0.14 (live host unreachable) | 0 | /root/rex-private/logs/rex-v04/0.14.log; merged f25d2fb."
+severity = "high"
+
+[qualification.008]
+task = "0.6"
+file = "packages/rex/src/cli/designx.lock.json"
+symbol = "use-media-query, use-touch-capable"
+observed = "The live registry answers 404 for both items; their vendored bodies were rebuilt from site/app/components/ui with only the @/hooks alias restored, so they are not byte copies of a registry response. The lock's vendored field holds the body inline, not a path as the interface ledger wrote."
+assumption = "Interface designx.registry-lock is stable with vendored as inline content; consumer 6.8 codes against that."
+severity = "medium"
+
+[qualification.009]
+task = "0.7"
+file = "packages/rex/src/server/ssr.test.tsx, packages/rex/src/client/loaders.test.tsx, packages/rex/src/freshness.test.ts"
+symbol = "full package suite, three runs"
+observed = "Each of three runs failed the same 15 tests owned elsewhere: 0.5 sidecar state (6), test Vite servers and the runtime copy resolving dist (8, fixed on the wave branch by fix/rex-v04/0-dist-resolution dbd640f), stale docs/api and spec pointers in freshness.test.ts (0.12 and wave-close render). Evidence: 282c1fb | hyperfide spec done 0.7 | 1 | /root/rex-private/logs/rex-v04/0.7.log"
+assumption = "0.7 reruns its gate after 0.5, 0.12 and the wave-close render land."
+severity = "medium"
+
+[qualification.010]
+task = "0.9"
+file = "tools/support-window.mjs"
+symbol = "typescript@7.0.2"
+observed = "pnpm -C packages/rex typecheck exits 1: the TypeScript 7 main entry exports only lib/version.cjs, without createSourceFile, createProgram or SyntaxKind. 5.9.3 and 6.0.3 pass; ESLint 9.39.5 and 10.14.0 pass. Evidence: c66fa84 | node tools/support-window.mjs | 1 for 7.0.2 | /root/rex-private/logs/rex-v04/0.9-matrix.log"
+assumption = "TypeScript 7 stays out of the peer range until a passing run is recorded (Q04)."
+severity = "medium"
+
+[qualification.011]
+task = "0.10"
+file = "tools/test-ratio.mjs"
+symbol = "suiteFailures, test-ratio.test.ts"
+observed = "The ratio check now requires recorded results per package; the demo's Playwright specs count toward the ratio without a results check. The new test-ratio cases and the full workspace run were not executed in the task gate. Evidence: 4a4d65e | hyperfide spec done 0.10 | 0 | /root/rex-private/logs/rex-v04/0.10.log"
+assumption = "Results coverage of e2e specs is open and unowned; the wave gate runs the new cases."
+severity = "low"
+
+[qualification.012]
+task = "0.11"
+file = "examples/demo/playwright.config.ts, site/playwright.config.ts"
+symbol = "firefox and webkit projects"
+observed = "The new projects need Firefox and WebKit locally. Both were downloaded on this host on 2026-11-09, but WebKit's system libraries are missing (playwright install-deps needs apt as root), so browser runs in gate-test.sh cannot start WebKit here. Evidence: dd37c47 | hyperfide spec done 0.11 | 0 | /root/rex-private/logs/rex-v04/0.11.log; /root/rex-private/logs/rex-v04/wave-0-playwright-install.log"
+assumption = "Installing host packages is an environment step for a human; until then a WebKit failure in the gate is BLOCKED, not a product failure."
+severity = "medium"
+
+[qualification.013]
+task = "0.11"
+file = "tools/gate-lint.sh, .github/workflows/checks.yml"
+symbol = "cg spec render --check"
+observed = "gate-lint.sh calls cg, which hosted runners do not have, so checks.yml runs the lint gate's steps individually instead of calling the script. Evidence: dd37c47 | hyperfide spec done 0.11 | 0 | /root/rex-private/logs/rex-v04/0.11.log"
+assumption = "The two lists stay in step through tools/qualification-gates.test.mjs; a later task may make the script runner-portable."
+severity = "low"
+
+[qualification.014]
+task = "0.8"
+file = "pnpm-lock.yaml"
+symbol = "development advisories"
+observed = "pnpm audit --prod reports 0 after the raise (7 before). The full pnpm audit still reports 11 development advisories (4 high): happy-dom 20.14.5 needs a major bump to 21; typedoc pulls markdown-it and minimatch; lighthouse pulls fast-uri and zod 3. Evidence: 4c3c3c0 | hyperfide spec done 0.8 | 0 | /root/rex-private/logs/rex-v04/0.8.log"
+assumption = "Outside req 1.7 (production); a follow-up task is for the integrator to decide."
+severity = "medium"
+
+[qualification.015]
+task = "0.12"
+file = "/usr/local/bin/hyperfide (2.0.0-dev), /usr/local/bin/cg (2.2.0)"
+symbol = "spec render, spec start, spec done"
+observed = "The two binaries render the spec pointers (CLAUDE.md, AGENTS.md, .cursor/rules/spec-workflow.mdc, .github/copilot-instructions.md) differently; main was stale under cg spec render --check, which gate-lint.sh and pnpm freshness use. hyperfide spec start/done rewrite the pointers in the older format, so workers restored them before committing. Pointers on the wave head are rendered with cg 2.2.0. Evidence: 5edf4e3 | hyperfide spec done 0.12 | 0 | /root/rex-private/logs/rex-v04/0.12.log"
+assumption = "cg 2.2.0 is the reference renderer (the version the fleet mechanics were verified with); the hyperfide binary on PATH should be aligned to it by a human."
+severity = "medium"
+
+[qualification.016]
+task = "0.5"
+file = "packages/rex/src/testing (renderRegion)"
+symbol = "renderRegion of a page declaring a shell-owned affordance"
+observed = "An isolated renderRegion of a page that declares a shell-owned affordance (site api: toggle-theme, registered by ThemeToggle in site/app/components/Shell.tsx) reports loading, because the control is absent; loading is the truthful state. Evidence: 0504741 | sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log"
+assumption = "Task 6.6 (provider of interface testing.harness) decides whether the harness surfaces this explicitly."
+severity = "note"
+
+[qualification.017]
+task = "0.5"
+file = "site/app/pages/api/test/api.test.tsx, site/app/pages/errors/test/errors.test.tsx"
+symbol = "publishes its sidecar with no actions"
+observed = "Two assertions expected actions [] while f5a1001 added the toggle-theme affordance to the api and errors declarations and updated only docs.test.tsx. Corrected per rex-main's decision of 2026-11-09 to the docs.test.tsx assertions (ids [toggle-theme], all allowed); the search test renders the page through renderReady. Evidence: bcc73ee | pnpm -C site exec vitest run api.test.tsx errors.test.tsx | 0 | /root/rex-private/logs/rex-v04/0.5-site-tests.log"
+assumption = "Product declarations and the missing-affordance rule are correct; the tests were stale (decision by rex-main, under D13's bounds)."
+severity = "assumption"
+
+[qualification.018]
+task = "0.2"
+file = "packages/rex/src/cli/registrations/migrate.ts, packages/rex/src/cli/registrations/promote.ts"
+symbol = "createProgram command loading"
+observed = "With typescript and vite optional peers since 0.2, rex --help failed in a consumer with only required peers because promote and migrate import typescript at module top level. Fixed on the wave branch through the existing registrations convention. Evidence: 83b84dd | node tools/smoke-cli-bootstrap.mjs and cli suites | 0 | /root/rex-private/logs/rex-v04/0-fix-cli.log"
+assumption = "Wave gate repair, cycle 1; no spec task owns it."
+severity = "medium"
+
+[qualification.019]
+task = "0.11"
+file = "examples/demo/app/components/BalanceCard.tsx"
+symbol = "24h change meter"
+observed = "The new WebKit project failed axe aria-meter-name on the demo portfolio page: Base UI links MeterLabel only after load, so server HTML had role=meter without a name. Fixed with useId and aria-labelledby in the server HTML. Evidence: 815d3dc | pnpm -C examples/demo exec playwright test e2e/axe.spec.ts | 0 | /root/rex-private/logs/rex-v04/0-fix-meter.log"
+assumption = "Wave gate repair, cycle 1; the shared ui/meter.tsx is unchanged."
+severity = "medium"
+
+[qualification.020]
+task = "0.11"
+file = "site/playwright.config.ts"
+symbol = "SITE_PORT, REX_SITE_PORT"
+observed = "Port 4173 on this host is held by an unrelated long-running process (another project's static server), so the site Playwright webServer could not start. Evidence: f5a7fdc | sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log (kept as wave-0-gate-test.run2-f5a7fdc.log). The port now comes from REX_SITE_PORT, default 4173, parsed strictly; tools/serve-static.mjs keeps its own DEFAULT_PORT 4173 but receives --port from the config."
+assumption = "Gates on this host export REX_SITE_PORT with a free port."
+severity = "note"
+
+[qualification.021]
+task = "0.10"
+file = "site/package.json, site/e2e/site.spec.ts, site/e2e/lighthouse.ts"
+symbol = "site test script, run-workspace-tests"
+observed = "0.10 made gate-test run every package's test script; site's test runs playwright test without building dist/client, so the webServer cannot start. With pnpm run build:static added (not committed), 158 of 158 executed site e2e tests failed before a 25-minute timeout (2220 total): CSP-blocked asset requests, Lighthouse accessibility 96 under 100, no-JS waits. The committed main report (0ad3ac4) already shows 164 unexpected, 0 expected. Evidence: 7336856 | sh tools/gate-test.sh (REX_SITE_PORT=4191) | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log; 7336856+script | pnpm -C site test | 124 | /root/rex-private/logs/rex-v04/0-fix-site-e2e.log"
+assumption = "Resolved by task 0.13: the site test script builds the static output first and runs the suite in a parallel functional phase and a one-worker timing phase; 2220 of 2220 pass. Evidence: ce914a9 | REX_SITE_PORT=4291 cg spec done 0.13 | 0 | /root/rex-private/logs/rex-v04/0.13-repair4.log"
+severity = "high"
+
+[qualification.022]
+task = "0.10"
+file = "examples/demo/e2e/report/**, site/e2e/report/results.json"
+symbol = "committed e2e reports"
+observed = "Each gate-test run rewrites the committed demo and site e2e reports and adds per-project report folders (firefox, webkit, phone, tablet), leaving the worktree dirty; the manager restored them after each run."
+assumption = "Task 8.10 (owns the e2e report paths) moves generated reports out of the tracked tree."
+severity = "low"
+
+[qualification.023]
+task = "0.13"
+file = "site/e2e/site.spec.ts, site/e2e/walk.ts"
+symbol = "watchPage, pages without JavaScript"
+observed = "The static build emits no content security policy. The 'failed request ... csp' lines appear only in Chromium with JavaScript disabled, which refuses script fetches and labels them csp; Firefox and WebKit show none. No product path to fix for do_2; the no-JS test now follows a visible link to another static page (b9e57b1, unmerged)."
+assumption = "do_2 of task 0.13 rests on a wrong premise; the integrator decides whether the no-JS test change stands."
+severity = "medium"
+
+[qualification.024]
+task = "0.13"
+file = "site/e2e/lighthouse.ts, packages/rex/src/server/ssr.ts"
+symbol = "phone Lighthouse performance"
+observed = "Phone performance is 85 to 89 on home, errors, docs and api against a threshold of 95, also with one worker, so not contention. All hydration JS finishes before first paint in Lighthouse's simulation; with scripts removed the pages score 100. Repair d0a0cb6 (unmerged, unqualified) moved preloads and the entry into a nonced end-of-body loader and widened into ssr.ts and prerender.ts; api still scores 89."
+assumption = "Resolved by task 0.13 under D14: the d0a0cb6 entry loader restored in ce914a9 plus the site layout-shift and api blocking-time fixes; phone timing phase home 98, api 96, docs 96, errors 99. Evidence: ce914a9 | REX_SITE_PORT=4291 cg spec done 0.13 | 0 | /root/rex-private/logs/rex-v04/0.13-repair4.log"
+severity = "high"
+
+[qualification.025]
+task = "0.13"
+file = "site/app (generated API reference), site/e2e/site.spec.ts"
+symbol = "operability check of /api/sidioralabs-rex-client on webkit"
+observed = "The page has about 17,457 elements; axe alone takes 380 s on WebKit and 140 s on Chromium, so the test exceeds its 240 s timeout. Not started by either 0.13 worker."
+assumption = "Resolved by task 0.13 in 758a3a8: each API kind and symbol is wrapped in a section and highlighted code merges same-style tokens, so axe on the page fell from 350 s to 18 s on WebKit; the timeout is unchanged. Evidence: ce914a9 | REX_SITE_PORT=4291 cg spec done 0.13 | 0 | /root/rex-private/logs/rex-v04/0.13-repair4.log"
+severity = "medium"
+
+[qualification.026]
+task = "0.13"
+file = "site/playwright.config.ts"
+symbol = "json reporter"
+observed = "After the full site run Playwright printed 'RangeError: Invalid string length', likely the json reporter overflowing on inline axe and Lighthouse attachments; results.json was not rewritten. d0a0cb6 attaches reports by path instead; unconfirmed on a full run."
+assumption = "Resolved by task 0.13: axe and Lighthouse reports are written to files and attached by path; the full run reports no RangeError. Evidence: ce914a9 | REX_SITE_PORT=4291 cg spec done 0.13 | 0 | /root/rex-private/logs/rex-v04/0.13-repair4.log"
+severity = "low"
+
+[qualification.027]
+task = "0.13, 0.14, 0.15"
+file = "cg 2.2.0 fleet begin, merge-up, sync"
+symbol = "hyperfide fleet"
+observed = "cg fleet begin and merge-up read spec from the main checkout, which lacks tasks added on the wave branch ('no [task.0.13] with a wave'); worktrees were cut with git worktree add, claims taken with cg spec claim, merges done with git merge --no-ff. cg fleet sync segfaulted (exit 139) in task 0.15 after writing a clean merge 97aeec2."
+assumption = "Tasks added on a wave branch need the spec on main or a cg option for the spec root; tool owner to fix."
+severity = "medium"
+
+[qualification.028]
+task = "1.9"
+file = "site static build (rex build --target static), site/e2e/walk.ts"
+symbol = "content security policy of static pages"
+observed = "Per task 0.13 (b9e57b1): the static build emits no content security policy; the 'failed request ... csp' lines come from Chromium labelling script and module preload fetches it refuses under disabled JavaScript as csp. Firefox and WebKit show none."
+assumption = "Task 1.9 confirms this when it adds the static policy."
+severity = "note"
+
+[qualification.029]
+task = "0.13"
+file = "packages/rex/src/client/page.tsx, client/screen-hold.tsx, client/screen.ts, client/shell/header.tsx, vite/ssr-css.ts, tools/serve-static.mjs"
+symbol = "PageHost, ScreenHold, useHydrated, HeaderSlot, shellHeadHtml, send"
+observed = "b9e57b1 changed framework and tool code outside 0.13's original touches: lazy pages keep the server screen until commit and useHydrated flips in a transition (phone and tablet hydration discarded the prerendered main); the page header is a section labelled by its h1 (it sat outside every landmark); production pages keep the app shell head (meta description was dropped); serve-static gzips text types."
+assumption = "The wave gate's full package run is their evidence."
+severity = "note"
+
+[qualification.030]
+task = "later static-output task (not wave 0)"
+file = "site static build, tools/serve-static.mjs"
+symbol = "extensionless page addresses"
+observed = "On a static host an extensionless page address such as /api redirects to its trailing-slash form /api/, costing one round trip before the document; Lighthouse shows about 600 ms on api, docs and errors under phone throttling."
+assumption = "A later static-output task decides the emitted file layout or link form; not wave 0."
+severity = "note"
+
+[qualification.031]
+task = "0.13"
+file = "packages/rex/src/server/ssr.ts, ssr.test.ts, ssr.test.tsx, static-cache.test.ts, vite/prerender.ts, vite/prerender.test.ts, client/page.tsx, client/screen-hold.tsx, client/screen.ts, client/shell/header.tsx, vite/ssr-css.ts"
+symbol = "renderer document head and tail, prerender MODULE_SCRIPT, client hydration"
+observed = "Task 0.13 changed framework client and server files beyond its original touches: the entry loader of D14 in ssr.ts and prerender.ts (d0a0cb6 content, restored in ce914a9) and the client and head changes of entry 029. Each was added to the task touches with its reason."
+assumption = "The wave gate's full package run is their evidence; later tasks that own ssr.ts build on D14."
+severity = "note"
+
+[qualification.032]
+task = "0.13"
+file = "packages/rex/src/cli/static-target.test.ts"
+symbol = "moduleScript"
+observed = "The static-target test still asserts the pre-D14 tag form, a <script type=\"module\" src> in the shell document; after the D14 loader the 404 and route shells carry no such tag and the test fails ('the document loads the client entry'). The file is outside 0.13's touches and 0.13's verify_cmd does not run it. Evidence: 391ac3c | REX_SITE_PORT=4293 sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log"
+assumption = "Under D14 the assertion must read the entry from the inline loader; held for rex-main's decision on D14 (see entry 033)."
+severity = "high"
+
+[qualification.033]
+task = "0.13"
+file = "examples/demo/e2e/screen-fit.spec.ts, examples/demo/e2e/walk.ts openOverlay"
+symbol = "overlay trigger before hydration"
+observed = "Demo screen-fit fails on send (phone, tablet) and portfolio (desktop): the overlay never opens after its trigger is clicked. The test waits for the server sidecar state ready (true at first paint under D13), then clicks; under D14 the entry is imported after the first frame, after the load event that page.goto waits for, so the click lands on unhydrated markup. Evidence: 391ac3c | REX_SITE_PORT=4293 sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log"
+assumption = "An agent that acts on sidecar ready can lose its first activation under D14; needs rex-main's decision (sidecar holds loading until hydrated, or the agent waits for the mirror, or D14 changes)."
+severity = "high"
+
+[qualification.034]
+task = "0.5"
+file = "packages/rex/src/client/agent/sidecar.tsx, docs/agent-contract.md"
+symbol = "useSidecarPayload browserReady"
+observed = "D13's first clause removed the 0.3.0 rule that a hydrating page reports loading in server HTML until it has hydrated, to satisfy unit tests left stale by that commit; an agent following the documented contract (wait until ready) could then act on markup without handlers, and under D14 three demo screen-fit tests failed (entry 033)."
+assumption = "rex-main reverses it with D15 on 2026-11-09; task 0.16 restores the rule and updates the stale expectations without dropping assertions."
+severity = "assumption"
+
+[qualification.035]
+task = "0.7"
+file = "packages/rex/src/client/list.test.tsx"
+symbol = "Page.List renders the first page with its state, count and a load-more link"
+observed = "Failed once in the full package run of the wave gate: the first test of the file waits with the default 1000 ms waitFor for [data-rex-list] and the file took 1180 ms; it passed in the 391ac3c gate run and 3 of 3 times alone at b4a60b6 (/root/rex-private/logs/rex-v04/0-probe-list-alone.log). The test renders no sidecar or document, so neither 0.16 nor D14 is involved. Evidence: b4a60b6 | REX_SITE_PORT=4293 sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log"
+assumption = "Resolved by rex-main as a wave gate repair in the pattern of task 0.7: the test file loads the lazily imported list view before its first test, so the first render no longer waits on a module import under load. Other lazily loaded views may carry the same sensitivity; a later failure of this kind is repaired the same way."
+severity = "medium"

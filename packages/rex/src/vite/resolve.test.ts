@@ -1,7 +1,14 @@
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { createServer, normalizePath, type Plugin, type ViteDevServer } from "vite";
+import {
+  createServer,
+  defaultClientConditions,
+  defaultServerConditions,
+  normalizePath,
+  type Plugin,
+  type ViteDevServer,
+} from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { rex } from "./plugin.ts";
 import { resolveRuntimeEntry, runtimePaths } from "./resolve.ts";
@@ -12,6 +19,8 @@ const source = join(here, "..");
 const fixtureRoot = join(here, "fixtures", "app");
 const coreEntry = join(source, "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
+const sourceResolve = { alias, conditions: ["rex-source", ...defaultClientConditions] };
+const sourceSsr = { resolve: { conditions: ["rex-source", ...defaultServerConditions] } };
 const PROBE = "\0rex-resolve-probe:";
 const EXTERNAL_SPECIFIER = "rex-resolve-probe-external";
 const RELATIVE_SPECIFIER = "rex-resolve-probe-relative";
@@ -81,7 +90,8 @@ describe(
         configFile: false,
         logLevel: "silent",
         appType: "custom",
-        resolve: { alias },
+        resolve: sourceResolve,
+        ssr: sourceSsr,
         server: { middlewareMode: true, hmr: false, watch: null },
         plugins: [probePlugin(), ...rex({ name: "fixture" })],
       });

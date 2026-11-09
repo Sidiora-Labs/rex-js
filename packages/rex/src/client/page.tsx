@@ -5,10 +5,12 @@ import {
   lazy,
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
+  useState,
   type ComponentType,
   type LazyExoticComponent,
   type ReactNode,
@@ -31,6 +33,7 @@ import { RegionBoundary } from "./boundary.tsx";
 import { pageLoaderQueryHashes, usePageLoaderQueries } from "./loaders.ts";
 import { useNav, type Nav } from "./nav.ts";
 import { useActivePage, type PageResolution } from "./router.tsx";
+import { ScreenHold } from "./screen-hold.tsx";
 import { useDataState } from "./states.ts";
 
 export type PageParamsValue = Readonly<Record<string, unknown>>;
@@ -335,9 +338,16 @@ function useActiveResolution(modules: PageModuleSet): PageResolution {
   return resolution;
 }
 
-const lazyPages = new WeakMap<LazyPageModuleSet, LazyExoticComponent<ComponentType>>();
+interface LoadedPageProps {
+  readonly onCommit: () => void;
+}
 
-function lazyPage(modules: LazyPageModuleSet): LazyExoticComponent<ComponentType> {
+const lazyPages = new WeakMap<
+  LazyPageModuleSet,
+  LazyExoticComponent<ComponentType<LoadedPageProps>>
+>();
+
+function lazyPage(modules: LazyPageModuleSet): LazyExoticComponent<ComponentType<LoadedPageProps>> {
   let component = lazyPages.get(modules);
   if (component === undefined) {
     component = lazy(async () => {
@@ -349,7 +359,10 @@ function lazyPage(modules: LazyPageModuleSet): LazyExoticComponent<ComponentType
         regions: (loaded.regions ?? {}) as Readonly<Record<string, ComponentType>>,
         overlays: (loaded.overlays ?? {}) as Readonly<Record<string, ComponentType>>,
       });
-      function LoadedPage() {
+      function LoadedPage({ onCommit }: LoadedPageProps) {
+        useEffect(() => {
+          onCommit();
+        }, [onCommit]);
         return <EagerPageHost modules={eager} />;
       }
       LoadedPage.displayName = `RexPage(${modules.page.id})`;
@@ -370,13 +383,19 @@ function PageLoading({ modules }: { readonly modules: LazyPageModuleSet }) {
 }
 
 export function PageHost({ modules }: PageHostProps) {
+  const [committed, setCommitted] = useState(false);
+  const onCommit = useCallback(() => setCommitted(true), []);
+  const boundary = useMemo(() => {
+    if (!isLazyPageModules(modules)) return null;
+    const Loaded = lazyPage(modules);
+    return (
+      <Suspense fallback={<PageLoading modules={modules} />}>
+        <Loaded onCommit={onCommit} />
+      </Suspense>
+    );
+  }, [modules, onCommit]);
   if (!isLazyPageModules(modules)) return <EagerPageHost modules={modules} />;
-  const Loaded = lazyPage(modules);
-  return (
-    <Suspense fallback={<PageLoading modules={modules} />}>
-      <Loaded />
-    </Suspense>
-  );
+  return <ScreenHold held={!committed}>{boundary}</ScreenHold>;
 }
 
 function EagerPageHost({ modules }: { readonly modules: EagerPageModuleSet }) {

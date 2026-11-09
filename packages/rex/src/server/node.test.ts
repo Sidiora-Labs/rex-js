@@ -603,9 +603,9 @@ function installRuntimeCopy(cwd: string, root: string): void {
   const copy = join(cwd, "rex-runtime");
   mkdirSync(copy);
   cpSync(join(packageRoot, "package.json"), join(copy, "package.json"));
-  cpSync(join(packageRoot, "src"), join(copy, "src"), {
+  cpSync(join(packageRoot, "dist"), join(copy, "dist"), {
     recursive: true,
-    filter: (source) => basename(source) !== "fixtures" && !/\.test\.tsx?$/.test(source),
+    filter: (source) => basename(source) !== "fixtures" && !/\.test\./.test(source),
   });
   symlinkSync(realpathSync(join(packageRoot, "node_modules")), join(copy, "node_modules"), "dir");
   linkPackage(root, "@sidioralabs/rex", copy);

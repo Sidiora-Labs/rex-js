@@ -5,7 +5,7 @@ import type { RexCommand as Command } from "../args.ts";
 import { RexError } from "../../core/errors.ts";
 import { validateName } from "../../core/ids.ts";
 import { titleFromId } from "../../core/page.ts";
-import { REX_VERSION } from "../../index.ts";
+import { REX_VERSION } from "../../version.ts";
 import type { RexCliIO } from "../index.ts";
 import {
   CLIENT_IMPORT,
@@ -26,14 +26,17 @@ import { runGenerators } from "../generators.ts";
 import { rexPrettierConfig } from "../../prettier.ts";
 import { InvalidArgumentError } from "../args.ts";
 import {
+  DESIGNX_CONFIG_FILE,
   DesignxError,
   fetchDesignx,
+  formatDesignxPaths,
   installPackages,
   type DesignxInstall,
   type DesignxOptions,
 } from "../designx.ts";
 import {
   DEFAULT_UI,
+  designxTemplatePaths,
   formatDesignxTemplates,
   isUiKit,
   type DesignxHome,
@@ -365,7 +368,15 @@ export async function newApp(
     root,
     designx === null ? plan : await formatDesignxTemplates(plan, NEW_APP_HOME),
   ).map((path) => `${appName}/${path}`);
-  if (designx !== null && options.install !== false) installPackages(root);
+  if (designx !== null && options.install !== false) {
+    installPackages(root);
+    await formatDesignxPaths(root, [
+      ...designx.files
+        .filter((entry) => entry.path !== DESIGNX_CONFIG_FILE)
+        .map((entry) => entry.path),
+      ...designxTemplatePaths(NEW_APP_HOME),
+    ]);
+  }
   return written;
 }
 

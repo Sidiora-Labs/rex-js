@@ -1,4 +1,5 @@
 import { WalletIcon } from "lucide-react";
+import { useId } from "react";
 import AnimatedNumber from "./AnimatedNumber.tsx";
 import ChangeBadge from "./ChangeBadge.tsx";
 import { Meter, MeterLabel, MeterValue } from "./ui/meter.tsx";
@@ -34,6 +35,7 @@ export default function BalanceCard({
   const change = Number(change24hUsd);
   const pct = Number(change24hPct);
   const meter = Math.min(100, Math.abs(pct) * 10);
+  const meterLabelId = useId();
   return (
     <section
       aria-label={`${name} balance`}
@@ -75,11 +77,14 @@ export default function BalanceCard({
           value={meter}
           min={0}
           max={100}
+          aria-labelledby={meterLabelId}
           aria-valuetext={`${change >= 0 ? "+" : "-"}${usd(Math.abs(change))} in 24 hours`}
           className="text-white"
           indicatorClassName={pct < 0 ? "bg-(--dx-red-2)" : "bg-(--dx-green-2)"}
         >
-          <MeterLabel className="text-white/85">24h change</MeterLabel>
+          <MeterLabel id={meterLabelId} className="text-white/85">
+            24h change
+          </MeterLabel>
           <MeterValue className="text-white">
             {() => `${change >= 0 ? "+" : "-"}${usd(Math.abs(change))}`}
           </MeterValue>

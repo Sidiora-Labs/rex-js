@@ -14,7 +14,7 @@ Status: roles assigned; the mechanics below were verified by a discarded pilot o
 
 | Manager | Wave | Scope | Tasks | Owner lanes |
 |---|---:|---|---|---|
-| `fm-rex-v04-0` | 0 | Green main and release integrity | 0.1 to 0.12 | release, quality, client, cli, docs |
+| `fm-rex-v04-0` | 0 | Green main and release integrity | 0.1 to 0.16 | release, quality, client, cli, docs |
 | `fm-rex-v04-1` | 1 | Security and correctness | 1.1 to 1.15 | security, server, client, build, data |
 | `fm-rex-v04-2` | 2 | Request model and server | 2.1 to 2.9 | server |
 | `fm-rex-v04-3` | 3 | Data and policy | 3.1 to 3.5 | data |

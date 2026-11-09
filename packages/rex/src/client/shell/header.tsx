@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { useRegistry } from "../context.ts";
 import { useText } from "../i18n/context.ts";
 import { useNav } from "../nav.ts";
@@ -11,6 +12,7 @@ export function HeaderSlot({ active }: ShellSlotProps) {
   const nav = useNav();
   const text = useText();
   const Button = useShellComponent("Button");
+  const titleId = useId();
   const showHeader = active === null || active.chrome.header;
   if (!showHeader) return null;
   const backTarget =
@@ -18,8 +20,8 @@ export function HeaderSlot({ active }: ShellSlotProps) {
       ? undefined
       : registry.find("page", active.chrome.back);
   return (
-    <div className="rex-page-header">
-      <h1 className="rex-page-title">
+    <section className="rex-page-header" aria-labelledby={titleId}>
+      <h1 id={titleId} className="rex-page-title">
         {active === null ? NOT_FOUND_TITLE : text(active.chrome.title)}
       </h1>
       {backTarget === undefined ? null : (
@@ -27,6 +29,6 @@ export function HeaderSlot({ active }: ShellSlotProps) {
           Back to {text(backTarget.chrome.title)}
         </Button>
       )}
-    </div>
+    </section>
   );
 }

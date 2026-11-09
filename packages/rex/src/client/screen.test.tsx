@@ -1,5 +1,5 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from "react";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -12,6 +12,7 @@ import { buildManifest } from "../manifest/build.ts";
 import { validateSidecar, type SidecarPayload } from "../manifest/sidecar.schema.ts";
 import { DENSITY_STORAGE_KEY, DensityProvider, useDensity } from "./agent/density.ts";
 import { RexSidecar, readSidecar } from "./agent/sidecar.tsx";
+import { ScreenHold } from "./screen-hold.tsx";
 import { createRexApp, type DensitySlotProps } from "./app.tsx";
 import * as client from "./index.ts";
 import { definePageModules, view, type PageModuleSet } from "./page.tsx";
@@ -501,6 +502,73 @@ describe("server seed and hydration", () => {
     expect(errors).toEqual([]);
     expect(container.textContent).toBe("desktop:fine:comfortable");
     expect(rootAttributes()).toMatchObject({ screen: "desktop", pointer: "fine" });
+    await act(async () => {
+      hydrated.root?.unmount();
+    });
+    container.remove();
+  });
+
+  it("holds the server screen for a lazily loaded boundary until it commits, keeping its server markup", async () => {
+    const viewport = new StubViewport(1440, false);
+    const source = viewport.source();
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(
+      <Seeded>
+        <ScreenHold held>
+          <Suspense fallback={<p>loading</p>}>
+            <Probe />
+          </Suspense>
+        </ScreenHold>
+      </Seeded>,
+    );
+    document.body.appendChild(container);
+    for (const [name, value] of Object.entries(screenAttributes(phone))) {
+      document.documentElement.setAttribute(name, value);
+    }
+    const serverNode = container.querySelector("p");
+    expect(serverNode?.textContent).toBe("phone:coarse:comfortable");
+    function Committed({ onCommit }: { readonly onCommit: () => void }) {
+      useEffect(() => {
+        onCommit();
+      }, [onCommit]);
+      return <Probe />;
+    }
+    let resolve: (module: { default: typeof Committed }) => void = () => {};
+    const LazyCommitted = lazy(
+      () => new Promise<{ default: typeof Committed }>((done) => (resolve = done)),
+    );
+    function Held() {
+      const [committed, setCommitted] = useState(false);
+      const onCommit = useCallback(() => setCommitted(true), []);
+      return (
+        <ScreenHold held={!committed}>
+          <Suspense fallback={<p>loading</p>}>
+            <LazyCommitted onCommit={onCommit} />
+          </Suspense>
+        </ScreenHold>
+      );
+    }
+    const errors: unknown[] = [];
+    const hydrated: { root: Root | null } = { root: null };
+    await act(async () => {
+      hydrated.root = hydrateRoot(
+        container,
+        <ScreenProvider density="comfortable" source={source}>
+          <Held />
+        </ScreenProvider>,
+        { onRecoverableError: (error) => errors.push(error) },
+      );
+    });
+    expect(errors).toEqual([]);
+    expect(rootAttributes()).toMatchObject({ screen: "desktop", pointer: "fine" });
+    expect(container.querySelector("p")).toBe(serverNode);
+    expect(serverNode?.textContent).toBe("phone:coarse:comfortable");
+    await act(async () => {
+      resolve({ default: Committed });
+    });
+    expect(errors).toEqual([]);
+    expect(container.querySelector("p")).toBe(serverNode);
+    expect(serverNode?.textContent).toBe("desktop:fine:comfortable");
     await act(async () => {
       hydrated.root?.unmount();
     });

@@ -1,7 +1,7 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, normalizePath } from "vite";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { REX_ERRORS_DOCS_BASE } from "../core/errors.ts";
 import { REX_SERVER_ONLY } from "../server-only.ts";
 import {
@@ -20,9 +20,11 @@ import {
 import { REX_HOOKS } from "./hooks.ts";
 import { rex } from "./plugin.ts";
 import { runtimePaths } from "./resolve.ts";
+import { copyFixture } from "../testing/internal/fixture.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixtures = join(here, "fixtures", "boundary");
+const fixtureCopy = copyFixture("vite/fixtures/boundary");
+const fixtures = fixtureCopy.dir;
 const coreEntry = join(here, "..", "index.ts");
 const serverOnlyEntry = join(here, "..", "server-only.ts");
 const alias = [
@@ -36,6 +38,10 @@ interface FixtureBuild {
   readonly secretNames?: readonly string[];
   readonly serverOnlyAlias?: boolean;
 }
+
+afterAll(() => {
+  fixtureCopy.remove();
+});
 
 function root(name: string): string {
   return join(fixtures, name);

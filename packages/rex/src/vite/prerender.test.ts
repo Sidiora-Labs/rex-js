@@ -1,5 +1,4 @@
 import {
-  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -12,7 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { build, type Plugin } from "vite";
+import { build, defaultClientConditions, defaultServerConditions, type Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prerenderBuild, type PrerenderBuildResult } from "../cli/commands/build.ts";
 import type { RexEntryBundle } from "../client/entry.tsx";
@@ -44,6 +43,7 @@ import {
   type RexDocumentAssets,
 } from "../server/ssr.ts";
 import { useLoader } from "../client/loaders.ts";
+import { copyFixture } from "../testing/internal/fixture.ts";
 import { rex } from "./plugin.ts";
 import {
   NOT_FOUND_FILE,
@@ -61,8 +61,8 @@ import {
 import { readClientManifest, readSsrAssets } from "./ssr-css.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixtureSource = join(here, "fixtures", "app");
-const fixtureRoot = join(here, ".prerender-fixture");
+const fixture = copyFixture("vite/fixtures/app");
+const fixtureRoot = fixture.dir;
 const outDir = join(fixtureRoot, "dist");
 const clientDir = join(outDir, "client");
 const coreEntry = join(here, "..", "index.ts");
@@ -222,6 +222,10 @@ const runtime: PrerenderRuntime = { createRexRenderer, pageRenderMode };
 const aliasPlugin: Plugin = {
   name: "prerender-fixture-alias",
   enforce: "pre",
+  config: () => ({
+    resolve: { conditions: ["rex-source", ...defaultClientConditions] },
+    ssr: { resolve: { conditions: ["rex-source", ...defaultServerConditions] } },
+  }),
   resolveId(id) {
     if (id === "@sidioralabs/rex") return coreEntry;
     if (id === "@sidioralabs/rex/client") return clientEntry;
@@ -233,8 +237,6 @@ let assets: RexDocumentAssets;
 let result: PrerenderBuildResult;
 
 beforeAll(async () => {
-  rmSync(fixtureRoot, { recursive: true, force: true });
-  cpSync(fixtureSource, fixtureRoot, { recursive: true });
   for (const [file, source] of Object.entries(FIXTURE_FILES)) {
     const target = join(fixtureRoot, file);
     mkdirSync(dirname(target), { recursive: true });
@@ -259,7 +261,7 @@ beforeAll(async () => {
 }, BUILD_TIMEOUT_MS);
 
 afterAll(() => {
-  rmSync(fixtureRoot, { recursive: true, force: true });
+  fixture.remove();
 });
 
 function read(file: string): string {
@@ -390,7 +392,9 @@ describe("rex build prerendering", { timeout: BUILD_TIMEOUT_MS }, () => {
       expect(html).toContain("Read the guide");
       expect(html).toContain('data-rex-ssr=""');
       expect(html).toContain('type="application/rex+data"');
-      expect(html).toContain(`src="${assets.scripts[0] as string}"`);
+      expect(html).toContain(
+        `for(const src of ${JSON.stringify([assets.scripts[0] as string])})import(src)`,
+      );
       expect(html).toContain(`nonce="${PRERENDER_NONCE}"`);
     }
   });

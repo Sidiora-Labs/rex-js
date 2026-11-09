@@ -53,6 +53,7 @@ export default function DocSearch({
       </Typography>
       <Command
         label={SEARCH_LABEL}
+        vimBindings={false}
         data-site-search=""
         className="rounded-xl border border-outline-variant"
       >
@@ -66,7 +67,9 @@ export default function DocSearch({
           placeholder="Search guides, recipes, errors and their headings"
         />
         <CommandList className="max-h-96">
-          <CommandEmpty>No page matches the search.</CommandEmpty>
+          {query === "" && entries.length > 0 ? null : (
+            <CommandEmpty>No page matches the search.</CommandEmpty>
+          )}
           {sections(entries).map(([section, items]) => (
             <CommandGroup key={section} heading={section}>
               {items.map((entry) => (

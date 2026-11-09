@@ -103,13 +103,14 @@ describe("errors page", () => {
     expect(shownCodes(view.container)).toEqual([]);
   });
 
-  it("publishes its sidecar with no actions", async () => {
+  it("publishes its sidecar with only the theme toggle", async () => {
     const view = await renderCatalog();
     const sidecar = view.sidecar();
     expect(sidecar.page).toBe("errors");
     expect(sidecar.params).toEqual({});
     expect(sidecar.state).toBe("ready");
-    expect(sidecar.actions).toEqual([]);
+    expect(sidecar.actions.map((entry) => entry.id)).toEqual(["toggle-theme"]);
+    expect(sidecar.actions.every((entry) => entry.allowed)).toBe(true);
     expect(sidecar.overlays).toEqual([]);
     expect(view.container.querySelector('main[data-rex-page="errors"]')).not.toBeNull();
     expect(
