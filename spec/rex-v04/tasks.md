@@ -29,13 +29,13 @@
     - Extend eslint.config.js to cover site and tools, and repair the site lint script so it no longer fails on a .tsx extension error.
     - Run the three CLI suites, root lint and format:check once and record the result.
     - _Requirements: 2.3_
-  - [ ] 0.5 Make server render and hydration agree on the sidecar page state
+  - [x] 0.5 Make server render and hydration agree on the sidecar page state
     - Reproduce the ten failures that report state loading where ready is expected, and find where the server-rendered sidecar and the hydrated page state diverge for a page whose loaders resolved on the server.
     - Fix the product path so a page with resolved loader data renders ready on the server and stays ready through hydration, and so window.__rex equals the sidecar script content.
     - Keep the test expectations; do not relax an assertion to loading. Add one regression test that compares the sidecar script with window.__rex after hydration.
     - Record in the qualification log any demo or site test that still fails for a different reason.
     - _Requirements: 2.8_
-  - [ ] 0.6 Pin the DesignX registry and make the default scaffold work offline
+  - [x] 0.6 Pin the DesignX registry and make the default scaffold work offline
     - Add a lock file of registry items with content hashes and vendor the items the default scaffold needs, so rex new verifies each fetched item against its hash and falls back to the vendored copy when the registry is unreachable.
     - Serve registry fixtures from a local server in designx.test.ts and new.test.ts so neither test opens a connection to a third-party host.
     - Write exact dependency versions instead of latest in scaffolds, in examples/demo and in site, and format generated files without requiring the optional prettier peer.
@@ -53,7 +53,7 @@
     - Enable grouped security updates in .github/dependabot.yml.
     - Run pnpm audit --prod and the package typecheck once and record the advisory count.
     - _Requirements: 1.7_
-  - [ ] 0.9 State and test the TypeScript and ESLint support window
+  - [x] 0.9 State and test the TypeScript and ESLint support window
     - Add tools/support-window.mjs that installs each listed TypeScript and ESLint major into a temporary copy and runs the package typecheck and the checker tests, printing one result line per version.
     - Widen the typescript and eslint peer ranges to every major whose run passes; for a major that fails, keep it out of the range and record the failing command in the qualification log.
     - Write the supported window and the plan for the native TypeScript compiler into docs/versioning.md, stating which checker features depend on the compiler API.
@@ -65,13 +65,13 @@
     - Include src/testing in coverage, make coverage thresholds apply even when a test fails, and make tools/test-ratio.mjs fail when the suite it counts has failing tests.
     - Wire tools/navigation-races.mjs, tools/smoke-cli-bootstrap.mjs and rex check --runtime into the gate scripts, and extend tools/qualification-gates.test.mjs to assert the wiring.
     - _Requirements: 2.5_
-  - [ ] 0.11 Harden the CI and release workflows and declare the platform matrix
+  - [x] 0.11 Harden the CI and release workflows and declare the platform matrix
     - Pin every third-party action by commit SHA, pin publint and attw versions, remove the global npm upgrade from the job that holds id-token write, and move shared jobs into reusable workflows.
     - Declare a matrix of Node 22.19, 24 and 26 on Linux, macOS and Windows, add smoke jobs that run the real Bun, Deno and workerd runtimes, add Firefox and WebKit Playwright projects, and add a CodeQL workflow.
     - Add a tag-ancestry check to the release workflow and tools/verify-published.mjs, a post-publish job that installs the published version from the registry and imports every entry.
     - Add tools/workflow-lint.mjs that fails on an unpinned action, a floating tool version or a missing matrix entry, with tests; update docs/releasing.md to describe the workflow as written.
     - _Requirements: 1.6, 2.6_
-  - [ ] 0.12 Regenerate documentation and pass the freshness gates on the wave revision
+  - [x] 0.12 Regenerate documentation and pass the freshness gates on the wave revision
     - Regenerate docs/api and docs/errors.md from the wave revision.
     - Fix every failure reported by pnpm freshness and pnpm docs:check, including version, API and pointer checks.
     - Correct the supported-versions table in SECURITY.md and mark links to hosts that are not yet live as pending in the link checker with a dated allow-list entry.

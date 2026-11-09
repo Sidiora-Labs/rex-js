@@ -49,7 +49,15 @@ function requiredStep(job, command) {
 
 for (const name of ["ci", "release"]) {
   test(`${name} enforces the ratio in a required verification job`, () => {
-    const { jobs } = workflow(name);
+    const callers = workflow(name).jobs;
+    assert.equal(callers.checks.uses, "./.github/workflows/checks.yml");
+    assert.equal(callers.checks.if, undefined);
+    assert.equal(callers.checks["continue-on-error"] ?? false, false);
+    const gate = name === "ci" ? callers.gate : callers.publish;
+    assert.ok(gate.needs.includes("checks"), `${name} must require the checks workflow`);
+    const checks = workflow("checks");
+    assert.deepEqual(Object.keys(checks.on), ["workflow_call"]);
+    const { jobs } = checks;
     const verify = jobs.verify;
     assert.equal(verify.if, undefined);
     assert.equal(verify["continue-on-error"] ?? false, false);
@@ -58,9 +66,9 @@ for (const name of ["ci", "release"]) {
     requiredStep(verify, "pnpm -r typecheck");
     requiredStep(verify, "pnpm -C packages/rex test");
     requiredStep(jobs.coverage, "pnpm -C packages/rex exec vitest run --coverage");
-    const gate = name === "ci" ? jobs.gate : jobs.publish;
     for (const id of requiredJobs) {
-      assert.ok(gate.needs.includes(id), `${name} must require ${id}`);
+      assert.ok(jobs[id], `checks must define ${id}`);
+      assert.equal(jobs[id].if, undefined);
       assert.equal(jobs[id]["continue-on-error"] ?? false, false);
     }
   });
@@ -81,7 +89,7 @@ test("CI rejects skipped and cancelled prerequisites as well as failures", () =>
 test("release publishes the uploaded smoke-tested tarball without rebuilding", () => {
   const { jobs } = workflow("release");
   assert.equal(jobs.publish.if, undefined);
-  const steps = jobs.package.steps;
+  const steps = workflow("checks").jobs.package.steps;
   const smokeIndex = steps.findIndex((step) =>
     step.run?.includes('sh tools/smoke-package.sh "$1"'),
   );

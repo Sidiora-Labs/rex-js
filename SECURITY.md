@@ -6,12 +6,12 @@ This policy covers the `@sidioralabs/rex` package, its `rex` CLI, the Vite plugi
 
 Rex is before 1.0. Security fixes are released for the latest minor version; the previous minor version receives fixes for critical and high severity issues for 90 days after the next minor version is published.
 
-| Version                                                               | Supported                                                                        |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Latest minor (the `version` of `packages/rex/package.json` on `main`) | Yes                                                                              |
-| Previous minor                                                        | Critical and high severity fixes for 90 days after the latest minor is published |
-| Minor lines never published to npm                                    | No; upgrade with `rex migrate` (see docs/migration.md)                           |
-| Earlier                                                               | No                                                                               |
+| Version                                                                     | Supported                                                                        |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Latest minor published to npm (the `latest` dist-tag of `@sidioralabs/rex`) | Yes                                                                              |
+| Previous minor published to npm                                             | Critical and high severity fixes for 90 days after the latest minor is published |
+| Minor lines never published to npm                                          | No; upgrade with `rex migrate` (see docs/migration.md)                           |
+| Earlier                                                                     | No                                                                               |
 
 After 1.0, the latest major version receives all security fixes and the previous major version receives critical and high severity fixes for twelve months after the next major version is published.
 

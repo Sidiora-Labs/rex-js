@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join, posix } from "node:path";
 import {
   DESIGNX_ITEMS,
@@ -13,6 +15,7 @@ import {
 import { rexPrettierConfig } from "../prettier.ts";
 import type { PlannedFile } from "./commands/make.ts";
 import { CLIENT_IMPORT } from "./templates.ts";
+import designxLock from "./designx.lock.json" with { type: "json" };
 
 export const DESIGNX_REGISTRY = DESIGNX_REGISTRY_URL;
 export const DESIGNX_NAMESPACE = "@dx/";
@@ -42,6 +45,22 @@ export const DESIGNX_STYLESHEET_HREF = `/${DESIGNX_THEME_FILE}`;
 export const TAILWIND_PACKAGES = ["@tailwindcss/vite", "tailwindcss"] as const;
 export const TAILWIND_VERSION = "^4.3.0";
 export const DESIGNX_FAILED = "rex.designx.failed";
+export const DESIGNX_LOCK_FILE = "designx.lock.json";
+export const DESIGNX_DEPENDENCY_VERSIONS: Readonly<Record<string, string>> = Object.freeze({
+  "tw-animate-css": "1.4.0",
+});
+
+export interface DesignxPin {
+  readonly url: string;
+  readonly sha256: string;
+  readonly vendored: string;
+}
+
+export interface DesignxLock {
+  readonly items: Readonly<Record<string, DesignxPin>>;
+}
+
+export const DESIGNX_LOCK: DesignxLock = designxLock;
 
 const ITEM_TYPES = [
   "registry:ui",
@@ -166,30 +185,63 @@ export function registryName(dependency: string): string {
   );
 }
 
+export function designxSha256(body: string): string {
+  return createHash("sha256").update(body, "utf8").digest("hex");
+}
+
+export function designxPin(name: string): DesignxPin {
+  const pin = Object.hasOwn(DESIGNX_LOCK.items, name) ? DESIGNX_LOCK.items[name] : undefined;
+  if (pin === undefined) {
+    throw new DesignxError(
+      `DesignX item "${name}" is not pinned in ${DESIGNX_LOCK_FILE}, so Rex will not install it`,
+    );
+  }
+  return pin;
+}
+
+function verifiedBody(name: string, body: string, pin: DesignxPin, source: string): string {
+  const sha256 = designxSha256(body);
+  if (sha256 !== pin.sha256) {
+    throw new DesignxError(
+      `DesignX item "${name}" from ${source} has sha256 ${sha256}, but ${DESIGNX_LOCK_FILE} pins ${pin.sha256}`,
+    );
+  }
+  return body;
+}
+
+async function registryBody(url: string, request: DesignxFetch): Promise<string | null> {
+  let response: Response;
+  try {
+    response = await request(url);
+  } catch {
+    return null;
+  }
+  if (!response.ok) return null;
+  try {
+    return await response.text();
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchDesignxItem(
   name: string,
   options: DesignxOptions = {},
 ): Promise<DesignxItem> {
+  const pin = designxPin(name);
   const url = designxItemUrl(name, options.registry);
-  const request = options.fetch ?? globalThis.fetch;
-  let response: Response;
+  const fetched = await registryBody(url, options.fetch ?? globalThis.fetch);
+  const body =
+    fetched === null
+      ? verifiedBody(name, pin.vendored, pin, `the vendored copy in ${DESIGNX_LOCK_FILE}`)
+      : verifiedBody(name, fetched, pin, url);
+  let parsed: unknown;
   try {
-    response = await request(url);
+    parsed = JSON.parse(body);
   } catch (error) {
-    throw new DesignxError(`cannot reach the DesignX registry at ${url}`, {
-      cause: error,
-    });
+    throw new DesignxError(`DesignX item "${name}" is not valid JSON`, { cause: error });
   }
-  if (!response.ok) {
-    throw new DesignxError(`the DesignX registry answered ${response.status} for ${url}`);
-  }
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch (error) {
-    throw new DesignxError(`the DesignX registry sent invalid JSON for ${url}`, { cause: error });
-  }
-  return parseDesignxItem(body, name);
+  return parseDesignxItem(parsed, name);
 }
 
 export async function resolveDesignxItems(
@@ -384,22 +436,32 @@ function isMissingModule(error: unknown): boolean {
   return code === "ERR_MODULE_NOT_FOUND" || code === "MODULE_NOT_FOUND";
 }
 
-async function loadPrettier(): Promise<Prettier> {
+function appPrettier(root: string): Prettier | null {
+  try {
+    return createRequire(join(root, "package.json"))("prettier") as Prettier;
+  } catch (error) {
+    if (isMissingModule(error)) return null;
+    throw error;
+  }
+}
+
+async function loadPrettier(root: string | undefined): Promise<Prettier | null> {
+  const fromApp = root === undefined ? null : appPrettier(root);
+  if (fromApp !== null) return fromApp;
   try {
     return await import("prettier");
   } catch (error) {
-    if (!isMissingModule(error)) throw error;
-    throw new DesignxError(
-      "the DesignX registry files are written through the rex/prettier preset, but prettier is not installed; add prettier next to rex or pass --ui none",
-      { cause: error },
-    );
+    if (isMissingModule(error)) return null;
+    throw error;
   }
 }
 
 export async function formatDesignxFiles(
   files: readonly PlannedFile[],
+  root?: string,
 ): Promise<readonly PlannedFile[]> {
-  const prettier = await loadPrettier();
+  const prettier = await loadPrettier(root);
+  if (prettier === null) return files;
   return Promise.all(
     files.map(async (file) => {
       let content: string;
@@ -418,10 +480,30 @@ export async function formatDesignxFiles(
   );
 }
 
+export async function formatDesignxPaths(root: string, paths: readonly string[]): Promise<void> {
+  const files = paths.map((path): PlannedFile => ({
+    kind: "file",
+    path,
+    content: readFileSync(join(root, path), "utf8"),
+  }));
+  const formatted = await formatDesignxFiles(files, root);
+  formatted.forEach((file, index) => {
+    if (file.content !== files[index]?.content) writeFileSync(join(root, file.path), file.content);
+  });
+}
+
 export function parseDependency(spec: string): readonly [string, string] {
   const at = spec.indexOf("@", spec.startsWith("@") ? 1 : 0);
-  if (at === -1) return [spec, "latest"];
-  return [spec.slice(0, at), spec.slice(at + 1)];
+  if (at !== -1) return [spec.slice(0, at), spec.slice(at + 1)];
+  const version = Object.hasOwn(DESIGNX_DEPENDENCY_VERSIONS, spec)
+    ? DESIGNX_DEPENDENCY_VERSIONS[spec]
+    : undefined;
+  if (version === undefined) {
+    throw new DesignxError(
+      `the DesignX registry names the dependency "${spec}" without a version, and Rex pins none for it`,
+    );
+  }
+  return [spec, version];
 }
 
 function collect(specs: readonly string[]): Record<string, string> {
@@ -574,6 +656,12 @@ export async function addDesignx(
     writeFileSync(indexFile, withDesignxStylesheet(readFileSync(indexFile, "utf8")));
     written.push("index.html");
   }
-  if (options.install !== false) installPackages(root);
+  if (options.install !== false) {
+    installPackages(root);
+    await formatDesignxPaths(
+      root,
+      install.files.filter((file) => file.path !== DESIGNX_CONFIG_FILE).map((file) => file.path),
+    );
+  }
   return written;
 }

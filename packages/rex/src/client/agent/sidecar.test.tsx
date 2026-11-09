@@ -328,12 +328,13 @@ describe("RexSidecar", () => {
     expect(buildSidecarPayload({ ...source, affordances: [] }).state).toBe("loading");
   });
 
-  it("does not emit a ready interactive sidecar in server HTML before hydration", async () => {
+  it("emits the same ready sidecar in server HTML and after hydration", async () => {
     const previousUrl = window.location.href;
     window.history.replaceState(null, "", "/about");
     const container = document.createElement("div");
     container.innerHTML = await serverHtml(documentTree("/about", createOverlayRegistry()));
-    expect(readSidecar(container)).toMatchObject({ page: "about", state: "loading" });
+    const server = readSidecar(container);
+    expect(server).toMatchObject({ page: "about", state: "ready" });
     const hydrated: { root: Root | null } = { root: null };
     document.body.append(container);
     try {
@@ -344,6 +345,7 @@ describe("RexSidecar", () => {
         expect(readSidecar(container)).toMatchObject({ page: "about", state: "ready" }),
       );
       expect(readSidecar(container)).toEqual(window.__rex);
+      expect(readSidecar(container)).toEqual(server);
     } finally {
       await act(async () => hydrated.root?.unmount());
       container.remove();

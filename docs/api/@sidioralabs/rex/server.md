@@ -3333,6 +3333,26 @@ const MARKDOWN_CONTENT_TYPE: "text/markdown; charset=utf-8" = "text/markdown; ch
 
 ***
 
+<a id="max_pending_confirmations"></a>
+
+### MAX\_PENDING\_CONFIRMATIONS
+
+```ts
+const MAX_PENDING_CONFIRMATIONS: 1024 = 1024;
+```
+
+***
+
+<a id="max_pending_confirmations_per_actor"></a>
+
+### MAX\_PENDING\_CONFIRMATIONS\_PER\_ACTOR
+
+```ts
+const MAX_PENDING_CONFIRMATIONS_PER_ACTOR: 32 = 32;
+```
+
+***
+
 <a id="origin_header"></a>
 
 ### ORIGIN\_HEADER

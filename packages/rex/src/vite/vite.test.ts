@@ -5,7 +5,14 @@ import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
-import { build, createServer, normalizePath, type ViteDevServer } from "vite";
+import {
+  build,
+  createServer,
+  defaultClientConditions,
+  defaultServerConditions,
+  normalizePath,
+  type ViteDevServer,
+} from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { stateExportName } from "../core/states.ts";
 import { DENSITY_HEADER, isApiPath, rex } from "./index.ts";
@@ -53,6 +60,8 @@ afterAll(() => {
 
 const coreEntry = join(here, "..", "index.ts");
 const alias = [{ find: /^@sidioralabs\/rex$/, replacement: coreEntry }];
+const sourceResolve = { alias, conditions: ["rex-source", ...defaultClientConditions] };
+const sourceSsr = { resolve: { conditions: ["rex-source", ...defaultServerConditions] } };
 const fixture = (path: string) => normalizePath(join(fixtureRoot, path));
 const MANIFEST_BUILDERS = /\/src\/manifest\/(build|json-schema|sidecar\.schema)\.ts$/;
 
@@ -199,7 +208,7 @@ describe("the client entry build", { timeout: VITE_TEST_TIMEOUT_MS }, () => {
       root: fixtureRoot,
       configFile: false,
       logLevel: "silent",
-      resolve: { alias },
+      resolve: sourceResolve,
       plugins: [rex({ name: "fixture" })],
       build: { write: false, minify: false },
     });
@@ -362,7 +371,7 @@ describe("the devtools in client builds", { timeout: DEVTOOLS_BUILD_TIMEOUT_MS }
         root: fixtureRoot,
         configFile: false,
         logLevel: "silent",
-        resolve: { alias },
+        resolve: sourceResolve,
         plugins: [
           rex(devtools === undefined ? { name: "fixture" } : { name: "fixture", devtools }),
         ],
@@ -436,7 +445,8 @@ describe("rex() with the Vite dev server", { timeout: VITE_TEST_TIMEOUT_MS }, ()
       configFile: false,
       logLevel: "silent",
       appType: "custom",
-      resolve: { alias },
+      resolve: sourceResolve,
+      ssr: sourceSsr,
       server: { middlewareMode: true, hmr: false },
       plugins: [
         rex({
