@@ -252,3 +252,19 @@ symbol = "renderer document head and tail, prerender MODULE_SCRIPT, client hydra
 observed = "Task 0.13 changed framework client and server files beyond its original touches: the entry loader of D14 in ssr.ts and prerender.ts (d0a0cb6 content, restored in ce914a9) and the client and head changes of entry 029. Each was added to the task touches with its reason."
 assumption = "The wave gate's full package run is their evidence; later tasks that own ssr.ts build on D14."
 severity = "note"
+
+[qualification.032]
+task = "0.13"
+file = "packages/rex/src/cli/static-target.test.ts"
+symbol = "moduleScript"
+observed = "The static-target test still asserts the pre-D14 tag form, a <script type=\"module\" src> in the shell document; after the D14 loader the 404 and route shells carry no such tag and the test fails ('the document loads the client entry'). The file is outside 0.13's touches and 0.13's verify_cmd does not run it. Evidence: 391ac3c | REX_SITE_PORT=4293 sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log"
+assumption = "Under D14 the assertion must read the entry from the inline loader; held for rex-main's decision on D14 (see entry 033)."
+severity = "high"
+
+[qualification.033]
+task = "0.13"
+file = "examples/demo/e2e/screen-fit.spec.ts, examples/demo/e2e/walk.ts openOverlay"
+symbol = "overlay trigger before hydration"
+observed = "Demo screen-fit fails on send (phone, tablet) and portfolio (desktop): the overlay never opens after its trigger is clicked. The test waits for the server sidecar state ready (true at first paint under D13), then clicks; under D14 the entry is imported after the first frame, after the load event that page.goto waits for, so the click lands on unhydrated markup. Evidence: 391ac3c | REX_SITE_PORT=4293 sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log"
+assumption = "An agent that acts on sidecar ready can lose its first activation under D14; needs rex-main's decision (sidecar holds loading until hydrated, or the agent waits for the mirror, or D14 changes)."
+severity = "high"
