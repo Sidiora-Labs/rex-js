@@ -58,7 +58,7 @@ task = "0.6"
 file = "packages/rex/src/designx/data-table.test.ts"
 symbol = "resolveDesignxItems"
 observed = "Still fetches the live DesignX registry host, contrary to req 2.2; outside 0.6 touches. Evidence: 14e13b7 | hyperfide spec done 0.6 | 0 | /root/rex-private/logs/rex-v04/0.6.log"
-assumption = "Needs a new task that points it at the cli/fixtures/designx-registry server; unowned in rex-v04."
+assumption = "Resolved by task 0.14: the test resolves through the same resolver against the cli/fixtures/designx-registry server and asserts it contacted only that fixture. Evidence: 3826636 | cg spec done 0.14 (live host unreachable) | 0 | /root/rex-private/logs/rex-v04/0.14.log; merged f25d2fb."
 severity = "high"
 
 [qualification.008]
@@ -170,7 +170,7 @@ task = "0.10"
 file = "site/package.json, site/e2e/site.spec.ts, site/e2e/lighthouse.ts"
 symbol = "site test script, run-workspace-tests"
 observed = "0.10 made gate-test run every package's test script; site's test runs playwright test without building dist/client, so the webServer cannot start. With pnpm run build:static added (not committed), 158 of 158 executed site e2e tests failed before a 25-minute timeout (2220 total): CSP-blocked asset requests, Lighthouse accessibility 96 under 100, no-JS waits. The committed main report (0ad3ac4) already shows 164 unexpected, 0 expected. Evidence: 7336856 | sh tools/gate-test.sh (REX_SITE_PORT=4191) | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log; 7336856+script | pnpm -C site test | 124 | /root/rex-private/logs/rex-v04/0-fix-site-e2e.log"
-assumption = "Pre-existing site e2e failure; task 1.9 (security headers, owns site/e2e/**) owns the CSP failures; the site test script build step belongs with whichever task the integrator assigns. Gate-test stays red for wave 0."
+assumption = "Assigned to task 0.13, which is not resolved and not merged: on its branch the site test script builds first and 2215 of 2220 pass; the CSP failures were Chromium labels for no-JS script refusals (entry 023). Remaining failures are entries 024 and 025. Evidence: b9e57b1 | REX_SITE_PORT=4291 cg spec done 0.13 | 1 | /root/rex-private/logs/rex-v04/0.13.log"
 severity = "high"
 
 [qualification.022]
@@ -180,3 +180,43 @@ symbol = "committed e2e reports"
 observed = "Each gate-test run rewrites the committed demo and site e2e reports and adds per-project report folders (firefox, webkit, phone, tablet), leaving the worktree dirty; the manager restored them after each run."
 assumption = "Task 8.10 (owns the e2e report paths) moves generated reports out of the tracked tree."
 severity = "low"
+
+[qualification.023]
+task = "0.13"
+file = "site/e2e/site.spec.ts, site/e2e/walk.ts"
+symbol = "watchPage, pages without JavaScript"
+observed = "The static build emits no content security policy. The 'failed request ... csp' lines appear only in Chromium with JavaScript disabled, which refuses script fetches and labels them csp; Firefox and WebKit show none. No product path to fix for do_2; the no-JS test now follows a visible link to another static page (b9e57b1, unmerged)."
+assumption = "do_2 of task 0.13 rests on a wrong premise; the integrator decides whether the no-JS test change stands."
+severity = "medium"
+
+[qualification.024]
+task = "0.13"
+file = "site/e2e/lighthouse.ts, packages/rex/src/server/ssr.ts"
+symbol = "phone Lighthouse performance"
+observed = "Phone performance is 85 to 89 on home, errors, docs and api against a threshold of 95, also with one worker, so not contention. All hydration JS finishes before first paint in Lighthouse's simulation; with scripts removed the pages score 100. Repair d0a0cb6 (unmerged, unqualified) moved preloads and the entry into a nonced end-of-body loader and widened into ssr.ts and prerender.ts; api still scores 89."
+assumption = "Needs a decision on the asset-emission contract in ssr.ts (shared with later tasks) or on deferred hydration; owner to be assigned by the integrator."
+severity = "high"
+
+[qualification.025]
+task = "0.13"
+file = "site/app (generated API reference), site/e2e/site.spec.ts"
+symbol = "operability check of /api/sidioralabs-rex-client on webkit"
+observed = "The page has about 17,457 elements; axe alone takes 380 s on WebKit and 140 s on Chromium, so the test exceeds its 240 s timeout. Not started by either 0.13 worker."
+assumption = "The generated API page must be split or lightened in site/app; the timeout stays."
+severity = "medium"
+
+[qualification.026]
+task = "0.13"
+file = "site/playwright.config.ts"
+symbol = "json reporter"
+observed = "After the full site run Playwright printed 'RangeError: Invalid string length', likely the json reporter overflowing on inline axe and Lighthouse attachments; results.json was not rewritten. d0a0cb6 attaches reports by path instead; unconfirmed on a full run."
+assumption = "Task-scoped to 0.13; confirm on its next full run."
+severity = "low"
+
+[qualification.027]
+task = "0.13, 0.14, 0.15"
+file = "cg 2.2.0 fleet begin, merge-up, sync"
+symbol = "hyperfide fleet"
+observed = "cg fleet begin and merge-up read spec from the main checkout, which lacks tasks added on the wave branch ('no [task.0.13] with a wave'); worktrees were cut with git worktree add, claims taken with cg spec claim, merges done with git merge --no-ff. cg fleet sync segfaulted (exit 139) in task 0.15 after writing a clean merge 97aeec2."
+assumption = "Tasks added on a wave branch need the spec on main or a cg option for the spec root; tool owner to fix."
+severity = "medium"
