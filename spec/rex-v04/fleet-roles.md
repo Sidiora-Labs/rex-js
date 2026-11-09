@@ -1,6 +1,6 @@
 # Fleet roles
 
-Status: roles assigned; no agent has run. The roster is [fleet.kvx](fleet.kvx) and the templates are in `spec/workflow.kvx`.
+Status: roles assigned; the mechanics below were verified by a discarded pilot on 2026-11-09. The roster is [fleet.kvx](fleet.kvx) and the templates are in `spec/workflow.kvx`.
 
 ## Roles
 
@@ -38,7 +38,7 @@ Status: roles assigned; no agent has run. The roster is [fleet.kvx](fleet.kvx) a
 2. Start one worker per eligible task, at most eight at a time. Give each worker its task id, the clauses, the interface blocks it provides and consumes, and the audit item numbers.
 3. Order merges so tasks that share a path merge in ascending id order. A later worker syncs with `hyperfide fleet sync` before it qualifies.
 4. Review each returned branch against its clauses and its `touches`. Reject a diff that weakens a check, adds a fake, or edits outside `touches` without a recorded widening.
-5. Merge with `hyperfide fleet merge-up W.N`, then mark done with `hyperfide spec done W.N`. Never use `--force` on a task whose `verify_cmd` failed.
+5. Merge a task the worker marked done with `hyperfide fleet merge-up W.N`. The worker runs `hyperfide spec done W.N` in its own worktree first. Never use `--force` on a task whose `verify_cmd` failed.
 6. Update a provided interface to `stable` in the ledger when its provider is done, and tell consumers if the signature changed.
 7. At wave close: regenerate `docs/api` and `docs/errors.md`, run the formatter, run both gate scripts once on the wave head, set the wave gate case, and write the wave report.
 8. Report implemented-not-qualified honestly. A task that ran out of budget stays `implemented` with its failing command, exit code and log path.
@@ -51,6 +51,20 @@ Status: roles assigned; no agent has run. The roster is [fleet.kvx](fleet.kvx) a
 4. Stay inside `touches`. Widen with a reason when a path is truly needed. Append only to shared registries.
 5. Record an unrelated failure once in the qualification log and do not fix it.
 6. Commit in the house format on the task branch and report revision, command, exit code and log path in one line.
+
+## Verified mechanics
+
+These were observed with Hyperfide 2.2.0 on this repository. Every command runs with the role environment set: `HYPERFIDE_AGENT`, `HYPERFIDE_ROLE`, `HYPERFIDE_PARENT`, `HYPERFIDE_FEATURE=rex-v04` and `HYPERFIDE_WAVE`.
+
+1. `hyperfide fleet begin W.N --agent w-rex-v04-W.N` cuts the wave branch on first use, cuts the task branch from the wave head, creates the worktree under `.codegraph/worktrees/task-rex-v04-W.N` and takes the claim. It is run from the repository root.
+2. A claim is refused while a live claim lists an overlapping `touches` path, and the refusal names the path. Same-wave tasks that share a path therefore run in rounds. The claim frees once the holder is done and merged up.
+3. A claim lasts 30 minutes. The worker renews it with `hyperfide spec heartbeat W.N --agent w-rex-v04-W.N --ttl 180` right after `spec start`.
+4. A new worktree has no dependencies. `pnpm install --frozen-lockfile --offline` takes a few seconds and warns about the missing `rex` bin until the package is built.
+5. `hyperfide spec start W.N` and `hyperfide spec done W.N` edit `spec/rex-v04/spec.kvx` and `spec/rex-v04/tasks.md` in the task worktree. The worker commits those edits with its work.
+6. `hyperfide spec done W.N` runs the `verify_cmd` and then checks each `touches` path. A declared path that does not exist and was not created is reported. Remove such a path from the task's `touches` only when the task truly did not need it, and record that in the qualification log.
+7. `hyperfide fleet merge-up W.N` runs from the task worktree, needs the task done, and merges into the wave worktree at `.codegraph/worktrees/wave-rex-v04-W`. The manager runs the wave-close work in that worktree.
+8. A task branch cut before a later merge-up is behind the wave head. `hyperfide fleet sync` in the task worktree brings the wave head in.
+9. Parallel workers each change one status line in `spec.kvx` and `tasks.md`, so those merges are clean. The derived views go stale and the manager re-renders them once at wave close.
 
 ## Commit format
 
