@@ -3,4 +3,52 @@
 
 [meta]
 feature = "rex-v04"
-entries = 0
+entries = 6
+
+[qualification.001]
+task = "0.2"
+file = "packages/rex/package.json"
+symbol = "peerDependenciesMeta @vitejs/plugin-react"
+observed = "Kept optional under do_2's owning-entry option: only the vite, check and eslint entries import it, and a required peer would make pnpm auto-install vite for server-only consumers. Evidence: 85adc79 | hyperfide spec done 0.2 | 0 | /root/rex-private/logs/rex-v04/0.2.log"
+assumption = "Optional peer plus the owning entries is the intended reading of 1.3; a later task revisits it if the packed-import test shows otherwise."
+severity = "low"
+
+[qualification.002]
+task = "0.2"
+file = "packages/rex/src/client/providers.ts, packages/rex/src/client/shell/slots.ts"
+symbol = "import.meta.env.DEV guard"
+observed = "Module-level import.meta.env.DEV threw on a plain-Node import of the client, server/node and testing entries; now guarded by typeof import.meta.env. vite/budgets.test.ts was not run, so devtools staying out of production bundles is unconfirmed at 85adc79."
+assumption = "The wave gate's full package suite (budgets) confirms devtools exclusion."
+severity = "medium"
+
+[qualification.003]
+task = "0.2"
+file = "docs/architecture.md"
+symbol = "line 7, publishConfig.exports"
+observed = "Still describes the deleted publishConfig.exports override; outside 0.2 touches."
+assumption = "A wave 8 documentation task corrects it."
+severity = "low"
+
+[qualification.004]
+task = "0.1"
+file = "docs/releasing.md"
+symbol = "line 11, REX_VERSION location"
+observed = "Says the constant lives in packages/rex/src/index.ts; it is now generated into src/version.ts by scripts/write-version.mjs and re-exported from index.ts. Outside 0.1 touches. Evidence: 3ce349c | 0.1 verify_cmd | 0 | /root/rex-private/logs/rex-v04/0.1.log"
+assumption = "Task 0.11 (owns docs/releasing.md) or a wave 8 documentation task corrects it."
+severity = "low"
+
+[qualification.005]
+task = "0.5"
+file = "packages/rex/src/client/agent/sidecar.test.tsx"
+symbol = "does not emit a ready interactive sidecar in server HTML before hydration"
+observed = "Test added in f5a1001 together with the hydration flag in useSidecarPayload asserts the server sidecar of /about says loading before hydration; req 2.8 and task 0.5 do_2 require a loaded page to render ready on the server and stay ready through hydration. No product code satisfies both. Evidence: b0884b9 | hyperfide spec done 0.5 | 1 (45/46) | /root/rex-private/logs/rex-v04/0.5.log"
+assumption = "Integrator decides whether req 2.8 supersedes the pre-hydration loading rule; if so the test's server assertion becomes ready plus sidecar equality. Both left intact; 0.5 stays in_progress."
+severity = "contradiction"
+
+[qualification.006]
+task = "0.5"
+file = "site/app/pages/api/test/api.test.tsx, site/app/pages/errors/test/errors.test.tsx"
+symbol = "toggle-theme affordance in page.ts"
+observed = "Three site tests render one region alone; the page declares a toggle-theme affordance whose handler only the Shell registers, so state stays loading and the no-actions assertions see toggle-theme. Not the hydration defect. Evidence: b0884b9 | hyperfide spec done 0.5 | 1 | /root/rex-private/logs/rex-v04/0.5.log"
+assumption = "No wave 0 task owns these site pages; the wave gate reports them red until a task is assigned."
+severity = "medium"

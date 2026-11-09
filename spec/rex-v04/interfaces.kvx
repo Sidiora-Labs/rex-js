@@ -10,7 +10,7 @@ count = 37
 kind = "constant"
 path = "packages/rex/src/version.ts"
 signature = "export const REX_VERSION: string"
-status = "proposed"
+status = "stable"
 provider = "0.1"
 consumers = ["0.6", "0.12", "8.11"]
 contract = "Generated at build from packages/rex/package.json. Never edited by hand. Equals the manifest version in every build."
@@ -19,7 +19,7 @@ contract = "Generated at build from packages/rex/package.json. Never edited by h
 kind = "package-export"
 path = "packages/rex/package.json"
 signature = "exports[entry] = { 'rex-source': './src/..', types: './dist/..', default: './dist/..' }"
-status = "proposed"
+status = "stable"
 provider = "0.2"
 consumers = ["0.3", "0.10", "8.11"]
 contract = "Registry consumers resolve dist. Workspace packages, Vitest and the dev server select the rex-source condition. No publishConfig override exists."
