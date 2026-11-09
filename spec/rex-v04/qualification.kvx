@@ -170,7 +170,7 @@ task = "0.10"
 file = "site/package.json, site/e2e/site.spec.ts, site/e2e/lighthouse.ts"
 symbol = "site test script, run-workspace-tests"
 observed = "0.10 made gate-test run every package's test script; site's test runs playwright test without building dist/client, so the webServer cannot start. With pnpm run build:static added (not committed), 158 of 158 executed site e2e tests failed before a 25-minute timeout (2220 total): CSP-blocked asset requests, Lighthouse accessibility 96 under 100, no-JS waits. The committed main report (0ad3ac4) already shows 164 unexpected, 0 expected. Evidence: 7336856 | sh tools/gate-test.sh (REX_SITE_PORT=4191) | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log; 7336856+script | pnpm -C site test | 124 | /root/rex-private/logs/rex-v04/0-fix-site-e2e.log"
-assumption = "Assigned to task 0.13, which is not resolved and not merged: on its branch the site test script builds first and 2215 of 2220 pass; the CSP failures were Chromium labels for no-JS script refusals (entries 023 and 028). Remaining failures are entries 024 and 025. Evidence: b9e57b1 | REX_SITE_PORT=4291 cg spec done 0.13 | 1 | /root/rex-private/logs/rex-v04/0.13.log"
+assumption = "Resolved by task 0.13: the site test script builds the static output first and runs the suite in a parallel functional phase and a one-worker timing phase; 2220 of 2220 pass. Evidence: ce914a9 | REX_SITE_PORT=4291 cg spec done 0.13 | 0 | /root/rex-private/logs/rex-v04/0.13-repair4.log"
 severity = "high"
 
 [qualification.022]
@@ -194,7 +194,7 @@ task = "0.13"
 file = "site/e2e/lighthouse.ts, packages/rex/src/server/ssr.ts"
 symbol = "phone Lighthouse performance"
 observed = "Phone performance is 85 to 89 on home, errors, docs and api against a threshold of 95, also with one worker, so not contention. All hydration JS finishes before first paint in Lighthouse's simulation; with scripts removed the pages score 100. Repair d0a0cb6 (unmerged, unqualified) moved preloads and the entry into a nonced end-of-body loader and widened into ssr.ts and prerender.ts; api still scores 89."
-assumption = "rex-main rejected the d0a0cb6 ssr.ts and prerender.ts change; 758a3a8 reverts it. The fix belongs in the site (what the four pages ship on first load), still owned by 0.13; measured alone after the revert: home 88, api 85, docs 88, errors 90."
+assumption = "Resolved by task 0.13 under D14: the d0a0cb6 entry loader restored in ce914a9 plus the site layout-shift and api blocking-time fixes; phone timing phase home 98, api 96, docs 96, errors 99. Evidence: ce914a9 | REX_SITE_PORT=4291 cg spec done 0.13 | 0 | /root/rex-private/logs/rex-v04/0.13-repair4.log"
 severity = "high"
 
 [qualification.025]
@@ -202,7 +202,7 @@ task = "0.13"
 file = "site/app (generated API reference), site/e2e/site.spec.ts"
 symbol = "operability check of /api/sidioralabs-rex-client on webkit"
 observed = "The page has about 17,457 elements; axe alone takes 380 s on WebKit and 140 s on Chromium, so the test exceeds its 240 s timeout. Not started by either 0.13 worker."
-assumption = "The generated API page must be split or lightened in site/app; the timeout stays."
+assumption = "Resolved by task 0.13 in 758a3a8: each API kind and symbol is wrapped in a section and highlighted code merges same-style tokens, so axe on the page fell from 350 s to 18 s on WebKit; the timeout is unchanged. Evidence: ce914a9 | REX_SITE_PORT=4291 cg spec done 0.13 | 0 | /root/rex-private/logs/rex-v04/0.13-repair4.log"
 severity = "medium"
 
 [qualification.026]
@@ -210,7 +210,7 @@ task = "0.13"
 file = "site/playwright.config.ts"
 symbol = "json reporter"
 observed = "After the full site run Playwright printed 'RangeError: Invalid string length', likely the json reporter overflowing on inline axe and Lighthouse attachments; results.json was not rewritten. d0a0cb6 attaches reports by path instead; unconfirmed on a full run."
-assumption = "Task-scoped to 0.13; confirm on its next full run."
+assumption = "Resolved by task 0.13: axe and Lighthouse reports are written to files and attached by path; the full run reports no RangeError. Evidence: ce914a9 | REX_SITE_PORT=4291 cg spec done 0.13 | 0 | /root/rex-private/logs/rex-v04/0.13-repair4.log"
 severity = "low"
 
 [qualification.027]
@@ -235,4 +235,20 @@ file = "packages/rex/src/client/page.tsx, client/screen-hold.tsx, client/screen.
 symbol = "PageHost, ScreenHold, useHydrated, HeaderSlot, shellHeadHtml, send"
 observed = "b9e57b1 changed framework and tool code outside 0.13's original touches: lazy pages keep the server screen until commit and useHydrated flips in a transition (phone and tablet hydration discarded the prerendered main); the page header is a section labelled by its h1 (it sat outside every landmark); production pages keep the app shell head (meta description was dropped); serve-static gzips text types."
 assumption = "The wave gate's full package run is their evidence."
+severity = "note"
+
+[qualification.030]
+task = "later static-output task (not wave 0)"
+file = "site static build, tools/serve-static.mjs"
+symbol = "extensionless page addresses"
+observed = "On a static host an extensionless page address such as /api redirects to its trailing-slash form /api/, costing one round trip before the document; Lighthouse shows about 600 ms on api, docs and errors under phone throttling."
+assumption = "A later static-output task decides the emitted file layout or link form; not wave 0."
+severity = "note"
+
+[qualification.031]
+task = "0.13"
+file = "packages/rex/src/server/ssr.ts, ssr.test.ts, ssr.test.tsx, static-cache.test.ts, vite/prerender.ts, vite/prerender.test.ts, client/page.tsx, client/screen-hold.tsx, client/screen.ts, client/shell/header.tsx, vite/ssr-css.ts"
+symbol = "renderer document head and tail, prerender MODULE_SCRIPT, client hydration"
+observed = "Task 0.13 changed framework client and server files beyond its original touches: the entry loader of D14 in ssr.ts and prerender.ts (d0a0cb6 content, restored in ce914a9) and the client and head changes of entry 029. Each was added to the task touches with its reason."
+assumption = "The wave gate's full package run is their evidence; later tasks that own ssr.ts build on D14."
 severity = "note"

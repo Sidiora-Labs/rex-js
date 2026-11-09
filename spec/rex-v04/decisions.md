@@ -19,6 +19,7 @@ Status: design, not implementation evidence. Requirements and task statuses are 
 | D11 | The server decides | Authorization, confirmation, the human gate, flow advance and audit are enforced on the server. |
 | D12 | The last wave documents what landed | Guides and the changelog are written against merged behaviour. |
 | D13 | The server-rendered sidecar of a page whose loaders resolved reports the page data state, and hydration alone never changes it | A declared browser-only affordance that has not registered is listed as not allowed with its reason and holds the state at loading until it registers. This supersedes the pre-hydration loading rule introduced with the hydration flag in the 0.3.0 changelog commit. Decided by rex-main on 2026-11-09 while qualifying task 0.5; flagged for human review. |
+| D14 | A Rex document paints its server HTML before it starts hydration | The document carries no head module preloads; one inline nonced module script waits for the first frame, then adds the module preloads and imports the entry. Static pages carry no such script. Cost: on a cold visit hydration starts up to one round trip later. Benefit: the first paint never waits for hydration scripts or their execution. One pattern for every document, served or prerendered. Decided by rex-main on 2026-11-09 while qualifying task 0.13, reversing the earlier rejection of the d0a0cb6 loading change; flagged for human review. |
 
 ## Proposed choices
 
