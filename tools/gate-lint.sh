@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
-# Release lint gate: typecheck every package, run the Rex checker with the
-# runtime pass on the demo and the site, audit production dependencies and
-# review their licenses. Every step runs; the gate fails if any failed.
+# Release lint gate: typecheck every package, lint and check formatting, run
+# the Rex checker with the runtime pass on the demo and the site, audit
+# production dependencies and review their licenses. Every step runs; the
+# gate fails if any failed.
 set -u
 cd "$(dirname "$0")/.."
 pnpm -C packages/rex build || exit 1
@@ -13,6 +14,8 @@ gate() {
   "$@" || failed="$failed $name"
 }
 gate typecheck pnpm -r typecheck
+gate lint pnpm lint
+gate format pnpm format:check
 gate demo-check pnpm -C examples/demo exec rex check --runtime
 gate site-check pnpm -C site exec rex check --runtime
 gate audit pnpm audit --prod

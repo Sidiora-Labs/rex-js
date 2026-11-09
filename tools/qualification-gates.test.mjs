@@ -187,6 +187,8 @@ test("the gate scripts run every wired gate and fail when any of them fails", ()
     ],
     "gate-lint.sh": [
       "pnpm -r typecheck",
+      "pnpm lint",
+      "pnpm format:check",
       "pnpm -C examples/demo exec rex check --runtime",
       "pnpm -C site exec rex check --runtime",
       "pnpm audit --prod",
