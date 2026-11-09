@@ -75,7 +75,7 @@ importers:
         specifier: ^4.3.0
         version: 4.3.3
       tw-animate-css:
-        specifier: latest
+        specifier: 1.4.0
         version: 1.4.0
       vite:
         specifier: ^8.3.6
@@ -299,7 +299,7 @@ importers:
         specifier: ^4.3.0
         version: 4.3.3
       tw-animate-css:
-        specifier: latest
+        specifier: 1.4.0
         version: 1.4.0
       vite:
         specifier: ^8.3.6
