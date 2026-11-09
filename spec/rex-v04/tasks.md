@@ -65,7 +65,7 @@
     - Include src/testing in coverage, make coverage thresholds apply even when a test fails, and make tools/test-ratio.mjs fail when the suite it counts has failing tests.
     - Wire tools/navigation-races.mjs, tools/smoke-cli-bootstrap.mjs and rex check --runtime into the gate scripts, and extend tools/qualification-gates.test.mjs to assert the wiring.
     - _Requirements: 2.5_
-  - [ ] 0.11 Harden the CI and release workflows and declare the platform matrix
+  - [x] 0.11 Harden the CI and release workflows and declare the platform matrix
     - Pin every third-party action by commit SHA, pin publint and attw versions, remove the global npm upgrade from the job that holds id-token write, and move shared jobs into reusable workflows.
     - Declare a matrix of Node 22.19, 24 and 26 on Linux, macOS and Windows, add smoke jobs that run the real Bun, Deno and workerd runtimes, add Firefox and WebKit Playwright projects, and add a CodeQL workflow.
     - Add a tag-ancestry check to the release workflow and tools/verify-published.mjs, a post-publish job that installs the published version from the registry and imports every entry.
