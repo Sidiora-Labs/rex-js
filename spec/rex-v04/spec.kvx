@@ -341,7 +341,7 @@ time_limit_minutes = 90
 
 [task.0.7]
 title = "Remove load sensitivity from the flaky suites"
-status = "in_progress"
+status = "done"
 wave = 0
 requires = ["0.3", "0.4"]
 touches = ["packages/rex/src/client/agent/flow.test.tsx", "packages/rex/src/client/agent/flow.tsx", "packages/rex/src/cli/commands.test.ts", "packages/rex/vitest.config.ts", "packages/rex/src/testing/internal/fixture.test.ts"]
@@ -1871,7 +1871,7 @@ oracle = "rex new with default options succeeds with the registry host unreachab
 
 [case.RX4-007]
 title = "Remove load sensitivity from the flaky suites"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["2.4"]
 tasks = ["0.7"]
