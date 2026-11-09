@@ -108,6 +108,16 @@ describe("HeaderSlot", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
+  it("puts the page header in a region landmark named by the page title", () => {
+    const { container } = mount("/");
+    const region = screen.getByRole("region", { name: "Home" });
+    expect(region).toBe(container.querySelector(".rex-page-header"));
+    expect(region.tagName).toBe("SECTION");
+    const title = screen.getByRole("heading", { level: 1 });
+    expect(region.getAttribute("aria-labelledby")).toBe(title.id);
+    expect(title.id).not.toBe("");
+  });
+
   it("renders the not-found title when no page is active", () => {
     mount("/missing");
     expect(heading()).toBe(NOT_FOUND_TITLE);

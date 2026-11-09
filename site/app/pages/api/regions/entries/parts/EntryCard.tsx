@@ -28,6 +28,14 @@ export interface EntryCardProps {
   readonly kinds: readonly EntryKind[];
 }
 
+const SYMBOLS_PER_ROW = 3;
+const SYMBOL_ROW_HEIGHT = 40;
+const KIND_HEADING_HEIGHT = 28;
+
+function kindHeight(symbols: number): number {
+  return KIND_HEADING_HEIGHT + Math.ceil(symbols / SYMBOLS_PER_ROW) * SYMBOL_ROW_HEIGHT;
+}
+
 export default function EntryCard({ slug, title, entry, summary, href, kinds }: EntryCardProps) {
   const headingId = `api-entry-${slug}`;
   return (
@@ -52,7 +60,12 @@ export default function EntryCard({ slug, title, entry, summary, href, kinds }: 
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {kinds.map((kind) => (
-            <div key={kind.id} data-site-api-kind={kind.title} className="flex flex-col gap-2">
+            <div
+              key={kind.id}
+              data-site-api-kind={kind.title}
+              className="flex flex-col gap-2 [content-visibility:auto]"
+              style={{ containIntrinsicBlockSize: `auto ${kindHeight(kind.symbols.length)}px` }}
+            >
               <Typography variant="eyebrow" as="h4" className="m-0">
                 {kind.title} ({kind.symbols.length})
               </Typography>

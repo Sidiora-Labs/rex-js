@@ -10,9 +10,9 @@
     "check": "rex check",
     "manifest": "rex manifest",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "rex check && vitest run && playwright test",
+    "test": "rex check && vitest run && pnpm run build:static && pnpm run test:e2e",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "node e2e/phases.mjs",
     "lint": "pnpm -w exec eslint site",
     "format": "prettier --write ."
   },

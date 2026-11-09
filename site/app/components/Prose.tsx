@@ -14,7 +14,7 @@ const PROSE_ELEMENTS = [
   "[&_strong]:font-semibold [&_hr]:my-10 [&_hr]:border-border",
   "[&_blockquote]:my-6 [&_blockquote]:border-l-2 [&_blockquote]:border-foreground [&_blockquote]:pl-5 [&_blockquote]:italic",
   "[&_:not(pre)>code]:rounded-xs [&_:not(pre)>code]:bg-container [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[0.88em]",
-  "[&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-outline-variant [&_pre]:bg-container [&_pre]:p-4 [&_pre]:font-mono [&_pre]:text-[13px] [&_pre]:leading-6",
+  "[&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-outline-variant [&_pre]:bg-card [&_pre]:p-4 [&_pre]:font-mono [&_pre]:text-[13px] [&_pre]:leading-6",
   "[&_.shiki_span]:[color:light-dark(var(--shiki-light),var(--shiki-dark))]",
   "[&_table]:my-6 [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:text-sm",
   "[&_th]:border-b [&_th]:border-border-strong [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium",

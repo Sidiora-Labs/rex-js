@@ -1,7 +1,9 @@
 import {
   createContext,
   createElement,
+  startTransition,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
@@ -247,11 +249,11 @@ function subscribeNothing(): () => void {
 }
 
 function useHydrated(): boolean {
-  return useSyncExternalStore(
-    subscribeNothing,
-    () => true,
-    () => false,
-  );
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    startTransition(() => setHydrated(true));
+  }, []);
+  return hydrated;
 }
 
 function sameState(a: ScreenState, b: ScreenSnapshot, density: RexScreenDensity): boolean {

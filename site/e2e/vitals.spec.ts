@@ -10,6 +10,9 @@ const source = readFileSync(
   "utf8",
 );
 
+const NON_INTERACTIVE_EXCLUDED =
+  'a[href], button, input, select, textarea, summary, label, [role="button"], [role="link"], [tabindex]';
+
 for (const stop of siteStops()) {
   test(`Core Web Vitals: ${stop.path}`, async ({ page, context }, info) => {
     await page.addInitScript({
@@ -24,7 +27,22 @@ for (const stop of siteStops()) {
     });
     await page.goto(stop.path);
     await waitForSidecar(page, stop.page.id, { mirror: stop.page.render !== "static" });
-    await page.locator("main").click({ position: { x: 8, y: 8 } });
+    const target = await page.evaluate((selector) => {
+      const main = document.querySelector("main");
+      if (main === null) return null;
+      const box = main.getBoundingClientRect();
+      for (let y = box.top + 8; y < Math.min(box.bottom, window.innerHeight) - 8; y += 8) {
+        for (let x = box.left + 8; x < box.right - 8; x += 8) {
+          const hit = document.elementFromPoint(x, y);
+          if (hit !== null && main.contains(hit) && hit.closest(selector) === null) {
+            return { x: x - box.left, y: y - box.top };
+          }
+        }
+      }
+      return null;
+    }, NON_INTERACTIVE_EXCLUDED);
+    if (target === null) throw new Error(`No non-interactive point in main on ${stop.path}`);
+    await page.locator("main").click({ position: target });
     await page.evaluate(
       () =>
         new Promise<void>((resolve) =>

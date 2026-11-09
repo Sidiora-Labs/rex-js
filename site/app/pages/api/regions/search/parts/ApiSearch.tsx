@@ -7,6 +7,7 @@ import {
   CommandList,
 } from "../../../../../components/ui/command.tsx";
 import { Typography } from "../../../../../components/ui/typography.tsx";
+import { useState } from "react";
 
 export interface ApiSearchEntry {
   readonly slug: string;
@@ -24,6 +25,7 @@ export interface ApiSearchProps {
 const SEARCH_LABEL = "Search the API";
 
 export default function ApiSearch({ entries, onOpen }: ApiSearchProps) {
+  const [query, setQuery] = useState("");
   return (
     <div className="flex flex-col gap-4">
       <Typography variant="h3" as="h2" className="m-0">
@@ -31,12 +33,19 @@ export default function ApiSearch({ entries, onOpen }: ApiSearchProps) {
       </Typography>
       <Command
         label={SEARCH_LABEL}
+        vimBindings={false}
         data-site-api-search=""
         className="rounded-xl border border-outline-variant"
       >
-        <CommandInput placeholder="Search the package entries and their exports" />
+        <CommandInput
+          value={query}
+          onValueChange={setQuery}
+          placeholder="Search the package entries and their exports"
+        />
         <CommandList className="max-h-96">
-          <CommandEmpty>No entry matches the search.</CommandEmpty>
+          {query === "" && entries.length > 0 ? null : (
+            <CommandEmpty>No entry matches the search.</CommandEmpty>
+          )}
           <CommandGroup heading="Entries">
             {entries.map((entry) => (
               <CommandItem

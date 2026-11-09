@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import {
   REPORT_DIR,
   SITE_ROOT,
@@ -10,12 +10,16 @@ import {
   checkParity,
   checkTextRenderer,
   checkZeroJs,
+  readSidecar,
   siteStops,
   waitForSidecar,
   watchPage,
+  type SiteStop,
 } from "./walk.ts";
 
 const stops = siteStops();
+const MAX_SCREENSHOT_PIXELS = 32_767;
+const BROWSER_CONTROL_REASON = "Requires an active browser control";
 
 test("every internal built link and asset resolves", () => {
   execFileSync(process.execPath, ["../tools/site-verify.mjs", "dist/client"], {
@@ -71,20 +75,30 @@ for (const stop of stops) {
       await expect(page.locator('[data-rex-nav-form="sidebar"]')).toBeVisible();
     }
     const accessibility = await new AxeBuilder({ page }).analyze();
-    await info.attach("axe", {
-      body: JSON.stringify(accessibility),
-      contentType: "application/json",
-    });
+    const axeReport = info.outputPath("axe.json");
+    writeFileSync(axeReport, JSON.stringify(accessibility));
+    await info.attach("axe", { path: axeReport, contentType: "application/json" });
     expect(accessibility.violations).toEqual([]);
     expect(watch.stop()).toEqual([]);
     if (!stop.path.includes("/", 1) || stop.path === "/docs/tutorial") {
       mkdirSync(REPORT_DIR, { recursive: true });
+      const size = await page.evaluate(() => ({
+        width: document.documentElement.scrollWidth,
+        height: document.documentElement.scrollHeight,
+      }));
       await page.screenshot({
         path: join(
           REPORT_DIR,
           `${info.project.name}-${stop.path.replaceAll("/", "_") || "home"}.png`,
         ),
         fullPage: true,
+        scale: "css",
+        clip: {
+          x: 0,
+          y: 0,
+          width: Math.min(size.width, MAX_SCREENSHOT_PIXELS),
+          height: Math.min(size.height, MAX_SCREENSHOT_PIXELS),
+        },
       });
     }
   });
@@ -99,7 +113,7 @@ for (const stop of stops) {
       });
       try {
         const page = await context.newPage();
-        const watch = watchPage(page);
+        const watch = watchPage(page, { javaScriptEnabled: false });
         const response = await page.goto(new URL(stop.path, String(info.project.use.baseURL)).href);
         expect(response?.status()).toBe(200);
         await waitForSidecar(page, stop.page.id, { mirror: false });
@@ -108,22 +122,47 @@ for (const stop of stops) {
         await expect(page.locator("main")).toBeVisible();
         expect((await page.locator("main").innerText()).trim().length).toBeGreaterThan(0);
         await checkZeroJs(page);
-        const link = page.locator("a[data-rex-nav][href]").first();
-        const href = await link.getAttribute("href");
-        expect(href).not.toBeNull();
-        const destination = new URL(href!, page.url());
-        const expected = stops.find(
-          (entry) => entry.path.replace(/\/$/, "") === destination.pathname.replace(/\/$/, ""),
-        );
-        if (expected === undefined)
-          throw new Error(`Unlisted navigation destination: ${destination.href}`);
+        const links = page.locator("a[data-rex-nav][href]:visible");
+        const current = new URL(page.url()).pathname.replace(/\/$/, "");
+        let link: Locator | null = null;
+        let destination: URL | null = null;
+        let expected: SiteStop | null = null;
+        for (let index = 0; index < (await links.count()); index++) {
+          const candidate = links.nth(index);
+          const href = await candidate.getAttribute("href");
+          expect(href).not.toBeNull();
+          const target = new URL(href!, page.url());
+          const path = target.pathname.replace(/\/$/, "");
+          const listed = stops.find((entry) => entry.path.replace(/\/$/, "") === path);
+          if (listed === undefined)
+            throw new Error(`Unlisted navigation destination: ${target.href}`);
+          if (path === current) continue;
+          link = candidate;
+          destination = target;
+          expected = listed;
+          break;
+        }
+        if (link === null || destination === null || expected === null) {
+          throw new Error(`No visible navigation link from ${stop.path} to another listed page`);
+        }
         const [navigated] = await Promise.all([
           page.waitForNavigation({ waitUntil: "load" }),
           link.click(),
         ]);
         expect(navigated?.status()).toBe(200);
-        await expect(page).toHaveURL(destination.href);
-        await waitForSidecar(page, expected.page.id, { mirror: false });
+        expect(new URL(page.url()).pathname.replace(/\/$/, "")).toBe(
+          destination.pathname.replace(/\/$/, ""),
+        );
+        if (expected.page.render === "static") {
+          await waitForSidecar(page, expected.page.id, { mirror: false });
+        } else {
+          const arrived = await readSidecar(page, { mirror: false });
+          expect(arrived.page).toBe(expected.page.id);
+          const pending = arrived.actions.filter(
+            (entry) => entry.allowed === false && entry.reason === BROWSER_CONTROL_REASON,
+          );
+          expect(arrived.state).toBe(pending.length > 0 ? "loading" : "ready");
+        }
         await expect(page.locator(`[data-rex-page="${expected.page.id}"]`)).toBeVisible();
         await expect(page.locator("[data-rex-error-code]")).toHaveCount(0);
         await expect(page.locator("main")).toBeVisible();
