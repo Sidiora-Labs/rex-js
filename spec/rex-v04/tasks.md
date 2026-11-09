@@ -29,7 +29,7 @@
     - Extend eslint.config.js to cover site and tools, and repair the site lint script so it no longer fails on a .tsx extension error.
     - Run the three CLI suites, root lint and format:check once and record the result.
     - _Requirements: 2.3_
-  - [ ] 0.5 Make server render and hydration agree on the sidecar page state
+  - [x] 0.5 Make server render and hydration agree on the sidecar page state
     - Reproduce the ten failures that report state loading where ready is expected, and find where the server-rendered sidecar and the hydrated page state diverge for a page whose loaders resolved on the server.
     - Fix the product path so a page with resolved loader data renders ready on the server and stays ready through hydration, and so window.__rex equals the sidecar script content.
     - Keep the test expectations; do not relax an assertion to loading. Add one regression test that compares the sidecar script with window.__rex after hydration.
