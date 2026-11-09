@@ -11,3 +11,4 @@ e2e/report/
 coverage/
 *.kvx.lock
 .env
+.hyperfide-backups/

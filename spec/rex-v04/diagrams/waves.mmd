@@ -1,0 +1,14 @@
+flowchart TD
+  M0[main at 5fe1aa2] --> W0[Wave 0: green main and release integrity]
+  W0 --> W1[Wave 1: security and correctness]
+  W1 --> W2[Wave 2: request model and server]
+  W2 --> W3[Wave 3: data and policy]
+  W2 --> W5[Wave 5: build and deploy]
+  W3 --> W4[Wave 4: routing and client]
+  W4 --> W6[Wave 6: checker, testing and CLI]
+  W6 --> W7[Wave 7: agent contract, accessibility and i18n]
+  W3 --> W8[Wave 8: documentation, examples and release preparation]
+  W5 --> W8
+  W7 --> W8
+  W8 --> RC[0.4.0 release candidate on main]
+  RC -.-> ASK[Human Asks: publish, tag, protect main]

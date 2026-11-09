@@ -1,0 +1,340 @@
+# Shared interfaces for rex-v04. One provider per interface; consumers require the provider.
+# status: proposed until the providing task is done, then stable. Signatures are the contract workers code against.
+
+[meta]
+feature = "rex-v04"
+version = "0.1.0-draft"
+count = 37
+
+[interface.rex.version]
+kind = "constant"
+path = "packages/rex/src/version.ts"
+signature = "export const REX_VERSION: string"
+status = "proposed"
+provider = "0.1"
+consumers = ["0.6", "0.12", "8.11"]
+contract = "Generated at build from packages/rex/package.json. Never edited by hand. Equals the manifest version in every build."
+
+[interface.pkg.exports-condition]
+kind = "package-export"
+path = "packages/rex/package.json"
+signature = "exports[entry] = { 'rex-source': './src/..', types: './dist/..', default: './dist/..' }"
+status = "proposed"
+provider = "0.2"
+consumers = ["0.3", "0.10", "8.11"]
+contract = "Registry consumers resolve dist. Workspace packages, Vitest and the dev server select the rex-source condition. No publishConfig override exists."
+
+[interface.test.fixture-temp]
+kind = "test-helper"
+path = "packages/rex/src/testing/internal/fixture.ts"
+signature = "withFixture(name: string, run: (dir: string) => Promise<void>): Promise<void>"
+status = "proposed"
+provider = "0.3"
+consumers = ["0.6", "0.7"]
+contract = "Copies a fixture to a fresh temporary directory and removes it afterwards. Internal: not exported from the package. Tests never write under src."
+
+[interface.designx.registry-lock]
+kind = "data-file"
+path = "packages/rex/src/cli/designx.lock.json"
+signature = "{ items: Record<string, { url: string, sha256: string, vendored: string }> }"
+status = "proposed"
+provider = "0.6"
+consumers = ["6.8"]
+contract = "Every registry item the scaffold can fetch has a content hash and a vendored copy. A hash mismatch is an error, an unreachable registry falls back to the vendored copy."
+
+[interface.actor.kind]
+kind = "type"
+path = "packages/rex/src/core/actor.ts"
+signature = "interface Actor { kind: 'human' | 'agent' | 'service'; ... }"
+status = "proposed"
+provider = "1.2"
+consumers = ["1.3", "1.4", "1.5", "7.1"]
+contract = "Set by the actor resolver. The server enforces a declared human gate against it and the ledger records it. The client never decides it."
+
+[interface.confirm.store]
+kind = "interface"
+path = "packages/rex/src/server/confirm-store.ts"
+signature = "interface ConfirmStore { issue(key, digest, ttl): Promise<string>; consume(token, key, digest): Promise<boolean> }"
+status = "proposed"
+provider = "1.3"
+consumers = ["1.5", "2.7"]
+contract = "Single use, expiring, bounded per actor or client key. One instance is shared by the RPC, form and loader paths."
+
+[interface.ledger.store]
+kind = "interface"
+path = "packages/rex/src/server/audit.ts"
+signature = "interface Ledger { append(entry: LedgerEntry): Promise<void>; read(query): AsyncIterable<LedgerEntry> }"
+status = "proposed"
+provider = "1.4"
+consumers = ["1.5", "2.7"]
+contract = "memoryLedger is bounded. fileLedger is durable. An append failure never changes an action response. Entries carry the actor kind."
+
+[interface.flow.journal]
+kind = "interface"
+path = "packages/rex/src/core/journal.ts"
+signature = "interface FlowJournal { load(id): Promise<FlowRecord | undefined>; commit(id, expectedVersion, record): Promise<boolean> }"
+status = "proposed"
+provider = "1.6"
+consumers = ["2.7", "8.7"]
+contract = "Compare-and-set on the instance version. Steps are identified by stable step identity. A durable file implementation ships."
+
+[interface.server.limits]
+kind = "config"
+path = "packages/rex/src/core/config.ts"
+signature = "server.limits: { bodyBytes: number; requestMs: number; renderMs: number }"
+status = "proposed"
+provider = "1.7"
+consumers = ["1.8", "2.1", "2.4", "4.5"]
+contract = "Defaults are safe. Tripping a limit returns a catalogued 413 or 503. The request AbortSignal reaches handlers and rendering."
+
+[interface.server.trust-proxy]
+kind = "config"
+path = "packages/rex/src/server/proxy.ts"
+signature = "server.trustProxy: false | number | string[]; requestOrigin(c): URL"
+status = "proposed"
+provider = "1.8"
+consumers = ["1.9", "2.2"]
+contract = "Forwarded headers are read only when configured. requestOrigin is the one source for same-origin checks and Secure cookies."
+
+[interface.security.headers]
+kind = "config"
+path = "packages/rex/src/server/middleware/security.ts"
+signature = "security.headers: { csp: CspDirectives; hsts?: HstsOptions }"
+status = "proposed"
+provider = "1.9"
+consumers = ["1.14"]
+contract = "The default policy includes frame-ancestors, base-uri, object-src and form-action. Static and fallback responses carry the same headers."
+
+[interface.boundary.strip-report]
+kind = "build-output"
+path = "packages/rex/src/vite/boundary.ts"
+signature = "stripHandlers(code, id): { code: string; stripped: StrippedSymbol[]; unproven: UnprovenSymbol[] }"
+status = "proposed"
+provider = "1.10"
+consumers = ["5.5"]
+contract = "A non-empty unproven list fails the client build with a catalogued error. The client entry imports declaration metadata only."
+
+[interface.client.root-boundary]
+kind = "component"
+path = "packages/rex/src/client/root-boundary.tsx"
+signature = "<RootBoundary> and <PageBoundary>; retry(): void"
+status = "proposed"
+provider = "1.11"
+consumers = ["1.12", "4.2", "4.4"]
+contract = "Any render error outside a region renders a recoverable, addressable view. Layouts and pages nest inside the page boundary."
+
+[interface.hydrate.codec]
+kind = "function"
+path = "packages/rex/src/core/serialize.ts"
+signature = "encodeHydration(value: unknown): string; decodeHydration(text: string): unknown"
+status = "proposed"
+provider = "1.12"
+consumers = ["1.14", "2.4"]
+contract = "Round-trips Date, BigInt, Map, Set and nested values. Output is safe to inline in a script element."
+
+[interface.store.versioned-write]
+kind = "interface"
+path = "packages/rex/src/core/store.ts"
+signature = "put(record, opts?: { ifVersion?: number }): Promise<Stored>; transaction<T>(run: (tx: Store) => Promise<T>): Promise<T>"
+status = "proposed"
+provider = "1.15"
+consumers = ["3.1", "3.2", "3.4", "3.5"]
+contract = "A version mismatch raises the catalogued conflict error. A transaction is all or nothing. The conformance suite covers both."
+
+[interface.action.context]
+kind = "type"
+path = "packages/rex/src/core/action.ts"
+signature = "interface ActionContext { actor: Actor; request: Request; headers: Headers; cookies: CookieJar; signal: AbortSignal; env: Env }"
+status = "proposed"
+provider = "2.1"
+consumers = ["2.2", "2.3", "2.6", "2.8", "2.9", "3.3", "6.6"]
+contract = "Built once per request and identical for actions and loaders on the RPC, form and render paths. Cookies set by a handler reach the response."
+
+[interface.session.api]
+kind = "function"
+path = "packages/rex/src/server/session.ts"
+signature = "sessionActor(options): ActorResolver; interface SessionStore { get; set; destroy }"
+status = "proposed"
+provider = "2.2"
+consumers = ["8.3", "8.7"]
+contract = "Sessions are signed and encrypted with rotating keys. No session resolves to an anonymous actor. The identifier is regenerated on privilege change."
+
+[interface.loader.control]
+kind = "function"
+path = "packages/rex/src/core/control.ts"
+signature = "notFound(): never; redirect(to: string, status?: number): never; respond(init: { status?: number; headers?: HeadersInit }): void"
+status = "proposed"
+provider = "2.3"
+consumers = ["2.4", "2.5", "4.1", "4.6"]
+contract = "One typed representation is honoured by server rendering and client navigation. Applications declare 404 and 500 pages by convention."
+
+[interface.http.cache-policy]
+kind = "config"
+path = "packages/rex/src/server/cache-policy.ts"
+signature = "page({ cache?: { maxAge: number; staleWhileRevalidate?: number } | 'private' | 'no-store' }); cacheControl(policy): string"
+status = "proposed"
+provider = "2.5"
+consumers = ["2.7", "5.8"]
+contract = "Hashed assets are immutable. Prerendered pages carry their declared lifetime. Actor-dependent HTML is no-store."
+
+[interface.route.matcher]
+kind = "function"
+path = "packages/rex/src/server/match.ts"
+signature = "matchRoute(patterns: RoutePattern[], pathname: string, policy: MatchPolicy): RouteMatch | undefined"
+status = "proposed"
+provider = "2.5"
+consumers = ["4.1"]
+contract = "The only matcher. The server, the static cache and the client call it, so case and trailing-slash behaviour cannot disagree."
+
+[interface.observe.hooks]
+kind = "config"
+path = "packages/rex/src/server/observe.ts"
+signature = "server.onError(error, info: { requestId: string; route?: string }); server.onRequest(info)"
+status = "proposed"
+provider = "2.6"
+consumers = []
+contract = "Every render and handler error reaches onError with a stack. The request identifier is returned in a response header. W3C trace context is continued."
+
+[interface.shared.store]
+kind = "interface"
+path = "packages/rex/src/server/shared-store.ts"
+signature = "interface SharedStore { get(key); set(key, value, opts?: { ttlMs?: number; ifVersion?: number }); delete(key) }"
+status = "proposed"
+provider = "2.7"
+consumers = []
+contract = "Key-value with expiry and compare-and-set. Confirmation tokens, the ledger, the flow journal and the static cache each have an implementation on it."
+
+[interface.env.schema]
+kind = "function"
+path = "packages/rex/src/core/env.ts"
+signature = "defineEnv({ server: Schema, public: Schema }): Env"
+status = "proposed"
+provider = "2.9"
+consumers = ["5.1", "8.3"]
+contract = "Validated at start with one error listing every problem. Only public values reach the client build."
+
+[interface.store.migrations]
+kind = "function"
+path = "packages/rex/src/store/migrations.ts"
+signature = "migrate(db, migrations: Migration[]): Promise<MigrationReport>"
+status = "proposed"
+provider = "3.1"
+consumers = ["3.2", "8.6"]
+contract = "Ordered, transactional, recorded with a checksum. The store issues no create-if-missing statements."
+
+[interface.policy.context]
+kind = "type"
+path = "packages/rex/src/core/policy.ts"
+signature = "type Policy<I, E> = (ctx: { actor: Actor; input: I; entity?: E; request?: Request }) => Decision | Promise<Decision>"
+status = "proposed"
+provider = "3.3"
+consumers = ["8.6"]
+contract = "Synchronous actor-only policies still evaluate on the client. Others are marked server-decided in the manifest. Default is deny."
+
+[interface.list.cursor]
+kind = "interface"
+path = "packages/rex/src/core/store.ts"
+signature = "list(query: { after?: Cursor; limit: number; count?: boolean }): Promise<{ items: T[]; next?: Cursor; total?: number }>"
+status = "proposed"
+provider = "3.4"
+consumers = ["3.5", "4.8", "8.6"]
+contract = "Stable order. Each record is returned once under concurrent insert. A count is computed only when requested."
+
+[interface.route.patterns]
+kind = "grammar"
+path = "packages/rex/src/core/page.ts"
+signature = "path grammar: /static, /:param, /:param?, /*rest; config.redirects; config.basePath; config.trailingSlash"
+status = "proposed"
+provider = "4.1"
+consumers = ["4.2", "4.3", "4.6", "6.7"]
+contract = "Typed parameters. Duplicate and ambiguous routes fail registration. The base path applies to matching, links, assets and static output."
+
+[interface.layout.declaration]
+kind = "function"
+path = "packages/rex/src/core/layout.ts"
+signature = "layout({ path: string, loaders?, view })"
+status = "proposed"
+provider = "4.2"
+consumers = []
+contract = "Nests by path prefix. Stays mounted across child navigation. Wrapped by the page boundary."
+
+[interface.nav.link]
+kind = "component"
+path = "packages/rex/src/client/link.tsx"
+signature = "<Link to={RoutePath} params? prefetch?: 'intent' | 'visible' | false>"
+status = "proposed"
+provider = "4.3"
+consumers = ["4.7"]
+contract = "Renders a real anchor, works without JavaScript, keeps agent addressing, exposes a pending state."
+
+[interface.page.head]
+kind = "type"
+path = "packages/rex/src/core/head.ts"
+signature = "page({ head?: Head | ((data) => Head) }); interface Head { title; description?; canonical?; openGraph?; robots? }"
+status = "proposed"
+provider = "4.6"
+consumers = ["8.6"]
+contract = "Rendered on the server and updated on navigation. One canonical per page. The build writes sitemap.xml and robots.txt."
+
+[interface.config.vite]
+kind = "config"
+path = "packages/rex/src/vite/user-config.ts"
+signature = "defineConfig({ vite?: UserViteConfig }); mergeUserVite(base, user, context): InlineConfig"
+status = "proposed"
+provider = "5.1"
+consumers = ["5.2", "5.3", "5.6", "5.7"]
+contract = "One merge function for dev, client build, server build and prerender. Settings that break a guarded invariant are rejected with a catalogued error."
+
+[interface.deploy.adapter]
+kind = "interface"
+path = "packages/rex/src/cli/hosts/adapter.ts"
+signature = "interface RexAdapter { name: string; build(result: BuildResult, options): Promise<void> }"
+status = "proposed"
+provider = "5.3"
+consumers = ["5.4", "8.3", "8.6"]
+contract = "Public and exported. Node and static adapters ship first. deploy.host and deploy.adapter are accepted by the configuration schema."
+
+[interface.check.suppression]
+kind = "syntax"
+path = "packages/rex/src/check/suppress.ts"
+signature = "// rex-check-disable-next-line <rule-id> -- <reason>; config.check.rules[id] = 'error' | 'warn' | 'off'; rex-check-baseline.json"
+status = "proposed"
+provider = "6.1"
+consumers = ["6.2", "6.3", "6.5"]
+contract = "A reason is mandatory. Unused suppressions are reported. Heuristic rules default to warn and never block rex dev."
+
+[interface.check.output]
+kind = "format"
+path = "packages/rex/src/check/sarif.ts"
+signature = "rex check --format text | json | sarif | github"
+status = "proposed"
+provider = "6.5"
+consumers = []
+contract = "SARIF 2.1.0. Every finding links to its rule documentation."
+
+[interface.testing.harness]
+kind = "module"
+path = "packages/rex/src/testing/index.ts"
+signature = "renderPageState(page, state); renderRoute(app, url, { actor }); expectAccessible(node); agentFixtures"
+status = "proposed"
+provider = "6.6"
+consumers = ["7.2", "8.2", "8.4"]
+contract = "Each helper runs real code paths with real types. Optional peers are loaded only by the helper that needs them."
+
+[interface.sidecar.schema]
+kind = "schema"
+path = "packages/rex/src/manifest/sidecar.schema.ts"
+signature = "{ version: 2, page, state, affordances: [{ address, action, instance, ... }] }; <link rel='rex-contract'>"
+status = "proposed"
+provider = "7.1"
+consumers = ["7.2", "7.3", "8.7"]
+contract = "Versioned with a compatibility rule. Addresses are unique per rendered instance. The JSON schema is served at a stable route."
+
+[interface.cli.json-output]
+kind = "flag"
+path = "packages/rex/src/cli/args.ts"
+signature = "--json; exit codes: 0 ok, 1 findings, 2 usage, 70 crash"
+status = "proposed"
+provider = "6.9"
+consumers = []
+contract = "Every command that prints a report accepts --json. Exit codes separate findings, usage errors and crashes."

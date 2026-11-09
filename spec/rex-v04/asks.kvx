@@ -1,0 +1,61 @@
+# rex-v04 Asks: steps only a human can take. Agents record state here and never perform them.
+# kind: permission | secret | decision. blocking = true stops the named task; false means proceed and flag.
+
+[meta]
+feature = "rex-v04"
+
+[ask.1]
+title = "Deprecate registry versions 0.2.0 and 0.3.0 and publish a working release"
+kind = "permission"
+blocking = false
+tasks = ["0.2", "8.11"]
+state = "open"
+detail = "Both published versions fail on import. Deprecation and publication need the registry account. The fleet prepares the package and the workflow and does not publish."
+
+[ask.2]
+title = "Enable trusted publishing and disallow token publishing for the package"
+kind = "permission"
+blocking = false
+tasks = ["0.11", "8.11"]
+state = "open"
+detail = "Registry and repository settings. Local publish tokens should be revoked afterwards."
+
+[ask.3]
+title = "Protect main: require the Gate check and pull-request review"
+kind = "permission"
+blocking = false
+tasks = ["0.11"]
+state = "open"
+detail = "Repository setting. Should follow the first green CI run on main."
+
+[ask.4]
+title = "Enable secret scanning, push protection, Dependabot security updates and CodeQL in repository settings"
+kind = "permission"
+blocking = false
+tasks = ["0.8", "0.11"]
+state = "open"
+detail = "The workflow and configuration files are written by the fleet; the settings switches are not."
+
+[ask.5]
+title = "Decide repository visibility and point rex.sidioralabs.com at the site"
+kind = "decision"
+blocking = false
+tasks = ["0.12", "8.8"]
+state = "open"
+detail = "Error hints and the package manifest link to hosts that are not live. Until decided, the link checker carries a dated pending entry."
+
+[ask.6]
+title = "Create and sign the v0.4.0 tag"
+kind = "permission"
+blocking = false
+tasks = ["8.11"]
+state = "open"
+detail = "Needs a maintainer signing key. The release workflow refuses a tag that is not on main."
+
+[ask.7]
+title = "Add a second maintainer"
+kind = "decision"
+blocking = false
+tasks = ["8.10"]
+state = "open"
+detail = "The audit records one author. Review requirements on main need a second person."

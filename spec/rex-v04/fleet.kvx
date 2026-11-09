@@ -1,0 +1,114 @@
+# Fleet roster for rex-v04: who owns which wave and which task.
+
+[meta]
+feature = "rex-v04"
+main_agent = "rex-main"
+main_branch = "main"
+
+[wave.0]
+title = "Green main and release integrity"
+manager = "fm-rex-v04-0"
+branch = "wave/rex-v04/0"
+base = "main"
+tasks = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12"]
+workers = ["w-rex-v04-0.1", "w-rex-v04-0.2", "w-rex-v04-0.3", "w-rex-v04-0.4", "w-rex-v04-0.5", "w-rex-v04-0.6", "w-rex-v04-0.7", "w-rex-v04-0.8", "w-rex-v04-0.9", "w-rex-v04-0.10", "w-rex-v04-0.11", "w-rex-v04-0.12"]
+owners = ["cli", "client", "docs", "quality", "release"]
+after = []
+gate_case = "RX4-900"
+status = "pending"
+
+[wave.1]
+title = "Security and correctness"
+manager = "fm-rex-v04-1"
+branch = "wave/rex-v04/1"
+base = "main"
+tasks = ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14", "1.15"]
+workers = ["w-rex-v04-1.1", "w-rex-v04-1.2", "w-rex-v04-1.3", "w-rex-v04-1.4", "w-rex-v04-1.5", "w-rex-v04-1.6", "w-rex-v04-1.7", "w-rex-v04-1.8", "w-rex-v04-1.9", "w-rex-v04-1.10", "w-rex-v04-1.11", "w-rex-v04-1.12", "w-rex-v04-1.13", "w-rex-v04-1.14", "w-rex-v04-1.15"]
+owners = ["build", "client", "data", "security", "server"]
+after = ["0"]
+gate_case = "RX4-901"
+status = "pending"
+
+[wave.2]
+title = "Request model and server"
+manager = "fm-rex-v04-2"
+branch = "wave/rex-v04/2"
+base = "main"
+tasks = ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9"]
+workers = ["w-rex-v04-2.1", "w-rex-v04-2.2", "w-rex-v04-2.3", "w-rex-v04-2.4", "w-rex-v04-2.5", "w-rex-v04-2.6", "w-rex-v04-2.7", "w-rex-v04-2.8", "w-rex-v04-2.9"]
+owners = ["server"]
+after = ["1"]
+gate_case = "RX4-902"
+status = "pending"
+
+[wave.3]
+title = "Data and policy"
+manager = "fm-rex-v04-3"
+branch = "wave/rex-v04/3"
+base = "main"
+tasks = ["3.1", "3.2", "3.3", "3.4", "3.5"]
+workers = ["w-rex-v04-3.1", "w-rex-v04-3.2", "w-rex-v04-3.3", "w-rex-v04-3.4", "w-rex-v04-3.5"]
+owners = ["data"]
+after = ["2"]
+gate_case = "RX4-903"
+status = "pending"
+
+[wave.4]
+title = "Routing and client"
+manager = "fm-rex-v04-4"
+branch = "wave/rex-v04/4"
+base = "main"
+tasks = ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8"]
+workers = ["w-rex-v04-4.1", "w-rex-v04-4.2", "w-rex-v04-4.3", "w-rex-v04-4.4", "w-rex-v04-4.5", "w-rex-v04-4.6", "w-rex-v04-4.7", "w-rex-v04-4.8"]
+owners = ["client"]
+after = ["3"]
+gate_case = "RX4-904"
+status = "pending"
+
+[wave.5]
+title = "Build and deploy"
+manager = "fm-rex-v04-5"
+branch = "wave/rex-v04/5"
+base = "main"
+tasks = ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8"]
+workers = ["w-rex-v04-5.1", "w-rex-v04-5.2", "w-rex-v04-5.3", "w-rex-v04-5.4", "w-rex-v04-5.5", "w-rex-v04-5.6", "w-rex-v04-5.7", "w-rex-v04-5.8"]
+owners = ["build"]
+after = ["2"]
+gate_case = "RX4-905"
+status = "pending"
+
+[wave.6]
+title = "Checker, testing and CLI"
+manager = "fm-rex-v04-6"
+branch = "wave/rex-v04/6"
+base = "main"
+tasks = ["6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9"]
+workers = ["w-rex-v04-6.1", "w-rex-v04-6.2", "w-rex-v04-6.3", "w-rex-v04-6.4", "w-rex-v04-6.5", "w-rex-v04-6.6", "w-rex-v04-6.7", "w-rex-v04-6.8", "w-rex-v04-6.9"]
+owners = ["checker", "cli", "quality"]
+after = ["4"]
+gate_case = "RX4-906"
+status = "pending"
+
+[wave.7]
+title = "Agent contract, accessibility and i18n"
+manager = "fm-rex-v04-7"
+branch = "wave/rex-v04/7"
+base = "main"
+tasks = ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7"]
+workers = ["w-rex-v04-7.1", "w-rex-v04-7.2", "w-rex-v04-7.3", "w-rex-v04-7.4", "w-rex-v04-7.5", "w-rex-v04-7.6", "w-rex-v04-7.7"]
+owners = ["a11y", "agent"]
+after = ["6"]
+gate_case = "RX4-907"
+status = "pending"
+
+[wave.8]
+title = "Documentation, examples and release preparation"
+manager = "fm-rex-v04-8"
+branch = "wave/rex-v04/8"
+base = "main"
+tasks = ["8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "8.8", "8.9", "8.10", "8.11"]
+workers = ["w-rex-v04-8.1", "w-rex-v04-8.2", "w-rex-v04-8.3", "w-rex-v04-8.4", "w-rex-v04-8.5", "w-rex-v04-8.6", "w-rex-v04-8.7", "w-rex-v04-8.8", "w-rex-v04-8.9", "w-rex-v04-8.10", "w-rex-v04-8.11"]
+owners = ["docs", "quality", "release"]
+after = ["3", "5", "7"]
+gate_case = "RX4-908"
+status = "pending"

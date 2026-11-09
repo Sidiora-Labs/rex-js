@@ -1,0 +1,6 @@
+# rex-v04 qualification log. One six-line entry per unrelated failure, contradiction or framework gap.
+# Keys: task, file, symbol, observed, assumption, severity. Entries name revision, command, exit code and log path.
+
+[meta]
+feature = "rex-v04"
+entries = 0

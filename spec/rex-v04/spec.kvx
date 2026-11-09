@@ -1,0 +1,2565 @@
+# Rex 0.4: the audit backlog as a qualified work plan.
+# Normative source for requirements, tasks and verification cases. Chapters refine it; generated views mirror it.
+
+[meta]
+feature = "rex-v04"
+name = "Rex 0.4: release integrity, secure defaults and production basics"
+version = "0.1.0-draft"
+status = "in_progress"
+stage = "implementation"
+review_date = "2026-11-09"
+source_baseline = "5fe1aa2e"
+intro = "Converts the November 2026 audit of commit 5fe1aa2 into nine waves of work. Wave 0 makes the main branch and the release path trustworthy. Wave 1 closes the security and correctness defects. Waves 2 to 7 add the request model, data layer, routing, build, checker, CLI and agent contract work that a production framework needs. Wave 8 documents and prepares the 0.4.0 release candidate. Every case starts UNRUN; a listed command is not evidence that it passes or exists."
+
+[decisions]
+d_1 = "The audit of commit 5fe1aa2 is the input. It is kept outside the repository. Tasks cite audit item numbers in the audit key and state required behaviour, not exploit detail."
+d_2 = "One feature manager owns each wave on wave/rex-v04/N and one worker owns each task on task/rex-v04/W.N. Only the main integrator writes main. Work merges upward: task into wave, wave into main behind the test and lint gates."
+d_3 = "Wave 0 lands before any other wave starts, because every later gate depends on a green main. Later waves start from the main that contains every wave they consume an interface from."
+d_4 = "interfaces.kvx names every new or changed public interface, its single providing task and its consumers. A consumer requires its provider to be done or landed. A change to a provided signature goes through the wave manager."
+d_5 = "A worker edits only its touches. A needed path outside them is widened through hyperfide slice with a reason code and reviewed by the wave manager. Shared registries such as core/errors.ts, core/config.ts and index.ts are append-only for workers."
+d_6 = "Each task qualifies with one typecheck and one run of its verify_cmd, at most two repair cycles. Workspace suites, browser runs and both gates run once per wave on the merged wave head."
+d_7 = "No check is weakened to pass. A conflict between code and a check is recorded in qualification.kvx and left intact."
+d_8 = "No React Server Components, no file-system routing, no second pattern where Rex already has one. New public surface follows the one-declaration model."
+d_9 = "Publication is human-only. Deprecating registry versions, publishing, trusted-publishing setup, signed tags, branch protection, repository settings and DNS are recorded in asks.kvx and never performed by an agent."
+d_10 = "The spec folder and the house commit format stay, by direction of the repository owner. Audit items 2.49 and 2.50 are adopted only as far as opening a contribution path that does not need the fleet tooling."
+d_11 = "A large item with an honest smaller alternative states both. Task 2.4 streams or removes the claim; tasks 5.4 and 3.2 qualify against local runtimes and record live-host evidence as future."
+d_12 = "The final wave is documentation, examples and release preparation, so documentation describes what landed and not what was planned."
+
+[prerequisite.green_main]
+title = "Green main before feature waves"
+tasks = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12"]
+entry_task = "0.1"
+gate_task = "0.12"
+blocks = ["1.1", "2.1", "3.1", "4.1", "5.1", "6.1", "7.1", "8.1"]
+contract = "fleet-roles.md"
+interface_contract = "interface-contracts.md"
+
+[req.1]
+title = "Release integrity"
+story = "As a developer installing Rex from the registry, I need the published package, the reported version and the default scaffold to work on the first attempt."
+ac_1 = "The package manifest in the repository SHALL resolve every public entry to built output for registry consumers, and workspace packages SHALL reach source only through a named custom export condition."
+ac_2 = "The version reported by the library, the CLI and scaffolded projects SHALL derive from the package manifest at build time, and no test or document SHALL carry a release number that the freshness gate does not check."
+ac_3 = "Peer and engine metadata SHALL mark every statically imported peer as required for the entry that imports it, SHALL keep server-only consumers free of build-tool peers, and SHALL state one Node floor in every manifest and document."
+ac_4 = "The published tarball SHALL carry source maps and declaration maps, and the build script SHALL NOT run a package install."
+ac_5 = "The default rex new path SHALL succeed without a live third-party registry by using content-hash-pinned registry items, SHALL write exact dependency versions, and SHALL NOT need an optional peer."
+ac_6 = "The release workflow SHALL verify a published version by installing it from the registry and importing every entry, and SHALL refuse a tag whose commit is not an ancestor of main."
+ac_7 = "Production dependencies with a known advisory SHALL be raised above the advisory range and the matching peer floors SHALL follow."
+ac_8 = "The TypeScript and ESLint peer ranges SHALL state a tested support window, with a recorded result for each current major release."
+
+[req.2]
+title = "Deterministic green main"
+story = "As a maintainer, I need every gate on main to pass for a real reason and fail for a real reason."
+ac_1 = "Tests SHALL NOT write inside the source tree; fixtures SHALL be copied to temporary directories and the built package SHALL be produced once per test run."
+ac_2 = "No unit or integration test SHALL contact a live third-party host."
+ac_3 = "Tests SHALL assert the current CLI output contract, and lint and format gates SHALL pass over packages, the site and tools."
+ac_4 = "Tests identified as load-sensitive SHALL pass under full-suite parallel load in three consecutive runs, without a raised timeout hiding a defect."
+ac_5 = "Every workspace package SHALL have a typecheck script, the root test script SHALL run every package and report all failures, and the coverage and ratio gates SHALL fail when tests fail."
+ac_6 = "CI workflows SHALL pin third-party actions by commit SHA, pin tool versions, share jobs through workflow calls, and declare a Node and operating-system matrix with Bun, Deno and workerd smoke jobs and Firefox and WebKit browser projects."
+ac_7 = "Generated documentation and freshness checks SHALL pass on the wave revision."
+ac_8 = "Server render and client hydration SHALL publish the same page state in the sidecar script and in the window object, and a loaded page SHALL report the ready state."
+
+[req.3]
+title = "Action invocation safety"
+story = "As an application owner, I need a guarantee that no action runs unless a person or an attributed agent deliberately asked for it."
+ac_1 = "An action named in a URL SHALL NOT be invoked without an explicit user gesture; the runtime SHALL at most prefill and wait, and any per-action opt-in SHALL be limited to actions declared safe."
+ac_2 = "The confirmation dialog SHALL place initial focus on the cancelling control."
+ac_3 = "An actor SHALL carry a kind that separates human, agent and service principals; the server SHALL enforce a declared human gate, and the ledger SHALL record the kind of the acting principal."
+ac_4 = "Confirmation tokens SHALL live in one pluggable store shared by the RPC, form and loader paths, bounded per actor so that one visitor cannot exhaust the capacity of another."
+ac_5 = "The confirmation input digest SHALL be canonical over dates, files, maps, sets and nested values."
+
+[req.4]
+title = "Flow integrity"
+story = "As an operator of multi-step flows, I need each step authorized, audited and executed exactly once."
+ac_1 = "Flow start and status SHALL pass a start or ownership policy, and instance identifiers SHALL be issued by the server."
+ac_2 = "Flow steps SHALL run through the same authorization, confirmation and audit path as a direct invocation, SHALL attribute each step to the acting principal, and SHALL enforce irreversible gate decisions on the server."
+ac_3 = "A flow step SHALL execute at most once per instance under concurrent advance, using a lease or compare-and-set and an idempotency key."
+ac_4 = "The flow journal SHALL be an interface with a durable implementation, and steps SHALL be matched by stable identity instead of position."
+
+[req.5]
+title = "Audit ledger"
+story = "As an operator, I need an audit record that survives restarts and never breaks the action it records."
+ac_1 = "The in-memory ledger SHALL be bounded, and a production start that uses it SHALL emit a warning."
+ac_2 = "A durable ledger implementation SHALL ship with the package, and the generated server entry and the scaffold SHALL use it."
+ac_3 = "A ledger append failure SHALL NOT turn a committed action into an error response, and reads SHALL NOT be audited unless the application opts in."
+
+[req.6]
+title = "Server hardening"
+story = "As an operator exposing Rex to the internet, I need bounded resource use, correct behaviour behind a proxy and responses that reveal nothing internal."
+ac_1 = "The server SHALL enforce a request body limit, request and render timeouts, abort-signal propagation to handlers, and SHALL expose a rate-limit hook."
+ac_2 = "The server SHALL drain in-flight requests on shutdown signals, and health and readiness routes SHALL reflect real dependency state."
+ac_3 = "A trustProxy option SHALL control whether forwarded headers decide the request origin and the Secure cookie attribute, and the CSRF cookie SHALL use the __Host- prefix on secure origins."
+ac_4 = "The content security policy SHALL include frame-ancestors, base-uri, object-src and form-action, strict transport security SHALL be configurable, and static and fallback responses SHALL carry the same security headers."
+ac_5 = "Error responses and client payloads SHALL NOT expose internal messages or unlisted actor attributes; actor-dependent responses SHALL carry cache and vary headers; development routes SHALL be absent from production builds; form coercion SHALL reject prototype keys; rendered markdown SHALL be sanitized."
+ac_6 = "Malformed percent-encoding SHALL return 400, invalid route parameters SHALL return 404, loader failures SHALL map to their declared status, dotted path segments SHALL stay reachable, server-rendered CSS SHALL follow import order, and rex check SHALL report a configuration file that throws."
+
+[req.7]
+title = "Server and client boundary"
+story = "As an application owner, I need proof that server code never ships to the browser."
+ac_1 = "The client build SHALL fail when a server handler cannot be proven stripped."
+ac_2 = "Handler stripping SHALL work by resolved symbol across import forms, argument shapes and path separators, and the client entry SHALL NOT import handler modules."
+
+[req.8]
+title = "Client resilience"
+story = "As a user, I need the application to recover from errors, deployments and identity changes without showing a blank page or stale data."
+ac_1 = "Root and page error boundaries SHALL render a recoverable view for any render error outside a region."
+ac_2 = "A failed dynamic import SHALL be retried and SHALL NOT be cached as a permanent failure, and preload errors and version skew SHALL lead to a reload prompt."
+ac_3 = "Page queries SHALL be scoped to their page, client errors in the 4xx range SHALL NOT be retried, server-seeded loader data SHALL be refetched on revisit according to its staleness, and an identity change SHALL clear cached data."
+ac_4 = "Hydration data SHALL round-trip dates, big integers, maps and sets between server and client."
+
+[req.9]
+title = "Store and data"
+story = "As a developer storing real data, I need safe concurrent writes, migrations, a production database and scalable lists."
+ac_1 = "Store writes SHALL support version checks and transactions, and the conformance suite SHALL cover both."
+ac_2 = "The drizzle store SHALL NOT cache a rejected readiness promise."
+ac_3 = "Schema changes SHALL apply through versioned migrations with a recorded history instead of create-if-missing statements."
+ac_4 = "A PostgreSQL store adapter SHALL pass the store conformance suite."
+ac_5 = "Lists SHALL support cursor pagination, and a total count SHALL be computed only on request."
+ac_6 = "Reference targets and invalidation names SHALL be validated at registration, and the store conformance suite SHALL be a public export."
+
+[req.10]
+title = "Request model"
+story = "As a developer building an authenticated application, I need handlers that see the request, sessions that are signed, loaders that control the response and configuration that is typed."
+ac_1 = "The action and loader context SHALL expose the request, headers, readable and settable cookies, an abort signal and environment bindings."
+ac_2 = "Signed cookie sessions, a session store interface and a session actor resolver SHALL ship with the package, and no example SHALL fall back to a privileged actor."
+ac_3 = "Loaders SHALL be able to return not-found, redirect, status and headers, and applications SHALL be able to declare 404 and 500 pages."
+ac_4 = "An environment schema SHALL be validated at start, dotenv files and a mode flag SHALL be supported, and server-only values SHALL never reach the client bundle."
+ac_5 = "Policies SHALL be able to run asynchronously with the actor, input, target entity and request context, and wallet-specific conditions SHALL live outside core."
+
+[req.11]
+title = "HTTP delivery"
+story = "As an operator running more than one replica, I need correct caching, honest streaming, observable failures and shared state."
+ac_1 = "Server rendering SHALL send the document shell before suspended content resolves, or the documentation SHALL NOT claim streaming."
+ac_2 = "Prerendered pages and hashed assets SHALL carry cache headers that match their lifetime, HTML cache policy SHALL be declarable per page, responses SHALL support compression, HEAD SHALL NOT trigger a full render, and one matcher SHALL decide case and trailing-slash behaviour."
+ac_3 = "Render and handler errors SHALL reach an error hook with a stack and a request identifier, W3C trace context SHALL propagate, and access log and metrics hooks SHALL exist."
+ac_4 = "Confirmation tokens, the ledger, the flow journal and the static cache SHALL accept shared stores; on-demand revalidation SHALL exist; regeneration SHALL back off after failure."
+ac_5 = "The no-JavaScript form round trip SHALL preserve submitted values on error and SHALL keep the outcome within cookie size limits."
+
+[req.12]
+title = "Routing and navigation"
+story = "As a developer building a multi-page product, I need complete route patterns, layouts, links and page states that keep the user oriented."
+ac_1 = "Routing SHALL support catch-all and optional segments, redirects, duplicate-route detection, a trailing-slash policy and a base path."
+ac_2 = "Nested layouts SHALL persist across navigation between their child pages."
+ac_3 = "A Link component SHALL provide prefetch and a pending indicator, and scroll position SHALL be restored on history navigation."
+ac_4 = "Transient loading, offline and stale states SHALL keep previous data visible instead of replacing the view."
+ac_5 = "The scripted form path SHALL honour the declared redirect, map server errors to fields, submit files and move focus to the first invalid field."
+ac_6 = "Pages SHALL declare head metadata including description, canonical, Open Graph and robots, and the build SHALL generate a sitemap and a robots file."
+ac_7 = "Actions SHALL support optimistic updates with rollback, and pages SHALL be able to block navigation while work is unsaved."
+ac_8 = "Lists SHALL support virtualization that keeps agent addressing and keyboard access intact."
+
+[req.13]
+title = "Build and deploy"
+story = "As a team shipping to a host, I need to extend the build, target real platforms and keep bundles small."
+ac_1 = "The configuration SHALL accept a user Vite section merged under the invariants that Rex guards."
+ac_2 = "Prerender and manifest generation SHALL run on a production loader, the build SHALL bound the number of Vite instances, prerender SHALL run concurrently, and output SHALL be deterministic for a fixed input."
+ac_3 = "A public adapter interface SHALL exist with Node and static adapters, and the configuration schema SHALL accept the documented deploy host key."
+ac_4 = "Adapters for Cloudflare, Vercel and Netlify SHALL emit the output format each host documents."
+ac_5 = "The client entry SHALL NOT statically import every declaration, SHALL NOT inline the manifest, and SHALL be covered by bundle budgets."
+ac_6 = "Server bundle externals SHALL be configurable with native addons external by default, and production source maps SHALL be an option."
+ac_7 = "Development SHALL render server documents without an unstyled flash, SHALL restart on configuration change, and SHALL isolate a partial page folder to that page."
+ac_8 = "The images configuration SHALL drive a real image pipeline."
+
+[req.14]
+title = "Checker"
+story = "As a developer, I need a checker that I can tune, trust and run fast."
+ac_1 = "The checker SHALL support inline suppression with a reason, per-rule severity and a baseline file; heuristic rules SHALL NOT block development at error severity by default; the recorded false positives SHALL be fixed."
+ac_2 = "A rule that throws SHALL be isolated and reported without aborting other rules, and a solution-style tsconfig SHALL have its references typechecked."
+ac_3 = "The boundary rule SHALL catch namespace imports, re-exports, path aliases and glob imports, and SHALL accept a user allow-list."
+ac_4 = "The ESLint bridge SHALL walk the project once per run, the checker SHALL keep an incremental cache and a watch mode, and rex dev SHALL NOT wait for a full check before serving."
+ac_5 = "The checker SHALL emit SARIF and GitHub annotations, link each finding to rule documentation, load custom rules, validate i18n keys, and the ESLint preset SHALL include hook rules."
+
+[req.15]
+title = "Testing harness and CLI"
+story = "As a developer, I need test helpers for every page state and a CLI that covers the daily loop on every platform."
+ac_1 = "The testing entry SHALL provide forced-state rendering, a server-render helper, an accessibility helper and Playwright fixtures, and scaffolds SHALL include test setup."
+ac_2 = "The CLI SHALL provide preview, routes and info commands."
+ac_3 = "The CLI SHALL provide upgrade and add commands, and rex migrate SHALL support a dry run."
+ac_4 = "Commands SHALL load lazily, support JSON output, use distinct exit codes for findings and crashes, offer a stack-trace flag and suggest corrections for unknown commands, and scaffolds SHALL include a gitignore and a README."
+ac_5 = "Spawning package-manager commands SHALL work with Windows command shims."
+
+[req.16]
+title = "Agent contract"
+story = "As an agent author, I need a versioned, discoverable contract and a way to prove a client conforms."
+ac_1 = "Addresses SHALL be unique per rendered instance, the sidecar schema SHALL carry a version, and pages SHALL expose a discovery link to a published JSON schema."
+ac_2 = "The palette and keyboard shortcuts SHALL collect required input before invoking an action."
+ac_3 = "A conformance suite and a reference client SHALL ship and run against the demo."
+
+[req.17]
+title = "Accessibility and internationalization"
+story = "As a user with assistive technology or a non-English locale, I need the runtime surfaces to meet WCAG 2.2 AA and speak my language."
+ac_1 = "Single-character shortcuts SHALL be remappable or disableable, and duplicate shortcut declarations SHALL be detected."
+ac_2 = "Modal surfaces SHALL make the background inert, trap focus completely and lock scroll."
+ac_3 = "Runtime outcome and confirmation text SHALL be localized, and no raw message key SHALL reach the user."
+ac_4 = "The i18n runtime SHALL format dates, load locales lazily, set text direction and leave numeric strings unformatted."
+ac_5 = "The shell SHALL provide a skip link, a heading inside main, a visible reason for disabled controls, a strong border contrast of at least 3 to 1 and forced-colors rules."
+
+[req.18]
+title = "Documentation and project"
+story = "As an evaluator, I need documentation I can follow, examples I can run and a project I can contribute to."
+ac_1 = "The public API SHALL be trimmed to the intended surface, every public symbol SHALL be documented, and an API report gate SHALL run in CI."
+ac_2 = "The tutorial SHALL run end to end under an automated test."
+ac_3 = "Guides SHALL exist for authentication, deployment per host, environment and secrets, and the security model."
+ac_4 = "Guides SHALL exist for performance, testing, accessibility, troubleshooting and upgrading."
+ac_5 = "The changelog SHALL be curated with a breaking-changes section per release, changesets SHALL drive it, and codemods SHALL cover each breaking change since 0.2."
+ac_6 = "Examples SHALL include a minimal starter, a static blog and a CRUD application on a real database."
+ac_7 = "Examples SHALL include authentication, a runnable flow and an external agent script."
+ac_8 = "The README SHALL be a concise entry point, the site SHALL lead with the tutorial, and documentation SHALL be versioned."
+ac_9 = "Benchmarks SHALL measure server-render throughput and track bundle size across commits."
+ac_10 = "An outside contributor SHALL be able to contribute without a private tool, generated agent files SHALL be free of machine paths, and committed test reports SHALL be removed."
+ac_11 = "A 0.4.0 release candidate SHALL be prepared, and every publication step that needs a human SHALL be recorded as an Ask."
+
+[design]
+overview = "spec.kvx is normative. design.body.md gives the boundary and invariants. interface-contracts.md and interfaces.kvx define the shared interfaces. fleet-roles.md assigns the wave managers and workers. verification.md defines evidence. decisions.md separates fixed constraints from proposed choices. implementation-plan.md and traceability.md are derived by tools/validate_spec.py --render."
+authority = "The server decides. Authorization, confirmation, the human gate, flow advance and audit are enforced on the server and never inferred from client behaviour. The client mirrors decisions for presentation only."
+declarations = "One declaration still feeds typed RPC, the no-JavaScript form, the palette, shortcuts and the manifest. New capabilities extend the declaration or the configuration schema; none adds a parallel mechanism."
+state = "Every piece of server state that must survive a restart or be shared between replicas sits behind an interface with a bounded memory default and a durable or shared implementation: confirmation tokens, ledger, flow journal, sessions and static cache."
+implementation = "Package code lives in packages/rex/src with colocated tests. Repository tools live in tools. Examples live in examples. Guides live in docs/guides. Each task lists the files it owns in touches."
+verification = "Each task has one verify_cmd that runs its named tests after one typecheck. Each wave has one gate case that runs tools/gate-test.sh and tools/gate-lint.sh on the merged wave head. Structural validation of this pack uses tools/validate_spec.py and executes no product code."
+
+[documentation]
+mode = "manual"
+status = "pending"
+audiences = ["user", "developer", "operator", "agent-author"]
+targets = ["spec/rex-v04/**", "docs/guides/**", "docs/agent-contract.md", "docs/platforms.md", "docs/releasing.md", "CHANGELOG.md", "README.md"]
+
+[tasks]
+heading = "Nine waves from a green main to a 0.4.0 release candidate"
+
+[task.0.1]
+title = "Derive the version constant from the package manifest"
+status = "pending"
+wave = 0
+requires = []
+touches = ["packages/rex/src/index.ts", "packages/rex/src/version.ts", "packages/rex/src/version.test.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/pack.test.ts", "packages/rex/scripts/write-version.mjs", "README.md", "docs/cli.md", "SECURITY.md", "tools/freshness.mjs"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/version.test.ts src/cli/pack.test.ts"
+do_1 = "Add a build step that writes src/version.ts from packages/rex/package.json and make index.ts re-export REX_VERSION from it, so the constant cannot drift from the manifest."
+do_2 = "Make rex --version and the dependency range that rex new writes read the generated constant; remove the literal version from cli/commands/new.ts."
+do_3 = "Remove hard-coded release numbers from cli/pack.test.ts, README.md, docs/cli.md and SECURITY.md, or route them through the freshness gate so a stale copy fails tools/freshness.mjs."
+do_4 = "Add version.test.ts asserting the constant equals the manifest version and that a scaffolded manifest range admits the current version."
+reqs = ["1.2"]
+owner = "release"
+cases = ["RX4-001", "RX4-900"]
+provides = ["rex.version"]
+consumes = []
+audit = ["0.2"]
+time_limit_minutes = 45
+
+[task.0.2]
+title = "Point package exports at built output and correct peer, engine and map metadata"
+status = "pending"
+wave = 0
+requires = []
+touches = ["packages/rex/package.json", "packages/rex/tsconfig.build.json", "packages/rex/tsconfig.json", "tsconfig.base.json", "examples/demo/tsconfig.json", "examples/demo/vitest.config.ts", "site/tsconfig.json", "site/vitest.config.ts", "packages/rex/vitest.config.ts", "tools/smoke-package.sh", "tools/package-exports.test.mjs", "README.md", "docs/development.md"]
+verify_cmd = "pnpm -C packages/rex build && node --test tools/package-exports.test.mjs"
+do_1 = "Make the in-repo exports map resolve types and default to dist, and add a rex-source custom condition that workspace packages, Vitest and the dev server select to reach src; delete the publishConfig.exports override."
+do_2 = "Mark wouter, cmdk, @vitejs/plugin-react and @hono/node-server as required peers of the entries that import them statically, or move the import behind the entry that owns it; keep typescript and vite optional for server-only consumers."
+do_3 = "State one Node floor in the package engines, the root manifest, README.md and docs/development.md; enable sourceMap and declarationMap in tsconfig.build.json; remove the trailing pnpm install from the build script."
+do_4 = "Add tools/package-exports.test.mjs that packs the package, installs the tarball into a temporary project with the real peers and imports every exports key; extend tools/smoke-package.sh to call it."
+reqs = ["1.1", "1.3", "1.4"]
+owner = "release"
+cases = ["RX4-002", "RX4-900"]
+provides = ["pkg.exports-condition"]
+consumes = []
+audit = ["0.1", "0.13", "0.18"]
+time_limit_minutes = 90
+
+[task.0.3]
+title = "Isolate tests from the source tree and build dist once per run"
+status = "pending"
+wave = 0
+requires = ["0.2"]
+touches = ["packages/rex/vitest.config.ts", "packages/rex/vitest.global-setup.ts", "packages/rex/src/testing/internal/fixture.ts", "packages/rex/src/testing/internal/fixture.test.ts", "packages/rex/src/cli/**/*.test.ts", "packages/rex/src/vite/**/*.test.ts", "packages/rex/src/check/**/*.test.ts", "packages/rex/src/manifest/**/*.test.ts", ".gitignore", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/cli/static-target.test.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/testing/internal/fixture.test.ts src/vite/prerender.test.ts src/cli/static-target.test.ts"
+do_1 = "Add src/testing/internal/fixture.ts with a helper that copies a named fixture to a fresh temporary directory and removes it after the test; it is internal and not exported from the package."
+do_2 = "Move every test that writes loader caches, symlinks or prerender output under src onto the helper, including the fixture node_modules links and src/vite/.prerender-fixture."
+do_3 = "Build dist once in a Vitest globalSetup and stop individual tests from rebuilding it; place CLI integration tests that spawn the binary in a serial Vitest project."
+do_4 = "Assert in fixture.test.ts that a full fixture round trip leaves git status clean, and run the three named suites twice in a row to show no EEXIST failure on the second run."
+reqs = ["2.1"]
+owner = "quality"
+cases = ["RX4-003", "RX4-900"]
+provides = ["test.fixture-temp"]
+consumes = ["pkg.exports-condition"]
+audit = ["0.7"]
+time_limit_minutes = 90
+
+[task.0.4]
+title = "Update CLI output assertions and make lint and format cover the workspace"
+status = "pending"
+wave = 0
+requires = []
+touches = ["packages/rex/src/cli/commands.test.ts", "packages/rex/src/cli/index.test.ts", "packages/rex/src/cli/cli.test.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/check/rules/*.ts", "eslint.config.js", "site/eslint.config.js", "site/package.json", "package.json", ".prettierignore"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli/commands.test.ts src/cli/index.test.ts src/cli/cli.test.ts && pnpm lint && pnpm format:check"
+do_1 = "Rewrite the stale assertions in cli/commands.test.ts, cli/index.test.ts and cli/cli.test.ts against the build reporter output introduced by the CLI output rework, asserting the contract and not incidental spacing."
+do_2 = "Remove or use the unused formatChunkTable in cli/commands/build.ts and format the two unformatted files under check/rules."
+do_3 = "Extend eslint.config.js to cover site and tools, and repair the site lint script so it no longer fails on a .tsx extension error."
+do_4 = "Run the three CLI suites, root lint and format:check once and record the result."
+reqs = ["2.3"]
+owner = "quality"
+cases = ["RX4-004", "RX4-900"]
+provides = []
+consumes = []
+audit = ["0.6", "0.9"]
+time_limit_minutes = 45
+
+[task.0.5]
+title = "Make server render and hydration agree on the sidecar page state"
+status = "pending"
+wave = 0
+requires = []
+touches = ["packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/client/loaders.ts", "packages/rex/src/client/loaders.test.tsx", "packages/rex/src/client/hydrate.ts", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/page.tsx", "packages/rex/src/client/states.ts", "examples/demo/app/**/test/*.test.tsx", "site/app/**/test/*.test.tsx", "packages/rex/src/client/agent/sidecar.test.tsx"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/ssr.test.tsx src/client/loaders.test.tsx src/client/agent/sidecar.test.tsx"
+do_1 = "Reproduce the ten failures that report state loading where ready is expected, and find where the server-rendered sidecar and the hydrated page state diverge for a page whose loaders resolved on the server."
+do_2 = "Fix the product path so a page with resolved loader data renders ready on the server and stays ready through hydration, and so window.__rex equals the sidecar script content."
+do_3 = "Keep the test expectations; do not relax an assertion to loading. Add one regression test that compares the sidecar script with window.__rex after hydration."
+do_4 = "Record in the qualification log any demo or site test that still fails for a different reason."
+reqs = ["2.8"]
+owner = "client"
+cases = ["RX4-005", "RX4-900"]
+provides = []
+consumes = []
+audit = ["0.5"]
+time_limit_minutes = 90
+
+[task.0.6]
+title = "Pin the DesignX registry and make the default scaffold work offline"
+status = "pending"
+wave = 0
+requires = ["0.1", "0.3"]
+touches = ["packages/rex/src/cli/designx.ts", "packages/rex/src/cli/designx.test.ts", "packages/rex/src/cli/designx.lock.json", "packages/rex/src/cli/new.test.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/fixtures/designx-registry/**", "tools/smoke-package.sh", "examples/demo/package.json", "site/package.json", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli/designx.test.ts src/cli/new.test.ts"
+do_1 = "Add a lock file of registry items with content hashes and vendor the items the default scaffold needs, so rex new verifies each fetched item against its hash and falls back to the vendored copy when the registry is unreachable."
+do_2 = "Serve registry fixtures from a local server in designx.test.ts and new.test.ts so neither test opens a connection to a third-party host."
+do_3 = "Write exact dependency versions instead of latest in scaffolds, in examples/demo and in site, and format generated files without requiring the optional prettier peer."
+do_4 = "Extend tools/smoke-package.sh to run the default rex new path with networking to the registry host disabled."
+reqs = ["1.5", "2.2"]
+owner = "cli"
+cases = ["RX4-006", "RX4-900"]
+provides = ["designx.registry-lock"]
+consumes = ["test.fixture-temp", "rex.version"]
+audit = ["0.3", "0.10", "1.12"]
+time_limit_minutes = 90
+
+[task.0.7]
+title = "Remove load sensitivity from the flaky suites"
+status = "pending"
+wave = 0
+requires = ["0.3", "0.4"]
+touches = ["packages/rex/src/client/agent/flow.test.tsx", "packages/rex/src/client/agent/flow.tsx", "packages/rex/src/cli/commands.test.ts", "packages/rex/vitest.config.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex test && pnpm -C packages/rex test && pnpm -C packages/rex test"
+do_1 = "Find why client/agent/flow.test.tsx fails only under full-suite load and fix the ordering or timer dependency in the test or in the product code it exposes."
+do_2 = "Identify the two tests that reach the five second timeout and remove the cause; a raised timeout is acceptable only with a measured reason written next to it."
+do_3 = "Cut the runtime of cli/commands.test.ts by reusing the single built dist and one scaffolded fixture per file."
+do_4 = "Run the full package suite three times in a row and record the three results."
+reqs = ["2.4"]
+owner = "quality"
+cases = ["RX4-007", "RX4-900"]
+provides = []
+consumes = ["test.fixture-temp"]
+audit = ["0.8"]
+time_limit_minutes = 90
+
+[task.0.8]
+title = "Raise vulnerable dependencies and their peer floors"
+status = "pending"
+wave = 0
+requires = ["0.2"]
+touches = ["packages/rex/package.json", "package.json", "examples/demo/package.json", "site/package.json", "pnpm-lock.yaml", ".github/dependabot.yml"]
+verify_cmd = "pnpm install --frozen-lockfile && pnpm -C packages/rex typecheck && pnpm audit --prod --audit-level high"
+do_1 = "Raise vite and zod above the ranges named by pnpm audit --prod and raise the matching peer floors in the package manifest."
+do_2 = "Resolve the remaining production advisories by upgrade; use an override only with a comment naming the advisory."
+do_3 = "Enable grouped security updates in .github/dependabot.yml."
+do_4 = "Run pnpm audit --prod and the package typecheck once and record the advisory count."
+reqs = ["1.7"]
+owner = "release"
+cases = ["RX4-008", "RX4-900"]
+provides = []
+consumes = []
+audit = ["0.12"]
+time_limit_minutes = 45
+
+[task.0.9]
+title = "State and test the TypeScript and ESLint support window"
+status = "pending"
+wave = 0
+requires = ["0.8"]
+touches = ["packages/rex/package.json", "package.json", "pnpm-lock.yaml", "docs/versioning.md", "tools/support-window.mjs", "tools/support-window.test.mjs", "packages/rex/src/check/rules/typecheck.ts", "packages/rex/src/eslint/index.ts"]
+verify_cmd = "node --test tools/support-window.test.mjs && node tools/support-window.mjs --check"
+do_1 = "Add tools/support-window.mjs that installs each listed TypeScript and ESLint major into a temporary copy and runs the package typecheck and the checker tests, printing one result line per version."
+do_2 = "Widen the typescript and eslint peer ranges to every major whose run passes; for a major that fails, keep it out of the range and record the failing command in the qualification log."
+do_3 = "Write the supported window and the plan for the native TypeScript compiler into docs/versioning.md, stating which checker features depend on the compiler API."
+do_4 = "Add tools/support-window.test.mjs covering the result parser and range computation."
+reqs = ["1.8"]
+owner = "release"
+cases = ["RX4-009", "RX4-900"]
+provides = []
+consumes = []
+audit = ["0.19"]
+time_limit_minutes = 90
+
+[task.0.10]
+title = "Give every package a typecheck and make the root gates honest"
+status = "pending"
+wave = 0
+requires = ["0.3", "0.4"]
+touches = ["package.json", "examples/demo/package.json", "site/package.json", "packages/rex/vitest.config.ts", "tools/test-ratio.mjs", "tools/run-workspace-tests.mjs", "tools/qualification-gates.test.mjs", "tools/gate-test.sh", "tools/gate-lint.sh", "packages/rex/src/testing/**"]
+verify_cmd = "pnpm typecheck && node --test tools/qualification-gates.test.mjs"
+do_1 = "Add a typecheck script to examples/demo and site and fix the type errors it reveals without widening types."
+do_2 = "Replace the root test script with tools/run-workspace-tests.mjs, which runs every package, continues after a failure and exits non-zero with a per-package summary."
+do_3 = "Include src/testing in coverage, make coverage thresholds apply even when a test fails, and make tools/test-ratio.mjs fail when the suite it counts has failing tests."
+do_4 = "Wire tools/navigation-races.mjs, tools/smoke-cli-bootstrap.mjs and rex check --runtime into the gate scripts, and extend tools/qualification-gates.test.mjs to assert the wiring."
+reqs = ["2.5"]
+owner = "quality"
+cases = ["RX4-010", "RX4-900"]
+provides = []
+consumes = ["pkg.exports-condition"]
+audit = ["0.17"]
+time_limit_minutes = 90
+
+[task.0.11]
+title = "Harden the CI and release workflows and declare the platform matrix"
+status = "pending"
+wave = 0
+requires = ["0.10"]
+touches = [".github/workflows/**", ".github/dependabot.yml", "tools/workflow-lint.mjs", "tools/workflow-lint.test.mjs", "tools/verify-published.mjs", "examples/demo/playwright.config.ts", "site/playwright.config.ts", "docs/releasing.md"]
+verify_cmd = "node --test tools/workflow-lint.test.mjs && node tools/workflow-lint.mjs .github/workflows"
+do_1 = "Pin every third-party action by commit SHA, pin publint and attw versions, remove the global npm upgrade from the job that holds id-token write, and move shared jobs into reusable workflows."
+do_2 = "Declare a matrix of Node 22.19, 24 and 26 on Linux, macOS and Windows, add smoke jobs that run the real Bun, Deno and workerd runtimes, add Firefox and WebKit Playwright projects, and add a CodeQL workflow."
+do_3 = "Add a tag-ancestry check to the release workflow and tools/verify-published.mjs, a post-publish job that installs the published version from the registry and imports every entry."
+do_4 = "Add tools/workflow-lint.mjs that fails on an unpinned action, a floating tool version or a missing matrix entry, with tests; update docs/releasing.md to describe the workflow as written."
+reqs = ["1.6", "2.6"]
+owner = "release"
+cases = ["RX4-011", "RX4-900"]
+provides = []
+consumes = []
+audit = ["0.15", "0.16", "0.1", "0.11", "0.12"]
+time_limit_minutes = 90
+
+[task.0.12]
+title = "Regenerate documentation and pass the freshness gates on the wave revision"
+status = "pending"
+wave = 0
+requires = ["0.1", "0.4", "0.5", "0.6", "0.8", "0.9", "0.10", "0.11"]
+touches = ["docs/api/**", "docs/errors.md", "tools/freshness.mjs", "tools/check-links.mjs", "SECURITY.md", "packages/rex/README.md", "README.md"]
+verify_cmd = "pnpm docs:check && pnpm freshness"
+do_1 = "Regenerate docs/api and docs/errors.md from the wave revision."
+do_2 = "Fix every failure reported by pnpm freshness and pnpm docs:check, including version, API and pointer checks."
+do_3 = "Correct the supported-versions table in SECURITY.md and mark links to hosts that are not yet live as pending in the link checker with a dated allow-list entry."
+do_4 = "Run docs:check and freshness once and record the result."
+reqs = ["2.7"]
+owner = "docs"
+cases = ["RX4-012", "RX4-900"]
+provides = []
+consumes = ["rex.version"]
+audit = ["0.9", "0.14", "0.11"]
+time_limit_minutes = 45
+
+[task.1.1]
+title = "Require a user gesture for URL-carried actions and default confirm focus to Cancel"
+status = "pending"
+wave = 1
+requires = []
+touches = ["packages/rex/src/client/agent/url-invoke.ts", "packages/rex/src/client/agent/url-invoke.test.tsx", "packages/rex/src/client/agent/confirm-dialog.tsx", "packages/rex/src/client/agent/confirm.test.tsx", "packages/rex/src/client/shell.tsx", "packages/rex/src/core/action.ts", "docs/agent-contract.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/agent/url-invoke.test.tsx src/client/agent/confirm.test.tsx"
+do_1 = "Change URL invocation so a URL can only prefill an action surface and wait for an activation by the user; nothing is sent on page load."
+do_2 = "Add an action-level opt-in for URL prefill that the registry accepts only for actions declared safe, and reject the option on any other action at declaration time."
+do_3 = "Move initial focus in the confirmation dialog to the cancelling control and keep Enter from confirming without a deliberate move."
+do_4 = "Test that a page load with action parameters performs no request, that activation performs exactly one, and that the dialog opens with focus on Cancel."
+reqs = ["3.1", "3.2"]
+owner = "security"
+cases = ["RX4-013", "RX4-901"]
+provides = []
+consumes = []
+audit = ["1.1"]
+time_limit_minutes = 45
+
+[task.1.2]
+title = "Add actor kind and enforce the human gate on the server"
+status = "pending"
+wave = 1
+requires = []
+touches = ["packages/rex/src/core/actor.ts", "packages/rex/src/core/actor.test.ts", "packages/rex/src/core/action.ts", "packages/rex/src/client/act.ts", "packages/rex/src/client/act.test.tsx", "packages/rex/src/server/router.ts", "packages/rex/src/server/router.test.ts", "packages/rex/src/server/audit.ts", "packages/rex/src/server/context.ts", "docs/agent-contract.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/actor.test.ts src/server/router.test.ts src/client/act.test.tsx"
+do_1 = "Add a kind field to Actor with the values human, agent and service, defaulting to human only where the resolver states it, and carry it through the server context."
+do_2 = "Let an action declare a human gate; the server rejects a gated invocation from a non-human actor with a catalogued error, independent of any client behaviour."
+do_3 = "Stop the client run helper from fetching and replaying a confirmation token without a recorded user decision, and rewrite the agent contract text that tells agents to accept on their own."
+do_4 = "Record the actor kind on every ledger entry and test the gate, the rejection and the ledger attribution."
+reqs = ["3.3"]
+owner = "security"
+cases = ["RX4-014", "RX4-901"]
+provides = ["actor.kind"]
+consumes = []
+audit = ["1.6"]
+time_limit_minutes = 90
+
+[task.1.3]
+title = "Share one bounded confirmation store and make the input digest canonical"
+status = "pending"
+wave = 1
+requires = ["1.2"]
+touches = ["packages/rex/src/server/confirm-store.ts", "packages/rex/src/server/confirm-store.test.ts", "packages/rex/src/server/router.ts", "packages/rex/src/server/router.test.ts", "packages/rex/src/server/routes/form.ts", "packages/rex/src/server/loaders.ts", "packages/rex/src/manifest/build.ts", "packages/rex/src/manifest/build.test.ts", "packages/rex/src/core/serialize.ts", "packages/rex/src/core/serialize.test.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/confirm-store.test.ts src/server/router.test.ts src/core/serialize.test.ts"
+do_1 = "Define a ConfirmStore interface with issue, consume and expiry, and a bounded in-memory implementation whose capacity is counted per actor and, for anonymous visitors, per client key."
+do_2 = "Replace the per-router maps with one store instance shared by the RPC, form and loader paths, injected through server options."
+do_3 = "Compute the input digest from a canonical encoding that covers Date, File, Map, Set, BigInt and nested values with stable key order."
+do_4 = "Test single use, expiry, cross-path sharing, isolation of one actor from another under exhaustion, and digest equality for equal inputs."
+reqs = ["3.4", "3.5"]
+owner = "security"
+cases = ["RX4-015", "RX4-901"]
+provides = ["confirm.store"]
+consumes = ["actor.kind"]
+audit = ["1.5"]
+time_limit_minutes = 90
+
+[task.1.4]
+title = "Bound the memory ledger, ship a durable ledger and take the append off the critical path"
+status = "pending"
+wave = 1
+requires = ["1.3"]
+touches = ["packages/rex/src/server/audit.ts", "packages/rex/src/server/audit.test.ts", "packages/rex/src/server/ledger-file.ts", "packages/rex/src/server/ledger-file.test.ts", "packages/rex/src/server/router.ts", "packages/rex/src/server/router.test.ts", "packages/rex/src/server/loaders.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/core/config.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/audit.test.ts src/server/ledger-file.test.ts src/server/router.test.ts"
+do_1 = "Give memoryLedger a fixed capacity with oldest-first eviction and emit one warning when it is used with NODE_ENV production."
+do_2 = "Add a durable append-only file ledger with rotation, and make the generated server entry and the scaffold template use it by default."
+do_3 = "Stop auditing loader reads unless the application opts in through configuration."
+do_4 = "Move the ledger append so a failure after commit is reported through the error path and never changes the action response; test the bound, the durability across restart and the failure case."
+reqs = ["5.1", "5.2", "5.3"]
+owner = "security"
+cases = ["RX4-016", "RX4-901"]
+provides = ["ledger.store"]
+consumes = ["actor.kind"]
+audit = ["1.4"]
+time_limit_minutes = 90
+
+[task.1.5]
+title = "Authorize flows and run their steps through the action pipeline"
+status = "pending"
+wave = 1
+requires = ["1.4"]
+touches = ["packages/rex/src/server/flow.ts", "packages/rex/src/server/flow.test.ts", "packages/rex/src/core/flow.ts", "packages/rex/src/core/flow.test.ts", "packages/rex/src/client/agent/flow-gate.ts", "packages/rex/src/client/agent/flow.tsx"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/flow.test.ts src/core/flow.test.ts"
+do_1 = "Add a start policy and an ownership check to flow start and status, and issue instance identifiers on the server."
+do_2 = "Run each step through the same authorization, confirmation and audit path that a direct invocation uses, instead of calling the handler directly."
+do_3 = "Attribute each step to the principal that acted on it, so a step after an approval is not recorded as the approver unless the approver ran it."
+do_4 = "Enforce irreversible gate decisions on the server and test start denial, status denial for a non-owner, per-step audit entries and server-side gate enforcement."
+reqs = ["4.1", "4.2"]
+owner = "security"
+cases = ["RX4-017", "RX4-901"]
+provides = []
+consumes = ["actor.kind", "ledger.store", "confirm.store"]
+audit = ["1.2"]
+time_limit_minutes = 90
+
+[task.1.6]
+title = "Make flow steps exactly-once with a durable journal"
+status = "pending"
+wave = 1
+requires = ["1.5"]
+touches = ["packages/rex/src/core/flow.ts", "packages/rex/src/core/flow.test.ts", "packages/rex/src/core/journal.ts", "packages/rex/src/core/journal.test.ts", "packages/rex/src/server/journal-file.ts", "packages/rex/src/server/journal-file.test.ts", "packages/rex/src/server/flow.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/flow.test.ts src/core/journal.test.ts src/server/journal-file.test.ts"
+do_1 = "Define a FlowJournal interface with compare-and-set on the instance version, keep the memory journal as one implementation and add a durable file journal."
+do_2 = "Take a lease or version check before a step runs and pass an idempotency key to the step so a retried advance cannot run the handler twice."
+do_3 = "Match journal records to steps by stable step identity instead of array position, and reject a journal that no longer matches the declared flow with a catalogued error."
+do_4 = "Test two concurrent advances on one instance, recovery after a crash between handler and journal write, and a flow whose steps were reordered."
+reqs = ["4.3", "4.4"]
+owner = "security"
+cases = ["RX4-018", "RX4-901"]
+provides = ["flow.journal"]
+consumes = []
+audit = ["1.3"]
+time_limit_minutes = 90
+
+[task.1.7]
+title = "Add request limits, timeouts, graceful shutdown and real health routes"
+status = "pending"
+wave = 1
+requires = []
+touches = ["packages/rex/src/server/app.ts", "packages/rex/src/server/app.test.ts", "packages/rex/src/server/limits.ts", "packages/rex/src/server/limits.test.ts", "packages/rex/src/server/routes/health.ts", "packages/rex/src/server/routes/health.test.ts", "packages/rex/src/server/routes/form.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/adapters/node.ts", "packages/rex/src/server/adapters/node.test.ts", "packages/rex/src/server/node.ts", "packages/rex/src/core/config.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/limits.test.ts src/server/app.test.ts src/server/routes/health.test.ts src/server/adapters/node.test.ts"
+do_1 = "Add a server.limits configuration with a body size limit, a request timeout and a render timeout, with safe defaults, and return catalogued 413 and 503 responses when they trip."
+do_2 = "Propagate an AbortSignal from the request to handlers and to rendering so a disconnected client stops work, and expose a rate-limit hook that runs before handlers."
+do_3 = "Handle termination signals in the Node adapter and the generated server entry by refusing new connections and draining in-flight requests within a deadline."
+do_4 = "Split health into liveness and readiness, let the application register readiness checks, and test each limit, the drain and a failing readiness check."
+reqs = ["6.1", "6.2"]
+owner = "server"
+cases = ["RX4-019", "RX4-901"]
+provides = ["server.limits"]
+consumes = []
+audit = ["1.7"]
+time_limit_minutes = 90
+
+[task.1.8]
+title = "Add trustProxy and the __Host- CSRF cookie"
+status = "pending"
+wave = 1
+requires = ["1.7"]
+touches = ["packages/rex/src/server/middleware/security.ts", "packages/rex/src/server/middleware/security.test.ts", "packages/rex/src/server/security.test.ts", "packages/rex/src/server/proxy.ts", "packages/rex/src/server/proxy.test.ts", "packages/rex/src/core/config.ts", "docs/platforms.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/proxy.test.ts src/server/middleware/security.test.ts src/server/security.test.ts"
+do_1 = "Add a trustProxy option that, only when set, derives scheme, host and client address from Forwarded and X-Forwarded headers with a hop count."
+do_2 = "Use the derived origin for the same-origin check and the Secure cookie attribute, so a same-origin POST behind a TLS-terminating proxy passes and a spoofed header without trustProxy changes nothing."
+do_3 = "Name the CSRF cookie with the __Host- prefix on secure origins and keep a working name for plain HTTP development."
+do_4 = "Test proxied and direct requests with and without the option, spoofed headers, and the cookie name and attributes."
+reqs = ["6.3"]
+owner = "server"
+cases = ["RX4-020", "RX4-901"]
+provides = ["server.trust-proxy"]
+consumes = ["server.limits"]
+audit = ["1.8"]
+time_limit_minutes = 45
+
+[task.1.9]
+title = "Complete the security headers on every response"
+status = "pending"
+wave = 1
+requires = ["1.8"]
+touches = ["packages/rex/src/server/middleware/security.ts", "packages/rex/src/server/middleware/security.test.ts", "packages/rex/src/server/adapters/node.ts", "packages/rex/src/server/adapters/node.test.ts", "packages/rex/src/server/adapters/static-cache.ts", "packages/rex/src/vite/nonce.ts", "packages/rex/src/core/config.ts", "site/e2e/**"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/middleware/security.test.ts src/server/adapters/node.test.ts"
+do_1 = "Add frame-ancestors, base-uri, object-src and form-action to the default policy and remove the inline style allowance where nonces or hashes can replace it."
+do_2 = "Add a configurable Strict-Transport-Security header that is sent only on secure origins."
+do_3 = "Apply the security headers to static assets and to the SPA fallback in the Node adapter and the static cache."
+do_4 = "Test the directive set, the header on static and fallback responses, and that the site's own scripts load under the policy."
+reqs = ["6.4"]
+owner = "server"
+cases = ["RX4-021", "RX4-901"]
+provides = ["security.headers"]
+consumes = ["server.trust-proxy"]
+audit = ["1.9"]
+time_limit_minutes = 45
+
+[task.1.10]
+title = "Make the server and client boundary fail closed"
+status = "pending"
+wave = 1
+requires = []
+touches = ["packages/rex/src/vite/boundary.ts", "packages/rex/src/vite/boundary.test.ts", "packages/rex/src/vite/app-module.ts", "packages/rex/src/vite/app-module.test.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/src/vite/plugin.ts", "packages/rex/src/core/errors.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/boundary.test.ts src/vite/app-module.test.ts"
+do_1 = "Strip handlers by resolved symbol so renamed imports, namespace imports, non-literal arguments and re-exports are handled, and compare paths in a separator-independent and case-correct way."
+do_2 = "Fail the client build with a catalogued error that names the file and symbol when a handler cannot be proven stripped."
+do_3 = "Stop the client entry from importing action handler modules; it imports declaration metadata only."
+do_4 = "Test each import form, a Windows-style path, an unstrippable case that must fail the build, and assert that a marker string inside a handler is absent from the client bundle."
+reqs = ["7.1", "7.2"]
+owner = "build"
+cases = ["RX4-022", "RX4-901"]
+provides = ["boundary.strip-report"]
+consumes = []
+audit = ["1.10"]
+time_limit_minutes = 90
+
+[task.1.11]
+title = "Add root and page error boundaries with chunk and version-skew recovery"
+status = "pending"
+wave = 1
+requires = []
+touches = ["packages/rex/src/client/boundary.tsx", "packages/rex/src/client/boundary.test.tsx", "packages/rex/src/client/root-boundary.tsx", "packages/rex/src/client/root-boundary.test.tsx", "packages/rex/src/client/lazy.ts", "packages/rex/src/client/lazy.test.ts", "packages/rex/src/client/app.tsx", "packages/rex/src/client/app.test.tsx", "packages/rex/src/client/version-skew.ts", "packages/rex/src/client/version-skew.test.ts", "packages/rex/src/client/fallbacks.tsx"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/root-boundary.test.tsx src/client/lazy.test.ts src/client/version-skew.test.ts src/client/app.test.tsx"
+do_1 = "Add a root boundary around the application and a page boundary around each page, each rendering a recoverable view with a retry control and an agent-addressable state."
+do_2 = "Make lazy module loading retry a failed import with backoff and never cache a rejection as a permanent empty render."
+do_3 = "Handle the Vite preload error event and compare the running build identifier with the one the server reports; on mismatch show a reload prompt instead of failing."
+do_4 = "Test a render error outside a region, a failed then successful import, a preload error and a build identifier mismatch."
+reqs = ["8.1", "8.2"]
+owner = "client"
+cases = ["RX4-023", "RX4-901"]
+provides = ["client.root-boundary"]
+consumes = []
+audit = ["1.11"]
+time_limit_minutes = 90
+
+[task.1.12]
+title = "Fix client data scoping, retry, revisit and identity handling and type the hydration payload"
+status = "pending"
+wave = 1
+requires = ["1.11"]
+touches = ["packages/rex/src/client/page.tsx", "packages/rex/src/client/page.test.tsx", "packages/rex/src/client/entry.tsx", "packages/rex/src/client/entry.test.tsx", "packages/rex/src/client/loaders.ts", "packages/rex/src/client/loaders.test.tsx", "packages/rex/src/client/hydrate.ts", "packages/rex/src/client/hydrate.test.ts", "packages/rex/src/client/providers.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/core/serialize.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/page.test.tsx src/client/entry.test.tsx src/client/loaders.test.tsx src/client/hydrate.test.ts"
+do_1 = "Scope page queries to the page that declared them so one page never reads the query state of another."
+do_2 = "Do not retry responses in the 4xx range, and refetch server-seeded loader data on revisit once it is stale."
+do_3 = "Re-resolve the actor when identity changes and clear the query cache at that moment."
+do_4 = "Encode hydration data with a typed codec that round-trips Date, BigInt, Map and Set, and test each of the five behaviours."
+reqs = ["8.3", "8.4"]
+owner = "client"
+cases = ["RX4-024", "RX4-901"]
+provides = ["hydrate.codec"]
+consumes = ["client.root-boundary"]
+audit = ["1.13"]
+time_limit_minutes = 90
+
+[task.1.13]
+title = "Fix status mapping, dotted paths, CSS order, store readiness and config errors"
+status = "pending"
+wave = 1
+requires = ["1.7"]
+touches = ["packages/rex/src/store/drizzle.ts", "packages/rex/src/store/drizzle.test.ts", "packages/rex/src/core/page.ts", "packages/rex/src/core/page.test.ts", "packages/rex/src/server/routes/render.ts", "packages/rex/src/server/routes/render.test.ts", "packages/rex/src/vite/ssr-css.ts", "packages/rex/src/vite/ssr-css.test.ts", "packages/rex/src/server/middleware/telemetry.ts", "packages/rex/src/server/middleware/telemetry.test.ts", "packages/rex/src/cli/commands/check.ts", "packages/rex/src/cli/commands/check.test.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/store/drizzle.test.ts src/core/page.test.ts src/server/routes/render.test.ts src/vite/ssr-css.test.ts src/server/middleware/telemetry.test.ts src/cli/commands/check.test.ts"
+do_1 = "Reset the drizzle readiness promise after a rejection so a later call retries."
+do_2 = "Make pages whose last path segment contains a dot reachable, and emit server-rendered CSS in import order."
+do_3 = "Return 400 for malformed percent-encoding, 404 for route parameters that fail validation, and map loader failures to their declared status instead of a blanket 500."
+do_4 = "Make rex check report a configuration file that throws any error, and add one test per fix."
+reqs = ["6.6", "9.2"]
+owner = "server"
+cases = ["RX4-025", "RX4-901"]
+provides = []
+consumes = []
+audit = ["1.14"]
+time_limit_minutes = 90
+
+[task.1.14]
+title = "Close the information leaks in forms, manifest, actor payload, dev routes and markdown"
+status = "pending"
+wave = 1
+requires = ["1.9", "1.12"]
+touches = ["packages/rex/src/server/routes/form.ts", "packages/rex/src/server/routes/form.test.ts", "packages/rex/src/server/routes/manifest.ts", "packages/rex/src/server/routes/manifest.test.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/routes/dev.ts", "packages/rex/src/server/routes/dev.test.ts", "packages/rex/src/server/form.ts", "packages/rex/src/server/form.test.ts", "packages/rex/src/schema/fields.ts", "packages/rex/src/schema/fields.test.ts", "packages/rex/src/client/unsafe-html.tsx", "packages/rex/src/core/actor.ts", "packages/rex/src/core/config.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/routes/form.test.ts src/server/routes/manifest.test.ts src/server/routes/dev.test.ts src/server/form.test.ts src/schema/fields.test.ts"
+do_1 = "Return catalogued public messages from the form route and keep raw error text in the server log only."
+do_2 = "Send only actor attributes on an explicit allow-list to the client, and add Cache-Control and Vary to actor-dependent manifest responses."
+do_3 = "Exclude development routes from production builds at build time instead of by a runtime environment check."
+do_4 = "Reject __proto__, constructor and prototype keys in form coercion, sanitize markdown field output, and test each of the five leaks."
+reqs = ["6.5"]
+owner = "security"
+cases = ["RX4-026", "RX4-901"]
+provides = []
+consumes = ["security.headers", "hydrate.codec"]
+audit = ["1.15"]
+time_limit_minutes = 90
+
+[task.1.15]
+title = "Add version checks and transactions to the store contract"
+status = "pending"
+wave = 1
+requires = ["1.13"]
+touches = ["packages/rex/src/core/store.ts", "packages/rex/src/core/store.test.ts", "packages/rex/src/core/store.memory.ts", "packages/rex/src/core/store.conformance.ts", "packages/rex/src/core/store.conformance.test.ts", "packages/rex/src/store/drizzle.ts", "packages/rex/src/store/drizzle.test.ts", "packages/rex/src/store/markdown.ts", "packages/rex/src/core/errors.ts", "docs/recipes/database-transactions.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/store.test.ts src/core/store.conformance.test.ts src/store/drizzle.test.ts"
+do_1 = "Add a version to stored records and an ifVersion option to writes that fails with a catalogued conflict error when the stored version differs."
+do_2 = "Add a transaction method to the store contract with all-or-nothing semantics, implemented by the memory and drizzle stores."
+do_3 = "Extend the conformance suite with lost-update, conflict and rollback cases and run it against both stores."
+do_4 = "Update the database transactions recipe to the new contract."
+reqs = ["9.1"]
+owner = "data"
+cases = ["RX4-027", "RX4-901"]
+provides = ["store.versioned-write"]
+consumes = []
+audit = ["1.16"]
+time_limit_minutes = 90
+
+[task.2.1]
+title = "Make the action and loader context request-aware"
+status = "pending"
+wave = 2
+requires = []
+touches = ["packages/rex/src/core/action.ts", "packages/rex/src/core/action.test.ts", "packages/rex/src/server/context.ts", "packages/rex/src/server/context.test.ts", "packages/rex/src/server/router.ts", "packages/rex/src/server/router.test.ts", "packages/rex/src/server/loaders.ts", "packages/rex/src/server/loaders.test.ts", "packages/rex/src/server/routes/form.ts", "packages/rex/src/server/routes/rpc.ts", "packages/rex/src/server/cookies.ts", "packages/rex/src/server/cookies.test.ts", "packages/rex/src/testing/index.ts", "docs/primitives.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/action.test.ts src/server/context.test.ts src/server/cookies.test.ts src/server/router.test.ts src/server/loaders.test.ts"
+do_1 = "Extend ActionContext with the request, read-only headers, a cookie reader and writer, the abort signal and environment bindings, keeping actor where it is so existing handlers compile."
+do_2 = "Build the context once per request and pass the same shape to actions and loaders on the RPC, form and render paths."
+do_3 = "Apply cookies set by a handler to the response on all three paths, including the no-JavaScript form redirect."
+do_4 = "Give rex/testing a way to build a context for a handler test, and test header access, cookie round trip and abort propagation."
+reqs = ["10.1"]
+owner = "server"
+cases = ["RX4-028", "RX4-902"]
+provides = ["action.context"]
+consumes = ["server.limits"]
+audit = ["2.1"]
+time_limit_minutes = 90
+
+[task.2.2]
+title = "Ship signed sessions, a session store and the session actor resolver"
+status = "pending"
+wave = 2
+requires = ["2.1"]
+touches = ["packages/rex/src/server/session.ts", "packages/rex/src/server/session.test.ts", "packages/rex/src/server/session-store.ts", "packages/rex/src/server/session-store.test.ts", "packages/rex/src/server/index.ts", "packages/rex/src/core/config.ts", "packages/rex/src/core/errors.ts", "examples/demo/server.ts", "docs/platforms.md", "packages/rex/package.json"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/session.test.ts src/server/session-store.test.ts"
+do_1 = "Add signed and encrypted cookie sessions with key rotation, using Web Crypto so every runtime adapter works, with the cookie attributes derived from the trusted origin."
+do_2 = "Define a SessionStore interface with a cookie-backed and a memory implementation, and regenerate the session identifier on privilege change."
+do_3 = "Export sessionActor, the resolver that docs/platforms.md already names, and make an unauthenticated request resolve to an anonymous actor."
+do_4 = "Remove the privileged fallback from the demo resolver, and test tamper rejection, rotation, expiry and identifier regeneration."
+reqs = ["10.2"]
+owner = "server"
+cases = ["RX4-029", "RX4-902"]
+provides = ["session.api"]
+consumes = ["action.context", "server.trust-proxy"]
+audit = ["2.2"]
+time_limit_minutes = 120
+
+[task.2.3]
+title = "Give loaders control of the response and add application 404 and 500 pages"
+status = "pending"
+wave = 2
+requires = ["2.1"]
+touches = ["packages/rex/src/core/page.ts", "packages/rex/src/core/page.test.ts", "packages/rex/src/core/control.ts", "packages/rex/src/core/control.test.ts", "packages/rex/src/server/loaders.ts", "packages/rex/src/server/loaders.test.ts", "packages/rex/src/server/routes/render.ts", "packages/rex/src/server/routes/render.test.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/client/loaders.ts", "packages/rex/src/client/router.tsx", "packages/rex/src/client/fallbacks.tsx", "packages/rex/src/vite/scan.ts", "packages/rex/src/index.ts", "docs/recipes/loader.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/control.test.ts src/server/loaders.test.ts src/server/routes/render.test.ts"
+do_1 = "Add notFound, redirect and a response helper that loaders return or throw to set status and headers, with one typed representation shared by server and client."
+do_2 = "Honour them in server rendering with the right status and Location header, and in client navigation with the equivalent transition."
+do_3 = "Let an application declare a not-found page and an error page by convention, discovered by the scanner and rendered for unmatched routes and unhandled failures."
+do_4 = "Test a loader not-found, a redirect, a custom status and header, and both application pages on server and client."
+reqs = ["10.3"]
+owner = "server"
+cases = ["RX4-030", "RX4-902"]
+provides = ["loader.control"]
+consumes = ["action.context"]
+audit = ["2.3"]
+time_limit_minutes = 90
+
+[task.2.4]
+title = "Stream server rendering or correct the claim"
+status = "pending"
+wave = 2
+requires = ["2.3"]
+touches = ["packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/server/ssr-stream.ts", "packages/rex/src/server/ssr-stream.test.tsx", "packages/rex/src/server/routes/render.ts", "packages/rex/src/client/hydrate.ts", "CHANGELOG.md", "docs/architecture.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/ssr-stream.test.tsx src/server/ssr.test.tsx"
+do_1 = "Render with the React streaming API so the document shell and head are flushed before suspended regions resolve, with the render timeout and abort signal applied to the stream."
+do_2 = "Inline late hydration data for each resolved boundary using the typed codec, and keep prerender on the fully buffered path."
+do_3 = "Send render errors after the shell to the error path and to the page boundary instead of dropping them."
+do_4 = "Test that the first chunk arrives before a suspended loader resolves; if streaming cannot be qualified within the budget, remove the streaming claim from CHANGELOG.md and docs/architecture.md and record the gap."
+reqs = ["11.1"]
+owner = "server"
+cases = ["RX4-031", "RX4-902"]
+provides = []
+consumes = ["hydrate.codec", "loader.control", "server.limits"]
+audit = ["2.4"]
+time_limit_minutes = 120
+
+[task.2.5]
+title = "Add cache headers, compression and one route matcher"
+status = "pending"
+wave = 2
+requires = ["2.3"]
+touches = ["packages/rex/src/server/cache-policy.ts", "packages/rex/src/server/cache-policy.test.ts", "packages/rex/src/server/routes/render.ts", "packages/rex/src/server/routes/render.test.ts", "packages/rex/src/server/adapters/node.ts", "packages/rex/src/server/adapters/node.test.ts", "packages/rex/src/server/adapters/static-cache.ts", "packages/rex/src/server/adapters/static-cache.test.ts", "packages/rex/src/server/match.ts", "packages/rex/src/server/match.test.ts", "packages/rex/src/server/routes.ts", "packages/rex/src/core/page.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/cache-policy.test.ts src/server/match.test.ts src/server/routes/render.test.ts src/server/adapters/node.test.ts src/server/adapters/static-cache.test.ts"
+do_1 = "Let a page declare a cache policy and derive Cache-Control from it: immutable for hashed assets, a declared lifetime for prerendered pages, no-store for actor-dependent HTML."
+do_2 = "Add ETag validation and negotiated compression for text responses in the Node adapter."
+do_3 = "Replace the three route matchers with one module that decides case sensitivity and trailing slashes, used by the server, the static cache and the client."
+do_4 = "Answer HEAD without a full render where the cache holds the entry, and test the header for each response class, a 304 and matcher agreement."
+reqs = ["11.2"]
+owner = "server"
+cases = ["RX4-032", "RX4-902"]
+provides = ["http.cache-policy", "route.matcher"]
+consumes = ["loader.control"]
+audit = ["2.5", "2.9"]
+time_limit_minutes = 90
+
+[task.2.6]
+title = "Add the error hook, request identifiers, trace context and access logging"
+status = "pending"
+wave = 2
+requires = ["2.4"]
+touches = ["packages/rex/src/server/observe.ts", "packages/rex/src/server/observe.test.ts", "packages/rex/src/server/middleware/telemetry.ts", "packages/rex/src/server/middleware/telemetry.test.ts", "packages/rex/src/server/app.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/router.ts", "packages/rex/src/core/config.ts", "docs/platforms.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/observe.test.ts src/server/middleware/telemetry.test.ts"
+do_1 = "Add an onError hook that receives every render and handler error with its stack, the route, the actor identifier and a request identifier."
+do_2 = "Generate or accept a request identifier, return it in a response header and include it in public error bodies."
+do_3 = "Propagate W3C traceparent and tracestate into spans and outgoing context."
+do_4 = "Add an access log hook and a metrics hook with request duration and status, and test each hook including an error thrown during rendering."
+reqs = ["11.3"]
+owner = "server"
+cases = ["RX4-033", "RX4-902"]
+provides = ["observe.hooks"]
+consumes = ["action.context"]
+audit = ["2.6"]
+time_limit_minutes = 90
+
+[task.2.7]
+title = "Accept shared stores for tokens, ledger, journal and static cache"
+status = "pending"
+wave = 2
+requires = ["2.5", "2.6"]
+touches = ["packages/rex/src/server/shared-store.ts", "packages/rex/src/server/shared-store.test.ts", "packages/rex/src/server/confirm-store.ts", "packages/rex/src/server/confirm-store.test.ts", "packages/rex/src/server/audit.ts", "packages/rex/src/server/journal-file.ts", "packages/rex/src/server/adapters/static-cache.ts", "packages/rex/src/server/adapters/static-cache.test.ts", "packages/rex/src/server/revalidate.ts", "packages/rex/src/server/revalidate.test.ts", "packages/rex/src/core/config.ts", "docs/platforms.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/shared-store.test.ts src/server/revalidate.test.ts src/server/confirm-store.test.ts src/server/adapters/static-cache.test.ts"
+do_1 = "Define a small SharedStore key-value interface with expiry and compare-and-set, with a memory implementation and a conformance test any adapter can run."
+do_2 = "Provide ConfirmStore, ledger, flow journal and static cache implementations that sit on a SharedStore, so two server instances with one store behave as one."
+do_3 = "Add an on-demand revalidation function that actions can call by path or tag."
+do_4 = "Add regeneration backoff after a failed render, and test two app instances sharing one store for token consumption, journal advance and cache invalidation."
+reqs = ["11.4"]
+owner = "server"
+cases = ["RX4-034", "RX4-902"]
+provides = ["shared.store"]
+consumes = ["confirm.store", "ledger.store", "flow.journal", "http.cache-policy"]
+audit = ["2.7"]
+time_limit_minutes = 120
+
+[task.2.8]
+title = "Preserve values and bound the outcome in the no-JavaScript form round trip"
+status = "pending"
+wave = 2
+requires = ["2.1"]
+touches = ["packages/rex/src/server/routes/form.ts", "packages/rex/src/server/routes/form.test.ts", "packages/rex/src/server/form.ts", "packages/rex/src/server/form.test.ts", "packages/rex/src/server/form-outcome.ts", "packages/rex/src/server/form-outcome.test.ts", "packages/rex/src/client/form-view.tsx", "packages/rex/src/client/form.test.tsx", "docs/recipes/form-without-js.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/server/form-outcome.test.ts src/server/routes/form.test.ts src/server/form.test.ts"
+do_1 = "Keep submitted values across a failed no-JavaScript submission so the form re-renders filled, excluding fields marked sensitive."
+do_2 = "Store the outcome server-side under a short identifier, or compress and cap it, so the cookie stays under the size limit for any input."
+do_3 = "Map field errors to their fields on the re-rendered form."
+do_4 = "Test a failed submission with a large payload, value preservation, sensitive-field exclusion and cookie size."
+reqs = ["11.5"]
+owner = "server"
+cases = ["RX4-035", "RX4-902"]
+provides = []
+consumes = ["action.context"]
+audit = ["2.8"]
+time_limit_minutes = 90
+
+[task.2.9]
+title = "Add the typed environment schema, dotenv loading and build modes"
+status = "pending"
+wave = 2
+requires = ["2.1"]
+touches = ["packages/rex/src/core/env.ts", "packages/rex/src/core/env.test.ts", "packages/rex/src/cli/env.ts", "packages/rex/src/cli/env.test.ts", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/vite/plugin.ts", "packages/rex/src/core/config.ts", "packages/rex/src/index.ts", "docs/reference.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/env.test.ts src/cli/env.test.ts"
+do_1 = "Add defineEnv, a schema that splits server and public variables, validates at start and reports every missing or invalid variable in one catalogued error."
+do_2 = "Load .env, .env.local and mode-specific files in the CLI with documented precedence, and add a --mode flag to dev and build."
+do_3 = "Expose the validated values through the action context and expose only public variables to the client build."
+do_4 = "Test validation failure output, file precedence, mode selection and that a server variable is absent from the client bundle."
+reqs = ["10.4"]
+owner = "server"
+cases = ["RX4-036", "RX4-902"]
+provides = ["env.schema"]
+consumes = ["action.context"]
+audit = ["2.12"]
+time_limit_minutes = 90
+
+[task.3.1]
+title = "Replace create-if-missing with versioned store migrations"
+status = "pending"
+wave = 3
+requires = []
+touches = ["packages/rex/src/store/drizzle.ts", "packages/rex/src/store/drizzle.test.ts", "packages/rex/src/store/migrations.ts", "packages/rex/src/store/migrations.test.ts", "packages/rex/src/store/index.ts", "packages/rex/src/cli/commands/migrate.ts", "packages/rex/src/cli/commands/db.ts", "packages/rex/src/cli/commands/db.test.ts", "packages/rex/src/cli/index.ts", "docs/recipes/database-transactions.md", "docs/cli.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/store/migrations.test.ts src/store/drizzle.test.ts src/cli/commands/db.test.ts"
+do_1 = "Add a migration runner that applies ordered migrations inside a transaction and records each in a history table with a checksum."
+do_2 = "Generate a migration from the difference between declared entities and the recorded schema, and stop the store from issuing create-if-missing statements at start."
+do_3 = "Add rex db status, rex db generate and rex db migrate, and refuse to start in production with pending migrations unless configured otherwise."
+do_4 = "Test apply, re-run as a no-op, a checksum mismatch and a failed migration that rolls back."
+reqs = ["9.3"]
+owner = "data"
+cases = ["RX4-037", "RX4-903"]
+provides = ["store.migrations"]
+consumes = ["store.versioned-write"]
+audit = ["2.10"]
+time_limit_minutes = 120
+
+[task.3.2]
+title = "Add the PostgreSQL store adapter"
+status = "pending"
+wave = 3
+requires = ["3.1"]
+touches = ["packages/rex/src/store/postgres.ts", "packages/rex/src/store/postgres.test.ts", "packages/rex/src/store/dialect.ts", "packages/rex/src/store/dialect.test.ts", "packages/rex/src/store/drizzle.ts", "packages/rex/src/store/index.ts", "packages/rex/package.json", "pnpm-lock.yaml", "docs/platforms.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/store/dialect.test.ts src/store/postgres.test.ts"
+do_1 = "Separate SQL dialect differences from the drizzle store into a dialect module, keeping SQLite behaviour unchanged."
+do_2 = "Add a PostgreSQL adapter exported under its own entry with an optional peer driver."
+do_3 = "Run the store conformance suite and the migration runner against PostgreSQL through an embedded or local server started by the test; the test fails, not skips, when no server can start in CI."
+do_4 = "Document connection configuration and pooling in docs/platforms.md."
+reqs = ["9.4"]
+owner = "data"
+cases = ["RX4-038", "RX4-903"]
+provides = []
+consumes = ["store.versioned-write", "store.migrations"]
+audit = ["2.10"]
+time_limit_minutes = 120
+
+[task.3.3]
+title = "Generalize the policy model and move wallet conditions out of core"
+status = "pending"
+wave = 3
+requires = []
+touches = ["packages/rex/src/core/policy.ts", "packages/rex/src/core/policy.test.ts", "packages/rex/src/core/actor.ts", "packages/rex/src/core/actor.test.ts", "packages/rex/src/core/policy-wallet.ts", "packages/rex/src/core/policy-wallet.test.ts", "packages/rex/src/server/router.ts", "packages/rex/src/server/router.test.ts", "packages/rex/src/client/act.ts", "packages/rex/src/manifest/build.ts", "packages/rex/src/core/deprecated.ts", "docs/primitives.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/policy.test.ts src/core/policy-wallet.test.ts src/server/router.test.ts"
+do_1 = "Let a policy be asynchronous and receive the actor, the validated input, the target entity when one is addressed and the request context."
+do_2 = "Keep the client evaluation for policies that are synchronous and actor-only, and mark the others as server-decided in the manifest so the client does not guess."
+do_3 = "Move wallet-specific conditions and actor fields out of core into an optional module, leaving deprecated re-exports for one minor release."
+do_4 = "Test an ownership policy that reads the entity, an asynchronous policy, default deny and the manifest marking."
+reqs = ["10.5"]
+owner = "data"
+cases = ["RX4-039", "RX4-903"]
+provides = ["policy.context"]
+consumes = ["action.context"]
+audit = ["2.11"]
+time_limit_minutes = 90
+
+[task.3.4]
+title = "Add cursor pagination and make counts opt-in"
+status = "pending"
+wave = 3
+requires = []
+touches = ["packages/rex/src/core/store.ts", "packages/rex/src/core/store.test.ts", "packages/rex/src/core/store.memory.ts", "packages/rex/src/core/store.conformance.ts", "packages/rex/src/store/drizzle.ts", "packages/rex/src/store/drizzle.test.ts", "packages/rex/src/client/list.tsx", "packages/rex/src/client/list.test.tsx", "packages/rex/src/client/list-view.tsx", "packages/rex/src/server/loaders.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/store.test.ts src/store/drizzle.test.ts src/client/list.test.tsx"
+do_1 = "Add cursor pagination to the store list contract with a stable order, keeping offset pagination for existing callers."
+do_2 = "Compute a total count only when the caller asks for it."
+do_3 = "Teach the list component to page by cursor with an addressable next and previous affordance."
+do_4 = "Extend the conformance suite with cursor stability under concurrent insert, and test it against both stores."
+reqs = ["9.5"]
+owner = "data"
+cases = ["RX4-040", "RX4-903"]
+provides = ["list.cursor"]
+consumes = ["store.versioned-write"]
+audit = ["2.13"]
+time_limit_minutes = 90
+
+[task.3.5]
+title = "Validate references and invalidations and export the conformance suite"
+status = "pending"
+wave = 3
+requires = ["3.4"]
+touches = ["packages/rex/src/core/registry.ts", "packages/rex/src/core/registry.test.ts", "packages/rex/src/core/entity.ts", "packages/rex/src/core/entity.test.ts", "packages/rex/src/core/store.conformance.ts", "packages/rex/src/testing/index.ts", "packages/rex/src/testing/store.ts", "packages/rex/src/testing/store.test.ts", "packages/rex/src/core/errors.ts", "packages/rex/package.json", "docs/extensions.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/registry.test.ts src/core/entity.test.ts src/testing/store.test.ts"
+do_1 = "Validate at registration that every ref target names a declared entity and every invalidates name matches a declared loader or entity, with a catalogued error naming the declaration."
+do_2 = "Export the store conformance suite from rex/testing so adapter authors can run it."
+do_3 = "Document writing a store adapter against the suite in docs/extensions.md."
+do_4 = "Test an unknown ref target, an unknown invalidation name and a custom store run through the exported suite."
+reqs = ["9.6"]
+owner = "data"
+cases = ["RX4-041", "RX4-903"]
+provides = []
+consumes = ["store.versioned-write", "list.cursor"]
+audit = ["2.13"]
+time_limit_minutes = 45
+
+[task.4.1]
+title = "Complete route patterns, redirects, duplicate detection and base path"
+status = "pending"
+wave = 4
+requires = []
+touches = ["packages/rex/src/core/page.ts", "packages/rex/src/core/page.test.ts", "packages/rex/src/core/registry.ts", "packages/rex/src/core/registry.test.ts", "packages/rex/src/server/match.ts", "packages/rex/src/server/match.test.ts", "packages/rex/src/client/router.tsx", "packages/rex/src/client/router.test.tsx", "packages/rex/src/client/nav.ts", "packages/rex/src/core/config.ts", "packages/rex/src/vite/scan.ts", "packages/rex/src/vite/plugin.ts", "packages/rex/src/core/errors.ts", "docs/convention.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/page.test.ts src/core/registry.test.ts src/server/match.test.ts src/client/router.test.tsx"
+do_1 = "Add catch-all and optional segments to the page path grammar with typed parameters, matched identically on server and client through the shared matcher."
+do_2 = "Add declared redirects in configuration and reject duplicate or ambiguous routes at registration with a catalogued error."
+do_3 = "Add a trailing-slash policy and a base path that apply to matching, generated links, assets and the static build."
+do_4 = "Test each pattern form, precedence, a duplicate route, both slash policies and an application mounted under a base path."
+reqs = ["12.1"]
+owner = "client"
+cases = ["RX4-042", "RX4-904"]
+provides = ["route.patterns"]
+consumes = ["route.matcher", "loader.control"]
+audit = ["2.14"]
+time_limit_minutes = 90
+
+[task.4.2]
+title = "Add nested layouts"
+status = "pending"
+wave = 4
+requires = ["4.1"]
+touches = ["packages/rex/src/core/layout.ts", "packages/rex/src/core/layout.test.ts", "packages/rex/src/core/registry.ts", "packages/rex/src/client/layout.tsx", "packages/rex/src/client/layout.test.tsx", "packages/rex/src/client/router.tsx", "packages/rex/src/client/router.test.tsx", "packages/rex/src/client/page.tsx", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/vite/scan.ts", "packages/rex/src/vite/scan.test.ts", "packages/rex/src/check/rules/layout.ts", "packages/rex/src/index.ts", "docs/convention.md", "docs/extensions.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/layout.test.ts src/client/layout.test.tsx src/client/router.test.tsx src/vite/scan.test.ts"
+do_1 = "Add one layout declaration that a page folder can place by convention, nesting by path prefix, with its own loaders and regions."
+do_2 = "Render layouts on the server and keep them mounted on the client while navigating between their child pages, preserving their state."
+do_3 = "Wrap each layout level in the page boundary so a child failure leaves the layout visible."
+do_4 = "Extend the scanner and the layout check rule for the new folder shape, and test persistence, loader reuse and boundary isolation."
+reqs = ["12.2"]
+owner = "client"
+cases = ["RX4-043", "RX4-904"]
+provides = ["layout.declaration"]
+consumes = ["route.patterns", "client.root-boundary"]
+audit = ["2.15"]
+time_limit_minutes = 120
+
+[task.4.3]
+title = "Add Link with prefetch, pending state and scroll restoration"
+status = "pending"
+wave = 4
+requires = ["4.1"]
+touches = ["packages/rex/src/client/link.tsx", "packages/rex/src/client/link.test.tsx", "packages/rex/src/client/nav.ts", "packages/rex/src/client/nav.test.ts", "packages/rex/src/client/scroll.ts", "packages/rex/src/client/scroll.test.ts", "packages/rex/src/client/router.tsx", "packages/rex/src/client/shell/nav.tsx", "packages/rex/src/client/index.ts", "packages/rex/src/eslint/index.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/link.test.tsx src/client/nav.test.ts src/client/scroll.test.ts"
+do_1 = "Add a Link component typed by declared routes that renders a real anchor, keeps agent addressing and works without JavaScript."
+do_2 = "Prefetch the page chunk and loader data on intent or visibility with a concurrency cap, and expose a pending state for the navigation in flight."
+do_3 = "Restore scroll position on history navigation and reset it on forward navigation, honouring hash targets."
+do_4 = "Add a lint rule to the preset that flags raw anchors to internal routes, and test prefetch, pending and scroll behaviour."
+reqs = ["12.3"]
+owner = "client"
+cases = ["RX4-044", "RX4-904"]
+provides = ["nav.link"]
+consumes = ["route.patterns"]
+audit = ["2.16"]
+time_limit_minutes = 90
+
+[task.4.4]
+title = "Keep previous data visible through transient page states"
+status = "pending"
+wave = 4
+requires = []
+touches = ["packages/rex/src/client/states.ts", "packages/rex/src/client/states.test.ts", "packages/rex/src/core/states.ts", "packages/rex/src/client/page.tsx", "packages/rex/src/client/page.test.tsx", "packages/rex/src/client/fallbacks.tsx", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/check/rules/states.ts", "packages/rex/src/check/rules/states.test.ts", "docs/primitives.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/states.test.ts src/client/page.test.tsx src/check/rules/states.test.ts"
+do_1 = "Change the state resolution so loading after first data, offline and stale are overlays on the last good view, not replacements for it."
+do_2 = "Expose the transient state in the sidecar and through a busy attribute so agents and assistive technology see it."
+do_3 = "Keep the nine-state contract and its checker rule; a page still has to declare every state."
+do_4 = "Test revalidation, going offline with data on screen and a stale response, asserting the previous content stays in the document."
+reqs = ["12.4"]
+owner = "client"
+cases = ["RX4-045", "RX4-904"]
+provides = []
+consumes = ["client.root-boundary"]
+audit = ["2.17"]
+time_limit_minutes = 90
+
+[task.4.5]
+title = "Complete the scripted form path"
+status = "pending"
+wave = 4
+requires = []
+touches = ["packages/rex/src/client/form.tsx", "packages/rex/src/client/form.test.tsx", "packages/rex/src/client/form-view.tsx", "packages/rex/src/client/form-view.test.tsx", "packages/rex/src/client/act.ts", "packages/rex/src/server/routes/rpc.ts", "packages/rex/src/server/routes/rpc.test.ts", "packages/rex/src/schema/fields.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/form.test.tsx src/client/form-view.test.tsx src/server/routes/rpc.test.ts"
+do_1 = "Honour the declared form redirect on the scripted path the same way the no-JavaScript path does."
+do_2 = "Map server validation errors to their fields with accessible descriptions."
+do_3 = "Submit file inputs as multipart through the same action, within the server body limit."
+do_4 = "Move focus to the first invalid field after a failed submission, and test the four behaviours."
+reqs = ["12.5"]
+owner = "client"
+cases = ["RX4-046", "RX4-904"]
+provides = []
+consumes = ["server.limits"]
+audit = ["2.18"]
+time_limit_minutes = 90
+
+[task.4.6]
+title = "Add per-page head metadata, sitemap and robots"
+status = "pending"
+wave = 4
+requires = ["4.1"]
+touches = ["packages/rex/src/core/head.ts", "packages/rex/src/core/head.test.ts", "packages/rex/src/core/page.ts", "packages/rex/src/client/head.tsx", "packages/rex/src/client/head.test.tsx", "packages/rex/src/server/ssr.ts", "packages/rex/src/server/ssr.test.tsx", "packages/rex/src/vite/prerender.ts", "packages/rex/src/vite/sitemap.ts", "packages/rex/src/vite/sitemap.test.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/core/config.ts", "site/index.html", "site/app/pages/**/page.ts", "docs/primitives.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/head.test.ts src/client/head.test.tsx src/vite/sitemap.test.ts src/server/ssr.test.tsx"
+do_1 = "Add a head declaration on the page with title, description, canonical, Open Graph and robots, computed from loader data when needed."
+do_2 = "Render it on the server and update it on client navigation, with one canonical per page."
+do_3 = "Generate sitemap.xml and robots.txt at build from the registered pages and a configured site URL."
+do_4 = "Replace the hard-coded canonical in the docs site with the per-page API, and test rendering, navigation updates and the generated files."
+reqs = ["12.6"]
+owner = "client"
+cases = ["RX4-047", "RX4-904"]
+provides = ["page.head"]
+consumes = ["route.patterns", "loader.control"]
+audit = ["2.19"]
+time_limit_minutes = 90
+
+[task.4.7]
+title = "Add optimistic updates and navigation blocking"
+status = "pending"
+wave = 4
+requires = ["4.3"]
+touches = ["packages/rex/src/client/act.ts", "packages/rex/src/client/act.test.tsx", "packages/rex/src/client/optimistic.ts", "packages/rex/src/client/optimistic.test.tsx", "packages/rex/src/client/nav.ts", "packages/rex/src/client/block.ts", "packages/rex/src/client/block.test.tsx", "packages/rex/src/core/action.ts", "packages/rex/src/client/index.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/optimistic.test.tsx src/client/block.test.tsx src/client/act.test.tsx"
+do_1 = "Let an action declare an optimistic update that is applied before the request and rolled back with a visible outcome when the server rejects it."
+do_2 = "Never apply an optimistic update to an action that needs confirmation or is declared irreversible."
+do_3 = "Add a navigation blocker that a page can arm while work is unsaved, covering link, history and unload navigation."
+do_4 = "Test apply, rollback on failure, the irreversible exclusion and each blocked navigation kind."
+reqs = ["12.7"]
+owner = "client"
+cases = ["RX4-048", "RX4-904"]
+provides = []
+consumes = ["nav.link"]
+audit = ["2.20"]
+time_limit_minutes = 90
+
+[task.4.8]
+title = "Add list virtualization that keeps addressing and keyboard access"
+status = "pending"
+wave = 4
+requires = ["4.4"]
+touches = ["packages/rex/src/client/list.tsx", "packages/rex/src/client/list.test.tsx", "packages/rex/src/client/list-view.tsx", "packages/rex/src/client/list-view.test.tsx", "packages/rex/src/client/virtual.ts", "packages/rex/src/client/virtual.test.ts", "packages/rex/src/client/agent/sidecar.tsx"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/virtual.test.ts src/client/list-view.test.tsx src/client/list.test.tsx"
+do_1 = "Add windowed rendering to the list view above a row threshold, without a new dependency unless the wave manager approves one."
+do_2 = "Keep every row addressable by agents through the sidecar even when it is not mounted, with a documented way to bring it into view."
+do_3 = "Keep keyboard navigation, focus retention and accurate row count semantics for assistive technology."
+do_4 = "Test window computation, addressing of an unmounted row and keyboard traversal across the window edge."
+reqs = ["12.8"]
+owner = "client"
+cases = ["RX4-049", "RX4-904"]
+provides = []
+consumes = ["list.cursor"]
+audit = ["2.20"]
+time_limit_minutes = 90
+
+[task.5.1]
+title = "Accept user Vite configuration under guarded invariants"
+status = "pending"
+wave = 5
+requires = []
+touches = ["packages/rex/src/core/config.ts", "packages/rex/src/core/config.test.ts", "packages/rex/src/vite/user-config.ts", "packages/rex/src/vite/user-config.test.ts", "packages/rex/src/vite/plugin.ts", "packages/rex/src/vite/dev-server.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/vite/prerender.ts", "packages/rex/src/vite/ssr.ts", "docs/reference.md", "docs/extensions.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/core/config.test.ts src/vite/user-config.test.ts"
+do_1 = "Add a vite key to the configuration schema that takes plugins, resolve aliases, server proxy and HTTPS, define, base, CSS options and build source maps."
+do_2 = "Merge it into every internal Vite call through one function, and reject with a catalogued error any setting that would break an invariant Rex guards, such as the boundary plugin order or the output layout."
+do_3 = "Apply the merge to dev, client build, server build and prerender so behaviour is the same in all four."
+do_4 = "Test a user plugin that runs in all four contexts, an alias, a proxy and a rejected override."
+reqs = ["13.1"]
+owner = "build"
+cases = ["RX4-050", "RX4-905"]
+provides = ["config.vite"]
+consumes = ["env.schema"]
+audit = ["2.21"]
+time_limit_minutes = 90
+
+[task.5.2]
+title = "Run the build pipeline on a production loader with bounded instances"
+status = "pending"
+wave = 5
+requires = ["5.1"]
+touches = ["packages/rex/src/cli/load.ts", "packages/rex/src/cli/load.test.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands/build.test.ts", "packages/rex/src/vite/prerender.ts", "packages/rex/src/vite/prerender.test.ts", "packages/rex/src/vite/outputs.ts", "packages/rex/src/vite/outputs.test.ts", "packages/rex/src/cli/commands/manifest.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli/load.test.ts src/vite/prerender.test.ts src/vite/outputs.test.ts src/cli/commands/build.test.ts"
+do_1 = "Run prerender and manifest generation against the built server bundle in production mode instead of a development-mode loader."
+do_2 = "Share one Vite instance per environment across the build steps and assert the count in a test."
+do_3 = "Prerender pages concurrently with a configurable limit and a per-page timeout."
+do_4 = "Remove wall-clock stamps from output or take them from one build identifier, and test that two builds of the same input are byte-identical."
+reqs = ["13.2"]
+owner = "build"
+cases = ["RX4-051", "RX4-905"]
+provides = []
+consumes = ["config.vite"]
+audit = ["2.23"]
+time_limit_minutes = 120
+
+[task.5.3]
+title = "Define the adapter interface with Node and static adapters"
+status = "pending"
+wave = 5
+requires = ["5.2"]
+touches = ["packages/rex/src/cli/hosts/index.ts", "packages/rex/src/cli/hosts/index.test.ts", "packages/rex/src/cli/hosts/adapter.ts", "packages/rex/src/cli/hosts/node.ts", "packages/rex/src/cli/hosts/node.test.ts", "packages/rex/src/cli/hosts/static.ts", "packages/rex/src/cli/hosts/static.test.ts", "packages/rex/src/core/config.ts", "packages/rex/src/core/config.test.ts", "packages/rex/src/cli/commands/build.ts", "packages/rex/package.json", "docs/platforms.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli/hosts/index.test.ts src/cli/hosts/node.test.ts src/cli/hosts/static.test.ts src/core/config.test.ts"
+do_1 = "Define a public RexAdapter interface that receives the build result and writes host output, exported so third parties can write adapters."
+do_2 = "Accept deploy.host and deploy.adapter in the configuration schema, matching what the documentation already describes."
+do_3 = "Implement the Node adapter with a start script and container file, and the static adapter on the existing static target."
+do_4 = "Replace the no-op host writers, and test that each adapter's output starts and serves a page."
+reqs = ["13.3"]
+owner = "build"
+cases = ["RX4-052", "RX4-905"]
+provides = ["deploy.adapter"]
+consumes = ["config.vite"]
+audit = ["2.22"]
+time_limit_minutes = 120
+
+[task.5.4]
+title = "Add Cloudflare, Vercel and Netlify adapters"
+status = "pending"
+wave = 5
+requires = ["5.3"]
+touches = ["packages/rex/src/cli/hosts/cloudflare.ts", "packages/rex/src/cli/hosts/cloudflare.test.ts", "packages/rex/src/cli/hosts/vercel.ts", "packages/rex/src/cli/hosts/vercel.test.ts", "packages/rex/src/cli/hosts/netlify.ts", "packages/rex/src/cli/hosts/netlify.test.ts", "packages/rex/src/cli/hosts/index.ts", "packages/rex/src/server/adapters/edge.ts", "packages/rex/src/server/adapters/edge.test.ts", "docs/platforms.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli/hosts/cloudflare.test.ts src/cli/hosts/vercel.test.ts src/cli/hosts/netlify.test.ts"
+do_1 = "Emit a Cloudflare Workers bundle with a wrangler configuration and static assets binding."
+do_2 = "Emit the Vercel Build Output API directory with functions and static routes."
+do_3 = "Emit Netlify functions with redirects and headers files."
+do_4 = "Validate each output against the host's documented layout in tests and run the Cloudflare output under a local workerd runtime; a live deployment is recorded as required future evidence, not claimed."
+reqs = ["13.4"]
+owner = "build"
+cases = ["RX4-053", "RX4-905"]
+provides = []
+consumes = ["deploy.adapter"]
+audit = ["2.22"]
+time_limit_minutes = 120
+
+[task.5.5]
+title = "Shrink the client entry and put it under budgets"
+status = "pending"
+wave = 5
+requires = ["5.2"]
+touches = ["packages/rex/src/vite/app-module.ts", "packages/rex/src/vite/app-module.test.ts", "packages/rex/src/vite/entry-module.ts", "packages/rex/src/vite/entry-module.test.ts", "packages/rex/src/vite/split.ts", "packages/rex/src/vite/split.test.ts", "packages/rex/src/vite/budgets.ts", "packages/rex/src/vite/budgets.test.ts", "packages/rex/src/client/entry.tsx", "packages/rex/src/client/store-registry.ts", "packages/rex/src/client/agent/palette.tsx", "packages/rex/src/manifest/build.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/app-module.test.ts src/vite/entry-module.test.ts src/vite/split.test.ts src/vite/budgets.test.ts"
+do_1 = "Load page, action and entity declarations per route instead of importing all of them in the entry."
+do_2 = "Fetch the manifest on demand for the palette and agents instead of inlining it in the entry."
+do_3 = "Include the entry chunk in budget accounting with a default budget."
+do_4 = "Measure the smoke application before and after, record both numbers, and test that a second page's declarations are absent from the first page's initial chunks."
+reqs = ["13.5"]
+owner = "build"
+cases = ["RX4-054", "RX4-905"]
+provides = []
+consumes = ["boundary.strip-report"]
+audit = ["2.24"]
+time_limit_minutes = 120
+
+[task.5.6]
+title = "Make server externals configurable and add production source maps"
+status = "pending"
+wave = 5
+requires = ["5.1"]
+touches = ["packages/rex/src/cli/commands/build.ts", "packages/rex/src/cli/commands/build.test.ts", "packages/rex/src/vite/externals.ts", "packages/rex/src/vite/externals.test.ts", "packages/rex/src/core/config.ts", "packages/rex/src/core/config.test.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/externals.test.ts src/cli/commands/build.test.ts"
+do_1 = "Replace the unconditional bundle-everything setting with a default that keeps native addons and packages with install scripts external, plus a configuration list to override either way."
+do_2 = "Detect native addons from package metadata and binary files."
+do_3 = "Add a source map option for client and server builds, with hidden maps as a choice."
+do_4 = "Test a fixture with a native addon dependency that must stay external and run, and the three source map modes."
+reqs = ["13.6"]
+owner = "build"
+cases = ["RX4-055", "RX4-905"]
+provides = []
+consumes = ["config.vite"]
+audit = ["2.25", "2.26"]
+time_limit_minutes = 90
+
+[task.5.7]
+title = "Fix the development experience gaps"
+status = "pending"
+wave = 5
+requires = ["5.1"]
+touches = ["packages/rex/src/vite/dev-server.ts", "packages/rex/src/vite/dev-server.test.ts", "packages/rex/src/vite/ssr-css.ts", "packages/rex/src/vite/ssr.ts", "packages/rex/src/vite/ssr.test.ts", "packages/rex/src/vite/hmr.ts", "packages/rex/src/vite/hmr.test.ts", "packages/rex/src/vite/scan.ts", "packages/rex/src/vite/scan.test.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/dev.test.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/dev-server.test.ts src/vite/ssr.test.ts src/vite/scan.test.ts src/cli/commands/dev.test.ts"
+do_1 = "Inject collected CSS into development server documents so there is no unstyled flash."
+do_2 = "Move development server rendering from the legacy module loader to the Vite Environment API."
+do_3 = "Restart the development server when the configuration file or an environment file changes."
+do_4 = "Report a partial page folder as an error for that page only and keep the rest of the application running; test each of the four."
+reqs = ["13.7"]
+owner = "build"
+cases = ["RX4-056", "RX4-905"]
+provides = []
+consumes = ["config.vite"]
+audit = ["2.26"]
+time_limit_minutes = 120
+
+[task.5.8]
+title = "Build the image pipeline behind the images configuration"
+status = "pending"
+wave = 5
+requires = ["5.2"]
+touches = ["packages/rex/src/vite/images.ts", "packages/rex/src/vite/images.test.ts", "packages/rex/src/client/media.tsx", "packages/rex/src/client/media.test.tsx", "packages/rex/src/server/routes/image.ts", "packages/rex/src/server/routes/image.test.ts", "packages/rex/src/core/config.ts", "packages/rex/src/check/rules/media.ts", "packages/rex/package.json", "pnpm-lock.yaml", "docs/primitives.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/vite/images.test.ts src/client/media.test.tsx src/server/routes/image.test.ts"
+do_1 = "Make the images configuration produce resized, modern-format variants at build time for local images, behind an optional peer."
+do_2 = "Emit srcset, sizes, width and height from the media component so layout does not shift."
+do_3 = "Add a bounded runtime image route for remote sources restricted to an allow-list, with cache headers."
+do_4 = "Test variant generation, the emitted markup, allow-list rejection and size bounds."
+reqs = ["13.8"]
+owner = "build"
+cases = ["RX4-057", "RX4-905"]
+provides = []
+consumes = ["http.cache-policy"]
+audit = ["2.27"]
+time_limit_minutes = 120
+
+[task.6.1]
+title = "Add suppression, severity and baseline to the checker and fix known false positives"
+status = "pending"
+wave = 6
+requires = []
+touches = ["packages/rex/src/check/engine.ts", "packages/rex/src/check/engine.test.ts", "packages/rex/src/check/rule.ts", "packages/rex/src/check/rule.test.ts", "packages/rex/src/check/suppress.ts", "packages/rex/src/check/suppress.test.ts", "packages/rex/src/check/baseline.ts", "packages/rex/src/check/baseline.test.ts", "packages/rex/src/check/rules/traps.ts", "packages/rex/src/check/rules/tokens.ts", "packages/rex/src/check/rules/a11y.ts", "packages/rex/src/check/rules/naming.ts", "packages/rex/src/check/rules/*.test.ts", "packages/rex/src/core/config.ts", "packages/rex/src/cli/commands/check.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/build.ts", "docs/convention.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/check/suppress.test.ts src/check/baseline.test.ts src/check/engine.test.ts src/check/rule.test.ts"
+do_1 = "Add an inline suppression comment that requires a rule identifier and a reason, and report unused suppressions."
+do_2 = "Add per-rule severity in configuration and a baseline file that records existing findings so only new ones fail."
+do_3 = "Classify rules as structural or heuristic; heuristic rules default to warning and never block rex dev."
+do_4 = "Fix the five recorded false positives in the traps, tokens, a11y and naming rules and the rule helper, each with a regression test."
+reqs = ["14.1"]
+owner = "checker"
+cases = ["RX4-058", "RX4-906"]
+provides = ["check.suppression"]
+consumes = []
+audit = ["2.28"]
+time_limit_minutes = 120
+
+[task.6.2]
+title = "Isolate rule failures and typecheck project references"
+status = "pending"
+wave = 6
+requires = ["6.1"]
+touches = ["packages/rex/src/check/engine.ts", "packages/rex/src/check/engine.test.ts", "packages/rex/src/check/rules/typecheck.ts", "packages/rex/src/check/rules/typecheck.test.ts", "packages/rex/src/check/report.ts", "packages/rex/src/core/errors.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/check/engine.test.ts src/check/rules/typecheck.test.ts"
+do_1 = "Catch a throwing rule, report it as a checker fault with the rule identifier and continue with the remaining rules."
+do_2 = "Exit with the crash exit code when any rule faulted, distinct from the findings exit code."
+do_3 = "Follow project references in a solution-style tsconfig and typecheck each referenced project."
+do_4 = "Test a rule that throws beside one that reports, and a solution-style fixture with an error in a referenced project."
+reqs = ["14.2"]
+owner = "checker"
+cases = ["RX4-059", "RX4-906"]
+provides = []
+consumes = ["check.suppression"]
+audit = ["2.29", "2.30"]
+time_limit_minutes = 45
+
+[task.6.3]
+title = "Harden the import boundary rule and add an allow-list"
+status = "pending"
+wave = 6
+requires = ["6.1"]
+touches = ["packages/rex/src/check/rules/boundaries.ts", "packages/rex/src/check/rules/boundaries.test.ts", "packages/rex/src/check/rule.ts", "packages/rex/src/core/config.ts", "packages/rex/src/eslint/index.ts", "packages/rex/src/eslint/index.test.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/check/rules/boundaries.test.ts src/eslint/index.test.ts"
+do_1 = "Resolve imports through the TypeScript module resolver so path aliases and re-exports are followed to their target."
+do_2 = "Catch namespace imports, re-exports through shared component folders and import.meta.glob patterns that cross a boundary."
+do_3 = "Add a user allow-list for the import table in configuration, validated against known layers."
+do_4 = "Test each bypass form as a failing fixture and an allow-listed import as a passing one."
+reqs = ["14.3"]
+owner = "checker"
+cases = ["RX4-060", "RX4-906"]
+provides = []
+consumes = ["check.suppression"]
+audit = ["2.31"]
+time_limit_minutes = 90
+
+[task.6.4]
+title = "Make the checker incremental and take it off the dev start path"
+status = "pending"
+wave = 6
+requires = ["6.2", "6.3"]
+touches = ["packages/rex/src/eslint/index.ts", "packages/rex/src/eslint/index.test.ts", "packages/rex/src/check/engine.ts", "packages/rex/src/check/engine.test.ts", "packages/rex/src/check/cache.ts", "packages/rex/src/check/cache.test.ts", "packages/rex/src/check/watch.ts", "packages/rex/src/check/watch.test.ts", "packages/rex/src/cli/commands/dev.ts", "packages/rex/src/cli/commands/check.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/check/cache.test.ts src/check/watch.test.ts src/eslint/index.test.ts src/check/engine.test.ts"
+do_1 = "Make the ESLint bridge build the project model once per run and share it across files and rules."
+do_2 = "Add a content-hashed cache of per-file results keyed by rule versions and configuration."
+do_3 = "Add rex check --watch that re-checks only affected files."
+do_4 = "Start the development server before the full check finishes and surface findings in the overlay as they arrive; record a before and after timing on the demo."
+reqs = ["14.4"]
+owner = "checker"
+cases = ["RX4-061", "RX4-906"]
+provides = []
+consumes = []
+audit = ["2.32"]
+time_limit_minutes = 120
+
+[task.6.5]
+title = "Add machine outputs, rule links, custom rules and i18n key validation"
+status = "pending"
+wave = 6
+requires = ["6.2"]
+touches = ["packages/rex/src/check/report.ts", "packages/rex/src/check/report.test.ts", "packages/rex/src/check/sarif.ts", "packages/rex/src/check/sarif.test.ts", "packages/rex/src/check/catalog.ts", "packages/rex/src/check/custom.ts", "packages/rex/src/check/custom.test.ts", "packages/rex/src/check/rules/i18n.ts", "packages/rex/src/check/rules/i18n.test.ts", "packages/rex/src/eslint/index.ts", "packages/rex/src/cli/commands/check.ts", "packages/rex/src/core/config.ts", "packages/rex/package.json", "pnpm-lock.yaml", "docs/extensions.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/check/sarif.test.ts src/check/custom.test.ts src/check/rules/i18n.test.ts src/check/report.test.ts"
+do_1 = "Add SARIF and GitHub annotation reporters selected by a format flag."
+do_2 = "Attach a documentation link to every finding from the rule catalog."
+do_3 = "Load custom rules from configuration through the public rule interface."
+do_4 = "Validate that message keys used in code exist in every locale, add the React hooks rules to the ESLint preset, and test each output and the key validation."
+reqs = ["14.5"]
+owner = "checker"
+cases = ["RX4-062", "RX4-906"]
+provides = ["check.output"]
+consumes = ["check.suppression"]
+audit = ["2.33"]
+time_limit_minutes = 90
+
+[task.6.6]
+title = "Extend the testing harness"
+status = "pending"
+wave = 6
+requires = []
+touches = ["packages/rex/src/testing/index.ts", "packages/rex/src/testing/index.test.tsx", "packages/rex/src/testing/states.tsx", "packages/rex/src/testing/states.test.tsx", "packages/rex/src/testing/ssr.ts", "packages/rex/src/testing/ssr.test.tsx", "packages/rex/src/testing/a11y.ts", "packages/rex/src/testing/a11y.test.tsx", "packages/rex/src/testing/playwright.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/generators.ts", "packages/rex/package.json", "pnpm-lock.yaml", "docs/recipes/README.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/testing/states.test.tsx src/testing/ssr.test.tsx src/testing/a11y.test.tsx src/testing/index.test.tsx"
+do_1 = "Add a helper that renders a page in any of its declared states without stubbing the network layer by hand."
+do_2 = "Add a server-render helper that returns the document, status and headers for a route and actor."
+do_3 = "Add an accessibility assertion helper and Playwright fixtures for agent addressing, each behind an optional peer."
+do_4 = "Include test setup in the scaffold and in rex make page, and test every helper against a real fixture application."
+reqs = ["15.1"]
+owner = "quality"
+cases = ["RX4-063", "RX4-906"]
+provides = ["testing.harness"]
+consumes = ["action.context"]
+audit = ["2.34"]
+time_limit_minutes = 120
+
+[task.6.7]
+title = "Add the preview, routes and info commands"
+status = "pending"
+wave = 6
+requires = []
+touches = ["packages/rex/src/cli/commands/preview.ts", "packages/rex/src/cli/commands/preview.test.ts", "packages/rex/src/cli/commands/routes.ts", "packages/rex/src/cli/commands/routes.test.ts", "packages/rex/src/cli/commands/info.ts", "packages/rex/src/cli/commands/info.test.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/args.ts", "docs/cli.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli/commands/preview.test.ts src/cli/commands/routes.test.ts src/cli/commands/info.test.ts"
+do_1 = "Add rex preview, which serves the production build locally with the production middleware."
+do_2 = "Add rex routes, which lists pages, loaders and actions with their paths and policies."
+do_3 = "Add rex info, which prints versions, runtime, configuration summary and environment diagnostics for bug reports."
+do_4 = "Document the three commands and test each against a built fixture."
+reqs = ["15.2"]
+owner = "cli"
+cases = ["RX4-064", "RX4-906"]
+provides = []
+consumes = ["route.patterns"]
+audit = ["2.35"]
+time_limit_minutes = 90
+
+[task.6.8]
+title = "Add the upgrade and add commands and a migrate dry run"
+status = "pending"
+wave = 6
+requires = ["6.7"]
+touches = ["packages/rex/src/cli/commands/upgrade.ts", "packages/rex/src/cli/commands/upgrade.test.ts", "packages/rex/src/cli/commands/add.ts", "packages/rex/src/cli/commands/add.test.ts", "packages/rex/src/cli/commands/migrate.ts", "packages/rex/src/cli/commands/migrate.test.ts", "packages/rex/src/cli/index.ts", "packages/rex/src/cli/designx.ts", "docs/cli.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli/commands/upgrade.test.ts src/cli/commands/add.test.ts src/cli/commands/migrate.test.ts"
+do_1 = "Add rex upgrade, which raises the Rex version and runs the codemods between the installed and target versions."
+do_2 = "Add rex add, which installs a UI kit item from the pinned registry."
+do_3 = "Add a dry-run flag to rex migrate that prints a diff and writes nothing."
+do_4 = "Test an upgrade on a fixture at an older version, an add from the local registry fixture and a dry run that leaves the tree unchanged."
+reqs = ["15.3"]
+owner = "cli"
+cases = ["RX4-065", "RX4-906"]
+provides = []
+consumes = ["designx.registry-lock"]
+audit = ["2.35", "2.36"]
+time_limit_minutes = 90
+
+[task.6.9]
+title = "Polish the CLI and make process spawning work on Windows"
+status = "pending"
+wave = 6
+requires = ["6.8"]
+touches = ["packages/rex/src/cli/index.ts", "packages/rex/src/cli/index.test.ts", "packages/rex/src/cli/args.ts", "packages/rex/src/cli/args.test.ts", "packages/rex/src/cli/spawn.ts", "packages/rex/src/cli/spawn.test.ts", "packages/rex/src/cli/templates.ts", "packages/rex/src/cli/commands/new.ts", "packages/rex/src/cli/frame.ts", "packages/rex/src/cli/exit-codes.ts", "docs/cli.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli/args.test.ts src/cli/spawn.test.ts src/cli/index.test.ts"
+do_1 = "Load each command module on demand so rex --version does not import the build toolchain, and record the before and after start time."
+do_2 = "Add a JSON output flag, distinct exit codes for findings, usage errors and crashes, a stack-trace flag and a suggestion for an unknown command."
+do_3 = "Scaffold a gitignore and a README in rex new."
+do_4 = "Route every package-manager spawn through one helper that resolves Windows command shims, and test argument parsing, exit codes and shim resolution with simulated Windows paths."
+reqs = ["15.4", "15.5"]
+owner = "cli"
+cases = ["RX4-066", "RX4-906"]
+provides = ["cli.json-output"]
+consumes = []
+audit = ["2.36", "2.37"]
+time_limit_minutes = 90
+
+[task.7.1]
+title = "Version the agent contract and make addresses unique"
+status = "pending"
+wave = 7
+requires = []
+touches = ["packages/rex/src/client/act.ts", "packages/rex/src/client/act.test.tsx", "packages/rex/src/client/agent/address.tsx", "packages/rex/src/client/agent/address.test.tsx", "packages/rex/src/client/agent/sidecar.tsx", "packages/rex/src/client/agent/sidecar.test.tsx", "packages/rex/src/manifest/sidecar.schema.ts", "packages/rex/src/manifest/sidecar.schema.test.ts", "packages/rex/src/manifest/json-schema.ts", "packages/rex/src/server/routes/manifest.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/client/agent/palette.tsx", "packages/rex/src/client/agent/palette.test.tsx", "packages/rex/src/client/agent/shortcuts.ts", "packages/rex/src/client/agent/shortcuts.test.ts", "docs/agent-contract.md"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/agent/address.test.tsx src/client/agent/sidecar.test.tsx src/manifest/sidecar.schema.test.ts src/client/agent/palette.test.tsx"
+do_1 = "Make addresses unique per rendered instance so two instances of one action on a page are distinguishable."
+do_2 = "Add a version field to the sidecar schema with a compatibility rule, and bump it for this change."
+do_3 = "Publish the JSON schema at a stable route and add a discovery link to every document."
+do_4 = "Make the palette and shortcuts open an input surface when an action needs input instead of invoking with empty input, and test uniqueness, version, discovery and input collection."
+reqs = ["16.1", "16.2"]
+owner = "agent"
+cases = ["RX4-067", "RX4-907"]
+provides = ["sidecar.schema"]
+consumes = ["actor.kind"]
+audit = ["2.38"]
+time_limit_minutes = 120
+
+[task.7.2]
+title = "Ship the agent conformance suite and a reference client"
+status = "pending"
+wave = 7
+requires = ["7.1"]
+touches = ["packages/rex/src/testing/agent.ts", "packages/rex/src/testing/agent.test.tsx", "packages/rex/src/testing/conformance.ts", "packages/rex/src/testing/conformance.test.tsx", "examples/agent-client/**", "docs/agent-contract.md", "packages/rex/package.json", "pnpm-workspace.yaml", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/testing/agent.test.tsx src/testing/conformance.test.tsx"
+do_1 = "Add a reference client that discovers the contract, reads the sidecar, addresses affordances and invokes actions over the documented surface only."
+do_2 = "Add a conformance suite that checks an application against the contract: discovery, schema validity, addressing, confirmation and outcome reporting."
+do_3 = "Add an example script that drives the demo through the reference client."
+do_4 = "Run the suite against a fixture application in tests and document how to run it against any application."
+reqs = ["16.3"]
+owner = "agent"
+cases = ["RX4-068", "RX4-907"]
+provides = []
+consumes = ["sidecar.schema", "testing.harness"]
+audit = ["2.38"]
+time_limit_minutes = 120
+
+[task.7.3]
+title = "Make keyboard shortcuts meet WCAG 2.1.4"
+status = "pending"
+wave = 7
+requires = ["7.1"]
+touches = ["packages/rex/src/client/agent/shortcuts.ts", "packages/rex/src/client/agent/shortcuts.test.ts", "packages/rex/src/client/agent/shortcut-settings.tsx", "packages/rex/src/client/agent/shortcut-settings.test.tsx", "packages/rex/src/core/action.ts", "packages/rex/src/core/registry.ts", "packages/rex/src/check/rules/a11y.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/agent/shortcuts.test.ts src/client/agent/shortcut-settings.test.tsx"
+do_1 = "Detect duplicate shortcut declarations at registration and report them with a catalogued error."
+do_2 = "Let users remap or turn off any single-character shortcut, with the choice persisted, and keep such shortcuts inactive while focus is in a text input."
+do_3 = "Add a settings surface that lists every shortcut and is itself addressable."
+do_4 = "Test duplicate detection, remap, disable and the text-input exclusion."
+reqs = ["17.1"]
+owner = "a11y"
+cases = ["RX4-069", "RX4-907"]
+provides = []
+consumes = ["sidecar.schema"]
+audit = ["2.39"]
+time_limit_minutes = 90
+
+[task.7.4]
+title = "Make modal surfaces inert-backed, focus-trapped and scroll-locked"
+status = "pending"
+wave = 7
+requires = []
+touches = ["packages/rex/src/client/overlay.tsx", "packages/rex/src/client/overlay.test.tsx", "packages/rex/src/client/overlay-surface.tsx", "packages/rex/src/client/overlay-surface.test.tsx", "packages/rex/src/client/agent/confirm-dialog.tsx", "packages/rex/src/client/agent/palette-menu.tsx", "packages/rex/src/client/modal.ts", "packages/rex/src/client/modal.test.tsx"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/modal.test.tsx src/client/overlay-surface.test.tsx src/client/overlay.test.tsx"
+do_1 = "Add one modal primitive that sets the background inert, traps focus including shift-tab and restores focus on close."
+do_2 = "Lock page scroll while a modal is open without layout shift."
+do_3 = "Move the palette, overlays and the confirmation dialog onto the primitive."
+do_4 = "Test focus trap in both directions, inert background, scroll lock and focus restoration for each surface."
+reqs = ["17.2"]
+owner = "a11y"
+cases = ["RX4-070", "RX4-907"]
+provides = []
+consumes = []
+audit = ["2.40"]
+time_limit_minutes = 90
+
+[task.7.5]
+title = "Localize runtime outcome and confirmation text"
+status = "pending"
+wave = 7
+requires = ["7.4"]
+touches = ["packages/rex/src/client/act.ts", "packages/rex/src/client/act.test.tsx", "packages/rex/src/client/agent/confirm-dialog.tsx", "packages/rex/src/client/agent/confirm.test.tsx", "packages/rex/src/client/agent/outcome.tsx", "packages/rex/src/client/outcome.ts", "packages/rex/src/client/i18n/messages.ts", "packages/rex/src/client/i18n/messages.test.ts", "packages/rex/src/check/rules/i18n.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/i18n/messages.test.ts src/client/act.test.tsx src/client/agent/confirm.test.tsx"
+do_1 = "Resolve every outcome and confirmation message through the i18n runtime with built-in default messages per locale."
+do_2 = "Remove hard-coded English from the confirmation dialog and outcome surfaces."
+do_3 = "Fall back to a readable default and log once when a key is missing, so a raw key never reaches the user."
+do_4 = "Test a non-English locale end to end for a confirmed action and a failed action."
+reqs = ["17.3"]
+owner = "a11y"
+cases = ["RX4-071", "RX4-907"]
+provides = []
+consumes = []
+audit = ["2.41"]
+time_limit_minutes = 45
+
+[task.7.6]
+title = "Deepen the i18n runtime"
+status = "pending"
+wave = 7
+requires = ["7.5"]
+touches = ["packages/rex/src/client/i18n/format.ts", "packages/rex/src/client/i18n/format.test.ts", "packages/rex/src/client/i18n/formatter.ts", "packages/rex/src/client/i18n/locale.ts", "packages/rex/src/client/i18n/locale.test.ts", "packages/rex/src/client/i18n/provider.tsx", "packages/rex/src/client/i18n/provider.test.tsx", "packages/rex/src/client/i18n/registration.ts", "packages/rex/src/server/locale.ts", "packages/rex/src/server/ssr.ts", "packages/rex/src/vite/app-module.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/i18n/format.test.ts src/client/i18n/locale.test.ts src/client/i18n/provider.test.tsx"
+do_1 = "Add date, time and relative-time formatting to the formatter."
+do_2 = "Load locale message bundles lazily per locale instead of bundling all of them."
+do_3 = "Set the dir attribute from the locale on the server and the client."
+do_4 = "Stop reformatting numeric strings as numbers, and test formatting, lazy loading, direction and string handling."
+reqs = ["17.4"]
+owner = "a11y"
+cases = ["RX4-072", "RX4-907"]
+provides = []
+consumes = []
+audit = ["2.42"]
+time_limit_minutes = 90
+
+[task.7.7]
+title = "Fix the shell accessibility details"
+status = "pending"
+wave = 7
+requires = ["7.4"]
+touches = ["packages/rex/src/client/shell.tsx", "packages/rex/src/client/shell.test.tsx", "packages/rex/src/client/shell/body.tsx", "packages/rex/src/client/shell/header.tsx", "packages/rex/src/client/shell/nav.tsx", "packages/rex/src/client/tokens.css", "packages/rex/src/client/tokens.test.ts", "packages/rex/src/client/agent/address.tsx", "packages/rex/src/check/rules/tokens.ts"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/client/shell.test.tsx src/client/tokens.test.ts"
+do_1 = "Add a skip link as the first focusable element and place the page heading inside main."
+do_2 = "Expose the reason a control is disabled to assistive technology and to agents."
+do_3 = "Raise the strong border token to at least 3 to 1 contrast in both themes and assert it in a token test."
+do_4 = "Add forced-colors rules for focus rings, borders and state indicators, and test the skip link, heading placement and contrast."
+reqs = ["17.5"]
+owner = "a11y"
+cases = ["RX4-073", "RX4-907"]
+provides = []
+consumes = []
+audit = ["2.43"]
+time_limit_minutes = 90
+
+[task.8.1]
+title = "Trim the public API, document it and gate an API report"
+status = "pending"
+wave = 8
+requires = []
+touches = ["packages/rex/src/index.ts", "packages/rex/src/client/index.ts", "packages/rex/src/server/index.ts", "packages/rex/src/check/index.ts", "packages/rex/src/manifest/index.ts", "packages/rex/src/store/index.ts", "packages/rex/src/schema/index.ts", "packages/rex/src/vite/index.ts", "packages/rex/src/**/*.ts", "packages/rex/src/**/*.tsx", "docs/api/**", "docs/versioning.md", "tools/api-report.mjs", "tools/api-report.test.mjs", "etc/rex.api.md", "typedoc.json", "package.json"]
+verify_cmd = "pnpm -C packages/rex typecheck && node --test tools/api-report.test.mjs && node tools/api-report.mjs --check"
+do_1 = "List every exported symbol per entry and mark each as public, internal or to remove; move internal helpers behind non-exported modules and keep a deprecated re-export for one minor where removal would break the demo or the site."
+do_2 = "Write a doc comment for every remaining public symbol, with parameters and an example for each primitive."
+do_3 = "Add tools/api-report.mjs that writes an API report and fails when the committed report differs or a public symbol lacks a doc comment."
+do_4 = "Regenerate docs/api, update docs/versioning.md to define the public surface, and test the report tool."
+reqs = ["18.1"]
+owner = "docs"
+cases = ["RX4-074", "RX4-908"]
+provides = []
+consumes = []
+audit = ["2.44"]
+time_limit_minutes = 180
+
+[task.8.2]
+title = "Repair the tutorial and execute it under a test"
+status = "pending"
+wave = 8
+requires = []
+touches = ["docs/tutorial.md", "tools/tutorial-run.mjs", "tools/tutorial-run.test.mjs", "package.json"]
+verify_cmd = "node --test tools/tutorial-run.test.mjs && node tools/tutorial-run.mjs"
+do_1 = "Fix the configuration step and any other step that produces checker errors."
+do_2 = "Mark each code block in the tutorial with its target file so a tool can apply the steps in order."
+do_3 = "Add tools/tutorial-run.mjs that scaffolds a project, applies every step, and runs rex check and the build after the final step."
+do_4 = "Test the step parser and run the tutorial once end to end."
+reqs = ["18.2"]
+owner = "docs"
+cases = ["RX4-075", "RX4-908"]
+provides = []
+consumes = ["testing.harness"]
+audit = ["2.45"]
+time_limit_minutes = 120
+
+[task.8.3]
+title = "Write the authentication, deployment, environment and security guides"
+status = "pending"
+wave = 8
+requires = []
+touches = ["docs/guides/authentication.md", "docs/guides/deployment.md", "docs/guides/environment.md", "docs/guides/security.md", "docs/guides/README.md", "docs/platforms.md", "site/app/**", "tools/check-links.mjs"]
+verify_cmd = "node tools/check-links.mjs && node tools/docs-snippets.mjs docs/guides"
+do_1 = "Write the authentication guide around sessions and the session actor, with a complete login and logout example."
+do_2 = "Write the deployment guide with one section per adapter and the proxy, limits and shared-store settings each host needs."
+do_3 = "Write the environment and secrets guide around the environment schema."
+do_4 = "Write the security model guide: the threat model, what Rex enforces, what the application owns, and how to report a vulnerability; make every code block compile through the docs snippet check."
+reqs = ["18.3"]
+owner = "docs"
+cases = ["RX4-076", "RX4-908"]
+provides = []
+consumes = ["session.api", "env.schema", "deploy.adapter"]
+audit = ["2.46"]
+time_limit_minutes = 120
+
+[task.8.4]
+title = "Write the performance, testing, accessibility, troubleshooting and upgrade guides"
+status = "pending"
+wave = 8
+requires = ["8.3"]
+touches = ["docs/guides/performance.md", "docs/guides/testing.md", "docs/guides/accessibility.md", "docs/guides/troubleshooting.md", "docs/guides/upgrading.md", "docs/guides/README.md", "docs/migration.md", "tools/docs-snippets.mjs", "tools/docs-snippets.test.mjs"]
+verify_cmd = "node --test tools/docs-snippets.test.mjs && node tools/check-links.mjs && node tools/docs-snippets.mjs docs/guides"
+do_1 = "Write the performance guide around budgets, caching, prefetch and the entry weight numbers measured in this feature."
+do_2 = "Write the testing guide around the harness helpers, and the accessibility guide around the shell, modals and shortcuts."
+do_3 = "Write the troubleshooting guide from the error catalog, and the upgrade guide from 0.2 through 0.4 with each breaking change and its codemod."
+do_4 = "Finish tools/docs-snippets.mjs so every fenced TypeScript block in docs/guides typechecks against the package, with tests."
+reqs = ["18.4"]
+owner = "docs"
+cases = ["RX4-077", "RX4-908"]
+provides = []
+consumes = ["testing.harness"]
+audit = ["2.46"]
+time_limit_minutes = 120
+
+[task.8.5]
+title = "Curate the changelog, adopt changesets and add the missing codemods"
+status = "pending"
+wave = 8
+requires = ["8.1"]
+touches = ["CHANGELOG.md", "docs/changelog-archive.md", ".changeset/**", "package.json", "pnpm-lock.yaml", "docs/releasing.md", "docs/migration.md", "packages/rex/src/cli/codemods/**", "packages/rex/src/cli/commands/migrate.ts", "packages/rex/src/cli/codemods"]
+verify_cmd = "pnpm -C packages/rex typecheck && pnpm -C packages/rex exec vitest run src/cli/codemods"
+do_1 = "Move the raw commit list to an archive file and write a curated changelog with added, changed, fixed and breaking sections for 0.2, 0.3 and 0.4."
+do_2 = "Adopt changesets with a configuration that writes the curated format, and document the flow in docs/releasing.md."
+do_3 = "Write a codemod for each breaking change between 0.2 and 0.4 that can be automated, and list the manual ones in docs/migration.md."
+do_4 = "Test each codemod on a before and after fixture."
+reqs = ["18.5"]
+owner = "docs"
+cases = ["RX4-078", "RX4-908"]
+provides = []
+consumes = []
+audit = ["2.47"]
+time_limit_minutes = 120
+
+[task.8.6]
+title = "Add the minimal starter, static blog and database CRUD examples"
+status = "pending"
+wave = 8
+requires = []
+touches = ["examples/minimal/**", "examples/blog/**", "examples/crud/**", "pnpm-lock.yaml", "tools/examples-check.mjs", "tools/examples-check.test.mjs", "package.json"]
+verify_cmd = "node --test tools/examples-check.test.mjs && node tools/examples-check.mjs minimal blog crud"
+do_1 = "Add a minimal starter with one page, one action and one test."
+do_2 = "Add a static blog on the markdown store with the static adapter, per-page head and a sitemap."
+do_3 = "Add a CRUD application on the drizzle store with migrations, cursor pagination and an ownership policy."
+do_4 = "Add tools/examples-check.mjs that runs typecheck, rex check, tests and build for every example, and run it."
+reqs = ["18.6"]
+owner = "docs"
+cases = ["RX4-079", "RX4-908"]
+provides = []
+consumes = ["store.migrations", "list.cursor", "page.head", "deploy.adapter", "policy.context"]
+audit = ["2.48"]
+time_limit_minutes = 180
+
+[task.8.7]
+title = "Add the authentication, flow and external agent examples"
+status = "pending"
+wave = 8
+requires = ["8.6"]
+touches = ["examples/auth/**", "examples/flow/**", "examples/agent-script/**", "pnpm-lock.yaml", "tools/examples-check.mjs"]
+verify_cmd = "node tools/examples-check.mjs auth flow agent-script"
+do_1 = "Add an authentication example with sessions, login, logout and a protected page."
+do_2 = "Add a runnable approval flow example with a durable journal."
+do_3 = "Add an external agent script that drives the flow example through the reference client."
+do_4 = "Run all three through the examples check, including the agent script against the running flow example."
+reqs = ["18.7"]
+owner = "docs"
+cases = ["RX4-080", "RX4-908"]
+provides = []
+consumes = ["session.api", "flow.journal", "sidecar.schema"]
+audit = ["2.48"]
+time_limit_minutes = 180
+
+[task.8.8]
+title = "Shorten the README, reorder the site and version the docs"
+status = "pending"
+wave = 8
+requires = ["8.4"]
+touches = ["README.md", "packages/rex/README.md", "site/app/**", "site/rex.config.ts", "site/scripts/**", "docs/README.md", "tools/site-verify.mjs"]
+verify_cmd = "pnpm -C site typecheck && pnpm -C site test:unit && pnpm --filter site check"
+do_1 = "Cut the README to an entry point: what Rex is, install, a first page, links to the tutorial and guides, and a current standards table."
+do_2 = "Lead the site navigation with the tutorial and guides, and move contributor documents under a contributing section."
+do_3 = "Add a version selector that serves documentation per released minor from tagged sources."
+do_4 = "Run the site checks and tests once."
+reqs = ["18.8"]
+owner = "docs"
+cases = ["RX4-081", "RX4-908"]
+provides = []
+consumes = []
+audit = ["2.51"]
+time_limit_minutes = 120
+
+[task.8.9]
+title = "Add server-render and bundle-size benchmarks"
+status = "pending"
+wave = 8
+requires = []
+touches = ["tools/bench/**", "tools/bench-ssr.mjs", "tools/bench-size.mjs", "tools/bench.test.mjs", "package.json", ".github/workflows/bench.yml", "docs/guides/performance.md"]
+verify_cmd = "node --test tools/bench.test.mjs && node tools/bench-size.mjs --check"
+do_1 = "Add a server-render throughput benchmark over a fixed fixture that prints requests per second and latency percentiles."
+do_2 = "Add a bundle-size tracker that records chunk sizes for the smoke application and compares against a committed baseline with a tolerance."
+do_3 = "Add a workflow that runs both on pull requests and comments the difference."
+do_4 = "Test the comparison logic and record one baseline with the machine it was measured on."
+reqs = ["18.9"]
+owner = "quality"
+cases = ["RX4-082", "RX4-908"]
+provides = []
+consumes = []
+audit = ["2.52"]
+time_limit_minutes = 90
+
+[task.8.10]
+title = "Open the contribution path and remove machine-specific files"
+status = "pending"
+wave = 8
+requires = []
+touches = ["CONTRIBUTING.md", "docs/development.md", ".mcp.json", ".cursor/**", ".codex/**", ".gemini/**", ".opencode/**", ".zed/**", ".vscode/**", ".agents/**", "examples/demo/e2e/reports/**", "site/e2e/reports/**", ".gitignore", "tools/repo-hygiene.mjs", "tools/repo-hygiene.test.mjs"]
+verify_cmd = "node --test tools/repo-hygiene.test.mjs && node tools/repo-hygiene.mjs"
+do_1 = "Document a contribution path that needs only git, pnpm and a pull request; the fleet tooling and its commit format stay as the maintainers' internal process and are described as optional."
+do_2 = "Remove absolute tool paths from committed agent and editor configuration, or stop committing the files that cannot be made portable."
+do_3 = "Remove committed end-to-end reports and ignore their output directories."
+do_4 = "Add tools/repo-hygiene.mjs that fails on an absolute home or tool path and on a committed report, with tests."
+reqs = ["18.10"]
+owner = "docs"
+cases = ["RX4-083", "RX4-908"]
+provides = []
+consumes = []
+audit = ["2.49", "2.50"]
+time_limit_minutes = 90
+
+[task.8.11]
+title = "Prepare the 0.4.0 release candidate and record the human Asks"
+status = "pending"
+wave = 8
+requires = ["8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "8.8", "8.9", "8.10"]
+touches = ["packages/rex/package.json", "CHANGELOG.md", "docs/releasing.md", "docs/api/**", "docs/errors.md", "SECURITY.md", "spec/rex-v04/asks.kvx", "pnpm-lock.yaml"]
+verify_cmd = "pnpm -C packages/rex build && node --test tools/package-exports.test.mjs && pnpm freshness && pnpm smoke"
+do_1 = "Set the package version to 0.4.0 and confirm the generated constant, the scaffold range and the freshness gate follow."
+do_2 = "Regenerate the API and error documentation and finish the 0.4.0 changelog entry from the changesets."
+do_3 = "Run the package smoke test on the packed tarball, including the default scaffold."
+do_4 = "Update spec/rex-v04/asks.kvx with the state of every human-only step: registry deprecation of 0.2.0 and 0.3.0, trusted publishing, the signed tag, branch protection, repository settings and site DNS; do not publish."
+reqs = ["18.11"]
+owner = "release"
+cases = ["RX4-084", "RX4-908"]
+provides = []
+consumes = ["rex.version", "pkg.exports-condition"]
+audit = ["0.1", "0.4", "0.11", "0.14"]
+time_limit_minutes = 90
+
+[case.RX4-001]
+title = "Derive the version constant from the package manifest"
+status = "UNRUN"
+tier = "component"
+reqs = ["1.2"]
+tasks = ["0.1"]
+oracle = "REX_VERSION, rex --version and the scaffolded range all equal the manifest version; a manifest bump with no other edit keeps the test green."
+
+[case.RX4-002]
+title = "Point package exports at built output and correct peer, engine and map metadata"
+status = "UNRUN"
+tier = "integration"
+reqs = ["1.1", "1.3", "1.4"]
+tasks = ["0.2"]
+oracle = "A packed tarball installed into an empty project imports every exports entry with node and resolves types; workspace tests still resolve source through the rex-source condition."
+
+[case.RX4-003]
+title = "Isolate tests from the source tree and build dist once per run"
+status = "UNRUN"
+tier = "integration"
+reqs = ["2.1"]
+tasks = ["0.3"]
+oracle = "Two consecutive runs of the named suites pass and leave no untracked or modified path under packages/rex/src."
+
+[case.RX4-004]
+title = "Update CLI output assertions and make lint and format cover the workspace"
+status = "UNRUN"
+tier = "component"
+reqs = ["2.3"]
+tasks = ["0.4"]
+oracle = "The three CLI suites pass, and pnpm lint and pnpm format:check exit 0 over packages, site and tools."
+
+[case.RX4-005]
+title = "Make server render and hydration agree on the sidecar page state"
+status = "UNRUN"
+tier = "integration"
+reqs = ["2.8"]
+tasks = ["0.5"]
+oracle = "A page with server-resolved loaders reports ready in the server sidecar, in the hydrated sidecar and in window.__rex, and the three objects are equal."
+
+[case.RX4-006]
+title = "Pin the DesignX registry and make the default scaffold work offline"
+status = "UNRUN"
+tier = "integration"
+reqs = ["1.5", "2.2"]
+tasks = ["0.6"]
+oracle = "rex new with default options succeeds with the registry host unreachable, every written dependency has an exact or caret version, and the two suites open no external connection."
+
+[case.RX4-007]
+title = "Remove load sensitivity from the flaky suites"
+status = "UNRUN"
+tier = "integration"
+reqs = ["2.4"]
+tasks = ["0.7"]
+oracle = "Three consecutive full runs of the package suite pass with no retry."
+
+[case.RX4-008]
+title = "Raise vulnerable dependencies and their peer floors"
+status = "UNRUN"
+tier = "component"
+reqs = ["1.7"]
+tasks = ["0.8"]
+oracle = "pnpm audit --prod reports no high or critical advisory and the package typecheck passes on the raised versions."
+
+[case.RX4-009]
+title = "State and test the TypeScript and ESLint support window"
+status = "UNRUN"
+tier = "integration"
+reqs = ["1.8"]
+tasks = ["0.9"]
+oracle = "The peer ranges equal the set of majors with a recorded passing run, and docs/versioning.md names each tested major with its result."
+
+[case.RX4-010]
+title = "Give every package a typecheck and make the root gates honest"
+status = "UNRUN"
+tier = "integration"
+reqs = ["2.5"]
+tasks = ["0.10"]
+oracle = "pnpm typecheck covers three packages, the root test reports every failing package in one run, and the gate wiring test passes."
+
+[case.RX4-011]
+title = "Harden the CI and release workflows and declare the platform matrix"
+status = "UNRUN"
+tier = "integration"
+reqs = ["1.6", "2.6"]
+tasks = ["0.11"]
+oracle = "The workflow lint passes on the repository workflows and fails on fixtures with an unpinned action, a floating tool and a tag that is not on main."
+
+[case.RX4-012]
+title = "Regenerate documentation and pass the freshness gates on the wave revision"
+status = "UNRUN"
+tier = "component"
+reqs = ["2.7"]
+tasks = ["0.12"]
+oracle = "pnpm docs:check and pnpm freshness exit 0 on the wave revision."
+
+[case.RX4-013]
+title = "Require a user gesture for URL-carried actions and default confirm focus to Cancel"
+status = "UNRUN"
+tier = "component"
+reqs = ["3.1", "3.2"]
+tasks = ["1.1"]
+oracle = "Loading a URL that names an action sends no invocation until a user activation, and the confirmation dialog opens focused on Cancel."
+
+[case.RX4-014]
+title = "Add actor kind and enforce the human gate on the server"
+status = "UNRUN"
+tier = "component"
+reqs = ["3.3"]
+tasks = ["1.2"]
+oracle = "A gated action invoked by an agent actor is rejected by the server with the catalogued error, and every ledger entry carries the actor kind."
+
+[case.RX4-015]
+title = "Share one bounded confirmation store and make the input digest canonical"
+status = "UNRUN"
+tier = "component"
+reqs = ["3.4", "3.5"]
+tasks = ["1.3"]
+oracle = "A token issued on one path is consumed once on another, exhausting one actor leaves another able to confirm, and inputs that differ only in a Date, File, Map or Set produce different digests."
+
+[case.RX4-016]
+title = "Bound the memory ledger, ship a durable ledger and take the append off the critical path"
+status = "UNRUN"
+tier = "integration"
+reqs = ["5.1", "5.2", "5.3"]
+tasks = ["1.4"]
+oracle = "The memory ledger never exceeds its capacity, the file ledger returns earlier entries after a restart, and an action that committed still returns success when the append throws."
+
+[case.RX4-017]
+title = "Authorize flows and run their steps through the action pipeline"
+status = "UNRUN"
+tier = "integration"
+reqs = ["4.1", "4.2"]
+tasks = ["1.5"]
+oracle = "A non-owner cannot read or advance a flow instance, each step produces a ledger entry with its acting principal, and an irreversible gate needs server-validated confirmation."
+
+[case.RX4-018]
+title = "Make flow steps exactly-once with a durable journal"
+status = "UNRUN"
+tier = "integration"
+reqs = ["4.3", "4.4"]
+tasks = ["1.6"]
+oracle = "Two concurrent advances run the step handler once, a restarted process resumes from the durable journal, and reordered steps are detected."
+
+[case.RX4-019]
+title = "Add request limits, timeouts, graceful shutdown and real health routes"
+status = "UNRUN"
+tier = "integration"
+reqs = ["6.1", "6.2"]
+tasks = ["1.7"]
+oracle = "An oversized body returns 413, a handler past the timeout is aborted, a termination signal drains in-flight requests, and readiness fails when a registered check fails."
+
+[case.RX4-020]
+title = "Add trustProxy and the __Host- CSRF cookie"
+status = "UNRUN"
+tier = "component"
+reqs = ["6.3"]
+tasks = ["1.8"]
+oracle = "With trustProxy set a proxied same-origin POST passes and cookies are Secure; without it forwarded headers are ignored; the CSRF cookie uses the __Host- prefix on HTTPS."
+
+[case.RX4-021]
+title = "Complete the security headers on every response"
+status = "UNRUN"
+tier = "component"
+reqs = ["6.4"]
+tasks = ["1.9"]
+oracle = "Every HTML, static and fallback response carries the full header set, and the policy contains the four added directives."
+
+[case.RX4-022]
+title = "Make the server and client boundary fail closed"
+status = "UNRUN"
+tier = "integration"
+reqs = ["7.1", "7.2"]
+tasks = ["1.10"]
+oracle = "A handler body never appears in the client bundle for any supported import form, and an unprovable case fails the build with the catalogued error."
+
+[case.RX4-023]
+title = "Add root and page error boundaries with chunk and version-skew recovery"
+status = "UNRUN"
+tier = "component"
+reqs = ["8.1", "8.2"]
+tasks = ["1.11"]
+oracle = "A render error outside a region shows the recoverable view, a failed import succeeds on retry, and a build mismatch shows a reload prompt."
+
+[case.RX4-024]
+title = "Fix client data scoping, retry, revisit and identity handling and type the hydration payload"
+status = "UNRUN"
+tier = "component"
+reqs = ["8.3", "8.4"]
+tasks = ["1.12"]
+oracle = "Queries are page-scoped, a 404 is requested once, seeded data refetches when stale, an identity change empties the cache, and a Date and a BigInt survive hydration."
+
+[case.RX4-025]
+title = "Fix status mapping, dotted paths, CSS order, store readiness and config errors"
+status = "UNRUN"
+tier = "component"
+reqs = ["6.6", "9.2"]
+tasks = ["1.13"]
+oracle = "Each of the six defects has a failing-before, passing-after test: readiness retry, dotted path, CSS order, 400 on bad encoding, 404 on bad parameter and a reported config error."
+
+[case.RX4-026]
+title = "Close the information leaks in forms, manifest, actor payload, dev routes and markdown"
+status = "UNRUN"
+tier = "component"
+reqs = ["6.5"]
+tasks = ["1.14"]
+oracle = "No raw error message, unlisted actor attribute or development route is reachable in a production build, prototype keys are rejected, and script content in a markdown field is not rendered."
+
+[case.RX4-027]
+title = "Add version checks and transactions to the store contract"
+status = "UNRUN"
+tier = "integration"
+reqs = ["9.1"]
+tasks = ["1.15"]
+oracle = "Two writers holding the same version produce one success and one conflict, and a failed transaction leaves no partial write, in both stores."
+
+[case.RX4-028]
+title = "Make the action and loader context request-aware"
+status = "UNRUN"
+tier = "integration"
+reqs = ["10.1"]
+tasks = ["2.1"]
+oracle = "A handler reads a request header, sets a cookie that appears on the response for RPC, form and render, and observes the abort signal when the client disconnects."
+
+[case.RX4-029]
+title = "Ship signed sessions, a session store and the session actor resolver"
+status = "UNRUN"
+tier = "integration"
+reqs = ["10.2"]
+tasks = ["2.2"]
+oracle = "A tampered session cookie is rejected, a rotated key still reads old sessions, and a request without a session resolves to an anonymous actor in the demo."
+
+[case.RX4-030]
+title = "Give loaders control of the response and add application 404 and 500 pages"
+status = "UNRUN"
+tier = "integration"
+reqs = ["10.3"]
+tasks = ["2.3"]
+oracle = "A loader not-found renders the application 404 page with status 404, a redirect returns the Location header, and an unhandled failure renders the application 500 page."
+
+[case.RX4-031]
+title = "Stream server rendering or correct the claim"
+status = "UNRUN"
+tier = "integration"
+reqs = ["11.1"]
+tasks = ["2.4"]
+oracle = "The first response chunk containing the shell arrives while a suspended loader is still pending, or no document claims streaming."
+
+[case.RX4-032]
+title = "Add cache headers, compression and one route matcher"
+status = "UNRUN"
+tier = "integration"
+reqs = ["11.2"]
+tasks = ["2.5"]
+oracle = "Hashed assets are immutable, a prerendered page carries its declared lifetime, a conditional request returns 304, and all three callers agree on every matcher case."
+
+[case.RX4-033]
+title = "Add the error hook, request identifiers, trace context and access logging"
+status = "UNRUN"
+tier = "component"
+reqs = ["11.3"]
+tasks = ["2.6"]
+oracle = "An error thrown during render reaches onError with a stack and the request identifier that the response header carries, and traceparent is continued."
+
+[case.RX4-034]
+title = "Accept shared stores for tokens, ledger, journal and static cache"
+status = "UNRUN"
+tier = "integration"
+reqs = ["11.4"]
+tasks = ["2.7"]
+oracle = "A token issued by one app instance is consumed by another that shares the store, and revalidating a path makes both instances serve the new page."
+
+[case.RX4-035]
+title = "Preserve values and bound the outcome in the no-JavaScript form round trip"
+status = "UNRUN"
+tier = "integration"
+reqs = ["11.5"]
+tasks = ["2.8"]
+oracle = "A failed no-JavaScript submission re-renders with the entered values and field errors, and the outcome cookie stays under 4096 bytes for a 64 KB input."
+
+[case.RX4-036]
+title = "Add the typed environment schema, dotenv loading and build modes"
+status = "UNRUN"
+tier = "integration"
+reqs = ["10.4"]
+tasks = ["2.9"]
+oracle = "A missing variable fails start with one error listing every problem, mode files override in the documented order, and a server-only value is absent from the client bundle."
+
+[case.RX4-037]
+title = "Replace create-if-missing with versioned store migrations"
+status = "UNRUN"
+tier = "integration"
+reqs = ["9.3"]
+tasks = ["3.1"]
+oracle = "Migrations apply once in order, a changed applied migration is detected, and a failing migration leaves the schema unchanged."
+
+[case.RX4-038]
+title = "Add the PostgreSQL store adapter"
+status = "UNRUN"
+tier = "integration"
+reqs = ["9.4"]
+tasks = ["3.2"]
+oracle = "The store conformance suite and the migration tests pass against a real PostgreSQL server process."
+
+[case.RX4-039]
+title = "Generalize the policy model and move wallet conditions out of core"
+status = "UNRUN"
+tier = "component"
+reqs = ["10.5"]
+tasks = ["3.3"]
+oracle = "An ownership policy denies a non-owner on the server using the target entity, and the manifest marks server-decided policies."
+
+[case.RX4-040]
+title = "Add cursor pagination and make counts opt-in"
+status = "UNRUN"
+tier = "component"
+reqs = ["9.5"]
+tasks = ["3.4"]
+oracle = "Paging by cursor returns each record once while rows are inserted, and no count query runs unless requested."
+
+[case.RX4-041]
+title = "Validate references and invalidations and export the conformance suite"
+status = "UNRUN"
+tier = "component"
+reqs = ["9.6"]
+tasks = ["3.5"]
+oracle = "An unknown ref target or invalidation name fails registration with a catalogued error, and an external store can run the exported suite."
+
+[case.RX4-042]
+title = "Complete route patterns, redirects, duplicate detection and base path"
+status = "UNRUN"
+tier = "integration"
+reqs = ["12.1"]
+tasks = ["4.1"]
+oracle = "Catch-all and optional segments match on server and client, a duplicate route fails registration, and an application under a base path navigates and loads assets."
+
+[case.RX4-043]
+title = "Add nested layouts"
+status = "UNRUN"
+tier = "integration"
+reqs = ["12.2"]
+tasks = ["4.2"]
+oracle = "Navigating between two children of one layout keeps the layout mounted with its state, and a child error leaves the layout rendered."
+
+[case.RX4-044]
+title = "Add Link with prefetch, pending state and scroll restoration"
+status = "UNRUN"
+tier = "component"
+reqs = ["12.3"]
+tasks = ["4.3"]
+oracle = "Hovering a Link fetches the target chunk and data once, the pending state is observable during navigation, and back navigation restores the scroll position."
+
+[case.RX4-045]
+title = "Keep previous data visible through transient page states"
+status = "UNRUN"
+tier = "component"
+reqs = ["12.4"]
+tasks = ["4.4"]
+oracle = "During revalidation, offline and stale, the previous content remains in the document and the sidecar reports the transient state."
+
+[case.RX4-046]
+title = "Complete the scripted form path"
+status = "UNRUN"
+tier = "component"
+reqs = ["12.5"]
+tasks = ["4.5"]
+oracle = "A scripted submission redirects as declared, shows server errors on their fields, uploads a file and focuses the first invalid field."
+
+[case.RX4-047]
+title = "Add per-page head metadata, sitemap and robots"
+status = "UNRUN"
+tier = "integration"
+reqs = ["12.6"]
+tasks = ["4.6"]
+oracle = "Each page renders its own description and canonical on the server and after client navigation, and the build writes a sitemap that lists every static page."
+
+[case.RX4-048]
+title = "Add optimistic updates and navigation blocking"
+status = "UNRUN"
+tier = "component"
+reqs = ["12.7"]
+tasks = ["4.7"]
+oracle = "An optimistic update appears before the response and is rolled back on failure, and an armed blocker stops link and history navigation until released."
+
+[case.RX4-049]
+title = "Add list virtualization that keeps addressing and keyboard access"
+status = "UNRUN"
+tier = "component"
+reqs = ["12.8"]
+tasks = ["4.8"]
+oracle = "A 10000-row list mounts a bounded number of rows, an unmounted row is still addressable, and arrow-key traversal crosses the window edge."
+
+[case.RX4-050]
+title = "Accept user Vite configuration under guarded invariants"
+status = "UNRUN"
+tier = "integration"
+reqs = ["13.1"]
+tasks = ["5.1"]
+oracle = "A user plugin and alias take effect in dev, client build, server build and prerender, and an invariant-breaking override fails with the catalogued error."
+
+[case.RX4-051]
+title = "Run the build pipeline on a production loader with bounded instances"
+status = "UNRUN"
+tier = "integration"
+reqs = ["13.2"]
+tasks = ["5.2"]
+oracle = "Two consecutive builds of one fixture produce identical output trees, prerender runs in production mode, and the Vite instance count stays within the asserted bound."
+
+[case.RX4-052]
+title = "Define the adapter interface with Node and static adapters"
+status = "UNRUN"
+tier = "integration"
+reqs = ["13.3"]
+tasks = ["5.3"]
+oracle = "The configuration accepts deploy.host, the Node adapter output starts and serves a page, and the static adapter output is served by a plain file server."
+
+[case.RX4-053]
+title = "Add Cloudflare, Vercel and Netlify adapters"
+status = "UNRUN"
+tier = "integration"
+reqs = ["13.4"]
+tasks = ["5.4"]
+oracle = "Each adapter writes the documented layout, and the Cloudflare output serves a page under a local workerd runtime."
+
+[case.RX4-054]
+title = "Shrink the client entry and put it under budgets"
+status = "UNRUN"
+tier = "integration"
+reqs = ["13.5"]
+tasks = ["5.5"]
+oracle = "The initial chunks for one page contain no declaration from another page, the manifest is not inlined, and the entry is counted by budgets."
+
+[case.RX4-055]
+title = "Make server externals configurable and add production source maps"
+status = "UNRUN"
+tier = "integration"
+reqs = ["13.6"]
+tasks = ["5.6"]
+oracle = "A server build with a native addon dependency starts and loads the addon, and each source map mode produces the expected files."
+
+[case.RX4-056]
+title = "Fix the development experience gaps"
+status = "UNRUN"
+tier = "integration"
+reqs = ["13.7"]
+tasks = ["5.7"]
+oracle = "The first development document contains its styles, a configuration edit restarts the server, and an incomplete page folder does not stop other pages."
+
+[case.RX4-057]
+title = "Build the image pipeline behind the images configuration"
+status = "UNRUN"
+tier = "integration"
+reqs = ["13.8"]
+tasks = ["5.8"]
+oracle = "A local image yields variants and a srcset with intrinsic dimensions, and a remote source outside the allow-list is rejected."
+
+[case.RX4-058]
+title = "Add suppression, severity and baseline to the checker and fix known false positives"
+status = "UNRUN"
+tier = "component"
+reqs = ["14.1"]
+tasks = ["6.1"]
+oracle = "A suppressed finding with a reason is not reported, a suppression without a reason is rejected, a baseline hides old findings only, and the five false-positive fixtures pass."
+
+[case.RX4-059]
+title = "Isolate rule failures and typecheck project references"
+status = "UNRUN"
+tier = "component"
+reqs = ["14.2"]
+tasks = ["6.2"]
+oracle = "A throwing rule does not hide another rule's findings, and a type error in a referenced project is reported."
+
+[case.RX4-060]
+title = "Harden the import boundary rule and add an allow-list"
+status = "UNRUN"
+tier = "component"
+reqs = ["14.3"]
+tasks = ["6.3"]
+oracle = "Each of the four bypass forms is reported, and an allow-listed import is accepted."
+
+[case.RX4-061]
+title = "Make the checker incremental and take it off the dev start path"
+status = "UNRUN"
+tier = "integration"
+reqs = ["14.4"]
+tasks = ["6.4"]
+oracle = "A second run with no change re-checks no file, a single edit re-checks only affected files, and the development server answers before the full check ends."
+
+[case.RX4-062]
+title = "Add machine outputs, rule links, custom rules and i18n key validation"
+status = "UNRUN"
+tier = "component"
+reqs = ["14.5"]
+tasks = ["6.5"]
+oracle = "The SARIF output validates against the 2.1.0 schema, a custom rule runs, and a missing locale key is reported."
+
+[case.RX4-063]
+title = "Extend the testing harness"
+status = "UNRUN"
+tier = "component"
+reqs = ["15.1"]
+tasks = ["6.6"]
+oracle = "Each helper is exercised against a fixture application, and a scaffolded project contains a passing test."
+
+[case.RX4-064]
+title = "Add the preview, routes and info commands"
+status = "UNRUN"
+tier = "integration"
+reqs = ["15.2"]
+tasks = ["6.7"]
+oracle = "rex preview serves the built fixture, rex routes lists every declared page, and rex info prints the resolved versions."
+
+[case.RX4-065]
+title = "Add the upgrade and add commands and a migrate dry run"
+status = "UNRUN"
+tier = "integration"
+reqs = ["15.3"]
+tasks = ["6.8"]
+oracle = "rex migrate with the dry-run flag changes no file, rex upgrade applies the pending codemods, and rex add installs a pinned item."
+
+[case.RX4-066]
+title = "Polish the CLI and make process spawning work on Windows"
+status = "UNRUN"
+tier = "component"
+reqs = ["15.4", "15.5"]
+tasks = ["6.9"]
+oracle = "rex --version loads no build module, an unknown command suggests the nearest one, exit codes differ for findings and crashes, and a .cmd shim is resolved."
+
+[case.RX4-067]
+title = "Version the agent contract and make addresses unique"
+status = "UNRUN"
+tier = "component"
+reqs = ["16.1", "16.2"]
+tasks = ["7.1"]
+oracle = "Two instances of one action have distinct addresses, the sidecar carries a version, the discovery link resolves to the schema, and an action with required input is not invoked empty."
+
+[case.RX4-068]
+title = "Ship the agent conformance suite and a reference client"
+status = "UNRUN"
+tier = "integration"
+reqs = ["16.3"]
+tasks = ["7.2"]
+oracle = "The conformance suite passes against the fixture application and fails against a fixture with a broken sidecar."
+
+[case.RX4-069]
+title = "Make keyboard shortcuts meet WCAG 2.1.4"
+status = "UNRUN"
+tier = "component"
+reqs = ["17.1"]
+tasks = ["7.3"]
+oracle = "A duplicate shortcut fails registration, a single-character shortcut can be remapped and disabled, and it does not fire while typing."
+
+[case.RX4-070]
+title = "Make modal surfaces inert-backed, focus-trapped and scroll-locked"
+status = "UNRUN"
+tier = "component"
+reqs = ["17.2"]
+tasks = ["7.4"]
+oracle = "With any modal open the background is inert, focus cycles inside in both directions, scroll is locked, and focus returns to the trigger on close."
+
+[case.RX4-071]
+title = "Localize runtime outcome and confirmation text"
+status = "UNRUN"
+tier = "component"
+reqs = ["17.3"]
+tasks = ["7.5"]
+oracle = "In a non-English locale the confirmation dialog and outcome show translated text, and a missing key shows a readable default."
+
+[case.RX4-072]
+title = "Deepen the i18n runtime"
+status = "UNRUN"
+tier = "component"
+reqs = ["17.4"]
+tasks = ["7.6"]
+oracle = "A right-to-left locale sets dir on the document, only the active locale bundle loads, and a numeric string is rendered unchanged."
+
+[case.RX4-073]
+title = "Fix the shell accessibility details"
+status = "UNRUN"
+tier = "component"
+reqs = ["17.5"]
+tasks = ["7.7"]
+oracle = "The first tab stop is the skip link, the heading is inside main, a disabled control exposes its reason, and the strong border contrast is at least 3 to 1."
+
+[case.RX4-074]
+title = "Trim the public API, document it and gate an API report"
+status = "UNRUN"
+tier = "integration"
+reqs = ["18.1"]
+tasks = ["8.1"]
+oracle = "The API report gate passes, it fails on an undocumented public symbol, and the exported symbol count is recorded before and after."
+
+[case.RX4-075]
+title = "Repair the tutorial and execute it under a test"
+status = "UNRUN"
+tier = "e2e"
+reqs = ["18.2"]
+tasks = ["8.2"]
+oracle = "The tutorial runner applies every step to a fresh scaffold and rex check and rex build pass at the end."
+
+[case.RX4-076]
+title = "Write the authentication, deployment, environment and security guides"
+status = "UNRUN"
+tier = "component"
+reqs = ["18.3"]
+tasks = ["8.3"]
+oracle = "The four guides exist, every internal link resolves, and every code block passes the snippet check."
+
+[case.RX4-077]
+title = "Write the performance, testing, accessibility, troubleshooting and upgrade guides"
+status = "UNRUN"
+tier = "component"
+reqs = ["18.4"]
+tasks = ["8.4"]
+oracle = "The five guides exist, links resolve, and the snippet check typechecks every block."
+
+[case.RX4-078]
+title = "Curate the changelog, adopt changesets and add the missing codemods"
+status = "UNRUN"
+tier = "component"
+reqs = ["18.5"]
+tasks = ["8.5"]
+oracle = "The changelog has a breaking-changes section for each release, and each codemod transforms its fixture to the expected output."
+
+[case.RX4-079]
+title = "Add the minimal starter, static blog and database CRUD examples"
+status = "UNRUN"
+tier = "e2e"
+reqs = ["18.6"]
+tasks = ["8.6"]
+oracle = "Every example passes typecheck, rex check, its tests and its build through the examples check."
+
+[case.RX4-080]
+title = "Add the authentication, flow and external agent examples"
+status = "UNRUN"
+tier = "e2e"
+reqs = ["18.7"]
+tasks = ["8.7"]
+oracle = "The three examples pass the examples check, and the agent script completes the flow against the running example."
+
+[case.RX4-081]
+title = "Shorten the README, reorder the site and version the docs"
+status = "UNRUN"
+tier = "integration"
+reqs = ["18.8"]
+tasks = ["8.8"]
+oracle = "The README is under 300 lines, the first site navigation entry is the tutorial, and the site tests pass."
+
+[case.RX4-082]
+title = "Add server-render and bundle-size benchmarks"
+status = "UNRUN"
+tier = "component"
+reqs = ["18.9"]
+tasks = ["8.9"]
+oracle = "The size tracker fails on a fixture that exceeds the tolerance, and one baseline is committed with its measurement context."
+
+[case.RX4-083]
+title = "Open the contribution path and remove machine-specific files"
+status = "UNRUN"
+tier = "component"
+reqs = ["18.10"]
+tasks = ["8.10"]
+oracle = "The hygiene check passes on the repository and fails on a fixture with an absolute tool path or a committed report."
+
+[case.RX4-084]
+title = "Prepare the 0.4.0 release candidate and record the human Asks"
+status = "UNRUN"
+tier = "release"
+reqs = ["18.11"]
+tasks = ["8.11"]
+oracle = "The packed 0.4.0 tarball passes the smoke test and the exports test, the freshness gate passes, and every human-only step is listed with its state."
+
+[case.RX4-900]
+title = "Wave 0 gate: Green main and release integrity"
+status = "UNRUN"
+tier = "release"
+reqs = ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"]
+tasks = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12"]
+oracle = "On the wave/rex-v04/0 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
+
+[case.RX4-901]
+title = "Wave 1 gate: Security and correctness"
+status = "UNRUN"
+tier = "release"
+reqs = ["3.1", "3.2", "3.3", "3.4", "3.5", "4.1", "4.2", "4.3", "4.4", "5.1", "5.2", "5.3", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "7.1", "7.2", "8.1", "8.2", "8.3", "8.4", "9.1", "9.2"]
+tasks = ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14", "1.15"]
+oracle = "On the wave/rex-v04/1 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
+
+[case.RX4-902]
+title = "Wave 2 gate: Request model and server"
+status = "UNRUN"
+tier = "release"
+reqs = ["10.1", "10.2", "10.3", "10.4", "11.1", "11.2", "11.3", "11.4", "11.5"]
+tasks = ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9"]
+oracle = "On the wave/rex-v04/2 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
+
+[case.RX4-903]
+title = "Wave 3 gate: Data and policy"
+status = "UNRUN"
+tier = "release"
+reqs = ["9.3", "9.4", "9.5", "9.6", "10.5"]
+tasks = ["3.1", "3.2", "3.3", "3.4", "3.5"]
+oracle = "On the wave/rex-v04/3 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
+
+[case.RX4-904]
+title = "Wave 4 gate: Routing and client"
+status = "UNRUN"
+tier = "release"
+reqs = ["12.1", "12.2", "12.3", "12.4", "12.5", "12.6", "12.7", "12.8"]
+tasks = ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8"]
+oracle = "On the wave/rex-v04/4 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
+
+[case.RX4-905]
+title = "Wave 5 gate: Build and deploy"
+status = "UNRUN"
+tier = "release"
+reqs = ["13.1", "13.2", "13.3", "13.4", "13.5", "13.6", "13.7", "13.8"]
+tasks = ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8"]
+oracle = "On the wave/rex-v04/5 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
+
+[case.RX4-906]
+title = "Wave 6 gate: Checker, testing and CLI"
+status = "UNRUN"
+tier = "release"
+reqs = ["14.1", "14.2", "14.3", "14.4", "14.5", "15.1", "15.2", "15.3", "15.4", "15.5"]
+tasks = ["6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9"]
+oracle = "On the wave/rex-v04/6 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
+
+[case.RX4-907]
+title = "Wave 7 gate: Agent contract, accessibility and i18n"
+status = "UNRUN"
+tier = "release"
+reqs = ["16.1", "16.2", "16.3", "17.1", "17.2", "17.3", "17.4", "17.5"]
+tasks = ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7"]
+oracle = "On the wave/rex-v04/7 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
+
+[case.RX4-908]
+title = "Wave 8 gate: Documentation, examples and release preparation"
+status = "UNRUN"
+tier = "release"
+reqs = ["18.1", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10", "18.11"]
+tasks = ["8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "8.8", "8.9", "8.10", "8.11"]
+oracle = "On the wave/rex-v04/8 head with every task branch merged, tools/gate-test.sh and tools/gate-lint.sh both exit 0, and the wave manager records revision, command, exit code and log path."
