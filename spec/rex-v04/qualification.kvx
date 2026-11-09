@@ -3,7 +3,7 @@
 
 [meta]
 feature = "rex-v04"
-entries = 14
+entries = 15
 
 [qualification.001]
 task = "0.2"
@@ -115,4 +115,12 @@ file = "pnpm-lock.yaml"
 symbol = "development advisories"
 observed = "pnpm audit --prod reports 0 after the raise (7 before). The full pnpm audit still reports 11 development advisories (4 high): happy-dom 20.14.5 needs a major bump to 21; typedoc pulls markdown-it and minimatch; lighthouse pulls fast-uri and zod 3. Evidence: 4c3c3c0 | hyperfide spec done 0.8 | 0 | /root/rex-private/logs/rex-v04/0.8.log"
 assumption = "Outside req 1.7 (production); a follow-up task is for the integrator to decide."
+severity = "medium"
+
+[qualification.015]
+task = "0.12"
+file = "/usr/local/bin/hyperfide (2.0.0-dev), /usr/local/bin/cg (2.2.0)"
+symbol = "spec render, spec start, spec done"
+observed = "The two binaries render the spec pointers (CLAUDE.md, AGENTS.md, .cursor/rules/spec-workflow.mdc, .github/copilot-instructions.md) differently; main was stale under cg spec render --check, which gate-lint.sh and pnpm freshness use. hyperfide spec start/done rewrite the pointers in the older format, so workers restored them before committing. Pointers on the wave head are rendered with cg 2.2.0. Evidence: 5edf4e3 | hyperfide spec done 0.12 | 0 | /root/rex-private/logs/rex-v04/0.12.log"
+assumption = "cg 2.2.0 is the reference renderer (the version the fleet mechanics were verified with); the hyperfide binary on PATH should be aligned to it by a human."
 severity = "medium"
