@@ -170,7 +170,7 @@ task = "0.10"
 file = "site/package.json, site/e2e/site.spec.ts, site/e2e/lighthouse.ts"
 symbol = "site test script, run-workspace-tests"
 observed = "0.10 made gate-test run every package's test script; site's test runs playwright test without building dist/client, so the webServer cannot start. With pnpm run build:static added (not committed), 158 of 158 executed site e2e tests failed before a 25-minute timeout (2220 total): CSP-blocked asset requests, Lighthouse accessibility 96 under 100, no-JS waits. The committed main report (0ad3ac4) already shows 164 unexpected, 0 expected. Evidence: 7336856 | sh tools/gate-test.sh (REX_SITE_PORT=4191) | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log; 7336856+script | pnpm -C site test | 124 | /root/rex-private/logs/rex-v04/0-fix-site-e2e.log"
-assumption = "Assigned to task 0.13, which is not resolved and not merged: on its branch the site test script builds first and 2215 of 2220 pass; the CSP failures were Chromium labels for no-JS script refusals (entry 023). Remaining failures are entries 024 and 025. Evidence: b9e57b1 | REX_SITE_PORT=4291 cg spec done 0.13 | 1 | /root/rex-private/logs/rex-v04/0.13.log"
+assumption = "Assigned to task 0.13, which is not resolved and not merged: on its branch the site test script builds first and 2215 of 2220 pass; the CSP failures were Chromium labels for no-JS script refusals (entries 023 and 028). Remaining failures are entries 024 and 025. Evidence: b9e57b1 | REX_SITE_PORT=4291 cg spec done 0.13 | 1 | /root/rex-private/logs/rex-v04/0.13.log"
 severity = "high"
 
 [qualification.022]
@@ -194,7 +194,7 @@ task = "0.13"
 file = "site/e2e/lighthouse.ts, packages/rex/src/server/ssr.ts"
 symbol = "phone Lighthouse performance"
 observed = "Phone performance is 85 to 89 on home, errors, docs and api against a threshold of 95, also with one worker, so not contention. All hydration JS finishes before first paint in Lighthouse's simulation; with scripts removed the pages score 100. Repair d0a0cb6 (unmerged, unqualified) moved preloads and the entry into a nonced end-of-body loader and widened into ssr.ts and prerender.ts; api still scores 89."
-assumption = "Needs a decision on the asset-emission contract in ssr.ts (shared with later tasks) or on deferred hydration; owner to be assigned by the integrator."
+assumption = "rex-main rejected the d0a0cb6 ssr.ts and prerender.ts change; 758a3a8 reverts it. The fix belongs in the site (what the four pages ship on first load), still owned by 0.13; measured alone after the revert: home 88, api 85, docs 88, errors 90."
 severity = "high"
 
 [qualification.025]
@@ -220,3 +220,19 @@ symbol = "hyperfide fleet"
 observed = "cg fleet begin and merge-up read spec from the main checkout, which lacks tasks added on the wave branch ('no [task.0.13] with a wave'); worktrees were cut with git worktree add, claims taken with cg spec claim, merges done with git merge --no-ff. cg fleet sync segfaulted (exit 139) in task 0.15 after writing a clean merge 97aeec2."
 assumption = "Tasks added on a wave branch need the spec on main or a cg option for the spec root; tool owner to fix."
 severity = "medium"
+
+[qualification.028]
+task = "1.9"
+file = "site static build (rex build --target static), site/e2e/walk.ts"
+symbol = "content security policy of static pages"
+observed = "Per task 0.13 (b9e57b1): the static build emits no content security policy; the 'failed request ... csp' lines come from Chromium labelling script and module preload fetches it refuses under disabled JavaScript as csp. Firefox and WebKit show none."
+assumption = "Task 1.9 confirms this when it adds the static policy."
+severity = "note"
+
+[qualification.029]
+task = "0.13"
+file = "packages/rex/src/client/page.tsx, client/screen-hold.tsx, client/screen.ts, client/shell/header.tsx, vite/ssr-css.ts, tools/serve-static.mjs"
+symbol = "PageHost, ScreenHold, useHydrated, HeaderSlot, shellHeadHtml, send"
+observed = "b9e57b1 changed framework and tool code outside 0.13's original touches: lazy pages keep the server screen until commit and useHydrated flips in a transition (phone and tablet hydration discarded the prerendered main); the page header is a section labelled by its h1 (it sat outside every landmark); production pages keep the app shell head (meta description was dropped); serve-static gzips text types."
+assumption = "The wave gate's full package run is their evidence."
+severity = "note"
