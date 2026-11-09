@@ -3,7 +3,7 @@
 
 [meta]
 feature = "rex-v04"
-entries = 19
+entries = 20
 
 [qualification.001]
 task = "0.2"
@@ -156,3 +156,11 @@ symbol = "24h change meter"
 observed = "The new WebKit project failed axe aria-meter-name on the demo portfolio page: Base UI links MeterLabel only after load, so server HTML had role=meter without a name. Fixed with useId and aria-labelledby in the server HTML. Evidence: 815d3dc | pnpm -C examples/demo exec playwright test e2e/axe.spec.ts | 0 | /root/rex-private/logs/rex-v04/0-fix-meter.log"
 assumption = "Wave gate repair, cycle 1; the shared ui/meter.tsx is unchanged."
 severity = "medium"
+
+[qualification.020]
+task = "0.11"
+file = "site/playwright.config.ts"
+symbol = "SITE_PORT, REX_SITE_PORT"
+observed = "Port 4173 on this host is held by an unrelated long-running process (another project's static server), so the site Playwright webServer could not start. Evidence: f5a7fdc | sh tools/gate-test.sh | 1 | /root/rex-private/logs/rex-v04/wave-0-gate-test.log (kept as wave-0-gate-test.run2-f5a7fdc.log). The port now comes from REX_SITE_PORT, default 4173, parsed strictly; tools/serve-static.mjs keeps its own DEFAULT_PORT 4173 but receives --port from the config."
+assumption = "Gates on this host export REX_SITE_PORT with a free port."
+severity = "note"

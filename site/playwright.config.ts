@@ -1,6 +1,17 @@
 import { defineConfig, devices } from "@playwright/test";
 
-export const SITE_PORT = 4173;
+const DEFAULT_SITE_PORT = 4173;
+
+function sitePort(value: string | undefined): number {
+  if (value === undefined) return DEFAULT_SITE_PORT;
+  const port = /^\d+$/.test(value) ? Number(value) : Number.NaN;
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`REX_SITE_PORT must be an integer from 1 to 65535, received "${value}"`);
+  }
+  return port;
+}
+
+export const SITE_PORT = sitePort(process.env.REX_SITE_PORT);
 export const SITE_URL = `http://127.0.0.1:${SITE_PORT}`;
 
 export default defineConfig({
