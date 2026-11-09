@@ -397,10 +397,10 @@ time_limit_minutes = 90
 
 [task.0.10]
 title = "Give every package a typecheck and make the root gates honest"
-status = "pending"
+status = "done"
 wave = 0
 requires = ["0.3", "0.4"]
-touches = ["package.json", "examples/demo/package.json", "site/package.json", "packages/rex/vitest.config.ts", "tools/test-ratio.mjs", "tools/run-workspace-tests.mjs", "tools/qualification-gates.test.mjs", "tools/gate-test.sh", "tools/gate-lint.sh", "packages/rex/src/testing/**"]
+touches = ["package.json", "examples/demo/package.json", "site/package.json", "packages/rex/vitest.config.ts", "tools/test-ratio.mjs", "tools/run-workspace-tests.mjs", "tools/qualification-gates.test.mjs", "tools/gate-test.sh", "tools/gate-lint.sh", "packages/rex/src/testing/**", "packages/rex/src/test-ratio.test.ts"]
 verify_cmd = "pnpm typecheck && node --test tools/qualification-gates.test.mjs"
 do_1 = "Add a typecheck script to examples/demo and site and fix the type errors it reveals without widening types."
 do_2 = "Replace the root test script with tools/run-workspace-tests.mjs, which runs every package, continues after a failure and exits non-zero with a per-package summary."
@@ -1894,7 +1894,7 @@ oracle = "The peer ranges equal the set of majors with a recorded passing run, a
 
 [case.RX4-010]
 title = "Give every package a typecheck and make the root gates honest"
-status = "UNRUN"
+status = "PASS"
 tier = "integration"
 reqs = ["2.5"]
 tasks = ["0.10"]

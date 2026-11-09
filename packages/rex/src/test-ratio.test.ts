@@ -87,6 +87,23 @@ function write(root: string, path: string, lines: readonly string[]): void {
   writeFileSync(file, `${lines.join("\n")}\n`);
 }
 
+const RESULTS = "node_modules/.cache/rex/test-results.json";
+
+function writeResults(
+  root: string,
+  dir: string,
+  files: readonly string[],
+  failed: readonly string[] = [],
+): void {
+  const testResults = files.map((file) => ({
+    name: join(root, dir, file),
+    status: failed.includes(file) ? "failed" : "passed",
+  }));
+  write(root, join(dir, RESULTS), [
+    JSON.stringify({ success: failed.length === 0, numFailedTests: failed.length, testResults }),
+  ]);
+}
+
 function numbered(prefix: string, count: number): string[] {
   return Array.from({ length: count }, (_, index) => `export const ${prefix}${index} = ${index};`);
 }
@@ -131,6 +148,8 @@ function writeTree(): string {
   write(root, "examples/demo/app/.cache/stale.ts", numbered("x", 5));
   write(root, "examples/demo/e2e/walk.ts", numbered("e", 4));
   write(root, "examples/demo/rex.config.ts", numbered("r", 3));
+  writeResults(root, "packages/rex", ["src/core/alpha.test.ts"]);
+  writeResults(root, "examples/demo", ["app/pages/home/test/home.test.tsx"]);
   return root;
 }
 
@@ -249,6 +268,7 @@ describe("tools/test-ratio.mjs", () => {
     );
 
     write(root, "packages/rex/src/core/beta.test.ts", numbered("bt", 6));
+    writeResults(root, "packages/rex", ["src/core/alpha.test.ts", "src/core/beta.test.ts"]);
     const report = tools.measure(root);
     expect(report.packages[0]).toMatchObject({
       source: { files: 2, lines: 13 },
@@ -269,6 +289,50 @@ describe("tools/test-ratio.mjs", () => {
     expect(demoBelow.err).toBe(
       "test-ratio: examples/demo has 0.88 lines of test code per line of source, below 1.00\n",
     );
+  });
+
+  it("exits 1 with --check while the counted suite has failing, missing or unrecorded test results", () => {
+    const root = writeTree();
+    write(root, "packages/rex/src/core/beta.test.ts", numbered("bt", 6));
+    const counted = ["src/core/alpha.test.ts", "src/core/beta.test.ts"];
+    writeResults(root, "packages/rex", counted, ["src/core/beta.test.ts"]);
+    const failing = run(["--check"], root);
+    expect(failing.status).toBe(1);
+    expect(failing.out).toContain(
+      "test-ratio: every package has at least 1.00 lines of test code per line of source\n",
+    );
+    expect(failing.err).toBe(
+      [
+        "test-ratio: packages/rex has failing tests: 1 failed in packages/rex/node_modules/.cache/rex/test-results.json",
+        "test-ratio: packages/rex test file src/core/beta.test.ts failed",
+        "",
+      ].join("\n"),
+    );
+
+    writeResults(root, "packages/rex", ["src/core/alpha.test.ts"]);
+    const unrecorded = run(["--check"], root);
+    expect(unrecorded.status).toBe(1);
+    expect(unrecorded.err).toBe(
+      "test-ratio: packages/rex test file src/core/beta.test.ts has no result in packages/rex/node_modules/.cache/rex/test-results.json\n",
+    );
+
+    rmSync(join(root, "examples/demo", RESULTS));
+    writeResults(root, "packages/rex", counted);
+    const missing = run(["--check"], root);
+    expect(missing.status).toBe(1);
+    expect(missing.err).toBe(
+      "test-ratio: examples/demo has no test results at examples/demo/node_modules/.cache/rex/test-results.json; run its tests before the ratio check\n",
+    );
+
+    write(root, join("examples/demo", RESULTS), ["{"]);
+    const unreadable = run(["--check"], root);
+    expect(unreadable.status).toBe(1);
+    expect(unreadable.err).toBe(
+      "test-ratio: examples/demo has unreadable test results at examples/demo/node_modules/.cache/rex/test-results.json\n",
+    );
+
+    writeResults(root, "examples/demo", ["app/pages/home/test/home.test.tsx"]);
+    expect(run(["--check"], root)).toMatchObject({ status: 0, err: "" });
   });
 
   it("measures both packages of the repository from the command line", () => {
